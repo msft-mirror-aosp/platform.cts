@@ -353,6 +353,9 @@
         <activity android:name=".RecreateOnKeyboardChangeActivity"
             android:recreateOnConfigChanges="keyboard|keyboardHidden"
             android:exported="true"/>
+        <activity android:name=".RecreateOnNavigationChangeActivity"
+            android:recreateOnConfigChanges="navigation"
+            android:exported="true"/>
         <receiver android:name=".LaunchBroadcastReceiver"
              android:enabled="true"
              android:exported="true">

@@ -26,8 +26,10 @@ import static android.server.wm.app.Components.FontScaleActivity.EXTRA_FONT_ACTI
 import static android.server.wm.app.Components.FontScaleActivity.EXTRA_FONT_PIXEL_SIZE;
 import static android.server.wm.app.Components.NO_RELAUNCH_ACTIVITY;
 import static android.server.wm.app.Components.RECREATE_ON_KEYBOARD_CHANGE_ACTIVITY;
+import static android.server.wm.app.Components.RECREATE_ON_NAVIGATION_CHANGE_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.server.wm.keyboardresources.Components.KEYBOARD_RESOURCES_ACTIVITY;
+import static android.server.wm.navigationresources.Components.NAVIGATION_RESOURCES_ACTIVITY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
@@ -65,10 +67,13 @@ import android.view.InputDevice;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.cts.input.ConfigurationItem;
 import com.android.cts.input.UinputKeyboard;
+import com.android.cts.input.UinputDevice;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+import com.android.cts.input.UinputRegisterCommand;
 import com.android.window.flags.Flags;
 
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
@@ -79,7 +84,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Build/Install/Run:
@@ -438,6 +446,11 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     private boolean hasNoKeyboardDevice() {
+        return hasNoInputDeviceMatching(device ->
+                device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC);
+    }
+
+    private boolean hasNoInputDeviceMatching(Predicate<InputDevice> condition) {
         InputManager inputManager = InstrumentationRegistry.getInstrumentation().getTargetContext()
                 .getSystemService(InputManager.class);
         assertNotNull(inputManager);
@@ -445,12 +458,105 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
         final int[] inputDeviceIds = inputManager.getInputDeviceIds();
         for (int inputDeviceId : inputDeviceIds) {
             final InputDevice inputDevice = inputManager.getInputDevice(inputDeviceId);
-            if (inputDevice.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
-                    && inputDevice.isEnabled()
-                    && !inputDevice.isVirtual()) {
-                return false;
+            if (inputDevice != null && inputDevice.isEnabled() && !inputDevice.isVirtual()) {
+                if (condition.test(inputDevice)) {
+                    return false;
+                }
             }
         }
         return true;
+    }
+
+    /**
+     * Verifies that an activity without "navigation" defined in the
+     * {@code android:recreateOnConfigChanges} attribute is not relaunched and receives the
+     * {@link android.app.Activity#onConfigurationChanged} callback instead when a navigation
+     * configuration change occurs.
+     */
+    @Test
+    @ApiTest(apis = {"android.R.attr#configChanges", "android.R.attr#recreateOnConfigChanges"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LESS_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    @EnableCompatChanges(ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    public void testNavigationConfigChange_noRelaunch() {
+        testNavigationConfigChange(TEST_ACTIVITY, 0 /* numRelaunch */, 1 /* numConfigChange */);
+    }
+
+    /**
+     * Verifies that an activity with "navigation" explicitly defined in the
+     * {@code android:recreateOnConfigChanges} attribute is relaunched and does not receive the
+     * {@link android.app.Activity#onConfigurationChanged} callback when a navigation configuration
+     * change occurs.
+     */
+    @Test
+    @ApiTest(apis = {"android.R.attr#configChanges", "android.R.attr#recreateOnConfigChanges"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LESS_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    @EnableCompatChanges(ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    public void testNavigationConfigChange_relaunch() {
+        testNavigationConfigChange(RECREATE_ON_NAVIGATION_CHANGE_ACTIVITY, 1 /* numRelaunch */,
+                0 /* numConfigChange */);
+    }
+
+    /**
+     * Verifies that if the app provides resources for a specific navigation configuration, the
+     * activity is relaunched and does not receive the
+     * {@link android.app.Activity#onConfigurationChanged} callback when a navigation configuration
+     * change occurs.
+     */
+    @Test
+    @ApiTest(apis = {"android.R.attr#configChanges", "android.R.attr#recreateOnConfigChanges"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LESS_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    @EnableCompatChanges(ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    public void testNavigationConfigChange_navigationResources_relaunch() {
+        testNavigationConfigChange(NAVIGATION_RESOURCES_ACTIVITY, 1 /* numRelaunch */,
+                0 /* numConfigChange */);
+    }
+
+    private void testNavigationConfigChange(ComponentName activityName,  int numRelaunch,
+            int numConfigChange) {
+        assumeTrue(hasNoNavigationDevice());
+
+        launchActivity(activityName);
+        waitAndAssertResumedActivity(activityName, "Activity must be resumed");
+        separateTestJournal();
+
+        // Check the activity state when connect a new dpad device.
+        try (UinputDevice dpadDevice = new UinputDevice(
+                InstrumentationRegistry.getInstrumentation(),
+                InputDevice.SOURCE_DPAD, createDeviceRegisterCommand(), null)) {
+            assertRelaunchOrConfigChanged(activityName, numRelaunch, numConfigChange);
+            separateTestJournal();
+        }
+
+        // Check the activity state after automatically disconnecting the new dpad device.
+        assertRelaunchOrConfigChanged(activityName, numRelaunch, numConfigChange);
+    }
+
+    private boolean hasNoNavigationDevice() {
+        return hasNoInputDeviceMatching(device ->
+                device.getSources() == InputDevice.SOURCE_DPAD
+                        || device.getSources() == InputDevice.SOURCE_TRACKBALL);
+    }
+
+    private UinputRegisterCommand createDeviceRegisterCommand() {
+        List<ConfigurationItem> configurationItems = Arrays.asList(
+                new ConfigurationItem(
+                        "UI_SET_EVBIT",
+                        List.of("EV_KEY")),
+                new ConfigurationItem(
+                        "UI_SET_KEYBIT",
+                        List.of("KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT", "KEY_SELECT"))
+        );
+
+        return new UinputRegisterCommand(
+                100 /* id */,
+                "Virtual Dpad Device (Test)" /* name */,
+                0x18d1 /* vid */,
+                0xabcd /* pid */,
+                "usb" /* bus */,
+                "usb:1" /* port */,
+                configurationItems,
+                Map.of(),
+                null /* ffEffectsMax */
+        );
     }
 }
