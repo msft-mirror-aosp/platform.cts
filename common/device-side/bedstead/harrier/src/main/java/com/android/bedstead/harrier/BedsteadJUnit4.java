@@ -66,9 +66,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * A JUnit test runner for use with Bedstead.
- */
+/** A JUnit test runner for use with Bedstead. */
 @SuppressWarnings("AndroidJdkLibsChecker")
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
@@ -100,16 +98,14 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     // These are annotations which are not included indirectly
-    private static final ImmutableSet<String> sIgnoredAnnotationPackages = ImmutableSet.of(
-        "java.lang.annotation",
-        "com.android.bedstead.harrier.annotations.meta",
-        "org.junit"
-    );
+    private static final ImmutableSet<String> sIgnoredAnnotationPackages =
+            ImmutableSet.of(
+                    "java.lang.annotation",
+                    "com.android.bedstead.harrier.annotations.meta",
+                    "org.junit");
 
-    private static final ImmutableList<String> sIgnoredAnnotationPrefixes = ImmutableList.of(
-        "kotlin",
-        "com.android.networkstack.kotlin"
-    );
+    private static final ImmutableList<String> sIgnoredAnnotationPrefixes =
+            ImmutableList.of("kotlin", "com.android.networkstack.kotlin");
 
     /**
      * Resolves annotations recursively.
@@ -134,8 +130,10 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         while (index < annotations.size()) {
             Annotation annotation = annotations.get(index);
             annotations.remove(index);
-            List<Annotation> replacementAnnotations = AnnotationSorterKt.sortedByPriority(
-                    getReplacementAnnotations(harrierRule, annotation, parameterizedAnnotations));
+            List<Annotation> replacementAnnotations =
+                    AnnotationSorterKt.sortedByPriority(
+                            getReplacementAnnotations(
+                                    harrierRule, annotation, parameterizedAnnotations));
             annotations.addAll(index, replacementAnnotations);
             index += replacementAnnotations.size();
         }
@@ -220,7 +218,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         if (specialReplaceFunction != null) {
             List<Annotation> replacement =
-                    specialReplaceFunction.apply(harrierRule, annotation)
+                    specialReplaceFunction
+                            .apply(harrierRule, annotation)
                             .collect(Collectors.toList());
             return replacement;
         }
@@ -230,8 +229,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         if (isRepeatingAnnotation(annotation)) {
             try {
                 Annotation[] annotations =
-                        (Annotation[]) annotation.annotationType()
-                                .getMethod("value").invoke(annotation);
+                        (Annotation[])
+                                annotation.annotationType().getMethod("value").invoke(annotation);
                 Collections.addAll(replacementAnnotations, annotations);
                 return replacementAnnotations;
             } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -267,7 +266,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             return false;
         }
 
-        if(annotation.annotationType().equals(IncludeNone.class)) {
+        if (annotation.annotationType().equals(IncludeNone.class)) {
             return true;
         }
 
@@ -308,19 +307,21 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
-        return testClass.getAnnotatedMethods().stream().filter(
-                method -> method.getAnnotation(Test.class) != null
-                        || isMethodAnnotatedIndirectly(method, BedsteadTest.class)
-        ).collect(Collectors.toList());
+        return testClass.getAnnotatedMethods().stream()
+                .filter(
+                        method ->
+                                method.getAnnotation(Test.class) != null
+                                        || isMethodAnnotatedIndirectly(method, BedsteadTest.class))
+                .collect(Collectors.toList());
     }
 
     private static <A extends Annotation> boolean isMethodAnnotatedIndirectly(
-            FrameworkMethod method,
-            Class<A> annotationType
-    ) {
-        return Arrays.stream(method.getAnnotations()).anyMatch(annotation ->
-                annotation.annotationType().getDeclaredAnnotation(annotationType) != null
-        );
+            FrameworkMethod method, Class<A> annotationType) {
+        return Arrays.stream(method.getAnnotations())
+                .anyMatch(
+                        annotation ->
+                                annotation.annotationType().getDeclaredAnnotation(annotationType)
+                                        != null);
     }
 
     /**
@@ -477,14 +478,15 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             boolean hasParameterised = false;
 
             for (Annotation annotation : annotations) {
-                var generatorAnnotation = annotation.annotationType()
-                        .getAnnotation(UsesParameterizedTestWithArgumentGenerator.class);
+                var generatorAnnotation =
+                        annotation
+                                .annotationType()
+                                .getAnnotation(UsesParameterizedTestWithArgumentGenerator.class);
                 if (generatorAnnotation != null) {
 
                     if (hasParameterised) {
                         throw new IllegalStateException(
-                                "Each parameter can only have a single parameterised annotation"
-                        );
+                                "Each parameter can only have a single parameterised annotation");
                     }
                     hasParameterised = true;
 
@@ -492,9 +494,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                             mLocator.get(generatorAnnotation.value());
 
                     var list = new ArrayList<FrameworkMethod>();
-                    expandedMethods.forEach(item ->
-                            list.addAll(generator.handleFrameworkMethod(item, annotation))
-                    );
+                    expandedMethods.forEach(
+                            item -> list.addAll(generator.handleFrameworkMethod(item, annotation)));
                     expandedMethods = list.stream();
                 }
             }
@@ -558,10 +559,10 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     /**
-     * Collect all annotations from the *runtime* class, which might be a subclass
-     * of the class where the test method is *declared*.
+     * Collect all annotations from the *runtime* class, which might be a subclass of the class
+     * where the test method is *declared*.
      */
-    List<Annotation> getRuntimeClassAnnotations(){
+    List<Annotation> getRuntimeClassAnnotations() {
         return Arrays.asList(getTestClass().getAnnotations());
     }
 
@@ -617,21 +618,23 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     /**
      * True if the test is running in debug mode.
      *
-     * <p>This will result in additional debugging information being added which would otherwise
-     * be dropped to improve test performance.
+     * <p>This will result in additional debugging information being added which would otherwise be
+     * dropped to improve test performance.
      *
      * <p>To enable this, pass the "bedstead-debug" instrumentation arg as "true"
      */
     public static boolean isDebug() {
         try {
-            Class instrumentationRegistryClass = Class.forName(
-                        "androidx.test.platform.app.InstrumentationRegistry");
+            Class instrumentationRegistryClass =
+                    Class.forName("androidx.test.platform.app.InstrumentationRegistry");
 
-            Object arguments = instrumentationRegistryClass.getMethod("getArguments")
-                    .invoke(null);
-            return Boolean.parseBoolean((String) arguments.getClass()
-                    .getMethod("getString", String.class, String.class)
-                    .invoke(arguments, "bedstead-debug", "false"));
+            Object arguments = instrumentationRegistryClass.getMethod("getArguments").invoke(null);
+            return Boolean.parseBoolean(
+                    (String)
+                            arguments
+                                    .getClass()
+                                    .getMethod("getString", String.class, String.class)
+                                    .invoke(arguments, "bedstead-debug", "false"));
         } catch (ClassNotFoundException e) {
             return false; // Must be on the host so can't access debug information
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
@@ -644,16 +647,12 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         // We do allow arguments - they will fail validation later on if not properly annotated
     }
 
-    /**
-     * Add a listener to be informed of test lifecycle events.
-     */
+    /** Add a listener to be informed of test lifecycle events. */
     public static void addLifecycleListener(TestLifecycleListener listener) {
         sLifecycleListeners.add(listener);
     }
 
-    /**
-     * Remove a listener being informed of test lifecycle events.
-     */
+    /** Remove a listener being informed of test lifecycle events. */
     public static void removeLifecycleListener(TestLifecycleListener listener) {
         sLifecycleListeners.remove(listener);
     }
@@ -664,25 +663,27 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         if (isIgnored(method)) {
             notifier.fireTestIgnored(description);
         } else {
-            Statement statement = new Statement() {
-                @Override
-                public void evaluate() throws Throwable {
-                    sLifecycleListeners.forEach(l -> l.testStarted(method.getName()));
-                    while (true) {
-                        try {
-                            methodBlock(method).evaluate();
-                            sLifecycleListeners.forEach(l -> l.testFinished(method.getName()));
-                            return;
-                        } catch (RestartTestException e) {
-                            sLifecycleListeners.forEach(
-                                    l -> l.testRestarted(method.getName(), e.getMessage()));
-                            System.out.println(LOG_TAG + ": Restarting test(" + e.toString() + ")");
+            Statement statement =
+                    new Statement() {
+                        @Override
+                        public void evaluate() throws Throwable {
+                            sLifecycleListeners.forEach(l -> l.testStarted(method.getName()));
+                            while (true) {
+                                try {
+                                    methodBlock(method).evaluate();
+                                    sLifecycleListeners.forEach(
+                                            l -> l.testFinished(method.getName()));
+                                    return;
+                                } catch (RestartTestException e) {
+                                    sLifecycleListeners.forEach(
+                                            l -> l.testRestarted(method.getName(), e.getMessage()));
+                                    System.out.println(
+                                            LOG_TAG + ": Restarting test(" + e.toString() + ")");
+                                }
+                            }
                         }
-                    }
-                }
-            };
+                    };
             runLeaf(statement, description, notifier);
         }
     }
-
 }

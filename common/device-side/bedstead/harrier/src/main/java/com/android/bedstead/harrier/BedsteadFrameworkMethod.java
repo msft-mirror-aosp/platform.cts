@@ -18,15 +18,18 @@ package com.android.bedstead.harrier;
 
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
+
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableList;
+
+import org.junit.runners.model.FrameworkMethod;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.runners.model.FrameworkMethod;
 
 /** {@link FrameworkMethod} subclass which allows modifying the test name and annotations. */
 public final class BedsteadFrameworkMethod extends FrameworkMethod {
@@ -68,8 +71,7 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
                         getMethod().getAnnotations(),
                         mBedsteadJUnit4.getRuntimeClassAnnotations()));
 
-        mBedsteadJUnit4.resolveRecursiveAnnotations(
-                annotations, mParameterizedAnnotations);
+        mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
 
         boolean hasRequireRunOnAnnotation =
                 annotations.stream()
@@ -122,10 +124,7 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
         }
         StringBuilder newMethodName = new StringBuilder(super.getName());
         for (Annotation annotation : mParameterizedAnnotations) {
-            newMethodName
-                    .append("[")
-                    .append(getParameterName(annotation))
-                    .append("]");
+            newMethodName.append("[").append(getParameterName(annotation)).append("]");
         }
         return newMethodName.toString();
     }
