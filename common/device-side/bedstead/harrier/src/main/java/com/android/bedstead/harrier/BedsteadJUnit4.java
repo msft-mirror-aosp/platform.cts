@@ -216,7 +216,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         for (Annotation indirectAnnotation :
                 BedsteadAnnotationGenerator.INSTANCE.getIndirectAnnotations(annotation)) {
-            if (shouldSkipAnnotation(annotation)) {
+            if (shouldSkipAnnotation(indirectAnnotation)) {
                 continue;
             }
 
