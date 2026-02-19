@@ -1013,9 +1013,11 @@ public abstract class CodecTestBase {
     }
 
     public static void setWallpaperToSolidColor() {
-        if (WM != null) {
+        if (WM != null && WM.isWallpaperSupported()) {
             int width = WM.getDesiredMinimumWidth();
+            assertTrue("wallpaper support must be non-zero width", width > 0);
             int height = WM.getDesiredMinimumHeight();
+            assertTrue("wallpaper support must be non-zero height", height > 0);
             Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             new Canvas(bitmap).drawColor(Color.BLACK);
             try {
@@ -1028,7 +1030,7 @@ public abstract class CodecTestBase {
     }
 
     public static void setWallpaperToSystemDefault() {
-        if (WM != null) {
+        if (WM != null && WM.isWallpaperSupported()) {
             try {
                 WM.clear(WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK);
             } catch (IOException e) {
