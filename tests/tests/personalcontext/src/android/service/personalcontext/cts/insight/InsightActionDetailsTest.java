@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.PendingIntent;
 import android.app.RemoteAction;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -46,30 +47,38 @@ public class InsightActionDetailsTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    final Context mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
     @ApiTest(
             apis = {
                 "android.service.personalcontext.insight.InsightActionDetails.Builder#build",
                 "android.service.personalcontext.insight.InsightActionDetails.Builder"
-                        + "#setIntent",
+                        + "#setPendingIntent",
                 "android.service.personalcontext.insight.InsightActionDetails#hasActionType",
                 "android.service.personalcontext.insight.InsightActionDetails#getActionTypes",
             })
     @Test
     public void testCreateActionDetailsWithIntent() {
-        final Intent intent = new Intent();
+        final PendingIntent pendingIntent =
+                PendingIntent.getActivity(
+                        /* context= */ mContext,
+                        /* requestCode= */ 0,
+                        /* intent= */ new Intent("test"),
+                        /* flags= */ PendingIntent.FLAG_IMMUTABLE);
         final InsightActionDetails details =
-                new InsightActionDetails.Builder().setIntent(intent).build();
-        assertThat(details.getIntent()).isEqualTo(intent);
-        assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_INTENT)).isTrue();
+                new InsightActionDetails.Builder().setPendingIntent(pendingIntent).build();
+        assertThat(details.getPendingIntent()).isEqualTo(pendingIntent);
+        assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_PENDING_INTENT)).isTrue();
         assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_REMOTE_ACTION)).isFalse();
-        assertThat(details.getActionTypes()).isEqualTo(InsightActionDetails.ACTION_TYPE_INTENT);
+        assertThat(details.getActionTypes())
+                .isEqualTo(InsightActionDetails.ACTION_TYPE_PENDING_INTENT);
     }
 
     @ApiTest(
             apis = {
                 "android.service.personalcontext.insight.InsightActionDetails.Builder#build",
                 "android.service.personalcontext.insight.InsightActionDetails.Builder"
-                        + "#setIntent",
+                        + "#setPendingIntent",
                 "android.service.personalcontext.insight.InsightActionDetails#hasActionType",
                 "android.service.personalcontext.insight.InsightActionDetails#getActionTypes",
             })
@@ -79,7 +88,8 @@ public class InsightActionDetailsTest {
         final InsightActionDetails details =
                 new InsightActionDetails.Builder().setRemoteAction(action).build();
         assertThat(details.getRemoteAction()).isEqualTo(action);
-        assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_INTENT)).isFalse();
+        assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_PENDING_INTENT))
+                .isFalse();
         assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_REMOTE_ACTION)).isTrue();
         assertThat(details.getActionTypes())
                 .isEqualTo(InsightActionDetails.ACTION_TYPE_REMOTE_ACTION);
@@ -89,26 +99,31 @@ public class InsightActionDetailsTest {
             apis = {
                 "android.service.personalcontext.insight.InsightActionDetails.Builder#build",
                 "android.service.personalcontext.insight.InsightActionDetails.Builder"
-                        + "#setIntent",
+                        + "#setPendingIntent",
                 "android.service.personalcontext.insight.InsightActionDetails#hasActionType",
                 "android.service.personalcontext.insight.InsightActionDetails#getActionTypes",
             })
     @Test
-    public void testCreateActionDetailsWithIntentAndRemoteAction() {
-        final Intent intent = new Intent();
+    public void testCreateActionDetailsWithPendingIntentAndRemoteAction() {
+        final PendingIntent pendingIntent =
+                PendingIntent.getActivity(
+                        /* context= */ mContext,
+                        /* requestCode= */ 0,
+                        /* intent= */ new Intent("test"),
+                        /* flags= */ PendingIntent.FLAG_IMMUTABLE);
         final RemoteAction action = createTestRemoteAction();
         final InsightActionDetails details =
                 new InsightActionDetails.Builder()
-                        .setIntent(intent)
+                        .setPendingIntent(pendingIntent)
                         .setRemoteAction(action)
                         .build();
-        assertThat(details.getIntent()).isEqualTo(intent);
+        assertThat(details.getPendingIntent()).isEqualTo(pendingIntent);
         assertThat(details.getRemoteAction()).isEqualTo(action);
-        assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_INTENT)).isTrue();
+        assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_PENDING_INTENT)).isTrue();
         assertThat(details.hasActionType(InsightActionDetails.ACTION_TYPE_REMOTE_ACTION)).isTrue();
         assertThat(details.getActionTypes())
                 .isEqualTo(
-                        InsightActionDetails.ACTION_TYPE_INTENT
+                        InsightActionDetails.ACTION_TYPE_PENDING_INTENT
                                 + InsightActionDetails.ACTION_TYPE_REMOTE_ACTION);
     }
 
