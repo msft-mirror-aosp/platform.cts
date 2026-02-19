@@ -178,7 +178,10 @@ public class ASurfaceControlInputReceiverTest {
     public void testRemoteASurfaceControlReceivesInput()
             throws InterruptedException {
         RemoteSurfaceControlInputReceiverHelper helper =
-                new RemoteSurfaceControlInputReceiverHelper(mActivity, true /* zOrderOnTop */,
+                new RemoteSurfaceControlInputReceiverHelper(
+                        mActivity,
+                        true /* zOrderOnTop */,
+                        true /* batched */,
                         false /* transferTouchToHost */);
 
         final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
@@ -232,8 +235,8 @@ public class ASurfaceControlInputReceiverTest {
                 });
         Rect bounds = new Rect();
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
-        final Point coord = new Point(bounds.left + bounds.width() / 2,
-                bounds.top + bounds.height() / 2);
+        final Point coord =
+                new Point(bounds.left + bounds.width() / 2, bounds.top + bounds.height() / 2);
         sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
         assertTrue("Failed to receive touch event on host",
@@ -242,11 +245,25 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    public void testTransferGestureFromHostToEmbeddedRemote()
+    public void testTransferGestureFromHostToEmbeddedRemoteBatched()
+            throws InterruptedException, RemoteException {
+        testTransferGestureFromHostToEmbeddedRemote(true /* batched */);
+    }
+
+    @Test
+    public void testTransferGestureFromHostToEmbeddedRemoteUnbatched()
+            throws InterruptedException, RemoteException {
+        testTransferGestureFromHostToEmbeddedRemote(false /* batched */);
+    }
+
+    private void testTransferGestureFromHostToEmbeddedRemote(boolean batched)
             throws InterruptedException, RemoteException {
         RemoteSurfaceControlInputReceiverHelper helper =
                 new RemoteSurfaceControlInputReceiverHelper(
-                        mActivity, false /* zOrderOnTop */, false /* transferTouchToHost */);
+                        mActivity,
+                        false /* zOrderOnTop */,
+                        batched,
+                        false /* transferTouchToHost */);
 
         final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier verifier = new BlockingQueueEventVerifier(events);
@@ -328,7 +345,10 @@ public class ASurfaceControlInputReceiverTest {
     public void testTransferGestureFromEmbeddedToHostRemote()
             throws InterruptedException, RemoteException {
         RemoteSurfaceControlInputReceiverHelper helper =
-                new RemoteSurfaceControlInputReceiverHelper(mActivity, true /* zOrderOnTop */,
+                new RemoteSurfaceControlInputReceiverHelper(
+                        mActivity,
+                        true /* zOrderOnTop */,
+                        true /* batched */,
                         true /* transferTouchToHost */);
 
         final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
@@ -462,15 +482,20 @@ public class ASurfaceControlInputReceiverTest {
     private class RemoteSurfaceControlInputReceiverHelper {
         private final Activity mActivity;
         private final boolean mZOrderOnTop;
+        private final boolean mBatched;
         private final boolean mTransferTouchToHost;
         private IAttachEmbeddedWindow mIAttachEmbeddedWindow;
 
         private InputTransferToken mEmbeddedTransferToken;
 
-        RemoteSurfaceControlInputReceiverHelper(Activity activity, boolean zOrderOnTop,
+        RemoteSurfaceControlInputReceiverHelper(
+                Activity activity,
+                boolean zOrderOnTop,
+                boolean batched,
                 boolean transferTouchToHost) {
             mActivity = activity;
             mZOrderOnTop = zOrderOnTop;
+            mBatched = batched;
             mTransferTouchToHost = transferTouchToHost;
         }
 
@@ -502,41 +527,56 @@ public class ASurfaceControlInputReceiverTest {
                     embeddedServiceReady.await(WAIT_TIME_S, TimeUnit.SECONDS));
 
             final CountDownLatch surfaceViewCreatedLatch = new CountDownLatch(1);
-            surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-                @Override
-                public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                    try {
-                        boolean success = mIAttachEmbeddedWindow.attachEmbeddedASurfaceControl(
-                                surfaceView.getSurfaceControl(),
-                                surfaceView.getRootSurfaceControl().getInputTransferToken(),
-                                sBounds.width(), sBounds.height(),
-                                mTransferTouchToHost, motionEventReceiver);
-                        mEmbeddedTransferToken =
-                                mIAttachEmbeddedWindow.getEmbeddedInputTransferToken();
-                        if (!success) {
-                            mFailOnTestThreadRule.addFailure(
-                                    new Exception("attachEmbeddedASurfaceControl failed"));
-                        }
-                        surfaceViewCreatedLatch.countDown();
-                    } catch (RemoteException e) {
-                        mFailOnTestThreadRule.addFailure(e);
-                    }
-                }
+            surfaceView
+                    .getHolder()
+                    .addCallback(
+                            new SurfaceHolder.Callback() {
+                                @Override
+                                public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                                    try {
+                                        boolean success =
+                                                mIAttachEmbeddedWindow
+                                                        .attachEmbeddedASurfaceControl(
+                                                                surfaceView.getSurfaceControl(),
+                                                                surfaceView
+                                                                        .getRootSurfaceControl()
+                                                                        .getInputTransferToken(),
+                                                                sBounds.width(),
+                                                                sBounds.height(),
+                                                                mBatched,
+                                                                mTransferTouchToHost,
+                                                                motionEventReceiver);
+                                        mEmbeddedTransferToken =
+                                                mIAttachEmbeddedWindow
+                                                        .getEmbeddedInputTransferToken();
+                                        if (!success) {
+                                            mFailOnTestThreadRule.addFailure(
+                                                    new Exception(
+                                                            "attachEmbeddedASurfaceControl"
+                                                                    + " failed"));
+                                        }
+                                        surfaceViewCreatedLatch.countDown();
+                                    } catch (RemoteException e) {
+                                        mFailOnTestThreadRule.addFailure(e);
+                                    }
+                                }
 
-                @Override
-                public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width,
-                        int height) {
-                }
+                                @Override
+                                public void surfaceChanged(
+                                        @NonNull SurfaceHolder holder,
+                                        int format,
+                                        int width,
+                                        int height) {}
 
-                @Override
-                public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-                    try {
-                        mIAttachEmbeddedWindow.tearDownEmbeddedASurfaceControl();
-                    } catch (RemoteException e) {
-                        mFailOnTestThreadRule.addFailure(e);
-                    }
-                }
-            });
+                                @Override
+                                public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+                                    try {
+                                        mIAttachEmbeddedWindow.tearDownEmbeddedASurfaceControl();
+                                    } catch (RemoteException e) {
+                                        mFailOnTestThreadRule.addFailure(e);
+                                    }
+                                }
+                            });
 
             mActivity.runOnUiThread(() -> mActivity.setContentView(surfaceView));
 
