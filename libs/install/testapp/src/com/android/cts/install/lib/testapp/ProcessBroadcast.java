@@ -43,6 +43,10 @@ import java.util.Scanner;
  */
 public class ProcessBroadcast extends BroadcastReceiver {
 
+    private static final String USERDATA_TXT = "userdata.txt";
+    private static final String USERDATA_LINK = "userdata.link";
+    private static final String XATTR_NAME = "user.test";
+
     /**
      * Exception thrown in case of issue with user data.
      */
@@ -68,7 +72,15 @@ public class ProcessBroadcast extends BroadcastReceiver {
                 setResultData(e.getMessage());
             }
         } else if ("GET_USER_DATA_VERSION".equals(action)) {
-            setResultCode(getUserDataVersion(context));
+            try {
+                setResultCode(getUserDataVersion(context));
+            } catch (FileNotFoundException e) {
+                setResultCode(-1); // Matches the host-side InstallUtils#getUserDataVersion()
+            } catch (UserDataException e) {
+                // Inconsistency detected.
+                setResultCode(-3); // Matches the host-side InstallUtils#getUserDataVersion()
+                setResultData(e.getMessage());
+            }
         } else if ("REQUEST_AUDIO_FOCUS".equals(action)) {
             requestAudioFocus(context);
         } else if ("ABANDON_AUDIO_FOCUS".equals(action)) {
@@ -120,10 +132,10 @@ public class ProcessBroadcast extends BroadcastReceiver {
         // Read the version of the app's user data and ensure it is compatible
         // with our version of the application. Also ensure that the user data is
         // for the correct user.
-        File versionFile = new File(context.getFilesDir(), "userdata.txt");
-        try {
-            Scanner s = new Scanner(versionFile);
-            int userDataVersion = s.nextInt();
+        File userDataTxtFile = new File(context.getFilesDir(), USERDATA_TXT);
+        int userDataVersion = -1;
+        try (Scanner s = new Scanner(userDataTxtFile)) {
+            userDataVersion = s.nextInt();
             s.nextLine();
 
             if (userDataVersion > appVersion) {
@@ -133,55 +145,108 @@ public class ProcessBroadcast extends BroadcastReceiver {
             }
 
             String readUserHandle = s.nextLine();
-            s.close();
 
             if (!readUserHandle.equals(userHandle)) {
                 throw new UserDataException("User handle expected to be: " + userHandle
                         + ", but was actually " + readUserHandle);
             }
-
-            int xattrVersion = Integer.valueOf(
-                    new String(Os.getxattr(versionFile.getAbsolutePath(), "user.test")));
-
-            if (xattrVersion > appVersion) {
-                throw new UserDataException("xattr data is from version " + xattrVersion
-                        + ", which is not compatible with this version " + appVersion
-                        + " of the RollbackTestApp");
-            }
         } catch (FileNotFoundException e) {
-            // No problem. This is a fresh install of the app or the user data
-            // has been wiped.
-        } catch (ErrnoException e) {
-            throw new UserDataException("Error while retrieving xattr.", e);
+            // No problem. This is a fresh install of the app or the user data has been wiped.
         }
 
-        // Record the current version of the app in the user data.
-        try {
-            PrintWriter pw = new PrintWriter(versionFile);
+        if (userDataVersion != -1) {
+            verifyAdditionalCopiesOfVersion(context, userDataVersion);
+        }
+
+        // Record the current version of the app in a regular file.
+        try (PrintWriter pw = new PrintWriter(userDataTxtFile)) {
             pw.println(appVersion);
             pw.println(userHandle);
-            pw.close();
-            Os.setxattr(versionFile.getAbsolutePath(), "user.test",
-                    Integer.toString(appVersion).getBytes(StandardCharsets.UTF_8), 0);
         } catch (IOException e) {
             throw new UserDataException("Unable to write user data.", e);
+        }
+        // Also store a copy in an xattr, so that it's tested that xattrs are preserved.
+        try {
+            Os.setxattr(
+                    userDataTxtFile.getAbsolutePath(),
+                    XATTR_NAME,
+                    Integer.toString(appVersion).getBytes(StandardCharsets.UTF_8),
+                    0);
         } catch (ErrnoException e) {
             throw new UserDataException("Unable to set xattr.", e);
+        }
+        // Also store a copy in a symlink, so that it's tested that symlinks are preserved.
+        File userDataLinkFile = new File(context.getFilesDir(), USERDATA_LINK);
+        try {
+            userDataLinkFile.delete();
+            Os.symlink(Integer.toString(appVersion), userDataLinkFile.getPath());
+        } catch (ErrnoException e) {
+            throw new UserDataException("Unable to create symlink.", e);
         }
     }
 
     /**
-     * Return the app's user data version or -1 if userdata.txt doesn't exist.
+     * Gets the app's user data version.
+     *
+     * @param context The application context.
+     * @return the user data version
+     * @throws FileNotFoundException if userdata.txt doesn't exist
+     * @throws UserDataException if a data inconsistency is detected
      */
-    private int getUserDataVersion(Context context) {
-        File versionFile = new File(context.getFilesDir(), "userdata.txt");
-        try (Scanner s = new Scanner(versionFile);) {
-            int dataVersion = s.nextInt();
-            return dataVersion;
-        } catch (FileNotFoundException e) {
-            // No problem. This is a fresh install of the app or the user data
-            // has been wiped.
-            return -1;
+    private int getUserDataVersion(Context context)
+            throws FileNotFoundException, UserDataException {
+        File file = new File(context.getFilesDir(), USERDATA_TXT);
+        final int userDataVersion;
+        try (Scanner s = new Scanner(file)) {
+            userDataVersion = s.nextInt();
+        }
+        verifyAdditionalCopiesOfVersion(context, userDataVersion);
+        return userDataVersion;
+    }
+
+    private void verifyAdditionalCopiesOfVersion(Context context, int userDataVersion)
+            throws UserDataException {
+        verifyXattrVersion(context, userDataVersion);
+        verifySymlinkVersion(context, userDataVersion);
+    }
+
+    private void verifyXattrVersion(Context context, int userDataVersion) throws UserDataException {
+        File file = new File(context.getFilesDir(), USERDATA_TXT);
+        final int xattrVersion;
+        try {
+            xattrVersion =
+                    Integer.valueOf(new String(Os.getxattr(file.getAbsolutePath(), XATTR_NAME)));
+        } catch (ErrnoException e) {
+            throw new UserDataException("Error while retrieving xattr.", e);
+        }
+        if (xattrVersion != userDataVersion) {
+            throw new UserDataException(
+                    "xattr version is "
+                            + xattrVersion
+                            + " which does not match version "
+                            + userDataVersion
+                            + " from contents of "
+                            + USERDATA_TXT);
+        }
+    }
+
+    private void verifySymlinkVersion(Context context, int userDataVersion)
+            throws UserDataException {
+        File file = new File(context.getFilesDir(), USERDATA_LINK);
+        final int symlinkVersion;
+        try {
+            symlinkVersion = Integer.valueOf(Os.readlink(file.getPath()));
+        } catch (ErrnoException e) {
+            throw new UserDataException("Error while reading symlink.", e);
+        }
+        if (symlinkVersion != userDataVersion) {
+            throw new UserDataException(
+                    "symlink version is "
+                            + symlinkVersion
+                            + " which does not match version "
+                            + userDataVersion
+                            + " from contents of "
+                            + USERDATA_TXT);
         }
     }
 }

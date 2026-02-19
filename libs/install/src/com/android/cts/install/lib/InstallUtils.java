@@ -266,8 +266,10 @@ public class InstallUtils {
 
     /**
      * Retrieves the app's user data version from userdata.txt.
-     * @return -1 if userdata.txt doesn't exist or -2 if the app doesn't handle the broadcast which
-     * could happen when the app crashes or doesn't start at all.
+     *
+     * @return -1 if userdata.txt doesn't exist, -2 if the app doesn't handle the broadcast which
+     *     could happen when the app crashes or doesn't start at all, or -3 if the app detects that
+     *     userdata.txt is inconsistent with the rest of its data directory.
      */
     public static int getUserDataVersion(String packageName) {
         Intent intent = new Intent();
