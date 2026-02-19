@@ -7,3 +7,4 @@ per-file StaticSharedLibsHostTests.java=patb@google.com
 
 per-file LooperCompatChangesHostTest.java = file:/platform/frameworks/base:/MESSAGE_QUEUE_OWNERS
 per-file LooperCompatChangesTest.java = file:/platform/frameworks/base:/MESSAGE_QUEUE_OWNERS
+per-file FileManagerHostTest.java = file:/platform/frameworks/base:/core/java/android/os/storage/OWNERS
