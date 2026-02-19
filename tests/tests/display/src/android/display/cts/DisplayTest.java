@@ -17,6 +17,8 @@
 package android.display.cts;
 
 import static android.content.pm.PackageManager.FEATURE_LEANBACK;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FEATURE_REAR_DISPLAY_OUTER_DEFAULT;
 import static android.hardware.flags.Flags.FLAG_OVERLAYPROPERTIES_CLASS_API;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Display.FRAME_RATE_CATEGORY_HIGH;
@@ -61,6 +63,7 @@ import android.hardware.DataSpace;
 import android.hardware.HardwareBuffer;
 import android.hardware.LutProperties;
 import android.hardware.OverlayProperties;
+import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.display.DeviceProductInfo;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.DisplayManager.DisplayListener;
@@ -99,6 +102,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DisplayStateManager;
 import com.android.compatibility.common.util.DisplayUtil;
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.StateKeeperRule;
 
@@ -175,6 +179,8 @@ public class DisplayTest extends TestBase {
     private TestPresentation mPresentation;
 
     private UiAutomation mUiAutomation;
+
+    private android.hardware.devicestate.DeviceState mCurrentDeviceState;
 
     private static class DisplayModeState {
         public final int mHeight;
@@ -273,7 +279,11 @@ public class DisplayTest extends TestBase {
         mUiModeManager = mContext.getSystemService(UiModeManager.class);
         mDefaultDisplay = mDisplayManager.getDisplay(DEFAULT_DISPLAY);
         mSupportedWideGamuts = mDefaultDisplay.getSupportedWideColorGamut();
+        mContext.getSystemService(DeviceStateManager.class)
+                .registerCallback(Runnable::run, state -> mCurrentDeviceState = state);
+        PollingCheck.waitFor(1000, () -> mCurrentDeviceState != null);
 
+        assumeTrue(deviceStateCanSupportSecondaryDisplays(mCurrentDeviceState));
         addSecondaryDisplay();
     }
 
@@ -1524,5 +1534,17 @@ public class DisplayTest extends TestBase {
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchDisplayId(DEFAULT_DISPLAY);
         return options.toBundle();
+    }
+
+    /**
+     * Certain device states that use both internal displays on a foldable may not support the usage
+     * of secondary displays. Creating a secondary display will cause the device to cancel the state
+     * request that was made, changing the device state.
+     * TODO(b/449222961): Update with specific property that describes this limitation.
+     */
+    private boolean deviceStateCanSupportSecondaryDisplays(
+            android.hardware.devicestate.DeviceState state) {
+        return !(state.hasProperty(PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT)
+                || state.hasProperty(PROPERTY_FEATURE_REAR_DISPLAY_OUTER_DEFAULT));
     }
 }
