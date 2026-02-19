@@ -19,6 +19,7 @@ package android.server.wm.display;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Intent;
 import android.platform.test.annotations.Presubmit;
@@ -43,6 +44,15 @@ public class PresentationTest extends MultiDisplayTestBase {
 
     @Test
     public void testPresentationFollowsDisplayFlag() {
+        // TODO(b/485015685): Re-enable the test once proper API is in place.
+        // In a Multi-User Multi-Display (MUMD) environment, a test running as a passenger
+        // user may not have permission to launch activities on displays assigned to other
+        // users.
+        // For now, test is skipped as there is no clean way to filter display based on
+        // user visibility due to lack of API.
+        assumeFalse(
+                "Not currently supported in MUMD devices due to user to display association",
+                isVisibleBackgroundUserSupported());
         for (Display display : mDm.getDisplays()) {
             launchPresentationActivity(display.getDisplayId());
             if ((display.getFlags() & Display.FLAG_PRESENTATION) != Display.FLAG_PRESENTATION) {
@@ -91,6 +101,10 @@ public class PresentationTest extends MultiDisplayTestBase {
                 "Presentation window still shows"));
     }
 
+    /**
+     * Asserts that a presentation can be created on a presentation display, which is the most basic
+     * scenario the API is intended for.
+     */
     @Test
     public void testPresentationBlockedOnNonPresentationDisplay() {
         WindowManagerState.DisplayContent display =
