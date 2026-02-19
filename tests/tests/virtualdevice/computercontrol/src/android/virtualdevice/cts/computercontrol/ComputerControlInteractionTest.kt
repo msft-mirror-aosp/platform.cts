@@ -277,9 +277,10 @@ class ComputerControlInteractionTest {
     fun testGetScreenshot() = launchTestApp().use { testAppAgent ->
         val screenshot = testAppAgent.getScreenshot()
         assertThat(screenshot).isNotNull()
-        screenshot!!
-        assertThat(screenshot.width).isEqualTo(bounds.width())
-        assertThat(screenshot.height).isEqualTo(bounds.height())
+        screenshot!!.use {
+            assertThat(it.width).isEqualTo(bounds.width())
+            assertThat(it.height).isEqualTo(bounds.height())
+        }
     }
 
     @Test

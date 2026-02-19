@@ -98,7 +98,7 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
 
         // Wait for the interaction receiver to be bound by performing a no-op UI interaction.
         // This is more robust than a fixed sleep.
-        getScreenshot()
+        getScreenshot()?.close()
     }
 
     fun handOverApplications() {
