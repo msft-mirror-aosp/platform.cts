@@ -485,4 +485,40 @@ public class UsbManagerApiTest {
             }
         }
     }
+
+    /**
+     * Verify isPciTunnelingEnabled and setPciTunnelingEnabled work correctly when tunneling control
+     * is allowed.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCI_TUNNEL_CONTROL)
+    public void test_UsbApiSetPciTunnelingEnabledAndSecurity() throws Exception {
+        // Adopt MANAGE_USB permission.
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+
+            // We can only run this test if Pci Tunneling is supported. This requires
+            // hardware support. The underlying policy around this is already unit tested
+            // by system services.
+            Assume.assumeTrue(
+                    mUsbManagerSys.getPciTunnelingControlAllowedStatus()
+                            == UsbManager.PCI_TUNNEL_CTRL_SUPPORTED);
+
+            boolean initialValue = mUsbManagerSys.isPciTunnelingEnabled();
+            try {
+                mUsbManagerSys.setPciTunnelingEnabled(!initialValue);
+                Assert.assertNotEquals(initialValue, mUsbManagerSys.isPciTunnelingEnabled());
+            } finally {
+                mUsbManagerSys.setPciTunnelingEnabled(initialValue);
+            }
+
+            Assert.assertEquals(initialValue, mUsbManagerSys.isPciTunnelingEnabled());
+        }
+
+        // Assert apis throw security exception if called without MANAGE_USB.
+        assertThrows(
+                SecurityException.class,
+                () -> mUsbManagerSys.getPciTunnelingControlAllowedStatus());
+        assertThrows(SecurityException.class, () -> mUsbManagerSys.isPciTunnelingEnabled());
+        assertThrows(SecurityException.class, () -> mUsbManagerSys.setPciTunnelingEnabled(false));
+    }
 }
