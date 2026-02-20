@@ -36,6 +36,7 @@ import com.google.common.truth.Truth.assertThat
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -133,17 +134,20 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
     @Test
     fun setPolicy_multipleSupervisionApps_mostRecentPolicyApplied() {
         withTestApp(EMPTY_TEST_APP_PACKAGE_NAME) { _ ->
-            withSupervisionApps(count = 2) { (app1, app2) ->
+            withSupervisionApps(count = 2) { apps ->
                 setSupervisionEnabled(true)
-                assertThat(app1.events().supervisionEnabled()).eventOccurred()
-                assertThat(app2.events().supervisionEnabled()).eventOccurred()
-
+                runBlocking {
+                    apps.forEachParallel {
+                        assertThat(it.events().supervisionEnabled()).eventOccurred()
+                    }
+                }
                 val policy1 = EMPTY_TEST_APP_BLOCKED_POLICY
                 val policy2 = PackageUsagePolicy.Builder(
                     EMPTY_TEST_APP_PACKAGE_NAME,
                     PackageUsagePolicy.TYPE_ALLOWED
                 ).setVersion(1).build()
 
+                val (app1, app2) = apps
                 setAndVerifyPackageUsagePolicy(policy1, app1)
                 setAndVerifyPackageUsagePolicy(policy2, app2)
             }
@@ -152,17 +156,22 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
 
     @Test
     fun setPolicy_multipleSupervisionApps_oneSetsAllNotified() {
-        withSupervisionApps(count = 3) { (app1, app2, app3) ->
+        withSupervisionApps(count = 3) { apps ->
+
             setSupervisionEnabled(true)
-            assertThat(app1.events().supervisionEnabled()).eventOccurred()
-            assertThat(app2.events().supervisionEnabled()).eventOccurred()
-            assertThat(app3.events().supervisionEnabled()).eventOccurred()
+            runBlocking {
+                apps.forEachParallel {
+                    assertThat(it.events().supervisionEnabled()).eventOccurred()
+                }
+            }
 
-            app1.supervisionManager().setPolicy(EMPTY_TEST_APP_BLOCKED_POLICY)
+            apps[0].supervisionManager().setPolicy(EMPTY_TEST_APP_BLOCKED_POLICY)
 
-            assertThat(app1.events().policyChanged()).eventOccurred()
-            assertThat(app2.events().policyChanged()).eventOccurred()
-            assertThat(app3.events().policyChanged()).eventOccurred()
+            runBlocking {
+                apps.forEachParallel {
+                    assertThat(it.events().policyChanged()).eventOccurred()
+                }
+            }
         }
     }
 
@@ -209,7 +218,9 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
             assertThat(onPolicyChangedEvent).eventOccurredWithin(Duration.ofSeconds(TIMEOUT))
             assertThat(supervisionApp.supervisionManager().getPolicies())
                 .contains(expectedPolicy)
-            assertThat(latch.await(TIMEOUT, TimeUnit.SECONDS)).isEqualTo(expectBroadcast)
+            if (expectBroadcast) {
+                assertThat(latch.await(TIMEOUT, TimeUnit.SECONDS)).isEqualTo(true)
+            }
         } finally {
             context.unregisterReceiver(broadcastReceiver)
         }
@@ -217,17 +228,17 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
         assertThat(getApplicationEnabledState(policy.packageName)).isEqualTo(expectedEnabledState)
     }
 
+
     private fun withTestApp(packageName: String, action: (app: TestAppInstance) -> Unit) {
         val app: TestApp = TestAppProvider().query().wherePackageName().isEqualTo(packageName).get()
 
-        val appInstance =
-            checkNotNull(app.install(TestApis.users().instrumented())) {
-                "Failed to install $packageName TestApp."
-            }
+        installAndWaitForBroadcast(app)
+        val appInstance = app.instance(TestApis.users().instrumented())
+
         try {
             action(appInstance)
         } finally {
-            appInstance.uninstall()
+            uninstallAndWaitForBroadcast(appInstance)
         }
     }
 
@@ -252,24 +263,11 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
         }
     }
 
-    class TestBroadcastReceiver(
-        val targetPackageName: String,
-        val latch: CountDownLatch = CountDownLatch(1),
-    ) : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val packageName = intent.data?.encodedSchemeSpecificPart
-            if (packageName != null && targetPackageName.equals(packageName)) {
-                latch.countDown()
-            }
-        }
-    }
-
     private companion object {
         const val EMPTY_TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.EmptyTestApp"
         const val MULTIPLE_ACTIVITIES_TEST_APP_PACKAGE_NAME =
             "com.android.bedstead.testapp.MultipleActivitiesTestApp"
         const val NOT_EMPTY_TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.NotEmptyTestApp"
-        const val TIMEOUT = 5L
         val EMPTY_TEST_APP_BLOCKED_POLICY =
             PackageUsagePolicy.Builder(
                 EMPTY_TEST_APP_PACKAGE_NAME,

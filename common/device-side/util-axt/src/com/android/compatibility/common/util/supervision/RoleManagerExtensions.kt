@@ -55,13 +55,14 @@ private fun withRoleHeld(roleName: String, action: () -> Unit, packages: List<St
     try {
         supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(true)
         assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isTrue()
+        roleManager.setBypassingRoleQualification(true)
         roleHolderPackages.forEach { roleManager.addRoleHolder(context, roleName, it) }
         action()
     } finally {
         roleHolderPackages.forEach { roleManager.removeRoleHolder(context, roleName, it) }
+        roleManager.setBypassingRoleQualification(false)
         supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(false)
         assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isFalse()
-        supervisionManager.setSupervisionEnabled(false)
     }
 }
 
@@ -85,7 +86,6 @@ private fun RoleManager.addRoleHolder(context: Context, roleName: String, packag
     addOnRoleHoldersChangedListenerAsUser(context.getMainExecutor(), listener, user)
 
     try {
-        setBypassingRoleQualification(true)
         val callbackResult = runBlocking {
             withTimeoutOrNull(TIMEOUT) {
                 addRoleHolderInternal(context, roleName, packageName)
@@ -97,7 +97,6 @@ private fun RoleManager.addRoleHolder(context: Context, roleName: String, packag
         assertThat(listenerCalled).isTrue()
         assertThat(getRoleHolders(roleName)).contains(packageName)
     } finally {
-        setBypassingRoleQualification(false)
         removeOnRoleHoldersChangedListenerAsUser(listener, user)
     }
 }
