@@ -442,8 +442,9 @@ public class LayerTests extends ActivityTestBase {
         // technically wrong - the alpha is ignored. But the only straightforward way to respect it
         // would be to promote to a layer, which defeats the purpose of using
         // forceHasOverlappingRendering, which is to skip promoting to a layer for speed.
-        // If we do ever respect the alpha, the verifier will need to be updated. In the meantime,
-        // this test verifies that we do not crash.
+        // Further, if we have client-drawn rounded corners, the alpha is respected.
+        // We skip verification here and just verify that we don't crash.
+        // If we do ever respect the alpha in all cases, the verifier will need to be updated.
         if (!getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WEBVIEW)) {
             return; // no WebView to run test on
         }
@@ -458,9 +459,7 @@ public class LayerTests extends ActivityTestBase {
                     WebViewReadyHelper helper = new WebViewReadyHelper(webview, hwFence);
                     helper.loadData("<body style=\"background-color:blue\">");
                 }, true, hwFence)
-                // See comments above. This verifies the current behavior, but more importantly,
-                // verifies that this does not crash.
-                .runWithVerifier(new ColorVerifier(Color.BLUE));
+                .runWithoutVerification();
     }
 
     @LargeTest
