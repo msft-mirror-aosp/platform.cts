@@ -354,7 +354,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             }
         }
 
-        if (getProperty(GPU_FREQUENCY_CAPABILITY_PROPERTY)) {
+        if (getProperty(GPU_FREQUENCY_CAPABILITY_PROPERTY) && shouldCheckGpuFrequency()) {
             errorCollector.checkThat(
                     "Trace does not contain valid GPU frequency.",
                     containsGpuFrequencyEvent(traceFrequencyRenderStagesDefaultCounters5Ms),
@@ -591,6 +591,23 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private boolean getProperty(String propertyName) throws Exception {
         String property = getDevice().getProperty(propertyName);
         return (property != null && property.equals("true"));
+    }
+
+    private boolean shouldCheckGpuFrequency() throws Exception {
+        CommandResult gpuFreqsStatus =
+                getDevice().executeShellV2Command(
+                    "cat /sys/class/kgsl/kgsl-3d0/gpu_available_frequencies");
+        if (gpuFreqsStatus.getStatus() != CommandStatus.SUCCESS) {
+            return true;
+        }
+        String gpuFreqs = gpuFreqsStatus.getStdout();
+        if (gpuFreqs != null && !gpuFreqs.trim().isEmpty()) {
+            String[] freqs = gpuFreqs.trim().split("\\s+");
+            if (freqs.length <= 1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void bypassTestForFeatures(String... features) throws Exception {
