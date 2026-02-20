@@ -453,7 +453,9 @@ bool CodecDecoderTest::isOutputFormatOk(AMediaFormat* configFormat) {
     // and channel-count information is present in Descriptor OBUs. The extractor may not be parsing
     // descriptor OBUs but sending 0, 0 as sample-rate and channel-count (as per the stream header).
     // So skip comparing channel-count and sample-rate against format used for configure.
-    if (strcmp(mMediaType, AMEDIA_MIMETYPE_AUDIO_IAMF) != 0) {
+    // Also, skip channel count verification for object based formats
+    if (strcmp(mMediaType, AMEDIA_MIMETYPE_AUDIO_IAMF) != 0 &&
+        strcmp(mMediaType, AMEDIA_MIMETYPE_AUDIO_AC4) != 0) {
         RETURN_IF_TRUE(!isFormatSimilar(configFormat,
                                         mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat()
                                                             : mOutFormat),
