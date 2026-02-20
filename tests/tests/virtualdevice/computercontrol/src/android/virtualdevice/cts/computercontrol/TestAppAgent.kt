@@ -96,9 +96,7 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
         }
         testAppFocusRequester = TestAppFocusRequester(context)
 
-        // Wait for the interaction receiver to be bound by performing a no-op UI interaction.
-        // This is more robust than a fixed sleep.
-        getScreenshot()?.close()
+        waitForActivityReady()
     }
 
     fun handOverApplications() {
@@ -159,6 +157,10 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
 
     fun getAccessibilityWindows(): List<AccessibilityWindowInfo> {
         return session.getAccessibilityWindows()
+    }
+
+    private fun waitForActivityReady() {
+        nextAction(Action.ActivityReady::class.java)
     }
 
     fun <T : Action> nextAction(clazz: Class<T>): T? = runBlocking {

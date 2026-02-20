@@ -44,6 +44,8 @@ class AppActivity : ComponentActivity() {
 
     private val interactionReceiverBinder = InteractionReceiverBinder()
 
+    private var activityReadySignaled = false
+
     private val focusRequesters =
         mapOf(
             Constants.TEXT_FIELD_1 to FocusRequester(),
@@ -70,6 +72,20 @@ class AppActivity : ComponentActivity() {
         registerReceiver(focusReceiver, filter, RECEIVER_EXPORTED)
 
         setContent { AppView(focusRequesters, this::sendInteraction) }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        Log.d(
+            Constants.TAG,
+            "onWindowFocusChanged: hasFocus=$hasFocus, " +
+                "signaled=$activityReadySignaled"
+        )
+        if (hasFocus && !activityReadySignaled) {
+            activityReadySignaled = true
+            sendInteraction(Interaction(Action.ActivityReady))
+            Log.d(Constants.TAG, "Sent ActivityReady signal")
+        }
     }
 
     override fun onDestroy() {
