@@ -47,8 +47,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.telecom.Call;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.VideoProfile;
 import android.telecom.cts.apps.AppControlWrapper;
@@ -63,7 +63,6 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -516,7 +515,7 @@ public class RingerTest extends BaseAppVerifier {
     @Test
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
-    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_VOIP_DND_FOCUS)
+    @RequiresFlagsEnabled(com.android.internal.telecom.flags.Flags.FLAG_VOIP_DND_FOCUS)
     public void testIncomingSelfManagedVoipCallDuringDndDoesntGainFocus() throws Exception {
         assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
         AppControlWrapper app = null;
@@ -533,7 +532,7 @@ public class RingerTest extends BaseAppVerifier {
      * to get audio focus while the call is in ringing state if the device is in DND mode.
      */
     @Test
-    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_VOIP_DND_FOCUS)
+    @RequiresFlagsEnabled(com.android.internal.telecom.flags.Flags.FLAG_VOIP_DND_FOCUS)
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testIncomingTransactionalVoipCallDuringDndDoesntGainFocus() throws Exception {
@@ -597,7 +596,14 @@ public class RingerTest extends BaseAppVerifier {
             // Make an incoming call with the test app and ensure it is ringing.
             String mt = addIncomingCallAndVerify(app);
             verifyCallIsInState(mt, STATE_RINGING);
-
+            Bundle callStartExtras = getLastAddedCallExtrasAtStart();
+            // The DND state must be known when a call is first added so that Bluetooth can hear of
+            // the state.  If it gets set later, BT won't use it.
+            if (!(app.isTransactionalControl())) {
+                assertTrue(
+                        "Expected EXTRA_IS_SUPPRESSED_BY_DO_NOT_DISTURB set at start of call",
+                        callStartExtras.containsKey(Call.EXTRA_IS_SUPPRESSED_BY_DO_NOT_DISTURB));
+            }
             // We will send a connection event through Telecom up to the ics just to make sure that
             // all of the ringer focus checks have happened; the InCallController updates before the
             // ringing focus updates; waiting on a connection event ensures that has completed and
@@ -613,6 +619,12 @@ public class RingerTest extends BaseAppVerifier {
                 assertFalse(
                         "Expected no audio focus change in ringing due to DND",
                         hasMusicFocusChanged());
+
+                if (!(app.isTransactionalControl())) {
+                    assertTrue(
+                            "Expected EXTRA_IS_SUPPRESSED_BY_DO_NOT_DISTURB true at start of call",
+                            callStartExtras.getBoolean(Call.EXTRA_IS_SUPPRESSED_BY_DO_NOT_DISTURB));
+                }
             } else {
                 // We should have gotten back an indication that focus switched to our listener.
                 waitForAndVerifyMusicFocus(
@@ -620,6 +632,11 @@ public class RingerTest extends BaseAppVerifier {
                         AudioManager.AUDIOFOCUS_LOSS,
                         AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
                         AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK);
+                if (!(app.isTransactionalControl())) {
+                    assertFalse(
+                            "Expected EXTRA_IS_SUPPRESSED_BY_DO_NOT_DISTURB false at start of call",
+                            callStartExtras.getBoolean(Call.EXTRA_IS_SUPPRESSED_BY_DO_NOT_DISTURB));
+                }
             }
 
             // Disconnect the incoming call
