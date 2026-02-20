@@ -50,6 +50,7 @@ java_defaults {
         "cts_backported_fixes",
         "cts_backported_fixes_support",
         "power_flags_lib",
+        "libcore-aconfig-flags-lib",
     ],
     libs: [
         "android.test.runner.stubs.test",
@@ -91,6 +92,7 @@ android_test {
         "general-tests",
         "sts",
         "mts-documentsui",
+        "mcts-documentsui",
     ],
     sdk_version: "test_current",
     // Do not compress minijail policy files.

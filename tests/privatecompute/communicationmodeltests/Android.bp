@@ -32,6 +32,7 @@ android_test {
         "flag-junit",
         "services.core",
         "android.app.privatecompute.flags-aconfig-java",
+        "libcore-aconfig-flags-lib",
     ],
     test_suites: [
         "cts",
@@ -59,6 +60,7 @@ android_test {
         "flag-junit",
         "services.core",
         "android.app.privatecompute.flags-aconfig-java",
+        "libcore-aconfig-flags-lib",
     ],
     test_suites: [
         "cts",
