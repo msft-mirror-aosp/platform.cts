@@ -23,8 +23,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.BundleHint;
-import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.service.personalcontext.hint.HintFilter;
+import android.service.personalcontext.hint.PublishedContextHint;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -59,14 +59,13 @@ public class HintFilterTest {
     @Rule
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static ContextHintWithSignature makeHint(String hintClass)
-            throws GeneralSecurityException {
+    private static PublishedContextHint makeHint(String hintClass) throws GeneralSecurityException {
         final byte[] key = new byte[64];
         new Random().nextBytes(key);
 
-        return new ContextHintWithSignature.Builder(
+        return new PublishedContextHint.Builder(
                         new BundleHint.Builder().setHintTypeName(hintClass).build(),
-                        new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM))
+                        new SecretKeySpec(key, PublishedContextHint.HMAC_ALGORITHM))
                 .build();
     }
 
@@ -78,11 +77,11 @@ public class HintFilterTest {
             })
     @Test
     public void testHintFilterRequireAll() throws GeneralSecurityException {
-        ContextHintWithSignature hintA = makeHint(HINT_CLASS_A);
-        ContextHintWithSignature hintB = makeHint(HINT_CLASS_B);
-        ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
+        PublishedContextHint hintA = makeHint(HINT_CLASS_A);
+        PublishedContextHint hintB = makeHint(HINT_CLASS_B);
+        PublishedContextHint hintC = makeHint(HINT_CLASS_C);
 
-        final Set<ContextHintWithSignature> interestedHintSet =
+        final Set<PublishedContextHint> interestedHintSet =
                 new HintFilter.Builder()
                         .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_REQUIRED)
                         .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_REQUIRED)
@@ -102,11 +101,11 @@ public class HintFilterTest {
             })
     @Test
     public void testHintFilterRequireSome() throws GeneralSecurityException {
-        ContextHintWithSignature hintA = makeHint(HINT_CLASS_A);
-        ContextHintWithSignature hintB = makeHint(HINT_CLASS_B);
-        ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
+        PublishedContextHint hintA = makeHint(HINT_CLASS_A);
+        PublishedContextHint hintB = makeHint(HINT_CLASS_B);
+        PublishedContextHint hintC = makeHint(HINT_CLASS_C);
 
-        final Set<ContextHintWithSignature> interestedHintSet =
+        final Set<PublishedContextHint> interestedHintSet =
                 new HintFilter.Builder()
                         .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_REQUIRED)
                         .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_REQUIRED)
@@ -125,11 +124,11 @@ public class HintFilterTest {
             })
     @Test
     public void testHintFilterRequireMissingSome() throws GeneralSecurityException {
-        ContextHintWithSignature hintA = makeHint(HINT_CLASS_A);
-        ContextHintWithSignature hintB = makeHint(HINT_CLASS_B);
-        ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
+        PublishedContextHint hintA = makeHint(HINT_CLASS_A);
+        PublishedContextHint hintB = makeHint(HINT_CLASS_B);
+        PublishedContextHint hintC = makeHint(HINT_CLASS_C);
 
-        final Set<ContextHintWithSignature> interestedHintSet =
+        final Set<PublishedContextHint> interestedHintSet =
                 new HintFilter.Builder()
                         .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_REQUIRED)
                         .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_REQUIRED)
@@ -151,11 +150,11 @@ public class HintFilterTest {
             })
     @Test
     public void testHintFilterRequireNone() throws GeneralSecurityException {
-        ContextHintWithSignature hintA = makeHint(HINT_CLASS_A);
-        ContextHintWithSignature hintB = makeHint(HINT_CLASS_B);
-        ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
+        PublishedContextHint hintA = makeHint(HINT_CLASS_A);
+        PublishedContextHint hintB = makeHint(HINT_CLASS_B);
+        PublishedContextHint hintC = makeHint(HINT_CLASS_C);
 
-        final Set<ContextHintWithSignature> interestedHintSet =
+        final Set<PublishedContextHint> interestedHintSet =
                 new HintFilter.Builder()
                         .addBundleHintTypeName(HINT_CLASS_D, HintFilter.FILTER_TYPE_REQUIRED)
                         .addBundleHintTypeName(HINT_CLASS_E, HintFilter.FILTER_TYPE_REQUIRED)
@@ -174,11 +173,11 @@ public class HintFilterTest {
             })
     @Test
     public void testHintFilterAllowOne() throws GeneralSecurityException {
-        ContextHintWithSignature hintA = makeHint(HINT_CLASS_A);
-        ContextHintWithSignature hintB = makeHint(HINT_CLASS_B);
-        ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
+        PublishedContextHint hintA = makeHint(HINT_CLASS_A);
+        PublishedContextHint hintB = makeHint(HINT_CLASS_B);
+        PublishedContextHint hintC = makeHint(HINT_CLASS_C);
 
-        final Set<ContextHintWithSignature> interestedHintSet =
+        final Set<PublishedContextHint> interestedHintSet =
                 new HintFilter.Builder()
                         .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_ALLOWED)
                         .addBundleHintTypeName(HINT_CLASS_D, HintFilter.FILTER_TYPE_ALLOWED)
@@ -197,11 +196,11 @@ public class HintFilterTest {
             })
     @Test
     public void testHintFilterAllowMany() throws GeneralSecurityException {
-        ContextHintWithSignature hintA = makeHint(HINT_CLASS_A);
-        ContextHintWithSignature hintB = makeHint(HINT_CLASS_B);
-        ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
+        PublishedContextHint hintA = makeHint(HINT_CLASS_A);
+        PublishedContextHint hintB = makeHint(HINT_CLASS_B);
+        PublishedContextHint hintC = makeHint(HINT_CLASS_C);
 
-        final Set<ContextHintWithSignature> interestedHintSet =
+        final Set<PublishedContextHint> interestedHintSet =
                 new HintFilter.Builder()
                         .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_ALLOWED)
                         .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_ALLOWED)
@@ -221,11 +220,11 @@ public class HintFilterTest {
             })
     @Test
     public void testHintFilterAllowSome() throws GeneralSecurityException {
-        ContextHintWithSignature hintA = makeHint(HINT_CLASS_A);
-        ContextHintWithSignature hintB = makeHint(HINT_CLASS_B);
-        ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
+        PublishedContextHint hintA = makeHint(HINT_CLASS_A);
+        PublishedContextHint hintB = makeHint(HINT_CLASS_B);
+        PublishedContextHint hintC = makeHint(HINT_CLASS_C);
 
-        final Set<ContextHintWithSignature> interestedHintSet =
+        final Set<PublishedContextHint> interestedHintSet =
                 new HintFilter.Builder()
                         .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_ALLOWED)
                         .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_ALLOWED)
