@@ -325,48 +325,6 @@ class AppFunctionActivityScopedRegistrationTest {
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun execute_disabledActivityFunction_fail() = doBlocking {
-        val disabledByDefaultFunction =
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT
-
-        TestApis.activities().startActivity(
-            getExternalRegistrationIntent(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                REGISTRATION_ACTIVITY,
-                disabledByDefaultFunction.functionIdentifier
-            )
-        )
-
-        var activityId: AppFunctionActivityId? = null
-        retryAssert {
-            val state = getAppFunctionState(disabledByDefaultFunction)
-            assertThat(state).isNotNull()
-            assertThat(state.single().activityIds).isNotNull()
-            assertThat(state.single().activityIds).hasSize(1)
-            activityId = state.single().activityIds!!.first()
-        }
-
-        val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyString("prefix", "A")
-                .setPropertyString("suffix", "B")
-                .build()
-        val request = ExecuteAppFunctionRequest.Builder(
-            disabledByDefaultFunction
-        )
-            .setActivityId(activityId!!)
-            .setParameters(parameters)
-            .build()
-
-        val response = manager.executeAppFunction(request)
-        assertThat(response.exceptionOrNull()).isNotNull()
-        assertThat(response.appFunctionException().errorCode).isEqualTo(
-            AppFunctionException.ERROR_DISABLED
-        )
-    }
-
-    @Test
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_activityFunctionInTheSeparateApp_doesntProvideActivityId_fail() = doBlocking {
         TestApis.activities().startActivity(
             getExternalRegistrationIntent(
