@@ -17,6 +17,7 @@
 package android.view.inputmethod.cts;
 
 import static android.inputmethodservice.InputMethodService.FINISH_INPUT_NO_FALLBACK_CONNECTION;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.View.SCREEN_STATE_OFF;
 import static android.view.View.SCREEN_STATE_ON;
 import static android.view.View.VISIBLE;
@@ -105,8 +106,8 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
     public final RequireImeCompatFlagRule mRequireImeCompatFlagRule = new RequireImeCompatFlagRule(
             FINISH_INPUT_NO_FALLBACK_CONNECTION, true);
 
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
-    private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10) * HW_TIMEOUT_MULTIPLIER;
+    private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
     @RequireNotVisibleBackgroundUsers(reason =
             "Background visible user devices (primarily Android auto) currently doesn't support "
