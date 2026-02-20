@@ -16,6 +16,7 @@
 
 package android.mediav2.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
 import static android.media.codec.Flags.FLAG_DYNAMIC_OPERATING_MODE_SWITCH;
 import static android.media.codec.Flags.codecAvailability;
@@ -69,7 +70,6 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,6 +79,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
@@ -159,6 +160,41 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     // The test expects the resource consumption to be at least this value.
     static final int MIN_UTILIZATION_THRESHOLD = 60;
     private static List<CodecResource> GLOBAL_AVBL_RESOURCES;
+    private static final HashMap<String, List<String>> ASSETS = new HashMap<>();
+    private static final HashMap<String, APBTestInputData> DECODABLE_BUNDLE_CACHE = new HashMap<>();
+
+    static {
+        ASSETS.put(MediaFormat.MIMETYPE_VIDEO_HEVC,
+                List.of("bbb_7680x4320_30fps_crf32_2s_hevc.mp4",
+                        "bbb_3840x2160_30fps_crf32_2s_hevc.mp4",
+                        "bbb_1920x1080_30fps_crf32_2s_hevc.mp4",
+                        "bbb_1280x720_30fps_crf32_2s_hevc.mp4",
+                        "bbb_720x480_30fps_crf32_2s_hevc.mp4"));
+        ASSETS.put(MediaFormat.MIMETYPE_VIDEO_AV1,
+                List.of("bbb_7680x4320_30fps_crf38_2s_av1.mp4",
+                        "bbb_3840x2160_30fps_crf38_2s_av1.mp4",
+                        "bbb_1920x1080_30fps_crf38_2s_av1.mp4",
+                        "bbb_1280x720_30fps_crf38_2s_av1.mp4",
+                        "bbb_720x480_30fps_crf38_2s_av1.mp4"));
+        ASSETS.put(MediaFormat.MIMETYPE_VIDEO_VP9,
+                List.of("bbb_7680x4320_30fps_crf38_2s_vp9.mkv",
+                        "bbb_3840x2160_30fps_crf38_2s_vp9.mkv",
+                        "bbb_1920x1080_30fps_crf38_2s_vp9.mkv",
+                        "bbb_1280x720_30fps_crf38_2s_vp9.mkv",
+                        "bbb_720x480_30fps_crf38_2s_vp9.mkv"));
+        ASSETS.put(MediaFormat.MIMETYPE_VIDEO_AVC,
+                List.of("bbb_7680x4320_30fps_crf32_2s_avc.mp4",
+                        "bbb_3840x2160_30fps_crf32_2s_avc.mp4",
+                        "bbb_1920x1080_30fps_crf32_2s_avc.mp4",
+                        "bbb_1280x720_30fps_crf32_2s_avc.mp4",
+                        "bbb_720x480_30fps_crf32_2s_avc.mp4"));
+        ASSETS.put(MediaFormat.MIMETYPE_VIDEO_VP8,
+                List.of("bbb_7680x4320_30fps_crf32_2s_vp8.mkv",
+                        "bbb_3840x2160_30fps_crf32_2s_vp8.mkv",
+                        "bbb_1920x1080_30fps_crf32_2s_vp8.mkv",
+                        "bbb_1280x720_30fps_crf32_2s_vp8.mkv",
+                        "bbb_720x480_30fps_crf32_2s_vp8.mkv"));
+    }
 
     private final String[] mSrcFiles;
 
@@ -460,17 +496,131 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                         30, config.mMaxFrameRate));
     }
 
-    private void validateMaxInstances(String codecName, String mediaType, boolean testRTMode,
-            boolean testOperatingModeSwitch) {
-        // FIXME: While switching between non-realtime and realtime, the resource adjustment
-        // (relinquishing or committing) MUST happen on the next frame being processed. This would
-        // mean that the test must queue inputs for processing after a call to setParameters().
-        // Currently this method is using mock media formats for testing. So it won't be able to
-        // queue valid inputs for processing. Once this method is updated to use media extractor +
-        // media file, then this can be achieved. Until then add a safe check to avoid testing.
-        if (testOperatingModeSwitch) {
-            Assert.fail("Update test to handle this scenario");
+    static class DecodeToSurfaceWrapper extends CodecDecoderTestBase {
+
+        private final APBTestInputData mTestInput;
+
+        public DecodeToSurfaceWrapper(String decoder, String mediaType, APBTestInputData testInput,
+                Surface surface) {
+            super(decoder, mediaType, null, "");
+            mTestInput = testInput;
+            mSurface = surface;
         }
+
+        void configureCodec(MediaFormat format) {
+            MediaFormat formatDec = format;
+            if (mTestInput != null) {
+                formatDec = new MediaFormat(mTestInput.mFormats.getFirst());
+                formatDec.setInteger(MediaFormat.KEY_COLOR_FORMAT, COLOR_FormatSurface);
+                formatDec.setInteger(MediaFormat.KEY_PRIORITY,
+                        format.getInteger(MediaFormat.KEY_PRIORITY));
+                formatDec.setInteger(MediaFormat.KEY_OPERATING_RATE,
+                        format.getInteger(MediaFormat.KEY_OPERATING_RATE));
+            }
+            super.configureCodec(formatDec, true, false, false, 0);
+        }
+
+        @Override
+        protected void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
+            if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                mSawOutputEOS = true;
+            }
+            if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                mOutputBuff.saveOutPTS(info.presentationTimeUs);
+                mOutputCount++;
+            }
+            mCodec.releaseOutputBuffer(bufferIndex, mSurface != null);
+        }
+
+        public void launchInstance(MediaFormat format) throws IOException {
+            CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
+            mAsyncHandle = asyncHandleResource;
+            mCodec = MediaCodec.createByCodecName(mCodecName);
+            mOutputBuff = new OutputManager();
+            configureCodec(format);
+            mCodec.start();
+        }
+
+        public void decode(int offset, int count) throws InterruptedException {
+            if (mTestInput != null) {
+                doWork(mTestInput.mByteBuffer, new ArrayList<>(
+                        mTestInput.mInfoList.subList(offset, offset + count)));
+            }
+        }
+
+        public void signalEndOfStream() throws InterruptedException {
+            queueEOS();
+        }
+
+        public void waitForOutputEos() throws InterruptedException {
+            waitForAllOutputs();
+        }
+
+        public void stopInstance() {
+            mCodec.stop();
+        }
+
+        public void releaseInstance() {
+            tearDownCodecDecoderTestBase();
+            tearDownCodecTestBase();
+        }
+
+        public int getResourceChangeCbCount() {
+            return ((CodecAsyncHandlerResource) mAsyncHandle).getResourceChangeCbCount();
+        }
+
+        public void waitOnResourceChange(int currResourceChangeCbCount)
+                throws InterruptedException {
+            ((CodecAsyncHandlerResource) mAsyncHandle).waitOnResourceChange(
+                    currResourceChangeCbCount);
+        }
+
+        public Pair<Boolean, RuntimeException> getCodecErrState() {
+            return Pair.create(mAsyncHandle.hasSeenError(), mAsyncHandle.getErrorException());
+        }
+
+        public void updateOpMode(int priority, int operatingRate) {
+            updateOperatingMode(mCodec, priority, operatingRate);
+        }
+    }
+
+    private void stripAssetsToDecodableBundles(String mediaType) throws IOException {
+        List<String> assets = ASSETS.getOrDefault(mediaType, null);
+        if (assets != null) {
+            for (String file : assets) {
+                if (!DECODABLE_BUNDLE_CACHE.containsKey(file)) {
+                    DECODABLE_BUNDLE_CACHE.put(file,
+                            prepareInputList(List.of(MEDIA_DIR + file), mediaType));
+                }
+            }
+        }
+    }
+
+    private APBTestInputData getDecodableBundleForFormat(MediaFormat format) {
+        String mediaType = format.getString(MediaFormat.KEY_MIME);
+        int width = getWidth(format);
+        int height = getHeight(format);
+        for (APBTestInputData res : DECODABLE_BUNDLE_CACHE.values()) {
+            MediaFormat resFormat = res.mFormats.getFirst();
+            String resMediaType = resFormat.getString(MediaFormat.KEY_MIME);
+            int resWidth = getWidth(resFormat);
+            int resHeight = getHeight(resFormat);
+            if (mediaType.equals(resMediaType)) {
+                // An 8k UHD can be 7680x4320 or 8192x4320. A 4k UHD can be 3840x2160 or
+                // 4096x2160. A Full HD can be 1920x1080 or 1920x1088 or 2048x1080. Pick the
+                // closest and use it.
+                if ((resWidth == width && resHeight == height) || (resWidth < width
+                        && resHeight == height) || (resWidth == width && resHeight < height)) {
+                    return res;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void validateMaxInstances(String codecName, String mediaType, boolean testRTMode,
+            boolean testOperatingModeSwitch) throws IOException, InterruptedException {
+        int frameCount = 10;
         // TODO:
         // if multiple instances are started in nrt mode until resource exhaustion, switching a
         // codec to rt mode may or may not succeed due to lack of resources. In this scenario,
@@ -486,9 +636,9 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             testableFormats = getCodecTestFormatListNoPerfPoints(codecName, mediaType);
         }
         Assume.assumeNotNull("formats to configure codec unavailable", testableFormats);
-        List<MediaCodec> codecs = new ArrayList<>();
+        List<DecodeToSurfaceWrapper> codecs = new ArrayList<>();
         List<Pair<Integer, Surface>> surfaces = new ArrayList<>();
-        MediaCodec codec = null;
+        DecodeToSurfaceWrapper codec = null;
         int numInstances;
         List<CodecResource> lastGlobalResources;
         List<CodecResource> currentGlobalResources;
@@ -496,8 +646,11 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         MediaFormat currentFormat = null;
         List<CodecResource> lastGlobalResourceForFormat = null;
         List<CodecResource> currentGlobalResourcesForFormat = null;
+        APBTestInputData lastDecBundle = null;
+        APBTestInputData currentDecBundle = null;
         StringBuilder testLogs = new StringBuilder();
         int maxInstances = getMaxCodecInstances(codecName, mediaType);
+        stripAssetsToDecodableBundles(mediaType);
         for (List<MediaFormat> formats : testableFormats) {
             numInstances = 0;
             lastGlobalResources = getCurrentGlobalCodecResources();
@@ -510,7 +663,6 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                         mDynamicActivity.waitTillSurfaceIsCreated(index);
                         obj = mDynamicActivity.getSurface();
                     }
-                    codec = MediaCodec.createByCodecName(codecName);
                     MediaFormat configFormat =
                             numInstances < formats.size() ? formats.get(numInstances) :
                                     formats.get(0);
@@ -522,8 +674,23 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                         configFormat.setInteger(MediaFormat.KEY_PRIORITY, 1);
                         configFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, 0);
                     }
-                    codec.configure(configFormat, obj.second, null, 0);
-                    codec.start();
+                    APBTestInputData testInput = getDecodableBundleForFormat(configFormat);
+                    codec = new DecodeToSurfaceWrapper(codecName, mediaType, testInput,
+                            obj.second);
+                    codec.launchInstance(configFormat);
+                    int cbCount = codec.getResourceChangeCbCount();
+                    codec.waitOnResourceChange(cbCount);
+                    codec.decode(0, frameCount);
+                    // In some components it is observed that the actual resources required for
+                    // the current configuration is not computed at start but deferred till first
+                    // enqueueInput. So start() call might succeed but after queueing inputs,
+                    // CodecException.ERROR_INSUFFICIENT_RESOURCE could be raised and
+                    // communicated to the client via onError callback. So check for error before
+                    // proceeding.
+                    Pair<Boolean, RuntimeException> errState = codec.getCodecErrState();
+                    if (errState.first) {
+                        throw errState.second;
+                    }
                     codecs.add(codec);
                     surfaces.add(obj);
                     numInstances++;
@@ -539,6 +706,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     if (numInstances == 1) {
                         currentGlobalResourcesForFormat = currentGlobalResources;
                         currentFormat = configFormat;
+                        currentDecBundle = testInput;
                     }
                 } catch (InterruptedException e) {
                     Assert.fail("Got unexpected InterruptedException " + e.getMessage());
@@ -558,7 +726,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                 } finally {
                     if (codec != null) {
                         Log.d(LOG_TAG, "release codec");
-                        codec.release();
+                        codec.releaseInstance();
                         codec = null;
                     }
                     if (obj != null) {
@@ -568,9 +736,20 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             }
             if (testOperatingModeSwitch) {
                 for (int i = 0; i < codecs.size(); ++i) {
+                    if (codecs.get(i).mTestInput == null) {
+                        // we can test dynamic operating mode only if we can queue inputs
+                        continue;
+                    }
                     Log.d(LOG_TAG, "switching to non-real time, codec #" + i);
                     lastGlobalResources = getCurrentGlobalCodecResources();
-                    updateOperatingMode(codecs.get(i), 1, 0); // switch to non-real time
+                    int cbCount = codecs.get(i).getResourceChangeCbCount();
+                    codecs.get(i).updateOpMode(1, 0); // switch to non-real time
+                    codecs.get(i).decode(frameCount, frameCount);
+                    codecs.get(i).waitOnResourceChange(cbCount);
+                    Assert.assertEquals(
+                            "taking too long to receive onRequiredResourcesChanged callback\n"
+                                    + mTestEnv + mTestConfig,
+                            codecs.get(i).getResourceChangeCbCount(), cbCount + 1);
                     List<CodecResource> currGlobalResources = getCurrentGlobalCodecResources();
                     int result =
                             compareResources(lastGlobalResources, currGlobalResources, testLogs);
@@ -582,8 +761,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             for (int i = 0; i < codecs.size(); ++i) {
                 Log.d(LOG_TAG, "release codec #" + i);
                 lastGlobalResources = getCurrentGlobalCodecResources();
-                codecs.get(i).stop();
-                codecs.get(i).release();
+                codecs.get(i).signalEndOfStream();
+                codecs.get(i).waitForOutputEos();
+                codecs.get(i).stopInstance();
+                codecs.get(i).releaseInstance();
                 List<CodecResource> currGlobalResources = getCurrentGlobalCodecResources();
                 int result = compareResources(lastGlobalResources, currGlobalResources, testLogs);
                 Assert.assertEquals("releasing a codec instance did not increase resources"
@@ -598,7 +779,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             codecs.clear();
             // Only in real-time, it is guaranteed that the more pixels are processed per sec, the
             // more is the resource usage.
-            if (lastGlobalResourceForFormat != null && testRTMode) {
+            if (lastGlobalResourceForFormat != null && testRTMode && ((lastDecBundle == null) == (
+                    currentDecBundle == null))) {
                 int result = compareResources(lastGlobalResourceForFormat,
                         currentGlobalResourcesForFormat, testLogs);
                 Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
@@ -607,6 +789,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             }
             lastGlobalResourceForFormat = currentGlobalResourcesForFormat;
             lastFormat = currentFormat;
+            lastDecBundle = currentDecBundle;
         }
     }
 
@@ -627,7 +810,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
-    public void testConcurrentMaxInstances() {
+    public void testConcurrentMaxInstances() throws IOException, InterruptedException {
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
         validateMaxInstances(mCodecName, mMediaType, true, false);
         if (BOARD_FIRST_SDK_IS_AT_LEAST_202604) {
@@ -945,8 +1128,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
-    @Ignore("todo: have to queue inputs after switching operating mode")
-    public void testConcurrentMaxInstancesDynamic() {
+    public void testConcurrentMaxInstancesDynamic() throws IOException, InterruptedException {
         Assume.assumeTrue("Skipping, intended for devices the board first sdk >= 202604",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202604);
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
