@@ -146,8 +146,10 @@ public class MotionEventTest {
             final View decorView = mActivity.getWindow().getDecorView();
             final View contentView = decorView.findViewById(android.R.id.content);
             contentView.getLocationOnScreen(contentViewLocation);
-            // Set y position to the center of the view, to make sure it is away from the status bar
-            return new Point(contentViewLocation[0], contentViewLocation[1] + contentView.getHeight() / 2);
+            // Set x and y position to the center of the view, to make sure it is away from the
+            // system bars
+            return new Point(contentViewLocation[0] + contentView.getWidth() / 2,
+                    contentViewLocation[1] + contentView.getHeight() / 2);
         });
         mActivity.runOnUiThread(clickLocationTask);
         Point viewLocation = clickLocationTask.get(5, TimeUnit.SECONDS);
