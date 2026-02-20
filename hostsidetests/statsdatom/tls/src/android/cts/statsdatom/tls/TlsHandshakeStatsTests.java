@@ -16,7 +16,6 @@
 
 package android.cts.statsdatom.tls;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -30,11 +29,14 @@ import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.util.RunUtil;
+import com.google.protobuf.ExtensionRegistry;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TlsHandshakeStatsTests extends DeviceTestCase implements IBuildReceiver {
 
+    private static final int RETRY_LIMIT = 50;
     private IBuildInfo mCtsBuild;
 
     @Override
@@ -69,10 +71,18 @@ public class TlsHandshakeStatsTests extends DeviceTestCase implements IBuildRece
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testTlsHandshake");
 
         // Wait for the atom to be uploaded since it is done so asynchronously.
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-
-        // Sorted list of events in order in which they occurred.
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+        List<StatsLog.EventMetricData> data = new ArrayList<>();
+        for (int i = 0; i < RETRY_LIMIT; i++) {
+            StatsLog.ConfigMetricsReportList reportList = ReportUtils.getReportList(getDevice(),
+                    ExtensionRegistry.getEmptyRegistry());
+            if (reportList.getReportsCount() > 0) {
+                data.addAll(ReportUtils.getEventMetricDataList(reportList));
+                if (!data.isEmpty()) {
+                    break;
+                }
+            }
+            RunUtil.getDefault().sleep(AtomTestUtils.POLLING_INTERVAL_MS);
+        }
 
         assertThat(data.size()).isAtLeast(1);
         AtomsProto.TlsHandshakeReported atom = data.get(0).getAtom().getTlsHandshakeReported();
