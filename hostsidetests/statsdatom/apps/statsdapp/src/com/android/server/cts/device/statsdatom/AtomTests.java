@@ -484,17 +484,6 @@ public class AtomTests {
             mLatchNetwork.countDown();
         };
 
-        // fetch the networklocation first to make sure the ttff is not flaky
-        if (locManager.getProvider(LocationManager.NETWORK_PROVIDER) != null) {
-            Log.i(TAG, "Request Network Location updates.");
-            locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                    0 /* minTime*/,
-                    0 /* minDistance */,
-                    locListener,
-                    Looper.getMainLooper());
-        }
-        waitForReceiver(context, TIMEOUT_IN_MSEC, mLatchNetwork, null);
-
         // TTFF could take up to 90 seconds, thus we need to wait till TTFF does occur if it does
         // not occur in the first SLEEP_TIME_IN_MSEC
         final CountDownLatch mLatchTtff = new CountDownLatch(1);
