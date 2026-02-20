@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package android.cts.backup.delayedrestore;
+package android.cts.backup;
 
-import static org.junit.Assert.assertTrue;
-
-import android.cts.backup.BaseBackupHostSideTest;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -26,7 +23,6 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import com.android.compatibility.common.util.BackupUtils;
 import com.android.server.backup.Flags;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,7 +54,8 @@ public class DelayedRestoreHostSideTest extends BaseBackupHostSideTest {
                     + ":* DelayedRestoreBackupAgent:* DelayedFullBackupAgent:*"
                     + " TestBlobBackupHelper:* *:S";
 
-    private static final String SCHEDULE_LOG = "Scheduled delayed full restore: true";
+    private static final String FULL_SCHEDULE_LOG = "Scheduled delayed full restore: true";
+    private static final String KV_SCHEDULE_LOG = "Scheduled delayed restore: true";
     private static final String FULL_RESTORE_LOG = "onDelayedFullRestore called!";
     private static final String HELPER_RESTORE_LOG =
             "delayedRestoreEntity called for key: delayed_backup_file";
@@ -73,8 +70,12 @@ public class DelayedRestoreHostSideTest extends BaseBackupHostSideTest {
         installPackage(FULL_APK);
         clearPackageData(FULL_APP);
 
-        getDevice().executeShellCommand("pm grant " + KV_APP + " android.permission.SCHEDULE_DELAYED_RESTORE");
-        getDevice().executeShellCommand("pm grant " + FULL_APP + " android.permission.SCHEDULE_DELAYED_RESTORE");
+        getDevice()
+                .executeShellCommand(
+                        "pm grant " + KV_APP + " android.permission.SCHEDULE_DELAYED_RESTORE");
+        getDevice()
+                .executeShellCommand(
+                        "pm grant " + FULL_APP + " android.permission.SCHEDULE_DELAYED_RESTORE");
     }
 
     @After
@@ -101,7 +102,7 @@ public class DelayedRestoreHostSideTest extends BaseBackupHostSideTest {
         checkDeviceTest(FULL_APP, FULL_APP_TEST_CLASS, "assertFilesRestored");
 
         mLogcatInspector.assertLogcatContainsInOrder(
-                LOGCAT_FILTER, TIMEOUT_SECS, startLog, SCHEDULE_LOG);
+                LOGCAT_FILTER, TIMEOUT_SECS, startLog, FULL_SCHEDULE_LOG);
 
         installPackage(DEPENDENCY_APK);
 
@@ -126,7 +127,7 @@ public class DelayedRestoreHostSideTest extends BaseBackupHostSideTest {
         checkDeviceTest(KV_APP, KV_APP_TEST_CLASS, "assertSomeFilesRestored");
 
         mLogcatInspector.assertLogcatContainsInOrder(
-                LOGCAT_FILTER, TIMEOUT_SECS, startLog, SCHEDULE_LOG);
+                LOGCAT_FILTER, TIMEOUT_SECS, startLog, KV_SCHEDULE_LOG);
 
         installPackage(DEPENDENCY_APK);
 
@@ -141,5 +142,9 @@ public class DelayedRestoreHostSideTest extends BaseBackupHostSideTest {
     public void testDelayedRestoreDeviceSideTests() throws Exception {
         checkDeviceTest(KV_APP, KV_APP_TEST_CLASS, "testRequest_BuilderAndParcelable");
         checkDeviceTest(KV_APP, KV_APP_TEST_CLASS, "testSchedule_ReturnFalse_OutsideRestore");
+        checkDeviceTest(KV_APP, KV_APP_TEST_CLASS, "testOnDelayedRestore_coverage");
+        checkDeviceTest(
+                KV_APP, KV_APP_TEST_CLASS, "testBackupHelper_delayedRestoreEntity_coverage");
+        checkDeviceTest(FULL_APP, FULL_APP_TEST_CLASS, "testOnDelayedFullRestore_coverage");
     }
 }
