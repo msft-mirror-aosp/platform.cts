@@ -72,27 +72,31 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testV32_originalKeyAndHybridV32Enabled_installs() throws Exception {
+    public void testV32_originalKeyAndHybridV32Enabled_succeeds() throws Exception {
         // The APK for this test is signed with the RSA-2048 as the original key and the RSA-2048_2
-        // and ML-DSA-65 keys in the hybrid block; this test verifies that the platform uses the
-        // hybrid block for verification.
-        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+        // and ML-DSA-65 keys in the hybrid block; this test verifies that the platform allows the
+        // update from the original signer and uses the hybrid block for verification.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048-ver2.apk", getDevice());
 
         Utils.runDeviceTests(
                 getDevice(),
                 DEVICE_TEST_PACKAGE,
                 DEVICE_TEST_CLASS,
-                "testV32_originalKeyAndHybridV32Enabled");
+                "testV32_originalKeyAndV32HybridConfig");
     }
 
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testV32_originalKeyAndHybridV32Disabled_installs() throws Exception {
+    public void testV32_originalKeyAndHybridV32Disabled_succeeds() throws Exception {
         // The APK for this test is the same as above and is intended to verify that the hybrid
         // block is ignored and the original signing key in the v3.0 block is used when the v3.2
         // hybrid flag is disabled.
-        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds("v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048-ver2.apk", getDevice());
 
         Utils.runDeviceTests(
                 getDevice(),
@@ -104,29 +108,32 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testV32_v3OriginalV31RotatedV32HybridEnabled_installs() throws Exception {
+    public void testV32_v3OriginalV31RotatedV32HybridEnabled_succeeds() throws Exception {
         // The APK for this test is signed with the RSA-2048 as the original key, the RSA-2048_2 as
         // the rotated key in the v3.1 block, and the RSA-2048_3 and ML-DSA-65 keys in the hybrid
-        // block; this test verifies that the platform uses the hybrid block for verification.
+        // block; this test verifies that the platform allows the update from the v3.1 rotated
+        // signer and uses the hybrid block for verification.
+        assertInstallOnDeviceSucceeds("v31-rsa-2048_2-tgt-33-v3-rsa-2048.apk", getDevice());
         assertInstallOnDeviceSucceeds(
-                "v32-rsa-2048_3-mldsa-v31-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+                "v32-rsa-2048_3-mldsa-v31-rsa-2048_2-v3-rsa-2048-ver2.apk", getDevice());
 
         Utils.runDeviceTests(
                 getDevice(),
                 DEVICE_TEST_PACKAGE,
                 DEVICE_TEST_CLASS,
-                "testV32_v3OriginalV31RotatedV32HybridEnabled");
+                "testV32_v3OriginalV31RotatedV32HybridConfig");
     }
 
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testV32_v3OriginalV31RotatedV32HybridDisabled_installs() throws Exception {
+    public void testV32_v3OriginalV31RotatedV32HybridDisabled_succeeds() throws Exception {
         // The APK for this test is the same as above and is intended to verify that the hybrid
         // block is ignored and the rotated signing key in the v3.1 block is used when the v3.2
         // hybrid flag is disabled.
+        assertInstallOnDeviceSucceeds("v31-rsa-2048_2-tgt-33-v3-rsa-2048.apk", getDevice());
         assertInstallOnDeviceSucceeds(
-                "v32-rsa-2048_3-mldsa-v31-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+                "v32-rsa-2048_3-mldsa-v31-rsa-2048_2-v3-rsa-2048-ver2.apk", getDevice());
 
         Utils.runDeviceTests(
                 getDevice(),
@@ -253,5 +260,152 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
         // this from the additional attribute and block the install. This test verifies stripping
         // protection works when written to the v3.1 signature block.
         assertInstallOnDeviceFails("v32-sig-stripped-v31-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v3V32UpdateWithSameHybridConfig_succeeds() throws Exception {
+        // This is the standard update case from an APK signed with an original signing key and a
+        // v3.2 block updated to an APK signed with the same signing config.
+        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048-ver2.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_originalKeyAndV32HybridConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v3v31v32UpdateWithSameHybridConfig_succeeds() throws Exception {
+        // This is the other standard update case from an APK signed with a rotated signing key and
+        // a v3.2 block updated to an APK signed with the same signing config.
+        assertInstallOnDeviceSucceeds(
+                "v32-rsa-2048_3-mldsa-v31-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-rsa-2048_3-mldsa-v31-rsa-2048_2-v3-rsa-2048-ver2.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_v3OriginalV31RotatedV32HybridConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32UpdateToSingleSigner_succeeds() throws Exception {
+        // The v3.2 signature scheme is intended as a transition to PQC signing. Once a package is
+        // ready to be rotated back to a single signer config, the platform should allow the install
+        // as long as the previous hybrid signers are both in the lineage and the APK is signed with
+        // a new key that was not part of the hybrid config.
+        // Note, this test does not yet verify the transition to a single PQC signer config since
+        // this is not yet supported on the platform.
+        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v31-rsa-2048_3-mldsa-65-rsa-2048_2-in-por-v3-rsa-2048-ver2.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_v3OriginalV32HybridV31RotatedConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32UpdateToSharedSigner_fails() throws Exception {
+        // The v3.2 signature scheme requires that a new signing key be used whenever rotating to a
+        // new single signer or hybrid config. This test verifies the platform properly rejects
+        // an update if either of the hybrid keys are used as the new single signing identity or as
+        // one of the signers in the rotated hybrid config.
+        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+
+        assertInstallOnDeviceFails(
+                "v31-rsa-2048_2-mldsa-65-in-por-v3-rsa-2048-ver2.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v31-mldsa-65-rsa-2048_2-in-por-v3-rsa-2048-ver2.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v32-mldsa-65-rsa-2048_3-rsa-2048_2-in-por-v3-rsa-2048-ver2.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v32-mldsa-87-rsa-2048_2-mldsa-65-in-por-v3-rsa-2048-ver2.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v3OriginalToV32SameClassicalSigner_fails() throws Exception {
+        // The v3.2 signature scheme requires that the signing key be rotated when moving from the
+        // v3 / v3.1 single signer config to a hybrid signing config. This test verifies if the
+        // original classical key is reused as part of the hybrid signing config, then the platform
+        // will not allow the update.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048.apk", getDevice());
+
+        assertInstallOnDeviceFails("v32-rsa-mldsa-no-other-signers.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32RollbackToV3OriginalSigner_succeeds() throws Exception {
+        // The ROLLBACK capability should continue to function as expected when a package signed
+        // with a hybrid signature and the original signing key granted the ROLLBACK capability is
+        // installed. However, an update APK signed with one of the hybrid keys should fail the
+        // roll back attempt, even if the hybrid key has been granted the ROLLBACK capability.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-65-rsa-2048_2-rollback-v3-rsa-2048-rollback.apk", getDevice());
+
+        assertInstallOnDeviceFails("v31-rsa-2048_2-tgt-33-v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds("v3-rsa-2048.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(), DEVICE_TEST_PACKAGE, DEVICE_TEST_CLASS, "testV32_v3OriginalConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32RollbackToV31RotatedSigner_succeeds() throws Exception {
+        // Similar to the previous ROLLBACK test, this test verifies that an attempt to roll back to
+        // a v3.1 single signer that has been granted the ROLLBACK capability should succeed.
+        assertInstallOnDeviceSucceeds(
+                "v32-rsa-2048_3-mldsa-v31-rsa-2048_2-rollback-v3-rsa-2048.apk", getDevice());
+
+        assertInstallOnDeviceSucceeds("v31-rsa-2048_2-tgt-33-v3-rsa-2048.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(), DEVICE_TEST_PACKAGE, DEVICE_TEST_CLASS, "testV32_v31RotatedConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32ToV32RotatedConfig_succeeds() throws Exception {
+        // A hybrid signing config can be rotated to a new hybrid config by adding the current
+        // hybrid signers to the lineage and using this lineage to attest to the new hybrid signers.
+        // This test verifies that a rotation from an initial hybrid config to a new hybrid config
+        // is successful only when both original hybrid signers are in the lineage.
+        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+
+        assertInstallOnDeviceFails(
+                "v32-mldsa-87-rsa-2048_3-mldsa-65-in-por-v3-rsa-2048-ver2.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v32-mldsa-87-rsa-2048_3-rsa-2048_2-in-por-v3-rsa-2048-ver2.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-rsa-2048_2-mldsa-65-in-por-v3-rsa-2048-ver2.apk",
+                getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_v3OriginalV32RotatedConfig");
     }
 }
