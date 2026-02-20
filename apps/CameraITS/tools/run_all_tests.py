@@ -31,6 +31,7 @@ import image_processing_utils
 import its_device_utils
 import its_session_utils
 import lighting_control_utils
+from mobly.controllers import android_device
 import numpy as np
 import yaml
 
@@ -1068,6 +1069,11 @@ def main():
       # Run tests for scene
       logging.info('Running tests for %s with camera %s',
                    testing_scene, camera_id)
+      # Click on the Camera ITS app icon to bring it to foreground
+      # This is needed for aggregating test results in CtsVerifier
+      dut = android_device.AndroidDevice(device_id)
+      its_device_utils.click_on_app_icon(dut, mobly_output_logs_path)
+
       num_pass = 0
       num_skip = 0
       num_not_mandated_fail = 0
