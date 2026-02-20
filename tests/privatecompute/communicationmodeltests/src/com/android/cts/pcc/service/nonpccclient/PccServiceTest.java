@@ -195,7 +195,7 @@ public class PccServiceTest {
     }
 
     @Test
-    public void bind_sendWritableSharedMemory_throws() throws Exception {
+    public void bind_sendWritableSharedMemory_worksAsExpected() throws Exception {
         Intent intent = new Intent();
         intent.setComponent(PCC_SERVICE_COMPONENT);
         mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
@@ -209,12 +209,28 @@ public class PccServiceTest {
         sm.setProtect(OsConstants.PROT_WRITE);
         data.putParcelable("shared_memory", sm);
 
-        assertThrows(
-                "sendData was expected to throw IllegalArgumentException",
-                IllegalArgumentException.class,
-                () -> {
-                    pccClient.sendData(data);
-                });
+        boolean isLibcorePccEnabled = false;
+        try {
+            isLibcorePccEnabled = com.android.libcore.Flags.enablePccFrameworkSupport();
+        } catch (NoSuchMethodError e) {
+            // Flag not present on device, assume false
+        }
+
+        if (isLibcorePccEnabled) {
+            assertThrows(
+                    "sendData was expected to throw IllegalArgumentException",
+                    IllegalArgumentException.class,
+                    () -> {
+                        pccClient.sendData(data);
+                    });
+        } else {
+            try {
+                pccClient.sendData(data);
+            } catch (Exception e) {
+                throw new AssertionError(
+                        "sendData from PCC client to PCC service should not throw.", e);
+            }
+        }
     }
 
     @Test

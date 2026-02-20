@@ -27,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.Instrumentation;
-import android.app.privatecompute.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -36,7 +35,6 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SharedMemory;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.ErrnoException;
@@ -271,8 +269,15 @@ public class SharedMemoryTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testIsRegionReadOnly() throws RemoteException, ErrnoException {
+        boolean pccEnabled = false;
+        try {
+            pccEnabled = com.android.libcore.Flags.enablePccFrameworkSupport();
+        } catch (NoSuchMethodError e) {
+            // Flag not present on device, assume false
+        }
+        org.junit.Assume.assumeTrue(pccEnabled);
+
         try (SharedMemory sharedMemory = SharedMemory.create(null, 1)) {
             mRemote.setup(sharedMemory, PROT_READ | PROT_WRITE);
             assertFalse(mRemote.isRegionReadOnly());
