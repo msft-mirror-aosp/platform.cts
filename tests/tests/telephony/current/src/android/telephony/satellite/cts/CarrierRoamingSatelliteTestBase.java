@@ -675,11 +675,10 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int subId = SubscriptionManager.getSubscriptionId(slotId);
         sEsosSubId = subId;
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-        logd(TAG, "setUpHybridConnectManualTestEnvironment: sEsosSubId=" + subId);
-        if (!isActiveSubId(subId)) {
-            logd(TAG, "Skip the test because the ESOS subId is not active.");
-            return;
-        }
+        logd(TAG, "setUpHybridConnectManualTestEnvironment: subId=" + subId);
+        disableNtnOnlySubscription(sEsosSubId);
+        assumeTrue("Skip the test because the subId is not active.",
+                waitForSubscriptionActive(subId));
 
         setPhoneNumber(subId, phoneNumber);
 
@@ -1219,10 +1218,10 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         sEsosSubId = SubscriptionManager.getSubscriptionId(eSosSlotId);
         assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         logd(TAG, "setUpManualConnectTestEnvironment: sEsosSubId=" + sEsosSubId);
-        if (!isActiveSubId(sEsosSubId)) {
-            logd(TAG, "Skip the test because the ESOS subId is not active.");
-            return;
-        }
+        disableNtnOnlySubscription(sEsosSubId);
+        assumeTrue(
+            "Skip the test because the ESOS subId is not active.",
+            waitForSubscriptionActive(sEsosSubId));
         setPhoneNumber(sEsosSubId, phoneNumber);
 
         grantSatelliteAndSendSmsPermissions();
@@ -2227,9 +2226,10 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         moveSimToInService(slotId, simProfileId);
         sNtnOnlySubId = SubscriptionManager.getSubscriptionId(slotId);
         assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        disableNtnOnlySubscription(sNtnOnlySubId);
         logd(TAG, "setUpNtnOnlyTestEnvironment: sNtnOnlySubId=" + sNtnOnlySubId);
         assumeTrue("Skip the test because the NTN only subId is not active.",
-                isActiveSubId(sNtnOnlySubId));
+                waitForSubscriptionActive(sNtnOnlySubId));
         // Set phone number
         setPhoneNumber(sNtnOnlySubId, phoneNumber);
         setUpNtnOnlySubscription();
