@@ -1327,6 +1327,11 @@ public class AudioManagerTest {
                 "AudioManagerTest testUsageAssistant_controlledByStreamAssistant() skipped",
                 mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
 
+        assumeTrue(
+                "AudioManagerTest testUsageAssistant_controlledByStreamAssistant() skipped due to"
+                        + " assistant min volume != 0",
+                mAudioManager.getStreamMinVolume(AudioManager.STREAM_ASSISTANT) == 0);
+
         try (PermissionContext ignored =
                 TestApis.permissions()
                         .withPermission(
