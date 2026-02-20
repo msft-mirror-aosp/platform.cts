@@ -61,6 +61,7 @@ public class CujInCallService extends InCallService {
     public static final Map<String, Call> sCallIdToCall = new ConcurrentHashMap();
     public static final Map<String, CujCallCallback> sCallIdToCallback = new ConcurrentHashMap();
     public static Call sLastCall = null;
+    public static Bundle sLastCallExtrasAtStart = null;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -74,6 +75,7 @@ public class CujInCallService extends InCallService {
         Log.i(TAG, "onUnbind");
         sIsServiceBound = false;
         sLastCall = null;
+        sLastCallExtrasAtStart = null;
         sCallIdToCall.clear();
         return super.onUnbind(intent);
     }
@@ -86,6 +88,11 @@ public class CujInCallService extends InCallService {
         call.registerCallback(cujCallCallback);
         sCallIdToCallback.put(call.getDetails().getId(), cujCallCallback);
         sLastCall = call;
+        if (call.getDetails().getExtras() != null) {
+            sLastCallExtrasAtStart = call.getDetails().getExtras().deepCopy();
+        } else {
+            sLastCallExtrasAtStart = null;
+        }
     }
 
     @Override
@@ -108,6 +115,10 @@ public class CujInCallService extends InCallService {
 
     public static Call getLastAddedCall() {
         return sLastCall;
+    }
+
+    public static Bundle getLastAddedCallExtrasAtStart() {
+        return sLastCallExtrasAtStart;
     }
 
     public static CujCallCallback getCallbackForCall(String callId) {
