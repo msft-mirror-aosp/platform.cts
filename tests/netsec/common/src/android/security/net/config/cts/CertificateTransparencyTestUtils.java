@@ -15,8 +15,6 @@
  */
 package android.security.net.config.cts;
 
-import android.os.ConfigUpdate;
-
 import com.android.compatibility.common.util.ShellUtils;
 
 /** Helper methods/constants for Certificate Transparency CTS & e2e tests. */
@@ -37,7 +35,7 @@ final class CertificateTransparencyTestUtils {
     static final String INSTALL_COMPLETE_ACTION = "android.intent.action.INSTALL_COMPLETE";
 
     static void downloadLogList() {
-        ShellUtils.runShellCommand("am broadcast -a " + ConfigUpdate.ACTION_UPDATE_CT_LOGS);
+        ShellUtils.runShellCommand("cmd connectivity log-list-update");
     }
 
     static void deleteLogList() {

@@ -391,10 +391,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         try {
             logd(TAG, "testConfigureEmergencyAndDisasterPlmns: test entitlement disabled");
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
-            sMockModemManager.clearEventOnSetSatellitePlmn();
-            sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
-            sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
-            sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+            clearCarrierRoamingEventsInMockServiceManagers();
             prepareValidDisabledEntitlementStatus();
             enableSatelliteEntitlementSupport(subId);
 
@@ -414,6 +411,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             // Enable emergency and disaster services support for the carrier.
             logd(TAG, "testConfigureEmergencyAndDisasterPlmns: test emergency and disaster"
                     + " services enabled");
+            clearCarrierRoamingEventsInMockServiceManagers();
             expectedConfiguredCarrierPlmnList.clear();
             expectedConfiguredCarrierPlmnList.add("00101");
             expectedConfiguredCarrierPlmnList.add("10101");

@@ -30,7 +30,7 @@ class AppFunctionMetadataTestHelper {
     object LegacySchemaHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.helper"
         const val APK_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionTestHelper.apk"
-        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
 
         val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
@@ -132,7 +132,7 @@ class AppFunctionMetadataTestHelper {
 
     object DynamicSchemaHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.dynamic.schema"
-        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
 
         val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
@@ -349,7 +349,7 @@ class AppFunctionMetadataTestHelper {
 
     object CtsApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts"
-        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
         val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
@@ -455,7 +455,7 @@ class AppFunctionMetadataTestHelper {
 
     object ServiceHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.service.helper"
-        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
         val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
@@ -465,7 +465,7 @@ class AppFunctionMetadataTestHelper {
 
     object SideCarTestHelper {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.helper.sidecar"
-        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
         val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
     }
 

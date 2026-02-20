@@ -22,6 +22,7 @@ import android.hardware.input.VirtualTouchEvent
 import android.hardware.input.VirtualTouchscreen
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
+import android.os.SystemClock
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.InputEvent
@@ -63,6 +64,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
             .setPointerId(1)
             .setMajorAxisSize(inputSize)
             .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
+        val eventTimeGapMs = 10L
 
         // Down event
         mVirtualTouchscreen.sendTouchEvent(
@@ -73,6 +75,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
                 .setPressure(255f)
                 .build()
         )
+        SystemClock.sleep(eventTimeGapMs)
         expectedEvents.add(
             VirtualInputEventCreator.createTouchscreenEvent(
                 MotionEvent.ACTION_DOWN,
@@ -98,6 +101,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
                 .setY((point.y + i).toFloat())
                 .setPressure(255f)
             mVirtualTouchscreen.sendTouchEvent(builder.build())
+            SystemClock.sleep(eventTimeGapMs)
             expectedEvents.add(
                 VirtualInputEventCreator.createTouchscreenEvent(
                     MotionEvent.ACTION_MOVE,

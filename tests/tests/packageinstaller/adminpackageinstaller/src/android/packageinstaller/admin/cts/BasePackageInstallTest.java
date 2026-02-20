@@ -111,11 +111,12 @@ public class BasePackageInstallTest {
     private final MyBroadcastReceiver mBroadcastReceiver = new MyBroadcastReceiver();
     private final MyBroadcastReceiver mUninstallBroadcastReceiver = new MyBroadcastReceiver();
 
-    @Rule
+    // Make sure to apply this rule before mDeviceOwnerRule
+    @Rule(order = 0)
     public RequiredFeatureRule mAdminFeatureRule = new RequiredFeatureRule(
             PackageManager.FEATURE_DEVICE_ADMIN);
 
-    @Rule
+    @Rule(order = 1)
     public TestRule mDeviceOwnerRule = (base, description) -> new Statement() {
         @Override
         public void evaluate() throws Throwable {

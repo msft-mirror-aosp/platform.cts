@@ -382,9 +382,12 @@ public class VirtualCameraCaptureHelper {
         }
     }
 
-    /**
-     * Returns the {@link CameraDevice} corresponding to the virtual camera.
-     */
+    /** Returns the mock for {@link CameraDevice.StateCallback}. */
+    public CameraDevice.StateCallback getCameraStateCallback() {
+        return mCameraStateCallback;
+    }
+
+    /** Returns the {@link CameraDevice} corresponding to the virtual camera. */
     public CameraDevice getOrOpenCameraDevice() {
         try {
             if (mCameraDevice != null) {

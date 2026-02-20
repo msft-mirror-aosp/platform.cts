@@ -576,11 +576,17 @@ public class SmsManagerTest {
         init();
         Uri messageUri = insertTextMessage(mText);
 
-        smsManager.sendStoredTextMessage(messageUri, mSentIntent, mDeliveredIntent);
+        try {
+            DefaultSmsAppHelper.ensureDefaultSmsApp();
+            smsManager.sendStoredTextMessage(messageUri, mSentIntent, mDeliveredIntent);
 
-        assertTrue("Could not send SMS. Check signal.", mSendReceiver.waitForCalls(1, TIME_OUT));
-        if (mDeliveryReportSupported) {
-            assertTrue(mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+            assertTrue(
+                    "Could not send SMS. Check signal.", mSendReceiver.waitForCalls(1, TIME_OUT));
+            if (mDeliveryReportSupported) {
+                assertTrue(mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+            }
+        } finally {
+            DefaultSmsAppHelper.stopBeingDefaultSmsApp();
         }
     }
 
@@ -654,11 +660,16 @@ public class SmsManagerTest {
         List<PendingIntent> deliveryIntents =
                 createIntents(parts.size(), mDeliveryIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED);
 
-        smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
+        try {
+            DefaultSmsAppHelper.ensureDefaultSmsApp();
+            smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
 
-        assertTrue(
-                "Could not send multi part SMS. Check signal.",
-                mSendReceiver.waitForCalls(parts.size(), TIME_OUT));
+            assertTrue(
+                    "Could not send multi part SMS. Check signal.",
+                    mSendReceiver.waitForCalls(parts.size(), TIME_OUT));
+        } finally {
+            DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        }
     }
 
     private void testSendStoredMultipartTextMessage_UpgradeSupported(
@@ -1774,7 +1785,7 @@ public class SmsManagerTest {
                     }
                 }
                 mReceivedDataSms = true;
-                mReceivedText=sb.toString();
+                mReceivedText = sb.toString();
             }
             if (mAction.equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
                 sMessageId = intent.getLongExtra("messageId", 0L);
@@ -1812,16 +1823,15 @@ public class SmsManagerTest {
                     if (waitTime > 0) {
                         mLock.wait(waitTime);
                     } else {
-                        return false;  // timed out
+                        return false; // timed out
                     }
                 }
-                return true;  // success
+                return true; // success
             }
         }
     }
 
     private static class MessageUpgradeBroadcastReceiver extends BroadcastReceiver {
-        private static final String EXTRA_MESSAGE_URI = "message_uri";
         private CountDownLatch mLatch = new CountDownLatch(1);
         private final String mAction;
         private final AtomicInteger mUpgradeStatus = new AtomicInteger(-1);

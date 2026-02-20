@@ -798,7 +798,7 @@ class ProvisioningTest {
 
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
                     params.profileAdminComponentName.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_SYSTEM_USER)
@@ -828,7 +828,7 @@ class ProvisioningTest {
 
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
                     params.profileAdminComponentName.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_HEADLESS_SYSTEM_USER_MODE_REQUIRED)
@@ -861,7 +861,7 @@ class ProvisioningTest {
 
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
                     params.profileAdminComponentName.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_USER_HAS_PROFILE_OWNER)
@@ -894,7 +894,7 @@ class ProvisioningTest {
 
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
                     params.profileAdminComponentName.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_HAS_DEVICE_OWNER)
@@ -929,7 +929,7 @@ class ProvisioningTest {
 
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
                     params.profileAdminComponentName.packageName,
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_USER_HAS_PROFILE)
@@ -965,7 +965,7 @@ class ProvisioningTest {
 
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
                     params.profileAdminComponentName.packageName,
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
@@ -994,7 +994,7 @@ class ProvisioningTest {
 
         assertThat(
             localDevicePolicyManager.checkProvisioningPrecondition(
-                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
                 params.profileAdminComponentName.packageName,
             )
         ).isEqualTo(DevicePolicyManager.STATUS_NOT_FULL_USER)
@@ -1336,41 +1336,16 @@ class ProvisioningTest {
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
-        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"]
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE"]
     )
     fun checkProvisioningPreCondition_multiUserDC_returnsOk() =
         withIncompleteSetupOnAllUsers {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE,
                     DEVICE_ADMIN_COMPONENT_NAME.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_OK)
-        }
-
-    @Postsubmit(reason = "New test")
-    @EnsureHasNoDpc
-    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
-    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Multi-user device provisioning requires HSUM")
-    @RequireRunOnSecondaryUser
-    @RequireResourcesBooleanValue(
-        configName = "config_enableMultiuserManagement",
-        requiredValue = true
-    )
-    @Test
-    @ApiTest(
-        apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
-        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"]
-    )
-    fun checkProvisioningPreCondition_multiUserDC_secondaryUser_returnsNotSystemUser() =
-        withIncompleteSetupOnAllUsers {
-            assertThat(
-                localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
-                    DEVICE_ADMIN_COMPONENT_NAME.packageName
-                )
-            ).isEqualTo(DevicePolicyManager.STATUS_NOT_SYSTEM_USER)
         }
 
     @Postsubmit(reason = "New test")
@@ -1386,13 +1361,13 @@ class ProvisioningTest {
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
-        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"]
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE"]
     )
     fun checkProvisioningPreCondition_multiUserDC_nonHsum_returnsHsumRequired() =
         withIncompleteSetupOnAllUsers {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE,
                     DEVICE_ADMIN_COMPONENT_NAME.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_HEADLESS_SYSTEM_USER_MODE_REQUIRED)
@@ -1414,14 +1389,14 @@ class ProvisioningTest {
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
-        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"]
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE"]
     )
     fun checkProvisioningPreCondition_multiUserDC_systemUserSetup_returnsUserSetupCompleted() =
         withIncompleteSetupOnAllUsers {
             TestApis.users().system().setupComplete = true
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE,
                     DEVICE_ADMIN_COMPONENT_NAME.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
@@ -1443,14 +1418,14 @@ class ProvisioningTest {
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
-        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"]
+        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE"]
     )
     fun checkProvisioningPreCondition_multiUserDC_initialUserSetup_returnsUserSetupCompleted() =
         withIncompleteSetupOnAllUsers {
             TestApis.users().initial().setupComplete = true
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE,
                     DEVICE_ADMIN_COMPONENT_NAME.packageName
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
@@ -1468,16 +1443,16 @@ class ProvisioningTest {
     )
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
-            "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"]
+            "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE"]
     )
     fun checkProvisioningPreCondition_multiUserDC_configNotEnabled_returnsDeviceDoesntSupport() =
         withIncompleteSetupOnAllUsers {
             assertThat(
                 localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE,
                     DEVICE_ADMIN_COMPONENT_NAME.packageName
                 )
-            ).isEqualTo(DevicePolicyManager.STATUS_MULTI_USER_MANAGEMENT_NOT_SUPPORTED)
+            ).isEqualTo(DevicePolicyManager.STATUS_MULTIUSER_MANAGEMENT_NOT_SUPPORTED)
         }
 
     // TODO(b/208843126): add more CTS coverage for setUserProvisioningState

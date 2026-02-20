@@ -1,0 +1,78 @@
+# Copyright (C) 2026 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: cts/tests/mediapc/requirements/requirements.proto
+# proto-message: Requirement
+id: "7.4.3/H-3-1"
+name: "Android 17 BLE Channel Sounding"
+description: "MUST support BLE Channel Sounding feature"
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_37
+    specification:
+      "CDD Section 7.4.3 - Bluetooth"
+      " [C-11-1] MUST report the hardware feature flag"
+      "  android.hardware.bluetooth_le.channel_sounding"
+      " CDD Section 7.4.3 - Bluetooth"
+      " [C-11-2] MUST report the range accurately to within +/- 0.5 m"
+      " at the 90th percentile, as calculated with the "
+      " Cumulative Distribution Function, at the distance of 1 m."
+      " See https://source.android.com/docs/core/connect/presence-requirements"
+      "  for device setup info."
+    required_values {
+      key: "is_ble_cs_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "ble_cs_accuracy"
+      value {
+        float_value: 0.5  # TODO(b/485299779): Change to range.
+      }
+    }
+  }
+}
+measurements {
+  key: "is_ble_cs_supported"
+  value {
+    description:
+      "Whether the device supports BLE Channel Sounding feature or not."
+      "Indicated by the hardware feature flag "
+      "android.hardware.bluetooth_le.channel_sounding."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements {
+  key: "ble_cs_accuracy"
+  value {
+    description:
+      "BLE Channel Sounding accuracy range at the 90th percentile, as "
+      "calculated by the Cumulative Distribution Function at the distance of "
+      "1 m."
+    measurement_type: MEASUREMENT_TYPE_FLOAT
+    comparison: COMPARISON_INFO_ONLY  # TODO(b/485299779): Change to range
+    proto_field_number: 4
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 99
+  }
+}

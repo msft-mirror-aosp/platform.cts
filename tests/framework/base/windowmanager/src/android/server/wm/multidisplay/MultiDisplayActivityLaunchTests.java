@@ -1116,10 +1116,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
     /**
      * Tests that an activity cannot be launched on a display that cannot host tasks.
      */
-    @RequiresFlagsEnabled({
-            FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT,
-            Flags.FLAG_ENABLE_MIRROR_DISPLAY_NO_ACTIVITY
-    })
+    @RequiresFlagsEnabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
     @ApiTest(apis = {
             "android.app.ActivityOptions#setLaunchDisplayId",
             "android.app.ActivityManager#isActivityStartAllowedOnDisplay"

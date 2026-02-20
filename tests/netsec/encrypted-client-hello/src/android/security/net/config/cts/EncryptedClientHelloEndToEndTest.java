@@ -50,7 +50,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.InetAddress;
-import java.security.KeyStore;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -62,10 +61,9 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.SSLSocketFactory;
 
 @RunWith(AndroidJUnit4.class)
 public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
@@ -225,12 +223,7 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
     }
 
     private SSLSocket createSocketWithSNI(InetAddress address) throws Exception {
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
-        tmf.init((KeyStore) null);
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(/* keyManager= */ null, tmf.getTrustManagers(), null);
-
-        SSLSocket sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket(address, 443);
+        SSLSocket sslSocket = (SSLSocket) SSLSocketFactory.getDefault().createSocket(address, 443);
 
         // Enable SNI.
         SSLParameters sslParams = sslSocket.getSSLParameters();

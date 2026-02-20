@@ -269,12 +269,15 @@ public class MockModemManager {
                     mMockModemService.getMockModemConfigInterface();
             if (configInterface != null) {
                 TelephonyManager tm = sContext.getSystemService(TelephonyManager.class);
+                SubscriptionManager sm =
+                        sContext.getSystemService(SubscriptionManager.class);
 
                 result = configInterface.changeSimProfile(slotId, simProfileId, TAG);
                 if (result) {
                     try {
                         waitForSubscriptionCondition(
-                            () -> (TelephonyManager.SIM_STATE_READY == tm.getSimState(slotId)),
+                            () -> (TelephonyManager.SIM_STATE_READY == tm.getSimState(slotId)
+                                && sm.getActiveSubscriptionInfoForSimSlotIndex(slotId) != null),
                             TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED);
                     } finally {
                         Log.d(TAG, "Insert Sim - subscription changed.");
@@ -303,13 +306,16 @@ public class MockModemManager {
                     mMockModemService.getMockModemConfigInterface();
             if (configInterface != null) {
                 TelephonyManager tm = sContext.getSystemService(TelephonyManager.class);
+                SubscriptionManager sm =
+                    sContext.getSystemService(SubscriptionManager.class);
 
                 result = configInterface.changeSimProfile(slotId, MOCK_SIM_PROFILE_ID_DEFAULT, TAG);
                 if (result) {
                     try {
                         waitForSubscriptionCondition(
-                            () -> (TelephonyManager.SIM_STATE_NOT_READY == tm.getSimState(slotId)
-                                || TelephonyManager.SIM_STATE_ABSENT == tm.getSimState(slotId)),
+                            () -> ((TelephonyManager.SIM_STATE_ABSENT == tm.getSimState(slotId)
+                                || TelephonyManager.SIM_STATE_NOT_READY == tm.getSimState(slotId))
+                                && sm.getActiveSubscriptionInfoForSimSlotIndex(slotId) == null),
                             TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED);
                     } finally {
                         Log.d(TAG, "Remove Sim - subscription changed.");

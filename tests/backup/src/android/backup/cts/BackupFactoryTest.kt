@@ -58,7 +58,7 @@ class BackupFactoryTest : BaseBackupCtsTest() {
 
     @Test
     @ApiTest(apis = ["android.app.AppComponentFactory#instantiateBackupAgent"])
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BACKUPAGENT_INSTANTIATION)
+    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BACKUPAGENT_CREATION)
     fun testBackupAgent_isInstantiatedViaFactory() {
         assumeTrue("Device does not support backup", isBackupSupported())
 
