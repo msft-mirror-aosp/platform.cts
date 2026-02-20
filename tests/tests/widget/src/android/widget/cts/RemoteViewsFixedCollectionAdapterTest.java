@@ -36,6 +36,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.SizeF;
@@ -326,10 +328,17 @@ public class RemoteViewsFixedCollectionAdapterTest {
         RemoteCollectionItems items =
                 createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackageName.get());
 
-        int dataSize = parcelAndRun(items, Parcel::dataSize);
+        int serializedDataSize = parcelAndRun(items, Parcel::dataSize);
+
+        int otherPackageDataSize = getApplicationInfo(otherPackageName.get())
+                .map(appInfo -> parcelAndRun(appInfo, Parcel::dataSize))
+                .orElse(0);
+
+        // Calculate the size of the serialized data excluding ApplicationInfo
+        int dataSize = serializedDataSize - otherPackageDataSize;
 
         // 9,140 when test was written.
-        assertLessThan(12_000, dataSize);
+        assertLessThan(10_000, dataSize);
     }
 
     @Test
@@ -376,10 +385,17 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
         RemoteViews joinedRemoteViews = new RemoteViews(landscape, portrait);
 
-        int dataSize = parcelAndRun(joinedRemoteViews, Parcel::dataSize);
+        int serializedDataSize = parcelAndRun(joinedRemoteViews, Parcel::dataSize);
+
+        int otherPackageDataSize = getApplicationInfo(otherPackage.get())
+                .map(appInfo -> parcelAndRun(appInfo, Parcel::dataSize))
+                .orElse(0);
+
+        // Calculate the size of the serialized data excluding ApplicationInfo
+        int dataSize = serializedDataSize - otherPackageDataSize;
 
         // 14,068 when test was written.
-        assertLessThan(20_000, dataSize);
+        assertLessThan(15_000, dataSize);
     }
 
     @Test
@@ -917,4 +933,20 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .findFirst()
                 .map(info -> info.packageName);
     }
+
+
+     /**
+     * Retrieves the ApplicationInfo for the specified package name.
+     *
+     * @param packageName The name of the package whose ApplicationInfo is to be retrieved.
+     * @return An Optional containing the ApplicationInfo if found; otherwise, an empty Optional.
+     */
+    private Optional<ApplicationInfo> getApplicationInfo(String packageName) {
+        try {
+            return Optional.ofNullable(mActivity.getPackageManager().getApplicationInfo(packageName, 0));
+        } catch (PackageManager.NameNotFoundException e) {
+            return Optional.empty();
+        }
+    }
+
 }
