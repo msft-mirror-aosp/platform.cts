@@ -27,6 +27,7 @@ import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -46,6 +47,7 @@ import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -91,6 +93,9 @@ public class NetworkingHelper implements AutoCloseable {
 
     NetworkingHelper(@NonNull Instrumentation instrumentation, @NonNull Context context)
             throws Exception {
+        // Skip running network tests when ADB is connected over Ethernet,
+        // because the system prioritizes Ethernet and therefore does not send Wi‑Fi callbacks
+        assumeFalse(isAdbOverNetwork());
         mContext = context;
         mInstrumentation = instrumentation;
 
@@ -109,6 +114,12 @@ public class NetworkingHelper implements AutoCloseable {
         mInitialWiFiState = mHasWifi && isWifiEnabled();
 
         ensureSavedWifiNetwork();
+    }
+
+    private boolean isAdbOverNetwork() {
+        // If adb TCP port opened, this test may running by adb over network.
+        return (SystemProperties.getInt("persist.adb.tcp.port", -1) > -1)
+                || (SystemProperties.getInt("service.adb.tcp.port", -1) > -1);
     }
 
     /** Ensures that the device has a wifi network saved if it has the wifi feature. */
