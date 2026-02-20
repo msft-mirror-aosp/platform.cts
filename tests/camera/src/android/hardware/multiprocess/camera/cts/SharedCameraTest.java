@@ -45,8 +45,6 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.internal.camera.flags.Flags;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -183,7 +181,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testOpenMixedMode() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -207,7 +204,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testSharedSessionCreationInvalidConfig() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -241,7 +237,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testSharedSessionUnsupportedOperations() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -305,7 +300,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testSharedSessionTwoJavaClients() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -361,7 +355,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testCameraDeviceSharingSupported() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -408,7 +401,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testCameraDeviceSharingNotSupported() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -429,7 +421,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testClientSharedAccessPriorityChanged() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -457,7 +448,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testSharedSessionCreationDifferentStreams() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -525,7 +515,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testSharedSessionCreationSameStreams() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
@@ -582,7 +571,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testSecondaryClientStreamingBeforePrimary() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
