@@ -32,7 +32,7 @@ import android.service.personalcontext.PersonalContextManager;
 import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
-import android.service.personalcontext.hint.ContextHintWithSignature;
+import android.service.personalcontext.hint.PublishedContextHint;
 import android.util.Size;
 import android.widget.inline.InlinePresentationSpec;
 
@@ -124,7 +124,7 @@ public class PersonalContextManagerTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.PersonalContextManager#signHint",
+                "android.service.personalcontext.PersonalContextManager#preparePublishedHint",
             })
     @Test
     public void testSignHintWithAttributionHints() {
@@ -132,14 +132,14 @@ public class PersonalContextManagerTest {
         final ContextHint attributionHint1 = new BundleHint.Builder().build();
         final ContextHint attributionHint2 = new BundleHint.Builder().build();
 
-        final ContextHintWithSignature signedHint =
-                mPersonalContextManager.signHint(
+        final PublishedContextHint publishedHint =
+                mPersonalContextManager.preparePublishedHint(
                         mainHint, List.of(attributionHint1, attributionHint2));
 
-        assertThat(signedHint.getContextHint().getHintId()).isEqualTo(mainHint.getHintId());
+        assertThat(publishedHint.getContextHint().getHintId()).isEqualTo(mainHint.getHintId());
         assertThat(
-                        signedHint.getAttributionHints().stream()
-                                .map(chws -> chws.getContextHint().getHintId()))
+                        publishedHint.getAttributionHints().stream()
+                                .map(pch -> pch.getContextHint().getHintId()))
                 .containsExactly(attributionHint1.getHintId(), attributionHint2.getHintId());
     }
 

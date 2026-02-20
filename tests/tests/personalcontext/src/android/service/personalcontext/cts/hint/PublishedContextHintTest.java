@@ -27,8 +27,8 @@ import android.service.personalcontext.Flags;
 import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
-import android.service.personalcontext.hint.ContextHintWithSignature;
-import android.service.personalcontext.hint.ContextHintWithSignatureWrapper;
+import android.service.personalcontext.hint.PublishedContextHint;
+import android.service.personalcontext.hint.PublishedContextHintWrapper;
 import android.util.ArraySet;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -50,7 +50,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
-public class ContextHintWithSignatureTest {
+public class PublishedContextHintTest {
     private static final String SYSTEM_PACKAGE = "android";
 
     @Rule
@@ -60,36 +60,35 @@ public class ContextHintWithSignatureTest {
     private static SecretKeySpec generateSignedHintKey() {
         final byte[] key = new byte[64];
         new Random().nextBytes(key);
-        return new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM);
+        return new SecretKeySpec(key, PublishedContextHint.HMAC_ALGORITHM);
     }
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#addRenderTokens",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#setOriginatingPackage",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#addAttributionHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
-                "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
-                "android.service.personalcontext.hint.ContextHintWithSignature"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder#build",
+                "android.service.personalcontext.hint.PublishedContextHint#isSignatureValid",
+                "android.service.personalcontext.hint.PublishedContextHint#getContextHint",
+                "android.service.personalcontext.hint.PublishedContextHint#getRenderTokens",
+                "android.service.personalcontext.hint.PublishedContextHint"
                         + "#getOriginatingPackage",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
-                "android.service.personalcontext.hint.ContextHintWithSignature#describeContents",
-                "android.service.personalcontext.hint.ContextHintWithSignature#writeToParcel",
-                "android.service.personalcontext.hint.ContextHintWithSignature#CREATOR",
+                "android.service.personalcontext.hint.PublishedContextHint#getAttributionHints",
+                "android.service.personalcontext.hint.PublishedContextHint#describeContents",
+                "android.service.personalcontext.hint.PublishedContextHint#writeToParcel",
+                "android.service.personalcontext.hint.PublishedContextHint#CREATOR",
             })
-    private static void checkPresence(
-            ContextHintWithSignature signedHint, List<ContextHint> hints) {
+    private static void checkPresence(PublishedContextHint signedHint, List<ContextHint> hints) {
         final ArraySet<ContextHint> remainingHints = new ArraySet<>(hints);
-        final HashSet<ContextHintWithSignature> attributionHints =
+        final HashSet<PublishedContextHint> attributionHints =
                 new HashSet<>(signedHint.getAttributionHints());
 
         assertThat(remainingHints.size()).isEqualTo(attributionHints.size());
-        for (ContextHintWithSignature targetHint : attributionHints) {
+        for (PublishedContextHint targetHint : attributionHints) {
             assertThat(targetHint.getOriginatingPackage()).isEqualTo(SYSTEM_PACKAGE);
             final ContextHint targetContextHint = targetHint.getContextHint();
             final Optional<ContextHint> foundHint =
@@ -112,20 +111,20 @@ public class ContextHintWithSignatureTest {
         final BundleHint attributedHint2 = new BundleHint.Builder().build();
         final RenderToken renderToken = new RenderToken(UUID.randomUUID(), null);
 
-        final ContextHintWithSignature signedAttributedHint1 =
-                new ContextHintWithSignature.Builder(attributedHint1, key)
+        final PublishedContextHint signedAttributedHint1 =
+                new PublishedContextHint.Builder(attributedHint1, key)
                         .addRenderTokens(List.of(renderToken))
                         .build();
 
-        final ContextHintWithSignature signedAttributedHint2 =
-                new ContextHintWithSignature.Builder(attributedHint2, key)
+        final PublishedContextHint signedAttributedHint2 =
+                new PublishedContextHint.Builder(attributedHint2, key)
                         .addRenderTokens(List.of(renderToken))
                         .build();
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignatureWrapper(
-                        new ContextHintWithSignature.Builder(hint, key)
+                new PublishedContextHintWrapper(
+                        new PublishedContextHint.Builder(hint, key)
                                 .setOriginatingPackage(origin.getPackageName())
                                 .addRenderTokens(List.of(renderToken))
                                 .addAttributionHint(signedAttributedHint1)
@@ -135,9 +134,9 @@ public class ContextHintWithSignatureTest {
 
         parcel.setDataPosition(0);
 
-        final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
-                        .getContextHintWithSignature();
+        final PublishedContextHint signedHint =
+                parcel.readParcelable(/* loader= */ null, PublishedContextHintWrapper.class)
+                        .getPublishedContextHint();
 
         parcel.recycle();
 
@@ -151,19 +150,19 @@ public class ContextHintWithSignatureTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#addRenderTokens",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#addAttributionHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
-                "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
-                "android.service.personalcontext.hint.ContextHintWithSignature"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder#build",
+                "android.service.personalcontext.hint.PublishedContextHint#isSignatureValid",
+                "android.service.personalcontext.hint.PublishedContextHint#getContextHint",
+                "android.service.personalcontext.hint.PublishedContextHint#getRenderTokens",
+                "android.service.personalcontext.hint.PublishedContextHint"
                         + "#getOriginatingPackage",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
-                "android.service.personalcontext.hint.ContextHintWithSignature#writeToParcel",
-                "android.service.personalcontext.hint.ContextHintWithSignature#CREATOR",
+                "android.service.personalcontext.hint.PublishedContextHint#getAttributionHints",
+                "android.service.personalcontext.hint.PublishedContextHint#writeToParcel",
+                "android.service.personalcontext.hint.PublishedContextHint#CREATOR",
             })
     @Test
     public void testParcelAndUnparcelWithoutOrigin() throws GeneralSecurityException {
@@ -173,20 +172,20 @@ public class ContextHintWithSignatureTest {
         final BundleHint attributedHint2 = new BundleHint.Builder().build();
         final RenderToken renderToken = new RenderToken(UUID.randomUUID(), null);
 
-        final ContextHintWithSignature signedAttributedHint1 =
-                new ContextHintWithSignature.Builder(attributedHint1, key)
+        final PublishedContextHint signedAttributedHint1 =
+                new PublishedContextHint.Builder(attributedHint1, key)
                         .addRenderTokens(List.of(renderToken))
                         .build();
 
-        final ContextHintWithSignature signedAttributedHint2 =
-                new ContextHintWithSignature.Builder(attributedHint2, key)
+        final PublishedContextHint signedAttributedHint2 =
+                new PublishedContextHint.Builder(attributedHint2, key)
                         .addRenderTokens(List.of(renderToken))
                         .build();
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignatureWrapper(
-                        new ContextHintWithSignature.Builder(hint, key)
+                new PublishedContextHintWrapper(
+                        new PublishedContextHint.Builder(hint, key)
                                 .addRenderTokens(List.of(renderToken))
                                 .addAttributionHints(
                                         List.of(signedAttributedHint1, signedAttributedHint2))
@@ -195,9 +194,9 @@ public class ContextHintWithSignatureTest {
 
         parcel.setDataPosition(0);
 
-        final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
-                        .getContextHintWithSignature();
+        final PublishedContextHint signedHint =
+                parcel.readParcelable(/* loader= */ null, PublishedContextHintWrapper.class)
+                        .getPublishedContextHint();
 
         parcel.recycle();
 
@@ -211,19 +210,19 @@ public class ContextHintWithSignatureTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#setOriginatingPackage",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#addAttributionHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
-                "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
-                "android.service.personalcontext.hint.ContextHintWithSignature"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder#build",
+                "android.service.personalcontext.hint.PublishedContextHint#isSignatureValid",
+                "android.service.personalcontext.hint.PublishedContextHint#getContextHint",
+                "android.service.personalcontext.hint.PublishedContextHint#getRenderTokens",
+                "android.service.personalcontext.hint.PublishedContextHint"
                         + "#getOriginatingPackage",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
-                "android.service.personalcontext.hint.ContextHintWithSignature#writeToParcel",
-                "android.service.personalcontext.hint.ContextHintWithSignature#CREATOR",
+                "android.service.personalcontext.hint.PublishedContextHint#getAttributionHints",
+                "android.service.personalcontext.hint.PublishedContextHint#writeToParcel",
+                "android.service.personalcontext.hint.PublishedContextHint#CREATOR",
             })
     @Test
     public void testParcelAndUnparcelWithoutRenderToken() throws GeneralSecurityException {
@@ -233,16 +232,16 @@ public class ContextHintWithSignatureTest {
         final BundleHint attributedHint1 = new BundleHint.Builder().build();
         final BundleHint attributedHint2 = new BundleHint.Builder().build();
 
-        final ContextHintWithSignature signedAttributedHint1 =
-                new ContextHintWithSignature.Builder(attributedHint1, key).build();
+        final PublishedContextHint signedAttributedHint1 =
+                new PublishedContextHint.Builder(attributedHint1, key).build();
 
-        final ContextHintWithSignature signedAttributedHint2 =
-                new ContextHintWithSignature.Builder(attributedHint2, key).build();
+        final PublishedContextHint signedAttributedHint2 =
+                new PublishedContextHint.Builder(attributedHint2, key).build();
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignatureWrapper(
-                        new ContextHintWithSignature.Builder(hint, key)
+                new PublishedContextHintWrapper(
+                        new PublishedContextHint.Builder(hint, key)
                                 .setOriginatingPackage(origin.getPackageName())
                                 .addAttributionHints(
                                         List.of(signedAttributedHint1, signedAttributedHint2))
@@ -251,9 +250,9 @@ public class ContextHintWithSignatureTest {
 
         parcel.setDataPosition(0);
 
-        final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
-                        .getContextHintWithSignature();
+        final PublishedContextHint signedHint =
+                parcel.readParcelable(/* loader= */ null, PublishedContextHintWrapper.class)
+                        .getPublishedContextHint();
 
         parcel.recycle();
 
@@ -267,19 +266,19 @@ public class ContextHintWithSignatureTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#addRenderTokens",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder"
                         + "#setOriginatingPackage",
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
-                "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
-                "android.service.personalcontext.hint.ContextHintWithSignature"
+                "android.service.personalcontext.hint.PublishedContextHint.Builder#build",
+                "android.service.personalcontext.hint.PublishedContextHint#isSignatureValid",
+                "android.service.personalcontext.hint.PublishedContextHint#getContextHint",
+                "android.service.personalcontext.hint.PublishedContextHint#getRenderTokens",
+                "android.service.personalcontext.hint.PublishedContextHint"
                         + "#getOriginatingPackage",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
-                "android.service.personalcontext.hint.ContextHintWithSignature#writeToParcel",
-                "android.service.personalcontext.hint.ContextHintWithSignature#CREATOR",
+                "android.service.personalcontext.hint.PublishedContextHint#getAttributionHints",
+                "android.service.personalcontext.hint.PublishedContextHint#writeToParcel",
+                "android.service.personalcontext.hint.PublishedContextHint#CREATOR",
             })
     @Test
     public void testParcelAndUnparcelWithoutAttribution() throws GeneralSecurityException {
@@ -290,8 +289,8 @@ public class ContextHintWithSignatureTest {
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignatureWrapper(
-                        new ContextHintWithSignature.Builder(hint, key)
+                new PublishedContextHintWrapper(
+                        new PublishedContextHint.Builder(hint, key)
                                 .setOriginatingPackage(origin.getPackageName())
                                 .addRenderTokens(List.of(renderToken))
                                 .build()),
@@ -299,9 +298,9 @@ public class ContextHintWithSignatureTest {
 
         parcel.setDataPosition(0);
 
-        final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
-                        .getContextHintWithSignature();
+        final PublishedContextHint signedHint =
+                parcel.readParcelable(/* loader= */ null, PublishedContextHintWrapper.class)
+                        .getPublishedContextHint();
 
         parcel.recycle();
 
@@ -314,17 +313,17 @@ public class ContextHintWithSignatureTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
-                "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
-                "android.service.personalcontext.hint.ContextHintWithSignature#writeToParcel",
-                "android.service.personalcontext.hint.ContextHintWithSignature#CREATOR",
+                "android.service.personalcontext.hint.PublishedContextHint.Builder#build",
+                "android.service.personalcontext.hint.PublishedContextHint#isSignatureValid",
+                "android.service.personalcontext.hint.PublishedContextHint#writeToParcel",
+                "android.service.personalcontext.hint.PublishedContextHint#CREATOR",
             })
     @Test
     public void testSignatureWrongKey() throws GeneralSecurityException {
         final BundleHint hint = new BundleHint.Builder().build();
 
-        final ContextHintWithSignature signedHint =
-                (new ContextHintWithSignature.Builder(hint, generateSignedHintKey()).build());
+        final PublishedContextHint signedHint =
+                (new PublishedContextHint.Builder(hint, generateSignedHintKey()).build());
 
         assertThat(signedHint.isSignatureValid(generateSignedHintKey())).isFalse();
     }

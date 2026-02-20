@@ -27,7 +27,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
-import android.service.personalcontext.hint.ContextHintWithSignature;
+import android.service.personalcontext.hint.PublishedContextHint;
 import android.service.personalcontext.insight.ActionableInsight;
 import android.service.personalcontext.insight.InsightActionDetails;
 import android.service.personalcontext.insight.InsightDisplayDetails;
@@ -60,7 +60,7 @@ public class ActionableInsightTest {
     public static SecretKeySpec generateSignedHintKey() {
         byte[] key = new byte[64];
         new Random().nextBytes(key);
-        return new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM);
+        return new SecretKeySpec(key, PublishedContextHint.HMAC_ALGORITHM);
     }
 
     // Tests bundling and unbundling fields on the base ContextInsight.
@@ -76,8 +76,8 @@ public class ActionableInsightTest {
     public void testReturnHintReporter() throws GeneralSecurityException {
         final RenderToken renderToken = new RenderToken(UUID.randomUUID(), null);
 
-        final ContextHintWithSignature originHint =
-                new ContextHintWithSignature.Builder(
+        final PublishedContextHint originHint =
+                new PublishedContextHint.Builder(
                                 new BundleHint.Builder().build(), generateSignedHintKey())
                         .addRenderTokens(List.of(renderToken))
                         .build();
