@@ -18,7 +18,7 @@ package android.keystore.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
 import android.content.Context;
 import android.security.KeyPairGeneratorSpec;
@@ -79,95 +79,88 @@ public class KeyPairGeneratorSpecTest {
 
     @Test
     public void testBuilder_NullContext_Failure() throws Exception {
-        try {
-            new KeyPairGeneratorSpec.Builder(null);
-            fail("Should throw NullPointerException when context is null");
-        } catch (NullPointerException expected) {
-        }
+        assertThrows(
+                "Should throw NullPointerException when context is null",
+                NullPointerException.class,
+                () -> new KeyPairGeneratorSpec.Builder(null));
     }
 
     @Test
     public void testBuilder_MissingAlias_Failure() throws Exception {
-        try {
-            new KeyPairGeneratorSpec.Builder(getContext())
+        assertThrows(
+                "Should throw IllegalArgumentException when alias is missing",
+                IllegalArgumentException.class,
+                () -> new KeyPairGeneratorSpec.Builder(getContext())
                     .setSubject(TEST_DN_1)
                     .setSerialNumber(SERIAL_1)
                     .setStartDate(NOW)
                     .setEndDate(NOW_PLUS_10_YEARS)
-                    .build();
-            fail("Should throw IllegalArgumentException when alias is missing");
-        } catch (IllegalArgumentException expected) {
-        }
+                    .build());
     }
 
     @Test
     public void testBuilder_MissingSubjectDN_Failure() throws Exception {
-        try {
-            new KeyPairGeneratorSpec.Builder(getContext())
+        assertThrows(
+                "Should throw IllegalArgumentException when subject is missing",
+                IllegalArgumentException.class,
+                () -> new KeyPairGeneratorSpec.Builder(getContext())
                     .setAlias(TEST_ALIAS_1)
                     .setSerialNumber(SERIAL_1)
                     .setStartDate(NOW)
                     .setEndDate(NOW_PLUS_10_YEARS)
-                    .build();
-            fail("Should throw IllegalArgumentException when subject is missing");
-        } catch (IllegalArgumentException expected) {
-        }
+                    .build());
     }
 
     @Test
     public void testBuilder_MissingSerialNumber_Failure() throws Exception {
-        try {
-            new KeyPairGeneratorSpec.Builder(getContext())
+        assertThrows(
+                "Should throw IllegalArgumentException when serialNumber is missing",
+                IllegalArgumentException.class,
+                () -> new KeyPairGeneratorSpec.Builder(getContext())
                     .setAlias(TEST_ALIAS_1)
                     .setSubject(TEST_DN_1)
                     .setStartDate(NOW)
                     .setEndDate(NOW_PLUS_10_YEARS)
-                    .build();
-            fail("Should throw IllegalArgumentException when serialNumber is missing");
-        } catch (IllegalArgumentException expected) {
-        }
+                    .build());
     }
 
     @Test
     public void testBuilder_MissingStartDate_Failure() throws Exception {
-        try {
-            new KeyPairGeneratorSpec.Builder(getContext())
+        assertThrows(
+                "Should throw IllegalArgumentException when startDate is missing",
+                IllegalArgumentException.class,
+                () -> new KeyPairGeneratorSpec.Builder(getContext())
                     .setAlias(TEST_ALIAS_1)
                     .setSubject(TEST_DN_1)
                     .setSerialNumber(SERIAL_1)
                     .setEndDate(NOW_PLUS_10_YEARS)
-                    .build();
-            fail("Should throw IllegalArgumentException when startDate is missing");
-        } catch (IllegalArgumentException expected) {
-        }
+                    .build());
     }
 
     @Test
     public void testBuilder_MissingEndDate_Failure() throws Exception {
-        try {
-            new KeyPairGeneratorSpec.Builder(getContext())
+        assertThrows(
+                "Should throw IllegalArgumentException when endDate is missing",
+                IllegalArgumentException.class,
+                () -> new KeyPairGeneratorSpec.Builder(getContext())
                     .setAlias(TEST_ALIAS_1)
                     .setSubject(TEST_DN_1)
                     .setSerialNumber(SERIAL_1)
                     .setStartDate(NOW)
-                    .build();
-            fail("Should throw IllegalArgumentException when endDate is missing");
-        } catch (IllegalArgumentException expected) {
-        }
+                    .build());
     }
 
     @Test
     public void testBuilder_EndBeforeStart_Failure() throws Exception {
-        try {
-            new KeyPairGeneratorSpec.Builder(getContext())
+        assertThrows(
+                "Should throw IllegalArgumentException when end is before start",
+                IllegalArgumentException.class,
+                () -> new KeyPairGeneratorSpec.Builder(getContext())
                     .setAlias(TEST_ALIAS_1)
                     .setSubject(TEST_DN_1)
                     .setSerialNumber(SERIAL_1)
                     .setStartDate(NOW_PLUS_10_YEARS)
                     .setEndDate(NOW)
-                    .build();
-            fail("Should throw IllegalArgumentException when end is before start");
-        } catch (IllegalArgumentException expected) {
-        }
+                    .build());
     }
 }

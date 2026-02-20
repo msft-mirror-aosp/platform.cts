@@ -24,6 +24,7 @@ import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -282,33 +283,27 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testInitialize_KeySizeOnly() throws Exception {
-        try {
-            getRsaGenerator().initialize(1024);
-            fail("KeyPairGenerator should not support setting the key size");
-        } catch (IllegalArgumentException success) {
-        }
-
-        try {
-            getEcGenerator().initialize(256);
-            fail("KeyPairGenerator should not support setting the key size");
-        } catch (IllegalArgumentException success) {
-        }
+        assertThrows(
+                "RSA KeyPairGenerator should not support setting the key size",
+                IllegalArgumentException.class,
+                () -> getRsaGenerator().initialize(1024));
+        assertThrows(
+                "EC KeyPairGenerator should not support setting the key size",
+                IllegalArgumentException.class,
+                () -> getEcGenerator().initialize(256));
     }
 
     @Test
     public void testInitialize_KeySizeAndSecureRandomOnly()
             throws Exception {
-        try {
-            getRsaGenerator().initialize(1024, new SecureRandom());
-            fail("KeyPairGenerator should not support setting the key size");
-        } catch (IllegalArgumentException success) {
-        }
-
-        try {
-            getEcGenerator().initialize(1024, new SecureRandom());
-            fail("KeyPairGenerator should not support setting the key size");
-        } catch (IllegalArgumentException success) {
-        }
+        assertThrows(
+                "RSA KeyPairGenerator should not support initialization with a key size",
+                IllegalArgumentException.class,
+                () -> getRsaGenerator().initialize(1024, new SecureRandom()));
+        assertThrows(
+                "EC KeyPairGenerator should not support initialization with a key size",
+                IllegalArgumentException.class,
+                () -> getEcGenerator().initialize(1024, new SecureRandom()));
     }
 
     @Test
@@ -334,10 +329,11 @@ public class KeyPairGeneratorTest {
         for (String algorithm : EXPECTED_ALGORITHMS) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
-                try {
-                    generator.initialize(getWorkingSpec().setBlockModes("weird").build());
-                    fail();
-                } catch (InvalidAlgorithmParameterException expected) {}
+                assertThrows(
+                        InvalidAlgorithmParameterException.class,
+                        () ->
+                                generator.initialize(
+                                        getWorkingSpec().setBlockModes("weird").build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -349,10 +345,11 @@ public class KeyPairGeneratorTest {
         for (String algorithm : EXPECTED_ALGORITHMS) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
-                try {
-                    generator.initialize(getWorkingSpec().setEncryptionPaddings("weird").build());
-                    fail();
-                } catch (InvalidAlgorithmParameterException expected) {}
+                assertThrows(
+                        InvalidAlgorithmParameterException.class,
+                        () ->
+                                generator.initialize(
+                                        getWorkingSpec().setEncryptionPaddings("weird").build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -364,10 +361,8 @@ public class KeyPairGeneratorTest {
         for (String algorithm : EXPECTED_ALGORITHMS) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
-                try {
-                    generator.initialize(getWorkingSpec().setSignaturePaddings("weird").build());
-                    fail();
-                } catch (InvalidAlgorithmParameterException expected) {}
+                assertThrows(InvalidAlgorithmParameterException.class, () -> generator.initialize(
+                            getWorkingSpec().setSignaturePaddings("weird").build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -379,10 +374,9 @@ public class KeyPairGeneratorTest {
         for (String algorithm : EXPECTED_ALGORITHMS) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
-                try {
-                    generator.initialize(getWorkingSpec().setDigests("weird").build());
-                    fail();
-                } catch (InvalidAlgorithmParameterException expected) {}
+                assertThrows(
+                        InvalidAlgorithmParameterException.class,
+                        () -> generator.initialize(getWorkingSpec().setDigests("weird").build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -394,13 +388,14 @@ public class KeyPairGeneratorTest {
         for (String algorithm : EXPECTED_ALGORITHMS) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
-                try {
-                    generator.initialize(getWorkingSpec(
-                            KeyProperties.PURPOSE_ENCRYPT)
-                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                            .build());
-                    fail();
-                } catch (InvalidAlgorithmParameterException expected) {}
+                assertThrows(
+                        InvalidAlgorithmParameterException.class,
+                        () ->
+                                generator.initialize(
+                                        getWorkingSpec(KeyProperties.PURPOSE_ENCRYPT)
+                                                .setEncryptionPaddings(
+                                                        KeyProperties.ENCRYPTION_PADDING_NONE)
+                                                .build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -1630,18 +1625,22 @@ public class KeyPairGeneratorTest {
                 }
             }
             KeyPairGenerator generator = getEcGenerator();
+            final int currentKeySizeBits = keySizeBits;  // Needed to avoid lambda capture issues.
 
-            try {
-                generator.initialize(new KeyGenParameterSpec.Builder(
-                        TEST_ALIAS_1,
-                        KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
-                        .setKeySize(keySizeBits)
-                        .setIsStrongBoxBacked(useStrongbox)
-                        .build());
-                fail("EC KeyPairGenerator initialized with unsupported key size: " + keySizeBits
-                        + " bits");
-            } catch (InvalidAlgorithmParameterException expected) {
-            }
+            assertThrows(
+                    "EC KeyPairGenerator initialized with unsupported key size: "
+                            + currentKeySizeBits
+                            + " bits",
+                    InvalidAlgorithmParameterException.class,
+                    () ->
+                            generator.initialize(
+                                    new KeyGenParameterSpec.Builder(
+                                                    TEST_ALIAS_1,
+                                                    KeyProperties.PURPOSE_SIGN
+                                                            | KeyProperties.PURPOSE_VERIFY)
+                                            .setKeySize(currentKeySizeBits)
+                                            .setIsStrongBoxBacked(useStrongbox)
+                                            .build()));
         }
     }
 
@@ -1801,10 +1800,7 @@ public class KeyPairGeneratorTest {
     private void assertKeyGenInitThrowsInvalidAlgorithmParameterException(
             String algorithm, AlgorithmParameterSpec params) throws Exception {
         KeyPairGenerator generator = getGenerator(algorithm);
-        try {
-            generator.initialize(params);
-            fail();
-        } catch (InvalidAlgorithmParameterException expected) {}
+        assertThrows(InvalidAlgorithmParameterException.class, () -> generator.initialize(params));
     }
 
     private void assertKeyGenUsingECSizeOnlyUsesCorrectCurve(
