@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -50,6 +51,7 @@ struct {
     jmethodID fireTestStarted;
     jmethodID fireTestIgnored;
     jmethodID fireTestFailure;
+    jmethodID fireTestAssumptionFailed;
     jmethodID fireTestFinished;
 
 } gRunNotifier;
@@ -62,7 +64,23 @@ struct {
 struct {
     jclass clazz;
     jmethodID ctor;
+} gAssumptionFailure;
+
+struct {
+    jclass clazz;
+    jmethodID ctor;
 } gFailure;
+
+struct {
+    jclass clazz;
+    jmethodID ctor;
+} gMultipleFailureException;
+
+struct {
+    jclass clazz;
+    jmethodID ctor;
+    jmethodID add;
+} gArrayList;
 
 jobject gEmptyAnnotationsArray;
 
@@ -117,31 +135,51 @@ public:
         mCurrentTestDescription.reset(
                 createTestDescription(mEnv, mClassName, testInfo.test_case_name(), testInfo.name()));
         notify(gRunNotifier.fireTestStarted);
+        mSkipped = false;
     }
 
     virtual void OnTestPartResult(const testing::TestPartResult &testPartResult) override {
-        if (!testPartResult.passed()) {
-            mCurrentTestError << "\n" << testPartResult.file_name() << ":" << testPartResult.line_number()
-                          << "\n" << testPartResult.message() << "\n";
+        if (testPartResult.failed()) {
+            mTestFailures.push_back(testPartResult);
+        } else if (testPartResult.skipped() && !mSkipped) {
+            mSkipped = true;
+            ScopedLocalRef<jstring> jmessage = getTestFailureMessage(testPartResult);
+            ScopedLocalRef<jobject> jthrowable(mEnv, mEnv->NewObject(gAssumptionFailure.clazz,
+                    gAssumptionFailure.ctor, jmessage.get()));
+            ScopedLocalRef<jobject> jfailure(mEnv, mEnv->NewObject(gFailure.clazz,
+                    gFailure.ctor, mCurrentTestDescription.get(), jthrowable.get()));
+            mEnv->CallVoidMethod(mRunNotifier, gRunNotifier.fireTestAssumptionFailed, jfailure.get());
         }
     }
 
     virtual void OnTestEnd(const testing::TestInfo&) override {
-        const std::string error = mCurrentTestError.str();
-
-        if (!error.empty()) {
-            ScopedLocalRef<jstring> jmessage(mEnv, mEnv->NewStringUTF(error.c_str()));
+        if (mTestFailures.size() == 1) {
+            const testing::TestPartResult& testPartResult = mTestFailures[0];
+            ScopedLocalRef<jstring> jmessage = getTestFailureMessage(testPartResult);
             ScopedLocalRef<jobject> jthrowable(mEnv, mEnv->NewObject(gAssertionFailure.clazz,
                     gAssertionFailure.ctor, jmessage.get()));
             ScopedLocalRef<jobject> jfailure(mEnv, mEnv->NewObject(gFailure.clazz,
                     gFailure.ctor, mCurrentTestDescription.get(), jthrowable.get()));
             mEnv->CallVoidMethod(mRunNotifier, gRunNotifier.fireTestFailure, jfailure.get());
+        } else if (mTestFailures.size() > 1) {
+            ScopedLocalRef<jobject> jfailures(mEnv, mEnv->NewObject(gArrayList.clazz, gArrayList.ctor));
+            for (const auto& testPartResult : mTestFailures) {
+                ScopedLocalRef<jstring> jmessage = getTestFailureMessage(testPartResult);
+                ScopedLocalRef<jobject> jthrowable(mEnv, mEnv->NewObject(gAssertionFailure.clazz,
+                        gAssertionFailure.ctor, jmessage.get()));
+                mEnv->CallBooleanMethod(jfailures.get(), gArrayList.add, jthrowable.get());
+            }
+
+            ScopedLocalRef<jobject> jmultipleFailureException(mEnv, mEnv->NewObject(gMultipleFailureException.clazz,
+                    gMultipleFailureException.ctor, jfailures.get()));
+            ScopedLocalRef<jobject> jfailure(mEnv, mEnv->NewObject(gFailure.clazz,
+                    gFailure.ctor, mCurrentTestDescription.get(), jmultipleFailureException.get()));
+            mEnv->CallVoidMethod(mRunNotifier, gRunNotifier.fireTestFailure, jfailure.get());
         }
 
         notify(gRunNotifier.fireTestFinished);
         mCurrentTestDescription.reset();
-        mCurrentTestError.str("");
-        mCurrentTestError.clear();
+        mTestFailures.clear();
     }
 
     void reportDisabledTests(const std::vector<std::string>& mangledNames) {
@@ -161,7 +199,18 @@ private:
     jobject mRunNotifier;
     jstring mClassName;
     ScopedLocalRef<jobject> mCurrentTestDescription;
-    std::ostringstream mCurrentTestError;
+    std::vector<testing::TestPartResult> mTestFailures;
+    bool mSkipped = false;
+
+    ScopedLocalRef<jstring> getTestFailureMessage(const testing::TestPartResult& testPartResult) {
+        std::string message = "";
+        if (testPartResult.file_name()) {
+            message += "\n" + std::string(testPartResult.file_name()) + ":" + std::to_string(testPartResult.line_number()) + "\n";
+        }
+        message += testPartResult.message();
+        message += "\n";
+        return ScopedLocalRef<jstring>(mEnv, mEnv->NewStringUTF(message.c_str()));
+    }
 };
 
 }  // namespace
@@ -192,9 +241,19 @@ Java_com_android_gtestrunner_GtestRunner_nInitialize(JNIEnv *env, jclass, jstrin
     gAssertionFailure.clazz = (jclass) env->NewGlobalRef(env->FindClass("java/lang/AssertionError"));
     gAssertionFailure.ctor = env->GetMethodID(gAssertionFailure.clazz, "<init>", "(Ljava/lang/Object;)V");
 
+    gAssumptionFailure.clazz = (jclass) env->NewGlobalRef(env->FindClass("org/junit/AssumptionViolatedException"));
+    gAssumptionFailure.ctor = env->GetMethodID(gAssumptionFailure.clazz, "<init>", "(Ljava/lang/String;)V");
+
     gFailure.clazz = (jclass) env->NewGlobalRef(env->FindClass("org/junit/runner/notification/Failure"));
     gFailure.ctor = env->GetMethodID(gFailure.clazz, "<init>",
             "(Lorg/junit/runner/Description;Ljava/lang/Throwable;)V");
+
+    gMultipleFailureException.clazz = (jclass) env->NewGlobalRef(env->FindClass("org/junit/runners/model/MultipleFailureException"));
+    gMultipleFailureException.ctor = env->GetMethodID(gMultipleFailureException.clazz, "<init>", "(Ljava/util/List;)V");
+
+    gArrayList.clazz = (jclass) env->NewGlobalRef(env->FindClass("java/util/ArrayList"));
+    gArrayList.ctor = env->GetMethodID(gArrayList.clazz, "<init>", "()V");
+    gArrayList.add = env->GetMethodID(gArrayList.clazz, "add", "(Ljava/lang/Object;)Z");
 
     gRunNotifier.clazz = (jclass) env->NewGlobalRef(
             env->FindClass("org/junit/runner/notification/RunNotifier"));
@@ -205,6 +264,8 @@ Java_com_android_gtestrunner_GtestRunner_nInitialize(JNIEnv *env, jclass, jstrin
     gRunNotifier.fireTestFinished = env->GetMethodID(gRunNotifier.clazz, "fireTestFinished",
             "(Lorg/junit/runner/Description;)V");
     gRunNotifier.fireTestFailure = env->GetMethodID(gRunNotifier.clazz, "fireTestFailure",
+            "(Lorg/junit/runner/notification/Failure;)V");
+    gRunNotifier.fireTestAssumptionFailed = env->GetMethodID(gRunNotifier.clazz, "fireTestAssumptionFailed",
             "(Lorg/junit/runner/notification/Failure;)V");
 
     auto unitTest = ::testing::UnitTest::GetInstance();
