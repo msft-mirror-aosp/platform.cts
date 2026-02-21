@@ -102,7 +102,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @ApiTest(
         apis = ["android.app.contextualsearch.ContextualSearchManager#isContextualSearchAvailable"]
     )
@@ -112,7 +111,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @ApiTest(
         apis = ["android.app.contextualsearch.ContextualSearchManager#isContextualSearchAvailable"]
     )
@@ -122,7 +120,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @ApiTest(
         apis = ["android.app.contextualsearch.ContextualSearchManager#isContextualSearchAvailable"]
     )
@@ -157,7 +154,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @ApiTest(
         apis =
             [
@@ -192,7 +188,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
     @ApiTest(
         apis =
             [
@@ -219,7 +214,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
     @ApiTest(
         apis =
             [
@@ -263,7 +257,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
     @ApiTest(
         apis =
             [
@@ -320,7 +313,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
     @ApiTest(
         apis =
             [
@@ -340,7 +332,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
     @ApiTest(apis = ["android.app.contextualsearch.ContextualSearchManager#startContextualSearch"])
     fun testContextualSearchInvocationForForegroundApp_nullConfig_throwsException() {
         assertThrows(NullPointerException::class.java) {
@@ -350,7 +341,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
     @ApiTest(
         apis =
             [
@@ -670,7 +660,6 @@ class ContextualSearchManagerTest {
     )
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
-    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @ApiTest(
         apis =
             [
@@ -718,7 +707,6 @@ class ContextualSearchManagerTest {
     )
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
-    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @ApiTest(
         apis =
             [
@@ -771,7 +759,6 @@ class ContextualSearchManagerTest {
     )
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
-    @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
     @ApiTest(
         apis =
             [

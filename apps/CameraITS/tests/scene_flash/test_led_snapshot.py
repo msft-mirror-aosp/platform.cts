@@ -14,6 +14,7 @@
 """Verify that the LED snapshot works correctly."""
 
 import logging
+import operator
 import os.path
 
 import camera_properties_utils
@@ -104,15 +105,25 @@ def _is_color_mean_valid(means, color_channel, fmt_name, width, height):
   else:
     color_mean = means[2]
 
-  if not _FLASH_MEAN_MIN <= color_mean <= _FLASH_MEAN_MAX:
-    logging.debug('Flash image mean %s not'
-                  ' within limits for channel %s.'
-                  ' Format: %s,'
-                  ' Size: %sx%s', color_mean, color_channel,
-                  fmt_name, width, height)
-    return False
-  else:
-    return True
+  marginal_messages = []
+  # PASS if _FLASH_MEAN_MIN <= color_mean <= _FLASH_MEAN_MAX
+  checks = [
+      (color_mean, _FLASH_MEAN_MIN, operator.ge, 'MEAN_MIN'),
+      (color_mean, _FLASH_MEAN_MAX, operator.le, 'MEAN_MAX')
+  ]
+  for mean, threshold, operation, label in checks:
+    status, msg = its_session_utils.check_threshold_with_marginal_pass(
+        mean, threshold, operation, its_session_utils.MARGINAL_PASS_THRESHOLD,
+        f'{color_channel} {label}')
+    if status == its_session_utils.TestPassingStatus.FAIL:
+      logging.debug('%s failure: %s. Format: %s, Size: %sx%s',
+                    color_channel, msg, fmt_name, width, height)
+      return False, []  # return for FAIL case
+
+    if status == its_session_utils.TestPassingStatus.MARGINAL:
+      marginal_messages.append(msg)
+
+  return True, marginal_messages
 
 
 class LedSnapshotTest(its_base_test.ItsBaseTest):
@@ -141,7 +152,7 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
     super().setup_class()
     # establish connection with lighting controller
     self.use_gen2 = (self.lighting_cntl ==
-                gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+                     gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
     self.lighting_control_port = lighting_control_utils.lighting_control(
         self.lighting_cntl, self.lighting_ch, self.use_gen2)
 
@@ -166,6 +177,7 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
           camera_properties_utils.flash(props) and
           first_api_level >= its_session_utils.ANDROID14_API_LEVEL)
       failure_messages = []
+      marginal_messages = []
 
       for fmt_name in _FORMAT_NAMES:
         for size in _IMG_SIZES:
@@ -254,14 +266,18 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
 
             # Check whether the image means for each color channel is
             # within the limits or not.
-            valid_color = True
             for color in _COLOR_CHANNELS:
-              valid_color = _is_color_mean_valid(flash_means, color,
-                                                 fmt_name, width, height)
-              if not valid_color:
+              is_valid, warnings = _is_color_mean_valid(
+                  flash_means, color, fmt_name, width, height)
+              # FAIL case
+              if not is_valid:
                 failure_messages.append(
                     f'Flash image mean not within limits for channel {color}.'
-                    f' Format: {fmt_name},Size: {width}x{height}')
+                    f' Format: {fmt_name}, Size: {width}x{height}')
+              # PASS* case
+              if is_valid and warnings:
+                for w in warnings:
+                  marginal_messages.append(f'{fmt_name} {width}x{height}: {w}')
 
           if not flash_fired:
             raise AssertionError(
@@ -273,6 +289,10 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
               lighting_control_utils.LIGHT_ON, self.use_gen2)
 
       # assert correct behavior for all formats
+      if marginal_messages:
+        logging.warning(its_session_utils.MARGINAL_PASSING_MESSAGE)
+        for msg in marginal_messages:
+          logging.warning(msg)
       if failure_messages:
         raise AssertionError('\n'.join(failure_messages))
 

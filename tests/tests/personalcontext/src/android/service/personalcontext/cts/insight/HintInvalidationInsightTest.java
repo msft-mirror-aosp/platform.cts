@@ -23,8 +23,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.BundleHint;
-import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.service.personalcontext.hint.HintInvalidationHint;
+import android.service.personalcontext.hint.PublishedContextHint;
 import android.service.personalcontext.insight.ContextInsight;
 import android.service.personalcontext.insight.HintInvalidationInsight;
 
@@ -52,7 +52,7 @@ public class HintInvalidationInsightTest {
     private static SecretKeySpec generateSignedHintKey() {
         final byte[] key = new byte[64];
         new Random().nextBytes(key);
-        return new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM);
+        return new SecretKeySpec(key, PublishedContextHint.HMAC_ALGORITHM);
     }
 
     @ApiTest(
@@ -66,13 +66,13 @@ public class HintInvalidationInsightTest {
         final HintInvalidationHint invalidationHint =
                 new HintInvalidationHint.Builder(originalHint).build();
 
-        final ContextHintWithSignature signedOriginalHint =
-                new ContextHintWithSignature.Builder(originalHint, generateSignedHintKey())
+        final PublishedContextHint signedOriginalHint =
+                new PublishedContextHint.Builder(originalHint, generateSignedHintKey())
                         .setOriginatingPackage("a")
                         .build();
 
-        final ContextHintWithSignature signedInvalidationHint =
-                new ContextHintWithSignature.Builder(invalidationHint, generateSignedHintKey())
+        final PublishedContextHint signedInvalidationHint =
+                new PublishedContextHint.Builder(invalidationHint, generateSignedHintKey())
                         .setOriginatingPackage("a")
                         .build();
 
@@ -98,13 +98,13 @@ public class HintInvalidationInsightTest {
         final HintInvalidationHint invalidationHint =
                 new HintInvalidationHint.Builder(originalHint).build();
 
-        final ContextHintWithSignature signedOtherHint =
-                new ContextHintWithSignature.Builder(otherHint, generateSignedHintKey())
+        final PublishedContextHint signedOtherHint =
+                new PublishedContextHint.Builder(otherHint, generateSignedHintKey())
                         .setOriginatingPackage("a")
                         .build();
 
-        final ContextHintWithSignature signedInvalidationHint =
-                new ContextHintWithSignature.Builder(invalidationHint, generateSignedHintKey())
+        final PublishedContextHint signedInvalidationHint =
+                new PublishedContextHint.Builder(invalidationHint, generateSignedHintKey())
                         .setOriginatingPackage("a")
                         .build();
 
@@ -128,13 +128,13 @@ public class HintInvalidationInsightTest {
         final HintInvalidationHint invalidationHint =
                 new HintInvalidationHint.Builder(originalHint).build();
 
-        final ContextHintWithSignature signedOriginalHint =
-                new ContextHintWithSignature.Builder(originalHint, generateSignedHintKey())
+        final PublishedContextHint signedOriginalHint =
+                new PublishedContextHint.Builder(originalHint, generateSignedHintKey())
                         .setOriginatingPackage("a")
                         .build();
 
-        final ContextHintWithSignature signedInvalidationHint =
-                new ContextHintWithSignature.Builder(invalidationHint, generateSignedHintKey())
+        final PublishedContextHint signedInvalidationHint =
+                new PublishedContextHint.Builder(invalidationHint, generateSignedHintKey())
                         .setOriginatingPackage("b")
                         .build();
 

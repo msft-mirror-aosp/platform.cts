@@ -79,8 +79,6 @@ test_module_config {
     exclude_filters: [
         "android.systemui.cts.WindowInsetsBehaviorTests#tappableElements_tapSamplePoints_notExcludeViewRects_withoutAnyCancel",
         "android.systemui.cts.WindowInsetsBehaviorTests#swipeOutsideLimit_immersiveSticky_noEventCanceled",
-        // TODO(b/238861307)
-        "android.systemui.cts.MediaOutputDialogTest#mediaOutputDialog_correctDialog",
         // TODO(b/186201470)
         "android.systemui.cts.LightBarTests#testLightBarIsNotAllowed_fitStatusBar",
         "android.systemui.cts.WindowInsetsBehaviorTests#tappableElements_tapSamplePoints_excludeViewRects_withoutAnyCancel",

@@ -39,6 +39,7 @@ android_test {
         "android.companion.virtualdevice.flags-aconfig-java",
         "display_flags_lib",
         "surfaceflinger_flags_java_lib",
+        "SurfaceFlingerProperties",
         "junit-params",
         "desktop-test-lib",
     ],

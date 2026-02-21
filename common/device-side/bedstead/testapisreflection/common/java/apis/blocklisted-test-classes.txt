@@ -86,8 +86,8 @@ android.service.autofill.CompositeUserData
 android.service.autofill.CustomDescription
 android.service.autofill.InternalTransformation
 android.service.autofill.UserData
-android.service.personalcontext.hint.ContextHintWithSignature
-android.service.personalcontext.hint.ContextHintWithSignatureWrapper
+android.service.personalcontext.hint.PublishedContextHint
+android.service.personalcontext.hint.PublishedContextHintWrapper
 android.service.personalcontext.hint.HintFilter
 android.service.voice.AlwaysOnHotwordDetector.EventPayload.Builder
 android.telephony.TelephonyManager

@@ -61,6 +61,7 @@ import android.widget.EditText;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
@@ -68,6 +69,7 @@ import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -84,6 +86,10 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualDeviceImeTest {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final long TIMEOUT_MILLIS =
             TimeUnit.SECONDS.toMillis(10) * BuildUtils.HW_TIMEOUT_MULTIPLIER;

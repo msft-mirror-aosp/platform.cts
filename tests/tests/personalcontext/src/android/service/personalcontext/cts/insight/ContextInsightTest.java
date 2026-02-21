@@ -26,7 +26,7 @@ import android.service.personalcontext.Flags;
 import android.service.personalcontext.PersonalContextManager;
 import android.service.personalcontext.Token;
 import android.service.personalcontext.hint.BundleHint;
-import android.service.personalcontext.hint.ContextHintWithSignature;
+import android.service.personalcontext.hint.PublishedContextHint;
 import android.service.personalcontext.insight.BundleInsight;
 import android.service.personalcontext.insight.ContextInsight;
 
@@ -57,7 +57,7 @@ public class ContextInsightTest {
     public static SecretKeySpec generateSignedHintKey() {
         byte[] key = new byte[64];
         new Random().nextBytes(key);
-        return new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM);
+        return new SecretKeySpec(key, PublishedContextHint.HMAC_ALGORITHM);
     }
 
     private PersonalContextManager mPersonalContextManager;
@@ -86,8 +86,8 @@ public class ContextInsightTest {
         final String dataKey = "test-key";
         final BundleHint hint = new BundleHint.Builder().build();
         hint.getDataBundle().putInt(dataKey, inputValue);
-        final ContextHintWithSignature signedHint =
-                new ContextHintWithSignature.Builder(hint, generateSignedHintKey()).build();
+        final PublishedContextHint signedHint =
+                new PublishedContextHint.Builder(hint, generateSignedHintKey()).build();
 
         final BundleInsight insight =
                 new BundleInsight.Builder()

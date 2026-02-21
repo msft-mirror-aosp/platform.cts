@@ -1840,6 +1840,7 @@
 
     <!-- Strings for the Camera ITS test activity -->
     <string name="camera_its_test">Camera ITS Test</string>
+    <string name="camera_its_feature_combination_test">Camera ITS Feature Combination Test</string>
     <string name="camera_its_test_info">
         1. Connect your Android device to a computer with adb installed via a USB cable.
         \n\n2. Setup the CameraITS test environment by following the setup instructions in the

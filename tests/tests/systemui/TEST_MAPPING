@@ -20,10 +20,6 @@
           "exclude-filter": "android.systemui.cts.WindowInsetsBehaviorTests#tappableElements_tapSamplePoints_notExcludeViewRects_withoutAnyCancel"
         },
         {
-          // TODO(b/238861307)
-          "exclude-filter": "android.systemui.cts.MediaOutputDialogTest#mediaOutputDialog_correctDialog"
-        },
-        {
           // TODO(b/186201470)
           "exclude-filter": "android.systemui.cts.LightBarTests#testLightBarIsNotAllowed_fitStatusBar"
         }

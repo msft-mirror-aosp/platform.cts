@@ -18,6 +18,8 @@ package android.service.personalcontext.cts.insight;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -25,12 +27,13 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
-import android.service.personalcontext.hint.ContextHintWithSignature;
+import android.service.personalcontext.hint.PublishedContextHint;
 import android.service.personalcontext.insight.ActionableInsight;
 import android.service.personalcontext.insight.InsightActionDetails;
 import android.service.personalcontext.insight.InsightDisplayDetails;
 import android.service.personalcontext.insight.interaction.ReturnHintReport;
 
+import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -57,7 +60,7 @@ public class ActionableInsightTest {
     public static SecretKeySpec generateSignedHintKey() {
         byte[] key = new byte[64];
         new Random().nextBytes(key);
-        return new SecretKeySpec(key, ContextHintWithSignature.HMAC_ALGORITHM);
+        return new SecretKeySpec(key, PublishedContextHint.HMAC_ALGORITHM);
     }
 
     // Tests bundling and unbundling fields on the base ContextInsight.
@@ -73,14 +76,22 @@ public class ActionableInsightTest {
     public void testReturnHintReporter() throws GeneralSecurityException {
         final RenderToken renderToken = new RenderToken(UUID.randomUUID(), null);
 
-        final ContextHintWithSignature originHint =
-                new ContextHintWithSignature.Builder(
+        final PublishedContextHint originHint =
+                new PublishedContextHint.Builder(
                                 new BundleHint.Builder().build(), generateSignedHintKey())
                         .addRenderTokens(List.of(renderToken))
                         .build();
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final ActionableInsight insight =
                 new ActionableInsight.Builder(
-                                new InsightActionDetails.Builder().setIntent(new Intent()).build(),
+                                new InsightActionDetails.Builder()
+                                        .setPendingIntent(
+                                                PendingIntent.getActivity(
+                                                        /* context= */ context,
+                                                        /* requestCode= */ 0,
+                                                        /* intent= */ new Intent("test"),
+                                                        /* flags= */ PendingIntent.FLAG_IMMUTABLE))
+                                        .build(),
                                 new InsightDisplayDetails.Builder("test").build())
                         .addOriginHint(originHint)
                         .build();

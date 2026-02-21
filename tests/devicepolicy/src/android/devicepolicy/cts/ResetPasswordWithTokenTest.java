@@ -25,6 +25,7 @@ import static android.app.admin.DevicePolicyManager.PASSWORD_QUALITY_NUMERIC;
 import static android.app.admin.DevicePolicyManager.PASSWORD_QUALITY_SOMETHING;
 import static android.app.admin.DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED;
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
@@ -62,6 +63,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
 @RequireFeature(FEATURE_SECURE_LOCK_SCREEN)
+@RequireFeature(FEATURE_DEVICE_ADMIN)
 public final class ResetPasswordWithTokenTest {
 
     private static final String NOT_COMPLEX_PIN = "1234";

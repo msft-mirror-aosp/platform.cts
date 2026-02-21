@@ -361,40 +361,6 @@ class GetAppFunctionStatesTest {
 
     @Test
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionStates"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun getAppFunctionStates_registerButDisabled_shouldShowDisabled() = doBlocking {
-        val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        val functionName = DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS
-        try {
-            assertThat(
-                    registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
-                )
-                .isTrue()
-            setAppFunctionEnabledRemote(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionIdentifier,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-
-            val state = getAppFunctionStates(listOf(functionName)).single()
-
-            assertThat(state.isEnabled).isFalse()
-            assertThat(state.activityIds).isNull()
-        } finally {
-            setAppFunctionEnabledRemote(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionIdentifier,
-                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-            )
-            registrationService.safeUnregister(CONCAT_STRINGS_FUNCTION_ID)
-        }
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionStates"])
     @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner

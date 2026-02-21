@@ -64,8 +64,8 @@ public final class FrameworkMethodSorter {
      */
     public static List<FrameworkMethod> sort(List<FrameworkMethod> modifiedTests) {
         var defaultPriority = Integer.MIN_VALUE;
-        TreeMap<Integer, LinkedList<FrameworkMethod>> testRunPrioritization = new TreeMap<>(
-                Map.of(defaultPriority, new LinkedList<>()));
+        TreeMap<Integer, List<FrameworkMethod>> prioritizedTestRuns = new TreeMap<>(
+                Map.of(defaultPriority, new ArrayList<>()));
 
         modifiedTests.forEach(
                 singleTestRun -> {
@@ -79,22 +79,13 @@ public final class FrameworkMethodSorter {
                                             "Value %s restricted for use with TestOrder annotation",
                                             defaultPriority));
                         }
-                        testRunPrioritization
-                                .computeIfAbsent(testRunPriority, k -> new LinkedList<>())
+                        prioritizedTestRuns
+                                .computeIfAbsent(testRunPriority, k -> new ArrayList<>())
                                 .add(singleTestRun);
                     } else {
-                        testRunPrioritization.get(defaultPriority).add(singleTestRun);
+                        prioritizedTestRuns.get(defaultPriority).add(singleTestRun);
                     }
                 });
-        TreeMap<Integer, LinkedList<FrameworkMethod>> prioritizedTestRuns =
-                testRunPrioritization.entrySet().stream()
-                        .sorted(Map.Entry.comparingByKey())
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue,
-                                (u, v) -> u,
-                                TreeMap::new
-                        ));
 
         prioritizedTestRuns.forEach(
                 (key, value) -> sortMethodsByBedsteadAnnotations(value));
@@ -127,24 +118,6 @@ public final class FrameworkMethodSorter {
             return 0;
         });
 
-        List<Annotation> bedsteadAnnotationsSortedByMostCommon =
-                bedsteadAnnotationsSortedByMostCommon(modifiedTests);
-        var unused = comparator.thenComparing((o1, o2) -> {
-            for (Annotation annotation : bedsteadAnnotationsSortedByMostCommon) {
-                boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
-                boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
-
-                if (o1HasAnnotation && !o2HasAnnotation) {
-                    // o1 goes to the end
-                    return 1;
-                } else if (o2HasAnnotation && !o1HasAnnotation) {
-                    return -1;
-                }
-            }
-
-            return 0;
-        });
-
         modifiedTests.sort(comparator);
     }
 
@@ -155,28 +128,6 @@ public final class FrameworkMethodSorter {
         annotations.sort(Comparator.comparingInt(annotationCosts::get));
 
         return annotations;
-    }
-
-    private static List<Annotation> bedsteadAnnotationsSortedByMostCommon(List<FrameworkMethod> methods) {
-        Map<Annotation, Integer> annotationCounts = countAnnotations(methods);
-        List<Annotation> annotations = new ArrayList<>(annotationCounts.keySet());
-        annotations.sort(Comparator.comparingInt(annotationCounts::get));
-        Collections.reverse(annotations);
-
-        return annotations;
-    }
-
-    private static Map<Annotation, Integer> countAnnotations(List<FrameworkMethod> methods) {
-        Map<Annotation, Integer> annotationCounts = new HashMap<>();
-
-        for (FrameworkMethod method : methods) {
-            for (Annotation annotation : method.getAnnotations()) {
-                annotationCounts.put(
-                        annotation, annotationCounts.getOrDefault(annotation, 0) + 1);
-            }
-        }
-
-        return annotationCounts;
     }
 
     private static Map<Annotation, Integer> mapAnnotationsCost(List<FrameworkMethod> methods) {
