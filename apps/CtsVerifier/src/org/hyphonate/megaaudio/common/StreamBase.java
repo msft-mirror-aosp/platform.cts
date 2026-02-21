@@ -382,6 +382,11 @@ public abstract class StreamBase {
     public abstract boolean isMMap();
 
     /**
+     * @return The capacity of the buffer associated with the stream in frames.
+     */
+    public abstract int getBufferCapacityInFrames();
+
+    /**
      * @return The last error callback result (these must match Oboe). See Oboe constants
      */
     public abstract int getLastErrorCallbackResult();

@@ -5901,6 +5901,21 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_MMAP">MMAP:"</string>
     <string name="audio_datapaths_MMAP_exclusive">MMAP Exclusive:"</string>
 
+    <!-- MMAP PCM Offload Test -->
+    <string name="audio_mmap_offload_test">Audio MMAP PCM Offload Test</string>
+    <string name="audio_mmap_offload_info">This test verifies CDD requirement 5.5.4/C-1-1,C-1-2 regarding MMAP PCM offload support.
+        \nThe test validate MMAP PCM offload capabilities via AAudio API on speaker, USB and wired headset. Run the test one by one.
+        \nThe test will try to open the MMAP PCM offload stream in PCM 16bit, 44.1kHz and 48kHz for stereo and mono.
+        \nIf the test MMAP PCM offload stream is opened successfully, the test will validate the buffer capacity.
+        \nFollow the prompt to connect peripherals if necessary and click the \"Start\" button to run the test.
+        \nWhen the test is passed, the pass button will be enabled.
+    </string>
+    <string name="audio_mmap_offload_skip_not_supported">Device does not support mmap PCM offload, skip testing</string>
+    <string name="audio_mmap_offload_start_test">Press \"Start\" button to start the test</string>
+    <string name="audio_mmap_offload_running_test">Testing %1$s...</string>
+    <string name="audio_mmap_offload_connect_peripherals">Please plug in a %1$s for testing...</string>
+    <string name="audio_mmap_offload_fail_capacity">Stream is MMAP but buffer capacity (%1$d) is less than 5 seconds (%2$d). Fail.</string>
+
     <string name="audio_datapaths_speakermic_test">Audio Data Paths Speaker/Mic Test</string>
     <string name="audio_datapaths_speakermic_info">This test verifies basic functionality over the internal speakers and microphone.
         \n\nTest Setup:

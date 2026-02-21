@@ -194,6 +194,11 @@ public class OboeRecorder extends Recorder {
         return isMMapN(mNativeRecorder);
     }
 
+    @Override
+    public int getBufferCapacityInFrames() {
+        return getBufferCapacityN(mNativeRecorder);
+    }
+
     /**
      * @return See StreamState constants
      */
@@ -222,6 +227,8 @@ public class OboeRecorder extends Recorder {
     private native int getChannelCountN(long nativeRecorder);
 
     private native boolean isMMapN(long nativeRecorder);
+
+    private native int getBufferCapacityN(long nativeRecorder);
 
     private native int buildStreamN(long nativeRecorder, int channelCount, int sampleRate,
                                     int performanceMode, int sharingMode, int routeDeviceId,

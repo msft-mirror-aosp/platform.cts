@@ -58,6 +58,7 @@ public class OboePlayer extends Player {
         mNumExchangeFrames = builder.getNumExchangeFrames();
         mPerformanceMode = builder.getPerformanceMode();
         mSharingMode = builder.getSharingMode();
+        int encoding = builder.getEncoding();
         int routeDeviceId = builder.getRouteDeviceId();
         if (LOG) {
             Log.d(TAG, "build()");
@@ -68,11 +69,18 @@ public class OboePlayer extends Player {
             Log.d(TAG, "  perf mode: " + mPerformanceMode);
             Log.d(TAG, "  route device: " + routeDeviceId);
             Log.d(TAG, "  sharing mode: " + mSharingMode);
+            Log.d(TAG, "  encoding: " + encoding);
         }
-        return trackBuild(buildStreamN(
-                mNativePlayer, mChannelCount, mChannelMask, mSampleRate,
-                mPerformanceMode, mSharingMode,
-                routeDeviceId));
+        return trackBuild(
+                buildStreamN(
+                        mNativePlayer,
+                        mChannelCount,
+                        mChannelMask,
+                        mSampleRate,
+                        mPerformanceMode,
+                        mSharingMode,
+                        encoding,
+                        routeDeviceId));
     }
 
     @Override
@@ -149,6 +157,11 @@ public class OboePlayer extends Player {
         return isMMapN(mNativePlayer);
     }
 
+    @Override
+    public int getBufferCapacityInFrames() {
+        return getBufferCapacityN(mNativePlayer);
+    }
+
     /**
      * Gets a timestamp from the audio stream
      *
@@ -169,9 +182,15 @@ public class OboePlayer extends Player {
 
     private native long allocNativePlayer(long nativeSource, int playerSubtype);
 
-    private native int buildStreamN(long nativePlayer, int channelCount, int channelMask,
-                                    int sampleRate, int performanceMode, int sharingMode,
-                                    int routeDeviceId);
+    private native int buildStreamN(
+            long nativePlayer,
+            int channelCount,
+            int channelMask,
+            int sampleRate,
+            int performanceMode,
+            int sharingMode,
+            int encoding,
+            int routeDeviceId);
 
     private native int openStreamN(long nativePlayer);
 
@@ -184,6 +203,8 @@ public class OboePlayer extends Player {
     private native int teardownStreamN(long nativePlayer);
 
     private native int getBufferFrameCountN(long mNativePlayer);
+
+    private native int getBufferCapacityN(long nativePlayer);
 
     private native int getRoutedDeviceIdN(long nativePlayer);
 

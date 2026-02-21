@@ -63,6 +63,7 @@ public class JavaRecorder extends Recorder {
         mSharingMode = builder.getSharingMode();
         mPerformanceMode = builder.getPerformanceMode();
         mInputPreset = ((RecorderBuilder) builder).getInputPreset();
+        int encoding = builder.getEncodingForJava();
 
         if (LOG) {
             Log.i(TAG, "build()");
@@ -72,6 +73,7 @@ public class JavaRecorder extends Recorder {
             Log.i(TAG, "  perf mode: " + mPerformanceMode);
             Log.i(TAG, "  route device: " + builder.getRouteDeviceId());
             Log.i(TAG, "  preset: " + mInputPreset);
+            Log.i(TAG, "  encoding: " + encoding);
         }
 
         try {
@@ -81,7 +83,8 @@ public class JavaRecorder extends Recorder {
             Log.i(TAG, "  (in frames)" + (bufferSizeInBytes / 4 / mChannelCount));
 
             AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
-            formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+            formatBuilder
+                    .setEncoding(encoding)
                     .setSampleRate(mSampleRate)
                     .setChannelIndexMask(StreamBase.channelCountToIndexMask(mChannelCount));
 
@@ -203,6 +206,11 @@ public class JavaRecorder extends Recorder {
     public boolean isMMap() {
         // Java Streams are never MMAP
         return false;
+    }
+
+    @Override
+    public int getBufferCapacityInFrames() {
+        return mAudioRecord != null ? mAudioRecord.getBufferSizeInFrames() : -1;
     }
 
     // JavaRecorder-specific extension
