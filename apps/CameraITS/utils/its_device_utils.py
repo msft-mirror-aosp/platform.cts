@@ -16,12 +16,19 @@
 import logging
 import os
 import subprocess
+import time
+
+from snippet_uiautomator import uiautomator
+
 
 ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsDefaultTestActivity'
 ITS_FEATURE_COMBINATION_ACTIVITY = \
     'com.android.cts.verifier/.camera.its.FeatureCombinationTestActivity'
 CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 SYSTEM_USER = '0'
+WAIT_TIME_SEC = 2
+CAMERA_ITS_TEST_TEXT = 'Camera ITS Test'
+NAVIGATE_UP_DESCRIPTION = 'Navigate up'
 
 
 def run(cmd):
@@ -105,6 +112,43 @@ def get_current_user(device_id):
       device_id, adb_command).stdout.decode('utf-8').strip()
   logging.debug('Current user: %s', output)
   return output
+
+
+def click_on_app_icon(dut, log_path):
+  """Clicks on the Camera ITS app icon.
+
+    In order to click on the app icon, we need to find the app in the scrollable
+    menu and then click on it.
+
+    Args:
+      dut: android_device object.
+      log_path: Path to save screenshot if setup fails.
+  """
+  dut.services.register(
+        uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
+  )
+  dut.adb.shell(['input', 'keyevent', 'KEYCODE_POWER'])
+  dut.adb.shell(['input', 'keyevent', 'KEYCODE_WAKEUP'])
+  # Dismiss keyguard
+  dut.adb.shell(['wm', 'dismiss-keyguard'])
+  dut.adb.shell(
+      'am start -n com.android.cts.verifier/.CtsVerifierActivity'
+  )
+  time.sleep(WAIT_TIME_SEC)
+  if dut.ui(text=CAMERA_ITS_TEST_TEXT).wait.exists(
+      WAIT_TIME_SEC
+  ) and dut.ui(description=NAVIGATE_UP_DESCRIPTION).wait.exists(WAIT_TIME_SEC):
+    logging.debug('Pressing back button to return to Camera ITS Test page')
+    dut.ui(description=NAVIGATE_UP_DESCRIPTION).click()
+  scrollable_menu = dut.ui(scrollable=True)
+  if scrollable_menu.wait.exists(WAIT_TIME_SEC):
+    logging.debug('Scrolling down to find CameraITS')
+    found = scrollable_menu.scroll.down(text=CAMERA_ITS_TEST_TEXT)
+    if not found:
+      dut.take_screenshot(log_path, prefix='failed_to_find_CameraITS')
+    else:
+      logging.debug('Found CameraITS')
+      dut.ui(text=CAMERA_ITS_TEST_TEXT).click()
 
 
 def pull_file_from_content_provider(

@@ -191,6 +191,11 @@ public class BaseAppVerifier {
                             }
 
                             @Override
+                            public Bundle getLastAddedCallExtrasAtStart() {
+                                return CujInCallService.getLastAddedCallExtrasAtStart();
+                            }
+
+                            @Override
                             public int getCurrentCallCount() {
                                 return CujInCallService.getCurrentCallCount();
                             }
@@ -520,6 +525,18 @@ public class BaseAppVerifier {
 
     public void verifyCallIsInState(String id, int state) throws Exception {
         mBaseAppVerifierImpl.verifyCallIsInState(id, state);
+    }
+
+    /**
+     * For the last added call in the `CujInCallService`, returns the {@link
+     * Call.Details#getExtras()} that the ICS saw when {@link
+     * android.telecom.InCallService#onCallAdded(Call)} was called. This is important for verifying
+     * that the BluetoothICS gets the correct DND status at the start of a call
+     *
+     * @return The extras of the last added call when the call is first added.
+     */
+    public Bundle getLastAddedCallExtrasAtStart() {
+        return mBaseAppVerifierImpl.getLastAddedCallExtrasAtStart();
     }
 
     public void verifyCallExtraPresent(String id, String extraToVerify, boolean expected)

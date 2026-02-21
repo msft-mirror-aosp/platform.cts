@@ -49,6 +49,13 @@ sealed interface Action : Parcelable {
     }
 
     @Parcelize
+    data object ActivityReady : Action {
+        override fun toString(): String {
+            return "ActivityReady"
+        }
+    }
+
+    @Parcelize
     data object Destroy : Action {
         override fun toString(): String {
             return "Destroy"

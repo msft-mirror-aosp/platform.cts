@@ -60,7 +60,14 @@ DataCallbackResult OboePlayer::onAudioReady(AudioStream *oboeStream, void *audio
     }
 
     // Pull the data here!
-    int numFramesRead = mAudioSource->pull((float*)audioData, numFrames, mNumExchangeChannels);
+    int numFramesRead = 0;
+    if (oboeStream->getFormat() == oboe::AudioFormat::Float) {
+        numFramesRead = mAudioSource->pull((float*)audioData, numFrames, mNumExchangeChannels);
+    } else if (oboeStream->getFormat() == oboe::AudioFormat::I16) {
+        // TODO: b/484414955, support different format
+        memset(audioData, 0, numFrames * sizeof(int16_t) * mNumExchangeChannels);
+        numFramesRead = numFrames;
+    }
     // may need to handle 0-filling if numFramesRead < numFrames
 
     return numFramesRead != 0 ? DataCallbackResult::Continue : DataCallbackResult::Stop;
@@ -72,9 +79,9 @@ void OboePlayer::onErrorAfterClose(AudioStream *oboeStream, oboe::Result error) 
 void OboePlayer::onErrorBeforeClose(AudioStream *, oboe::Result error) {
 }
 
-StreamBase::Result OboePlayer::buildStream(int32_t channelCount, int32_t channelMask,
-                    int32_t sampleRate, int32_t performanceMode, int32_t sharingMode,
-                    int32_t routeDeviceId) {
+StreamBase::Result OboePlayer::buildStream(
+        int32_t channelCount, int32_t channelMask, int32_t sampleRate, int32_t encoding,
+        int32_t performanceMode, int32_t sharingMode, int32_t routeDeviceId) {
 
     if (LOG) {
         __android_log_print(ANDROID_LOG_DEBUG, TAG, "%s()", __FUNCTION__);
@@ -116,6 +123,8 @@ StreamBase::Result OboePlayer::buildStream(int32_t channelCount, int32_t channel
             mBuilder.setAudioApi(AudioApi::OpenSLES);
             break;
         }
+
+        mBuilder.setFormat((AudioFormat) encoding);
 
         mBuilder.setPerformanceMode((PerformanceMode) performanceMode);
         mBuilder.setSharingMode((SharingMode) sharingMode);
@@ -209,11 +218,11 @@ Java_org_hyphonate_megaaudio_player_OboePlayer_allocNativePlayer(
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_buildStreamN(
         JNIEnv *env, jobject thiz, jlong native_player,
         jint channel_count, jint channel_mask, jint sample_rate, jint performanceMode,
-        jint sharingMode, jint routeDeviceId) {
+        jint sharingMode, jint encoding, jint routeDeviceId) {
 
     OboePlayer* player = (OboePlayer*)native_player;
-    return player->buildStream(channel_count, channel_mask, sample_rate, performanceMode,
-                                sharingMode, routeDeviceId);
+    return player->buildStream(channel_count, channel_mask, sample_rate, encoding, performanceMode,
+                               sharingMode, routeDeviceId);
 }
 
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_openStreamN(
@@ -254,6 +263,12 @@ JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_player_OboePlayer_getBufferFrameCountN(JNIEnv *env, jobject thiz,
             jlong native_player) {
     return ((OboePlayer*)(native_player))->getNumBufferFrames();
+}
+
+JNIEXPORT jint JNICALL
+Java_org_hyphonate_megaaudio_player_OboePlayer_getBufferCapacityN(JNIEnv *env, jobject thiz,
+            jlong native_player) {
+    return ((OboePlayer*)(native_player))->getBufferCapacityInFrames();
 }
 
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_player_OboePlayer_getRoutedDeviceIdN(

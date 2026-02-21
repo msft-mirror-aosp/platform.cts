@@ -27,6 +27,7 @@ android_test {
         "androidx.test.rules",
         "TelecomTestAppUtilsLib",
         "telecom_flags_core_java_lib",
+        "telecom_module_bugfix_flags-java",
         "telecom_module_flags-export-java",
         "telephony_flags_core_java_lib",
         "flag-junit",

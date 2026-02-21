@@ -22,6 +22,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.EventLogs
 import com.android.eventlib.truth.EventLogsSubject.assertThat
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,6 +55,35 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
             setSupervisionEnabled(false)
             assertThat(events.supervisionDisabled()).eventOccurred()
             assertThat(events.serviceUnbound()).eventOccurred()
+        }
+    }
+
+    @Test
+    @ApiTest(
+        apis =
+            [
+                "android.app.supervision.SupervisionAppService#onSupervisionEnabled",
+                "android.app.supervision.SupervisionAppService#onSupervisionDisabled",
+            ]
+    )
+    fun testSupervisionAppService_witMultipleSupervisionApps() {
+        withSupervisionApps(count = 2) { apps ->
+
+            setSupervisionEnabled(true)
+            runBlocking {
+                apps.forEachParallel {
+                    assertThat(it.events().serviceBound()).eventOccurred()
+                    assertThat(it.events().supervisionEnabled()).eventOccurred()
+                }
+            }
+
+            setSupervisionEnabled(false)
+            runBlocking {
+                apps.forEachParallel {
+                    assertThat(it.events().supervisionDisabled()).eventOccurred()
+                    assertThat(it.events().serviceUnbound()).eventOccurred()
+                }
+            }
         }
     }
 }

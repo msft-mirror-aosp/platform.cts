@@ -1761,6 +1761,8 @@ public class SatelliteManagerTestBase {
                 tm -> tm.requestRadioPowerOffForReason(TelephonyManager.RADIO_POWER_REASON_USER),
                 android.Manifest.permission.MODIFY_PHONE_STATE);
         callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                sTelephonyManager, tm -> tm.unregisterTelephonyCallback(callback));
     }
 
     protected static void turnRadioOn() {
@@ -1772,6 +1774,8 @@ public class SatelliteManagerTestBase {
                 tm -> tm.clearRadioPowerOffForReason(TelephonyManager.RADIO_POWER_REASON_USER),
                 android.Manifest.permission.MODIFY_PHONE_STATE);
         callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                sTelephonyManager, tm -> tm.unregisterTelephonyCallback(callback));
     }
 
     protected class UwbAdapterStateCallback implements UwbManager.AdapterStateCallback {
@@ -2807,6 +2811,29 @@ public class SatelliteManagerTestBase {
         fail("NTN only subscription is not available for subId=" + subId);
     }
 
+    protected static void waitForNonNtnOnlySubscriptionAvailable(int subId) {
+        int i = 0;
+        while (i < 10) {
+            List<SubscriptionInfo> subscriptionInfoList =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            sSubscriptionManager,
+                            SubscriptionManager::getAvailableSubscriptionInfoList);
+            for (SubscriptionInfo info : subscriptionInfoList) {
+                if (info.getSubscriptionId() == subId
+                        && !info.isOnlyNonTerrestrialNetwork()) {
+                    logd("waitForNonNtnOnlySubscriptionAvailable: NTN only property for"
+                            + " subscription " + info + " is disabled");
+                    // Restore satellite permission
+                    grantSatellitePermission();
+                    return;
+                }
+            }
+            i++;
+            waitFor(500);
+        }
+        fail("NTN only subscription is still available for subId=" + subId);
+    }
+
     protected static void enableNtnOnlySubscription(int subId) {
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         boolean isNtnOnly =
@@ -2832,6 +2859,33 @@ public class SatelliteManagerTestBase {
         }
         waitForNtnOnlySubscriptionAvailable(subId);
         sNtnOnlySubIdsToBeRestored.add(subId);
+    }
+
+    protected static void disableNtnOnlySubscription(int subId) {
+        assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        boolean isNtnOnly =
+                SubscriptionManager.getBooleanSubscriptionProperty(
+                        subId, SubscriptionManager.IS_ONLY_NTN, false, getContext());
+        logd(
+                "disableNtnOnlySubscription: isNtnOnly="
+                        + isNtnOnly
+                        + ", subId="
+                        + subId);
+        if (!isNtnOnly) {
+            logd("disableNtnOnlySubscription: subId=" + subId + " is already not NTN only");
+            return;
+        }
+
+        UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            ui.adoptShellPermissionIdentity();
+            SubscriptionManager.setSubscriptionProperty(
+                    subId, SubscriptionManager.IS_ONLY_NTN, "0");
+        } finally {
+            ui.dropShellPermissionIdentity();
+        }
+        waitForNonNtnOnlySubscriptionAvailable(subId);
+        sNtnOnlySubIdsToBeRestored.remove(Integer.valueOf(subId));
     }
 
     protected static void restoreNtnOnlySubscriptions() {
@@ -3790,6 +3844,39 @@ public class SatelliteManagerTestBase {
                     + "no satellite subscription available");
         }
         return false;
+    }
+
+    protected static boolean waitForSubscriptionActive(int subId) {
+        logd("waitForSubscriptionActive: subId=" + subId);
+        if (isActiveSubId(subId)) {
+            return true;
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        SubscriptionManager.OnSubscriptionsChangedListener listener =
+                new SubscriptionManager.OnSubscriptionsChangedListener() {
+                    @Override
+                    public void onSubscriptionsChanged() {
+                        if (isActiveSubId(subId)) {
+                            latch.countDown();
+                        }
+                    }
+                };
+        sSubscriptionManager.addOnSubscriptionsChangedListener(
+                getContext().getMainExecutor(), listener);
+        try {
+            if (!latch.await(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                logd("waitForSubscriptionActive: Timeout waiting for subId=" + subId
+                        + " to become active");
+                return false;
+            }
+        } catch (InterruptedException e) {
+            logd("waitForSubscriptionActive: Got InterruptedException, e=" + e);
+            return false;
+        } finally {
+            sSubscriptionManager.removeOnSubscriptionsChangedListener(listener);
+        }
+        return true;
     }
 
     protected static boolean isActiveSubId(int subId) {

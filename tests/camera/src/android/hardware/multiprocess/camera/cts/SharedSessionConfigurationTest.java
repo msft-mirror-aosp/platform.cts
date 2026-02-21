@@ -30,8 +30,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Size;
 
-import com.android.internal.camera.flags.Flags;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +44,6 @@ public class SharedSessionConfigurationTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testConstructorAndGetters_validInput() {
         int colorSpace = /* ColorSpace.Named.SRGB */ 0;
         long[] sharedOutputConfigs = {
@@ -86,7 +83,6 @@ public class SharedSessionConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testConstructorAndGetters_multipleOutputs() {
         int colorSpace = /* ColorSpace.Named.ADOBE_RGB */ 10;
         long[] sharedOutputConfigs = {
@@ -151,7 +147,6 @@ public class SharedSessionConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testEmptySharedOutputConfigurations() {
         int colorSpace = /* ColorSpace.Named.SRGB */ 0;
         long[] sharedOutputConfigs = {};

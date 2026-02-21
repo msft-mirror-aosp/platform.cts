@@ -78,6 +78,7 @@ public class JavaPlayer extends Player {
         mNumExchangeFrames = builder.getNumExchangeFrames();
         mPerformanceMode = builder.getJavaPerformanceMode();
         int routeDeviceId = builder.getRouteDeviceId();
+        int encoding = builder.getEncodingForJava();
         if (LOG) {
             Log.d(TAG, "build()");
             Log.d(TAG, "  chans:" + mChannelCount);
@@ -86,6 +87,7 @@ public class JavaPlayer extends Player {
             Log.d(TAG, "  frames: " + mNumExchangeFrames);
             Log.d(TAG, "  perf mode: " + mPerformanceMode);
             Log.d(TAG, "  route device: " + routeDeviceId);
+            Log.d(TAG, "  encoding: " + encoding);
         }
 
         mAudioSource = mSourceProvider.getJavaSource();
@@ -93,8 +95,7 @@ public class JavaPlayer extends Player {
 
         try {
             AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
-            formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                    .setSampleRate(mSampleRate);
+            formatBuilder.setEncoding(builder.getEncodingForJava()).setSampleRate(mSampleRate);
             // setChannelIndexMask() won't give us a FAST_PATH
             // .setChannelIndexMask(
             //      StreamBase.channelCountToIndexMask(mChannelCount))
@@ -214,6 +215,11 @@ public class JavaPlayer extends Player {
     public boolean isMMap() {
         // Java Streams are never MMAP
         return false;
+    }
+
+    @Override
+    public int getBufferCapacityInFrames() {
+        return mAudioTrack != null ? mAudioTrack.getBufferCapacityInFrames() : -1;
     }
 
     /**

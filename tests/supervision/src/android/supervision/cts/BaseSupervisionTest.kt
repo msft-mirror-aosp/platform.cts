@@ -23,18 +23,30 @@ import android.Manifest.permission.OBSERVE_ROLE_HOLDERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.role.RoleManager
 import android.app.supervision.SupervisionManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.UserHandle
 import android.os.UserManager
 import android.platform.test.annotations.AppModeFull
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.supervision.withSupervisionRoleHeld
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /** Base class for supervision CTS tests. */
 @AppModeFull(reason = "The SupervisionManager API is not available in instant apps.")
@@ -115,9 +127,19 @@ open class BaseSupervisionTest {
                 }
             }
         } finally {
-            apps.forEach { it.uninstall() }
+            runBlocking {
+                apps.forEachParallel { uninstallAndWaitForBroadcast(it) }
+            }
             setSupervisionEnabled(false)
         }
+    }
+
+    suspend fun <T> Iterable<T>.forEachParallel(action: suspend (T) -> Unit) = coroutineScope {
+        map { item ->
+            launch(Dispatchers.IO) {
+                action(item)
+            }
+        }.joinAll()
     }
 
     fun installSupervisionApps(testAppProvider: TestAppProvider, appLabel: String, count: Int):
@@ -126,16 +148,62 @@ open class BaseSupervisionTest {
         check(testApps.size == count) {
             "Could not find ${count} app(s) with label ${appLabel}"
         }
-        return testApps.map {
-            checkNotNull(it.install(TestApis.users().instrumented())) {
-                "Failed to install ${it.packageName()}."
+
+        runBlocking {
+            testApps.forEachParallel { installAndWaitForBroadcast(it) }
+        }
+
+        return testApps.map { it.instance(TestApis.users().instrumented()) }
+    }
+
+
+    class TestBroadcastReceiver(
+        val targetPackageName: String,
+        val latch: CountDownLatch = CountDownLatch(1),
+    ) : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val packageName = intent.data?.encodedSchemeSpecificPart
+            if (packageName != null && targetPackageName.equals(packageName)) {
+                latch.countDown()
             }
+        }
+    }
+
+    fun installAndWaitForBroadcast(testApp: TestApp) {
+        waitForBroadcast(testApp.packageName(), Intent.ACTION_PACKAGE_ADDED) {
+            checkNotNull(testApp.install(TestApis.users().instrumented())) {
+                "Failed to install ${testApp.packageName()}."
+            }
+        }
+    }
+
+    fun uninstallAndWaitForBroadcast (appInstance: TestAppInstance) {
+        waitForBroadcast(appInstance.packageName(), Intent.ACTION_PACKAGE_FULLY_REMOVED) {
+            waitForBroadcast(appInstance.packageName(), Intent.ACTION_PACKAGE_REMOVED) {
+                appInstance.uninstall()
+            }
+        }
+    }
+
+    fun waitForBroadcast (packageName: String, type: String, action: () -> Unit) {
+        val latch = CountDownLatch(1)
+        val broadcastReceiver = TestBroadcastReceiver(packageName, latch)
+        val filter = IntentFilter(type)
+        filter.addDataScheme("package")
+
+        context.registerReceiver(broadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+
+        try {
+            action()
+            assertThat(latch.await(TIMEOUT, TimeUnit.SECONDS)).isEqualTo(true)
+        } finally {
+            context.unregisterReceiver(broadcastReceiver)
         }
     }
 
     companion object {
         val context: Context = TestApis.context().instrumentedContext()
-        val deviceState = DeviceState()
+        val TIMEOUT = 60.seconds.inWholeSeconds
         val supervisionManager = context.getSystemService(SupervisionManager::class.java)!!
         val userManager = context.getSystemService(UserManager::class.java)!!
         val roleManager = context.getSystemService(RoleManager::class.java)!!

@@ -36,5 +36,7 @@ interface IAttachEmbeddedWindow {
     boolean attachEmbeddedASurfaceControl(in SurfaceControl parentSc,
             in InputTransferToken hostToken, int width, int height, boolean batched,
             boolean transferTouchToHost, in @nullable IMotionEventReceiver receiver);
+    // Makes a `transferTouchGesture` request to transfer touch gesture from embedded to host.
+    void transferInputFromEmbeddedToHost();
     void tearDownEmbeddedASurfaceControl();
 }

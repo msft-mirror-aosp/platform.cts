@@ -53,7 +53,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.UiAutomation;
 import android.app.usage.EventStats;
-import android.app.usage.Flags;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageEvents.Event;
 import android.app.usage.UsageEventsQuery;
@@ -81,10 +80,6 @@ import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
@@ -111,7 +106,6 @@ import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -218,9 +212,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     private static final String TEST_NOTIFICATION_TITLE_FMT = "Test title; id=%s";
     private static final String TEST_NOTIFICATION_TEXT_1 = "Test content 1";
     private static final String TEST_NOTIFICATION_TEXT_2 = "Test content 2";
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private UiDevice mUiDevice;
@@ -1867,14 +1858,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsDisabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
-    @Test
-    public void testForegroundService() throws Exception {
-        testForegroundServiceHelper(/* filteredEvents= */ false);
-    }
-
-    @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
     @Test
     public void testForegroundService_withQueryFilter() throws Exception {
         testForegroundServiceHelper(/* filteredEvents= */ true);
@@ -2395,7 +2378,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
      */
     @AppModeFull(reason = "No usage events access in instant apps")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_USER_INTERACTION_TYPE_API)
     public void testReportUserInteractionWithTypeAccess() throws Exception {
         final PersistableBundle extras = new PersistableBundle();
         extras.putString(UsageStatsManager.EXTRA_EVENT_CATEGORY, "fake.namespace.category");
@@ -2418,7 +2400,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
      */
     @AppModeFull(reason = "No usage events access in instant apps")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_USER_INTERACTION_TYPE_API)
     public void testReportUserInteraction() throws Exception {
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
         // attempt to report an event with a null package, should fail.
@@ -2511,7 +2492,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
     @Test
     public void testUsageEventsQueryParceling() throws Exception {
         final String fakePackageName = "android.fake.package.name";
@@ -2537,7 +2517,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
     @Test
     public void testQueryEventsWithEventTypeFilter() throws Exception {
         final long endTime = System.currentTimeMillis() - MINUTE_IN_MILLIS;
@@ -2592,7 +2571,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
-    @RequiresFlagsEnabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
     @Test
     public void testQueryEventsWithPackageFilter() throws Exception {
         final String fakePackageName = "android.fake.package.name";

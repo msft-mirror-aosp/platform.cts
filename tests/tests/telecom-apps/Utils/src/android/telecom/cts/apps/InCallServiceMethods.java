@@ -16,6 +16,7 @@
 
 package android.telecom.cts.apps;
 
+import android.os.Bundle;
 import android.telecom.Call;
 
 import java.util.List;
@@ -31,6 +32,8 @@ public interface InCallServiceMethods {
     List<Call> getOngoingCalls();
 
     Call getLastAddedCall();
+
+    Bundle getLastAddedCallExtrasAtStart();
 
     int getCurrentCallCount();
 

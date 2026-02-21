@@ -371,6 +371,10 @@ public class BaseAppVerifierImpl {
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
+    public Bundle getLastAddedCallExtrasAtStart() {
+        return mVerifierMethods.getLastAddedCallExtrasAtStart();
+    }
+
     public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes)
             throws Exception {
         int currentCallCount = addCall(appControl, attributes);
