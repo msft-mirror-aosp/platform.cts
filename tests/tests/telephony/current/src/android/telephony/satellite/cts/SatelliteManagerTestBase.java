@@ -1761,6 +1761,8 @@ public class SatelliteManagerTestBase {
                 tm -> tm.requestRadioPowerOffForReason(TelephonyManager.RADIO_POWER_REASON_USER),
                 android.Manifest.permission.MODIFY_PHONE_STATE);
         callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                sTelephonyManager, tm -> tm.unregisterTelephonyCallback(callback));
     }
 
     protected static void turnRadioOn() {
@@ -1772,6 +1774,8 @@ public class SatelliteManagerTestBase {
                 tm -> tm.clearRadioPowerOffForReason(TelephonyManager.RADIO_POWER_REASON_USER),
                 android.Manifest.permission.MODIFY_PHONE_STATE);
         callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                sTelephonyManager, tm -> tm.unregisterTelephonyCallback(callback));
     }
 
     protected class UwbAdapterStateCallback implements UwbManager.AdapterStateCallback {
