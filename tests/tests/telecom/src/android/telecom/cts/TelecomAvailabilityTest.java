@@ -46,6 +46,7 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
     private static final String TAG = TelecomAvailabilityTest.class.getSimpleName();
     private static final String TELECOM_PACKAGE_NAME = "com.android.server.telecom";
     private static final String TELECOM_UI_PACKAGE_NAME = "com.android.server.telecomui";
+    private static final String TELECOM_UI_PACKAGE_NAME_SIGNED = "com.google.android.telecomui";
     private static final String TELEPHONY_PACKAGE_NAME = "com.android.phone";
 
     private PackageManager mPackageManager;
@@ -135,13 +136,16 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
         String packageName = activities.get(0).activityInfo.packageName;
         boolean isAllowedPackage =
                 TELECOM_PACKAGE_NAME.equals(packageName)
-                        || TELECOM_UI_PACKAGE_NAME.equals(packageName);
+                        || TELECOM_UI_PACKAGE_NAME.equals(packageName)
+                        || TELECOM_UI_PACKAGE_NAME_SIGNED.equals(packageName);
 
         assertTrue(
                 "Handler for MANAGE_BLOCKED_NUMBERS must be in an allowed package ("
                         + TELECOM_PACKAGE_NAME
                         + " or "
                         + TELECOM_UI_PACKAGE_NAME
+                        + " or "
+                        + TELECOM_UI_PACKAGE_NAME_SIGNED
                         + "), but was "
                         + packageName,
                 isAllowedPackage);
