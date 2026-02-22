@@ -41,6 +41,7 @@ public final class AtomTestUtils {
 
     public static final int WAIT_TIME_SHORT = 500;
     public static final int WAIT_TIME_LONG = 1000;
+    public static final int POLLING_INTERVAL_MS = 100;
 
     public static final long NS_PER_SEC = (long) 1E+9;
 
