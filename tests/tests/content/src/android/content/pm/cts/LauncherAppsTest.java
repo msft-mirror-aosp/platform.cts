@@ -821,8 +821,25 @@ public class LauncherAppsTest {
         }
     }
 
-    // TODO(b/484203600): Implement
-    // testGetActivityList_withoutLockAppsPermission_doesNotSupportAppLock
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#getActivityList" })
+    public void testGetActivityList_withoutLockAppsPermission_doesNotSupportAppLock()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withoutLockAppsPermission = clearHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isFalse();
+            final List<LauncherActivityInfo> activities =
+                    mLauncherApps.getActivityList(APP_LOCK_SUPPORTED_PACKAGE_NAME, USER_HANDLE);
+
+            assertThat(activities).hasSize(1);
+            final LauncherActivityInfo launcherActivityInfo = activities.get(0);
+            assertThat(launcherActivityInfo.getApplicationInfo().isAppLockSupported).isFalse();
+        }
+    }
 
     @Test
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
