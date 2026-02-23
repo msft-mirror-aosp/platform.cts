@@ -29,7 +29,7 @@ import com.android.bedstead.nene.types.OptionalBoolean
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-@UsesParameterizedTestWithArgumentGenerator(UsesParameterizedTestWithArgumentGenerator.SETTINGS)
+@UsesParameterizedTestWithArgumentGenerator(SettingsParameterizedTestWithArgumentGenerator::class)
 annotation class SettingsPreferenceMetadataParameter(
     /**
      * Package name of the application for which tests will be generated.

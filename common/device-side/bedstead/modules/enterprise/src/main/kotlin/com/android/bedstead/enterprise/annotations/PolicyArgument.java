@@ -16,6 +16,7 @@
 
 package com.android.bedstead.enterprise.annotations;
 
+import com.android.bedstead.enterprise.EnterpriseParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 
 import java.lang.annotation.ElementType;
@@ -25,6 +26,6 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.ANNOTATION_TYPE, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesParameterizedTestWithArgumentGenerator(UsesParameterizedTestWithArgumentGenerator.ENTERPRISE)
+@UsesParameterizedTestWithArgumentGenerator(EnterpriseParameterizedTestWithArgumentGenerator.class)
 public @interface PolicyArgument {
 }
