@@ -830,6 +830,77 @@ public class OutputSwitcherTest {
         assertThat(extraRoute).isEqualTo(uniqueId);
     }
 
+    @Test
+    public void showSystemOutputSwitcher_customOrdering_routesAreOrderedAccordingToPreference()
+            throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        RouteListingPreference.Item item1 =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID1)).build();
+        RouteListingPreference.Item item2 =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID2)).build();
+        RouteListingPreference prefRoute2First =
+                new RouteListingPreference.Builder()
+                        .setUseSystemOrdering(false)
+                        .setItems(List.of(item2, item1))
+                        .build();
+        mRouter2.setRouteListingPreference(prefRoute2First);
+        mRouter2.showSystemOutputSwitcher();
+        assertRoutesInOrderInUi(ROUTE_NAME2, ROUTE_NAME1);
+
+        dismissSystemDialogs();
+        UiAutomatorUtils2.waitUntilObjectGone(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE));
+
+        RouteListingPreference prefRoute1First =
+                new RouteListingPreference.Builder()
+                        .setUseSystemOrdering(false)
+                        .setItems(List.of(item1, item2))
+                        .build();
+        mRouter2.setRouteListingPreference(prefRoute1First);
+        mRouter2.showSystemOutputSwitcher();
+        assertRoutesInOrderInUi(ROUTE_NAME1, ROUTE_NAME2);
+    }
+
+    /**
+     * Verifies that the first route appears before the second route in the logical UI tree, which
+     * works regardless of whether the UI is a vertical list, horizontal row, or grid.
+     */
+    private void assertRoutesInOrderInUi(String firstRouteName, String secondRouteName)
+            throws UiObjectNotFoundException {
+        UiAutomatorUtils2.waitFindObject(
+                By.text(firstRouteName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitFindObject(
+                By.text(secondRouteName).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+
+        Pattern routeNamesPattern =
+                Pattern.compile(
+                        "^("
+                                + Pattern.quote(firstRouteName)
+                                + "|"
+                                + Pattern.quote(secondRouteName)
+                                + ")$");
+
+        // Fetch all text views on the screen in their logical accessibility tree order
+        List<UiObject2> allTextViews =
+                UiAutomatorUtils2.getUiDevice()
+                        .findObjects(By.text(routeNamesPattern).pkg(SYSTEM_UI_PACKAGE));
+        int firstRouteIndex = -1;
+        int secondRouteIndex = -1;
+        for (int i = 0; i < allTextViews.size(); i++) {
+            String text = allTextViews.get(i).getText();
+            if (firstRouteName.equals(text)) {
+                firstRouteIndex = i;
+            } else if (secondRouteName.equals(text)) {
+                secondRouteIndex = i;
+            }
+        }
+
+        assertThat(firstRouteIndex).isNotEqualTo(-1);
+        assertThat(secondRouteIndex).isNotEqualTo(-1);
+        assertThat(firstRouteIndex).isLessThan(secondRouteIndex);
+    }
+
     /** Get a route unique ID, which includes the provider ID. */
     private String getRouteUniqueId(String id) {
         CompletableFuture<String> idFuture = new CompletableFuture<>();
