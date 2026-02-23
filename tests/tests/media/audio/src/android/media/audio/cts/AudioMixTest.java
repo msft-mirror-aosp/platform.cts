@@ -29,6 +29,7 @@ import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_UID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -167,7 +168,7 @@ public class AudioMixTest {
 
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
     @Test
-    public void testEqualsPersistent() {
+    public void testEqualsPersistentInjector() {
         // TODO move this test to testEquals() test once flag is removed
         final EqualsTester equalsTester = new EqualsTester();
 
@@ -188,6 +189,34 @@ public class AudioMixTest {
                 recordAudioMixWithCamcorderPreset.isPersistent());
         equalsTester.addEqualityGroup(recordAudioMixWithCamcorderPreset,
                 writeToAndFromParcel(recordAudioMixWithCamcorderPreset));
+
+        equalsTester.testEquals();
+    }
+
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    @Test
+    public void testEqualsPersistentPlayers() {
+        final EqualsTester equalsTester = new EqualsTester();
+
+        final boolean isPersistent = true;
+        final AudioMix playbackAudioMixPersistent =
+                new AudioMix.Builder(
+                                new AudioMixingRule.Builder()
+                                        .setTargetMixRole(MIX_ROLE_PLAYERS)
+                                        .addRule(
+                                                AUDIO_ATTRIBUTES_MEDIA_MUSIC,
+                                                AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE)
+                                        .build())
+                        .setFormat(OUTPUT_FORMAT_STEREO_44KHZ_PCM)
+                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
+                        .setPersistent(isPersistent)
+                        .build();
+        assertEquals(OUTPUT_FORMAT_STEREO_44KHZ_PCM, playbackAudioMixPersistent.getFormat());
+        assertEquals(isPersistent, playbackAudioMixPersistent.isPersistent());
+        assertEquals(MIX_ROLE_PLAYERS, playbackAudioMixPersistent.getRule().getTargetMixRole());
+
+        equalsTester.addEqualityGroup(
+                playbackAudioMixPersistent, writeToAndFromParcel(playbackAudioMixPersistent));
 
         equalsTester.testEquals();
     }
@@ -247,6 +276,43 @@ public class AudioMixTest {
         assertEquals(AudioMix.ROUTE_FLAG_LOOP_BACK, audioMix.getRouteFlags());
     }
 
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    @Test
+    public void buildPersistentLoopbackForPlayerMix_success() {
+        final AudioMix audioMix =
+                new AudioMix.Builder(
+                                new AudioMixingRule.Builder()
+                                        .setTargetMixRole(MIX_ROLE_PLAYERS)
+                                        .addMixRule(RULE_MATCH_UID, 42)
+                                        .build())
+                        .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
+                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
+                        .setPersistent(true)
+                        .build();
+
+        assertEquals(OUTPUT_FORMAT_MONO_16KHZ_PCM, audioMix.getFormat());
+        assertEquals(AudioMix.ROUTE_FLAG_LOOP_BACK, audioMix.getRouteFlags());
+        assertTrue(audioMix.isPersistent());
+    }
+
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    @Test
+    public void buildPersistentRenderOnly_throws() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new AudioMix.Builder(
+                                        new AudioMixingRule.Builder()
+                                                .setTargetMixRole(MIX_ROLE_PLAYERS)
+                                                .addMixRule(RULE_MATCH_UID, 42)
+                                                .build())
+                                .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
+                                .setRouteFlags(AudioMix.ROUTE_FLAG_RENDER)
+                                .setDevice(AudioSystem.DEVICE_OUT_SPEAKER, "")
+                                .setPersistent(true)
+                                .build());
+    }
+
     @Test
     public void buildLoopbackForInjectorMix_success() {
         final AudioMix audioMix = new AudioMix.Builder(new AudioMixingRule.Builder()
@@ -301,8 +367,6 @@ public class AudioMixTest {
                 .setRouteFlags(AudioMix.ROUTE_FLAG_RENDER)
                 .setDevice(AudioSystem.DEVICE_OUT_SPEAKER, /*address=*/"").build());
     }
-
-
 
     private static AudioMix writeToAndFromParcel(AudioMix audioMix) {
         AudioPolicyConfig apc = new AudioPolicyConfig(new ArrayList<>(List.of(audioMix)));

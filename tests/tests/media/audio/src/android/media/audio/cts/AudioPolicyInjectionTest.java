@@ -21,13 +21,17 @@ import static android.Manifest.permission.RECORD_AUDIO;
 import static android.media.AudioManager.AUDIO_SESSION_ID_GENERATE;
 import static android.media.audio.Flags.FLAG_DAP_INJECTION_STARVE_MANAGEMENT;
 import static android.media.audiopolicy.AudioMixingRule.MIX_ROLE_INJECTOR;
+import static android.media.audiopolicy.AudioMixingRule.MIX_ROLE_PLAYERS;
 import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_AUDIO_SESSION_ID;
+
+import static com.google.common.util.concurrent.Uninterruptibles.joinUninterruptibly;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.*;
 
 import android.media.AudioAttributes;
+import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -37,6 +41,8 @@ import android.media.MediaRecorder;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -61,6 +67,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -82,7 +89,9 @@ public class AudioPolicyInjectionTest {
     // longer than 3s
     private static final long SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS = 4000;
     private static final long SLEEP_SHORT_TIMEOUT_MS = 500;
+    private static final long SLEEP_MEDIUM_TIMEOUT_MS = 1000;
     private static final int FAKE_APPLICATION_UID = 1234;
+    private static final int THREAD_JOIN_TIMEOUT_MS = 500;
 
     /**
      * captured signal should be mostly single frequency and power of that frequency should be over
@@ -95,6 +104,8 @@ public class AudioPolicyInjectionTest {
 
     private static final int FREQ_VOICE_STIMULI_HZ = 2000; // 2kHz
     private static final int SAMPLE_RATE_VOICE_HZ = 16000;
+    private static final int SAMPLE_RATE_PLAYBACK = 48000;
+
     private static final AudioFormat FORMAT_VOICE_INJECTION =
             new AudioFormat.Builder()
                     .setSampleRate(SAMPLE_RATE_VOICE_HZ)
@@ -114,6 +125,13 @@ public class AudioPolicyInjectionTest {
     private static final AudioAttributes AUDIO_ATTRIBUTES_VOICE_RECOGNITION =
             new AudioAttributes.Builder()
                     .setCapturePreset(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                    .build();
+
+    private static final AudioFormat FORMAT_PLAYBACK =
+            new AudioFormat.Builder()
+                    .setSampleRate(SAMPLE_RATE_PLAYBACK)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                     .build();
 
     @Rule(order = 1)
@@ -368,12 +386,12 @@ public class AudioPolicyInjectionTest {
     }
 
     /**
-     * Tests that a recording from a mix configured to be persistent records silence from
-     * a source AudioTrack that stops while the recording is in progress.
+     * Tests that a recording from a mix configured to be persistent records silence from a source
+     * AudioTrack that stops while the recording is in progress.
      */
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    public void testPersistentMixStopSourceAudioTrack() {
+    public void testPersistentInjectionMixStopSourceAudioTrack() {
         int sessionId = mAudioManager.generateAudioSessionId();
         setupInjectionWithMixRules(
                 true /* isPersistent */,
@@ -442,6 +460,249 @@ public class AudioPolicyInjectionTest {
         mVoiceRecord = buildAudioRecordForSessionId(sessionId);
 
         injectAndVerifyCapture(/* present= */ true);
+    }
+
+    /**
+     * Tests that a recording from a loopback mix configured to be persistent records silence even
+     * without a source AudioTrack.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testPersistentLoopbackInjectorMix() {
+        AudioMix audioMix = setupPersistentLoopbackPolicy(mAudioManager.generateAudioSessionId());
+        AudioRecord record = mAudioPolicy.createAudioRecordSink(audioMix);
+        SilenceCapturingThread silenceThread = new SilenceCapturingThread(record);
+
+        silenceThread.start();
+        SystemClock.sleep(SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS);
+
+        silenceThread.stopAndCheckSuccessfulRun();
+        record.release();
+    }
+
+    /**
+     * Tests that playback on a loopback mix configured to be persistent is playing continuously and
+     * maintains routing even when a recording client attaches and disconnects.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testPersistentLoopbackMixPlaybackWithRecord() {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        AudioMix audioMix = setupPersistentLoopbackPolicy(sessionId);
+        AudioTrack playbackTrack = createMediaAudioTrack(sessionId);
+        TrackPlayerThread player = new TrackPlayerThread(playbackTrack);
+
+        try {
+            int lastPosition = playbackTrack.getPlaybackHeadPosition();
+            checkRouting(playbackTrack, audioMix);
+
+            // Play without recording
+            player.start();
+            SystemClock.sleep(SLEEP_MEDIUM_TIMEOUT_MS);
+            lastPosition = assertPlaybackHeadPositionIncreases(playbackTrack, lastPosition);
+            checkRouting(playbackTrack, audioMix);
+
+            // Attach a recorder while keep playing
+            AudioRecord record = mAudioPolicy.createAudioRecordSink(audioMix);
+            RecordDrainerThread drainer = new RecordDrainerThread(record);
+            drainer.start();
+            SystemClock.sleep(SLEEP_MEDIUM_TIMEOUT_MS);
+            lastPosition = assertPlaybackHeadPositionIncreases(playbackTrack, lastPosition);
+            checkRouting(playbackTrack, audioMix);
+
+            // Detach recorder while track still playing
+            drainer.stopDrain();
+            record.release();
+            SystemClock.sleep(SLEEP_MEDIUM_TIMEOUT_MS);
+            assertPlaybackHeadPositionIncreases(playbackTrack, lastPosition);
+            checkRouting(playbackTrack, audioMix);
+        } finally {
+            player.stopPlayback();
+            playbackTrack.release();
+        }
+    }
+
+    /**
+     * Tests that both device ports (input and output) are added when a persistent loopback player
+     * audio mix is registered and removed when the policy mix is unregistered.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testPersistentPlayerMixDeviceRegistration() throws Exception {
+        verifyPersistentMixDeviceRegistration(MIX_ROLE_PLAYERS, FORMAT_PLAYBACK);
+    }
+
+    /**
+     * Tests that both device ports (input and output) are added when a persistent loopback injector
+     * audio mix is registered and removed when the policy mix is unregistered.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testPersistentInjectorMixDeviceRegistration() throws Exception {
+        verifyPersistentMixDeviceRegistration(MIX_ROLE_INJECTOR, FORMAT_VOICE_INJECTION);
+    }
+
+    private void verifyPersistentMixDeviceRegistration(int mixRole, AudioFormat format)
+            throws Exception {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        AudioMixingRule rule =
+                new AudioMixingRule.Builder()
+                        .setTargetMixRole(mixRole)
+                        .addMixRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId)
+                        .build();
+        AudioMix audioMix =
+                new AudioMix.Builder(rule)
+                        .setFormat(format)
+                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
+                        .setPersistent(true)
+                        .build();
+
+        mAudioPolicy =
+                new AudioPolicy.Builder(ApplicationProvider.getApplicationContext())
+                        .addMix(audioMix)
+                        .build();
+
+        DeviceRegistrationListener listener = null;
+        try {
+            int result = mAudioManager.registerAudioPolicy(mAudioPolicy);
+            assertEquals("AudioPolicy registration failed", AudioManager.SUCCESS, result);
+
+            String address = audioMix.getRegistration();
+            assertNotNull("Mix registration address is null", address);
+            assertFalse("Mix registration address is empty", address.isEmpty());
+
+            listener =
+                    new DeviceRegistrationListener(
+                            AudioDeviceInfo.TYPE_REMOTE_SUBMIX, address, mAudioManager);
+            mAudioManager.registerAudioDeviceCallback(
+                    listener, new Handler(Looper.getMainLooper()));
+
+            assertTrue(
+                    "Remote Submix devices not registered in time",
+                    listener.waitForRegistration(DEFAULT_TIMEOUT_MS));
+
+            mAudioManager.unregisterAudioPolicyAsync(mAudioPolicy);
+            mAudioPolicy = null;
+
+            assertTrue(
+                    "Remote Submix devices not unregistered in time",
+                    listener.waitForUnregistration(DEFAULT_TIMEOUT_MS));
+        } finally {
+            if (listener != null) {
+                mAudioManager.unregisterAudioDeviceCallback(listener);
+            }
+        }
+    }
+
+    private void checkRouting(AudioTrack track, AudioMix mix) {
+        AudioDeviceInfo routedDevice = track.getRoutedDevice();
+        assertNotNull("RoutedDevice is null", routedDevice);
+        assertEquals(
+                "RoutedDevice type is not REMOTE_SUBMIX",
+                AudioDeviceInfo.TYPE_REMOTE_SUBMIX,
+                routedDevice.getType());
+        assertEquals(
+                "RoutedDevice address does not match mix registration",
+                mix.getRegistration(),
+                routedDevice.getAddress());
+    }
+
+    private int assertPlaybackHeadPositionIncreases(AudioTrack track, int lastPosition) {
+        int currentPosition = track.getPlaybackHeadPosition();
+        assertTrue(
+                "Playback head position should increase: " + currentPosition + " > " + lastPosition,
+                currentPosition > lastPosition);
+        return currentPosition;
+    }
+
+    private AudioMix setupPersistentLoopbackPolicy(int sessionId) {
+        AudioMixingRule rule =
+                new AudioMixingRule.Builder()
+                        .setTargetMixRole(MIX_ROLE_PLAYERS)
+                        .addMixRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId)
+                        .build();
+        AudioMix audioMix =
+                new AudioMix.Builder(rule)
+                        .setFormat(FORMAT_PLAYBACK)
+                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
+                        .setPersistent(true)
+                        .build();
+
+        mAudioPolicy =
+                new AudioPolicy.Builder(ApplicationProvider.getApplicationContext())
+                        .addMix(audioMix)
+                        .build();
+
+        int result = mAudioManager.registerAudioPolicy(mAudioPolicy);
+        assertEquals("AudioPolicy registration failed", AudioManager.SUCCESS, result);
+
+        return audioMix;
+    }
+
+    private AudioTrack createMediaAudioTrack(int sessionId) {
+        AudioAttributes attributes =
+                new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
+
+        return new AudioTrack.Builder()
+                .setAudioAttributes(attributes)
+                .setAudioFormat(FORMAT_PLAYBACK)
+                .setTransferMode(AudioTrack.MODE_STREAM)
+                .setSessionId(sessionId)
+                .build();
+    }
+
+    // Helper to drain recorder
+    private static class RecordDrainerThread extends Thread {
+        private final AudioRecord mRecord;
+        private volatile boolean mRunning = true;
+
+        RecordDrainerThread(AudioRecord record) {
+            mRecord = record;
+        }
+
+        public void run() {
+            mRecord.startRecording();
+            byte[] buf = new byte[512];
+            while (mRunning) {
+                mRecord.read(buf, 0, buf.length);
+            }
+            mRecord.stop();
+        }
+
+        void stopDrain() {
+            mRunning = false;
+            joinUninterruptibly(this, THREAD_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    // Helper to play AudioTrack
+    private static class TrackPlayerThread extends Thread {
+        private final AudioTrack mTrack;
+        private volatile boolean mRunning = true;
+
+        TrackPlayerThread(AudioTrack track) {
+            mTrack = track;
+        }
+
+        @Override
+        public void run() {
+            int frameSize = mTrack.getFormat().getFrameSizeInBytes();
+            int bufferSize = mTrack.getBufferSizeInFrames() * frameSize;
+            byte[] buffer = new byte[bufferSize];
+            mTrack.play();
+            while (mRunning) {
+                int written = mTrack.write(buffer, 0, buffer.length, AudioTrack.WRITE_BLOCKING);
+                if (written < 0) {
+                    break;
+                }
+            }
+            mTrack.stop();
+        }
+
+        void stopPlayback() {
+            mRunning = false;
+            joinUninterruptibly(this, THREAD_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        }
     }
 
     private void verifySilenceRecording(int sessionId) {
@@ -612,13 +873,8 @@ public class AudioPolicyInjectionTest {
         captureThread.quit();
         captureThread.checkSuccessfulRun();
         // allow the capture thread to finish
-        try {
-            captureThread.join(500);
-        } catch (InterruptedException e) {
-            // ignore interruption
-        }
+        joinUninterruptibly(captureThread, THREAD_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         assertFalse("voice capture thread did not stop", captureThread.isAlive());
-
         assertFrequencyPresence("Voice", captureThread, FREQ_VOICE_STIMULI_HZ, present);
 
         mInjectionTrack.stop();
@@ -1008,6 +1264,63 @@ public class AudioPolicyInjectionTest {
                 }
             }
             return true;
+        }
+    }
+
+    private static class DeviceRegistrationListener extends AudioDeviceCallback {
+        private final Semaphore mAddedSemaphore = new Semaphore(0);
+        private final Semaphore mRemovedSemaphore = new Semaphore(0);
+        private final int mExpectedType;
+        private final String mExpectedAddress;
+        private final AudioManager mAudioManager;
+
+        private boolean mInPresent;
+        private boolean mOutPresent;
+
+        DeviceRegistrationListener(int type, String address, AudioManager audioManager) {
+            mExpectedType = type;
+            mExpectedAddress = Objects.requireNonNull(address);
+            mAudioManager = audioManager;
+        }
+
+        @Override
+        public synchronized void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+            updatePresence();
+            if (mInPresent && mOutPresent) mAddedSemaphore.release();
+        }
+
+        @Override
+        public synchronized void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+            updatePresence();
+            if (!mInPresent && !mOutPresent) mRemovedSemaphore.release();
+        }
+
+        private void updatePresence() {
+            mInPresent = mOutPresent = false;
+            for (AudioDeviceInfo dev : mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL)) {
+                if (dev.getType() == mExpectedType && mExpectedAddress.equals(dev.getAddress())) {
+                    if (dev.isSource()) mInPresent = true;
+                    if (dev.isSink()) mOutPresent = true;
+                }
+            }
+        }
+
+        boolean waitForRegistration(long timeoutMs) throws InterruptedException {
+            synchronized (this) {
+                updatePresence();
+                if (mInPresent && mOutPresent) return true;
+                mAddedSemaphore.drainPermits();
+            }
+            return mAddedSemaphore.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS);
+        }
+
+        boolean waitForUnregistration(long timeoutMs) throws InterruptedException {
+            synchronized (this) {
+                updatePresence();
+                if (!mInPresent && !mOutPresent) return true;
+                mRemovedSemaphore.drainPermits();
+            }
+            return mRemovedSemaphore.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS);
         }
     }
 }
