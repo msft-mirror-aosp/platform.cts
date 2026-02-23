@@ -29,6 +29,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.mockime.Watermark;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -59,8 +60,10 @@ public final class InputMethodVisibilityVerifier {
         return !containsWatermark(uiAutomation);
     }
 
-    private static boolean waitUntil(long timeout, @NonNull Predicate<UiAutomation> condition) {
-        final long startTime = SystemClock.elapsedRealtime();
+    private static boolean waitUntil(
+            @NonNull Duration timeout, @NonNull Predicate<UiAutomation> condition) {
+        final Duration startTime = Duration.ofMillis(SystemClock.elapsedRealtime());
+        final Duration endTime = startTime.plus(timeout);
         SystemClock.sleep(SCREENSHOT_DELAY);
 
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -69,17 +72,19 @@ public final class InputMethodVisibilityVerifier {
         final CountDownLatch latch = new CountDownLatch(1);
         instrumentation.waitForIdle(latch::countDown);
         try {
-            if (!latch.await(timeout, TimeUnit.MILLISECONDS)) {
+            if (!latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 return false;
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupt thread", e);
         }
 
         final UiAutomation uiAutomation = instrumentation.getUiAutomation();
         if (condition.test(uiAutomation)) {
             return true;
         }
-        while ((SystemClock.elapsedRealtime() - startTime) < timeout) {
+        while (Duration.ofMillis(SystemClock.elapsedRealtime()).compareTo(endTime) < 0) {
             SystemClock.sleep(SCREENSHOT_TIME_SLICE);
             if (condition.test(uiAutomation)) {
                 return true;
@@ -98,6 +103,19 @@ public final class InputMethodVisibilityVerifier {
      * @param timeout timeout in milliseconds.
      */
     public static void expectImeVisible(long timeout) {
+        expectImeVisible(Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Asserts that {@link com.android.cts.mockime.MockIme} is visible to the user.
+     *
+     * <p>This never succeeds when {@link
+     * com.android.cts.mockime.ImeSettings.Builder#setWatermarkEnabled(boolean)} is explicitly
+     * called with {@code false}.
+     *
+     * @param timeout timeout duration
+     */
+    public static void expectImeVisible(@NonNull Duration timeout) {
         assertTrue(waitUntil(timeout, InputMethodVisibilityVerifier::containsWatermark));
     }
 
@@ -109,6 +127,17 @@ public final class InputMethodVisibilityVerifier {
      * @see #expectImeVisible(long)
      */
     public static void expectImeVisible(long timeout, String message) {
+        expectImeVisible(Duration.ofMillis(timeout), message);
+    }
+
+    /**
+     * Asserts that {@link com.android.cts.mockime.MockIme} is visible to the user.
+     *
+     * @param timeout timeout duration
+     * @param message error message shown on failure
+     * @see #expectImeVisible(long)
+     */
+    public static void expectImeVisible(@NonNull Duration timeout, String message) {
         assertTrue(message, waitUntil(timeout, InputMethodVisibilityVerifier::containsWatermark));
     }
 
@@ -122,6 +151,19 @@ public final class InputMethodVisibilityVerifier {
      * @param timeout timeout in milliseconds.
      */
     public static void expectImeInvisible(long timeout) {
+        expectImeInvisible(Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Asserts that {@link com.android.cts.mockime.MockIme} is not visible to the user.
+     *
+     * <p>This always succeeds when {@link
+     * com.android.cts.mockime.ImeSettings.Builder#setWatermarkEnabled(boolean)} is explicitly
+     * called with {@code false}.
+     *
+     * @param timeout timeout duration
+     */
+    public static void expectImeInvisible(@NonNull Duration timeout) {
         assertTrue(waitUntil(timeout, InputMethodVisibilityVerifier::notContainsWatermark));
     }
 }
