@@ -28,9 +28,13 @@ import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
+import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
+import android.app.appfunctions.testutils.CtsTestUtil.freezeProcess
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
+import android.app.appfunctions.testutils.CtsTestUtil.safeUnfreezeProcess
+import android.app.appfunctions.testutils.CtsTestUtil.unfreezeProcess
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.DynamicRegistrationActivity.Companion.ACTION_REGISTER_APP_FUNCTION
 import android.app.appfunctions.testutils.DynamicRegistrationActivity2
@@ -41,7 +45,6 @@ import android.content.Intent
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.app.appfunctions.flags.Flags
 import androidx.core.os.asOutcomeReceiver
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
@@ -92,14 +95,14 @@ class AppFunctionActivityScopedRegistrationTest {
             CtsApp.PACKAGE_NAME,
             ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
             manager,
-            isEnabled = false
+            isEnabled = false,
         )
         retryAssert {
             assertFunctionEnabledState(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
                 ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                 manager,
-                isEnabled = false
+                isEnabled = false,
             )
         }
     }
@@ -111,26 +114,24 @@ class AppFunctionActivityScopedRegistrationTest {
 
     @Test
     fun registerAndUnregister_enabledStateIsCorrect() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
+        ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity -> activity.registerAppFunction(
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-            ) }
+            scenario.onActivity { activity ->
+                activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+            }
             scenario.onActivity { activity -> assertThat(activity.isRegistered).isTrue() }
             assertFunctionEnabledState(
                 CtsApp.PACKAGE_NAME,
                 ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                 manager,
-                isEnabled = true
+                isEnabled = true,
             )
             scenario.onActivity { activity -> activity.unregisterAppFunction() }
             assertFunctionEnabledState(
                 CtsApp.PACKAGE_NAME,
                 ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                 manager,
-                isEnabled = false
+                isEnabled = false,
             )
         }
     }
@@ -138,19 +139,20 @@ class AppFunctionActivityScopedRegistrationTest {
     @Test
     fun register_inTheSeparateApp_enabledStateIsCorrect() = doBlocking {
         try {
-            TestApis.activities().startActivity(
-                getExternalRegistrationIntent(
-                    DynamicSchemaHelperApp.PACKAGE_NAME,
-                    REGISTRATION_ACTIVITY,
-                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+            TestApis.activities()
+                .startActivity(
+                    getExternalRegistrationIntent(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        REGISTRATION_ACTIVITY,
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    )
                 )
-            )
             retryAssert {
                 assertFunctionEnabledState(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     manager,
-                    isEnabled = true
+                    isEnabled = true,
                 )
             }
         } finally {
@@ -159,36 +161,99 @@ class AppFunctionActivityScopedRegistrationTest {
     }
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun freezeProcessHavingActivityFunctionRegistered_enabledStateShouldBeFalse() = doBlocking {
+        try {
+            TestApis.activities()
+                .startActivity(
+                    getExternalRegistrationIntent(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        REGISTRATION_ACTIVITY,
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    )
+                )
+
+            freezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+
+            retryAssert {
+                assertFunctionEnabledState(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    manager,
+                    isEnabled = false,
+                )
+            }
+        } finally {
+            TestApis.activities().clearAllActivities()
+            safeUnfreezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+        }
+    }
+
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun unfreezeProcessHavingActivityFunctionRegistered_enabledStateShouldBeTrue() = doBlocking {
+        try {
+            TestApis.activities()
+                .startActivity(
+                    getExternalRegistrationIntent(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        REGISTRATION_ACTIVITY,
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    )
+                )
+
+            freezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+            retryAssert {
+                assertFunctionEnabledState(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    manager,
+                    isEnabled = false,
+                )
+            }
+            unfreezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+
+            retryAssert {
+                assertFunctionEnabledState(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    manager,
+                    isEnabled = true,
+                )
+            }
+        } finally {
+            TestApis.activities().clearAllActivities()
+            safeUnfreezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+        }
+    }
+
+    @Test
     fun register_fromTwoActivities_bothRegistrationsAreActive() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
+        ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity -> activity.registerAppFunction(
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-            ) }
+            scenario.onActivity { activity ->
+                activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+            }
             assertFunctionEnabledState(
                 CtsApp.PACKAGE_NAME,
                 ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                 manager,
-                isEnabled = true
+                isEnabled = true,
             )
             scenario.onActivity { activity -> assertThat(activity.isRegistered).isTrue() }
 
-            ActivityScenario.launch<DynamicRegistrationActivity>(
-                internalLaunchIntent
-            ).use { scenario2 ->
+            ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use {
+                scenario2 ->
                 scenario2.moveToState(Lifecycle.State.STARTED)
-                scenario2.onActivity { activity -> activity.registerAppFunction(
-                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-                )
+                scenario2.onActivity { activity ->
+                    activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
                 }
                 scenario2.onActivity { activity -> assertThat(activity.isRegistered).isTrue() }
                 assertFunctionEnabledState(
                     CtsApp.PACKAGE_NAME,
                     ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     manager,
-                    isEnabled = true
+                    isEnabled = true,
                 )
 
                 scenario.onActivity { activity -> activity.unregisterAppFunction() }
@@ -198,7 +263,7 @@ class AppFunctionActivityScopedRegistrationTest {
                     CtsApp.PACKAGE_NAME,
                     ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     manager,
-                    isEnabled = true
+                    isEnabled = true,
                 )
 
                 scenario2.onActivity { activity -> activity.unregisterAppFunction() }
@@ -207,7 +272,7 @@ class AppFunctionActivityScopedRegistrationTest {
                     CtsApp.PACKAGE_NAME,
                     ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     manager,
-                    isEnabled = false
+                    isEnabled = false,
                 )
             }
         }
@@ -215,22 +280,19 @@ class AppFunctionActivityScopedRegistrationTest {
 
     @Test
     fun register_globalFunction_onlyOneRegistrationIsAllowed() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
+        ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity -> activity.registerAppFunction(
-                CONCAT_STRINGS_FUNCTION_ID
-            ) }
+            scenario.onActivity { activity ->
+                activity.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+            }
             scenario.onActivity { activity -> assertThat(activity.isRegistered).isTrue() }
 
-            ActivityScenario.launch<DynamicRegistrationActivity>(
-                internalLaunchIntent
-            ).use { scenario2 ->
+            ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use {
+                scenario2 ->
                 scenario2.moveToState(Lifecycle.State.STARTED)
-                scenario2.onActivity { activity -> activity.registerAppFunction(
-                    CONCAT_STRINGS_FUNCTION_ID
-                ) }
+                scenario2.onActivity { activity ->
+                    activity.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+                }
                 scenario2.onActivity { activity -> assertThat(activity.isRegistered).isFalse() }
             }
         }
@@ -238,26 +300,23 @@ class AppFunctionActivityScopedRegistrationTest {
 
     @Test
     fun unregister_callTwice_doesntAffectActiveRegistration() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
+        ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity -> activity.registerAppFunction(
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-            ) }
+            scenario.onActivity { activity ->
+                activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+            }
             assertFunctionEnabledState(
                 CtsApp.PACKAGE_NAME,
                 ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                 manager,
-                isEnabled = true
+                isEnabled = true,
             )
 
-            ActivityScenario.launch<DynamicRegistrationActivity>(
-                internalLaunchIntent
-            ).use { scenario2 ->
+            ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use {
+                scenario2 ->
                 scenario2.moveToState(Lifecycle.State.STARTED)
-                scenario2.onActivity { activity -> activity.registerAppFunction(
-                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+                scenario2.onActivity { activity ->
+                    activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
                 }
                 scenario2.onActivity { activity -> assertThat(activity.isRegistered).isTrue() }
                 scenario2.onActivity { activity -> activity.unregisterAppFunction(numTimes = 2) }
@@ -265,7 +324,7 @@ class AppFunctionActivityScopedRegistrationTest {
                     CtsApp.PACKAGE_NAME,
                     ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     manager,
-                    isEnabled = true
+                    isEnabled = true,
                 )
             }
         }
@@ -274,104 +333,188 @@ class AppFunctionActivityScopedRegistrationTest {
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_globalDynamicFunction_withActivityId_fail() = doBlocking {
-        withRegisteredActivityId(
-            CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS
-        ) { activityId ->
+        withRegisteredActivityId(CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS) { activityId ->
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyString("prefix", "A")
                     .setPropertyString("suffix", "B")
                     .build()
-            val request = ExecuteAppFunctionRequest.Builder(
-                AppFunctionName(
-                    CtsApp.PACKAGE_NAME,
-                    CONCAT_STRINGS_FUNCTION_ID)
-            )
-                .setActivityId(activityId)
-                .setParameters(parameters)
-                .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        AppFunctionName(CtsApp.PACKAGE_NAME, CONCAT_STRINGS_FUNCTION_ID)
+                    )
+                    .setActivityId(activityId)
+                    .setParameters(parameters)
+                    .build()
 
             val response = manager.executeAppFunction(request)
             assertThat(response.exceptionOrNull()).isNotNull()
-            assertThat(response.appFunctionException().errorCode).isEqualTo(
-                AppFunctionException.ERROR_FUNCTION_NOT_FOUND
-            )
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
         }
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_staticFunction_withActivityId_fail() = doBlocking {
-        withRegisteredActivityId(
-            CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS
-        ) { activityId ->
-            val request = ExecuteAppFunctionRequest.Builder(
-                CtsApp.FunctionNames.ADD_ASYNC
-            )
-                .setActivityId(activityId)
-                .build()
+        withRegisteredActivityId(CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS) { activityId ->
+            val request =
+                ExecuteAppFunctionRequest.Builder(CtsApp.FunctionNames.ADD_ASYNC)
+                    .setActivityId(activityId)
+                    .build()
 
             val response = manager.executeAppFunction(request)
             assertThat(response.exceptionOrNull()).isNotNull()
-            assertThat(response.appFunctionException().errorCode).isEqualTo(
-                AppFunctionException.ERROR_FUNCTION_NOT_FOUND
-            )
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
         }
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_activityFunctionInTheSeparateApp_success() = doBlocking {
-        TestApis.activities().startActivity(
-            getExternalRegistrationIntent(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                REGISTRATION_ACTIVITY,
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+        TestApis.activities()
+            .startActivity(
+                getExternalRegistrationIntent(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    REGISTRATION_ACTIVITY,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
             )
-        )
 
-        val activityIds = awaitRegisteredActivityIds(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
-            numRegistrations = 1
-        )
+        val activityIds =
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
 
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyString("prefix", "A")
                 .setPropertyString("suffix", "B")
                 .build()
-        val request = ExecuteAppFunctionRequest.Builder(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
-        )
-            .setActivityId(activityIds.first())
-            .setParameters(parameters)
-            .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                )
+                .setActivityId(activityIds.first())
+                .setParameters(parameters)
+                .build()
 
         val response = manager.executeAppFunction(request)
         assertThat(response.exceptionOrNull()).isNull()
         assertThat(
-            response
-                .getOrNull()!!
-                .resultDocument
-                .getPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-        )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
             .isEqualTo("AB")
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun executeActivityFunctionFromFrozenProcess_fail() = doBlocking {
+        try {
+            TestApis.activities()
+                .startActivity(
+                    getExternalRegistrationIntent(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        REGISTRATION_ACTIVITY,
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    )
+                )
+            val activityIds =
+                awaitRegisteredActivityIds(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    numRegistrations = 1,
+                )
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyString("prefix", "A")
+                    .setPropertyString("suffix", "B")
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                    )
+                    .setActivityId(activityIds.single())
+                    .setParameters(parameters)
+                    .build()
+
+            freezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+            val response = manager.executeAppFunction(request)
+
+            assertThat(response.exceptionOrNull()).isNotNull()
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
+        } finally {
+            safeUnfreezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+        }
+    }
+
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun executeActivityFunctionFromUnfrozenProcess_success() = doBlocking {
+        try {
+            TestApis.activities()
+                .startActivity(
+                    getExternalRegistrationIntent(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        REGISTRATION_ACTIVITY,
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    )
+                )
+            val activityIds =
+                awaitRegisteredActivityIds(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    numRegistrations = 1,
+                )
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyString("prefix", "A")
+                    .setPropertyString("suffix", "B")
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                    )
+                    .setActivityId(activityIds.first())
+                    .setParameters(parameters)
+                    .build()
+
+            freezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+            unfreezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+            val response = manager.executeAppFunction(request)
+
+            assertThat(response.exceptionOrNull()).isNull()
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                )
+                .isEqualTo("AB")
+        } finally {
+            safeUnfreezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
+        }
+    }
+
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_activityFunctionInTheSeparateApp_doesntProvideActivityId_fail() = doBlocking {
-        TestApis.activities().startActivity(
-            getExternalRegistrationIntent(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                REGISTRATION_ACTIVITY,
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+        TestApis.activities()
+            .startActivity(
+                getExternalRegistrationIntent(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    REGISTRATION_ACTIVITY,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
             )
-        )
 
         awaitRegisteredActivityIds(
             DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
-            numRegistrations = 1
+            numRegistrations = 1,
         )
 
         val parameters: GenericDocument =
@@ -379,119 +522,121 @@ class AppFunctionActivityScopedRegistrationTest {
                 .setPropertyString("prefix", "A")
                 .setPropertyString("suffix", "B")
                 .build()
-        val request = ExecuteAppFunctionRequest.Builder(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
-        )
-            .setParameters(parameters)
-            .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                )
+                .setParameters(parameters)
+                .build()
 
         val response = manager.executeAppFunction(request)
         assertThat(response.exceptionOrNull()).isNotNull()
-        assertThat(response.appFunctionException().errorCode).isEqualTo(
-            AppFunctionException.ERROR_FUNCTION_NOT_FOUND
-        )
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_activityFunctionInTheSeparateApp_wrongActivityIdProvided_fail() = doBlocking {
-        TestApis.activities().startActivity(
-            getExternalRegistrationIntent(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                REGISTRATION_ACTIVITY,
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+        TestApis.activities()
+            .startActivity(
+                getExternalRegistrationIntent(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    REGISTRATION_ACTIVITY,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
             )
-        )
         awaitRegisteredActivityIds(
             DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
-            numRegistrations = 1
+            numRegistrations = 1,
         )
 
         // Obtain ActivityId from this app
-        withRegisteredActivityId(
-            CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS
-        ) { wrongActivityId ->
+        withRegisteredActivityId(CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS) { wrongActivityId ->
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyString("prefix", "A")
                     .setPropertyString("suffix", "B")
                     .build()
-            val request = ExecuteAppFunctionRequest.Builder(
-                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
-            )
-                .setActivityId(wrongActivityId)
-                .setParameters(parameters)
-                .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                    )
+                    .setActivityId(wrongActivityId)
+                    .setParameters(parameters)
+                    .build()
 
             val response = manager.executeAppFunction(request)
             assertThat(response.exceptionOrNull()).isNotNull()
-            assertThat(response.appFunctionException().errorCode).isEqualTo(
-                AppFunctionException.ERROR_FUNCTION_NOT_FOUND
-            )
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
         }
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_activityFunctionInTheSeparateApp_wrongFunctionName_fail() = doBlocking {
-        TestApis.activities().startActivity(
-            getExternalRegistrationIntent(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                REGISTRATION_ACTIVITY,
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+        TestApis.activities()
+            .startActivity(
+                getExternalRegistrationIntent(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    REGISTRATION_ACTIVITY,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
             )
-        )
 
-        val activityIds = awaitRegisteredActivityIds(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
-            numRegistrations = 1
-        )
+        val activityIds =
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
 
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyString("prefix", "A")
                 .setPropertyString("suffix", "B")
                 .build()
-        val request = ExecuteAppFunctionRequest.Builder(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_GET_URIS
-        )
-            .setActivityId(activityIds.first())
-            .setParameters(parameters)
-            .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_GET_URIS)
+                .setActivityId(activityIds.first())
+                .setParameters(parameters)
+                .build()
 
         val response = manager.executeAppFunction(request)
         assertThat(response.exceptionOrNull()).isNotNull()
-        assertThat(response.appFunctionException().errorCode).isEqualTo(
-            AppFunctionException.ERROR_FUNCTION_NOT_FOUND
-        )
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_twoActivitiesRegistered_targetsCorrectActivity() = doBlocking {
-        TestApis.activities().startActivity(
-            getExternalRegistrationIntent(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                REGISTRATION_ACTIVITY_2,
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+        TestApis.activities()
+            .startActivity(
+                getExternalRegistrationIntent(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    REGISTRATION_ACTIVITY_2,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
             )
-        )
-        val activityId2 = awaitRegisteredActivityIds(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
-            numRegistrations = 1
-        )
+        val activityId2 =
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
 
         // Start second activity which registers the same function but different implementation
-        TestApis.activities().startActivity(
-            getExternalRegistrationIntent(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                REGISTRATION_ACTIVITY,
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+        TestApis.activities()
+            .startActivity(
+                getExternalRegistrationIntent(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    REGISTRATION_ACTIVITY,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
             )
-        )
         awaitRegisteredActivityIds(
             DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
-            numRegistrations = 2
+            numRegistrations = 2,
         )
 
         // Target execution request to the first activity
@@ -500,62 +645,67 @@ class AppFunctionActivityScopedRegistrationTest {
                 .setPropertyString("prefix", "A")
                 .setPropertyString("suffix", "B")
                 .build()
-        val request = ExecuteAppFunctionRequest.Builder(
-                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
-        )
-            .setActivityId(activityId2.first())
-            .setParameters(parameters)
-            .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                )
+                .setActivityId(activityId2.first())
+                .setParameters(parameters)
+                .build()
 
         val response = manager.executeAppFunction(request)
         assertThat(response.exceptionOrNull()).isNull()
         assertThat(
-            response
-                .getOrNull()!!
-                .resultDocument
-                .getPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-        )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
             .isEqualTo(DynamicRegistrationActivity2.Companion.CUSTOM_PREFIX + "AB")
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun getAppFunctionActivityState_inTheSeparateApp_returnsRegisteredFunction() = doBlocking {
-        TestApis.activities().startActivity(getExternalRegistrationIntent(
-            DynamicSchemaHelperApp.PACKAGE_NAME,
-            REGISTRATION_ACTIVITY,
-            ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-        ))
+        TestApis.activities()
+            .startActivity(
+                getExternalRegistrationIntent(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    REGISTRATION_ACTIVITY,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
+            )
 
-        val activityIds = awaitRegisteredActivityIds(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
-            numRegistrations = 1
-        )
+        val activityIds =
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
 
         val activityStates = getAppFunctionActivityStates(setOf(activityIds.single()))
         assertThat(activityStates).hasSize(1)
         val activityState = activityStates.single()
         assertThat(activityState.activityId).isEqualTo(activityIds.single())
         assertThat(activityState.functionNames).hasSize(1)
-        assertThat(activityState.functionNames.single()).isEqualTo(
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
-        )
+        assertThat(activityState.functionNames.single())
+            .isEqualTo(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS)
     }
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun getAppFunctionActivityState_withExecutePermission_returnsAllRegisteredFunctions() = doBlocking {
-        val (localActivityId, externalActivityId) = startLocalAndExternalActivities()
+    fun getAppFunctionActivityState_withExecutePermission_returnsAllRegisteredFunctions() =
+        doBlocking {
+            val (localActivityId, externalActivityId) = startLocalAndExternalActivities()
 
-        val activityStates =
-            getAppFunctionActivityStates(setOf(localActivityId, externalActivityId))
+            val activityStates =
+                getAppFunctionActivityStates(setOf(localActivityId, externalActivityId))
 
-        assertActivityStates(
-            activityStates,
-            localActivityId,
-            listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS),
-        )
-    }
+            assertActivityStates(
+                activityStates,
+                localActivityId,
+                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS),
+            )
+        }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
@@ -575,7 +725,7 @@ class AppFunctionActivityScopedRegistrationTest {
             assertActivityStates(
                 activityStates,
                 externalActivityId,
-                listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS)
+                listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS),
             )
         }
 
@@ -592,12 +742,12 @@ class AppFunctionActivityScopedRegistrationTest {
             assertActivityStates(
                 activityStates,
                 localActivityId,
-                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS)
+                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS),
             )
             assertActivityStates(
                 activityStates,
                 externalActivityId,
-                listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS)
+                listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS),
             )
         }
 
@@ -616,7 +766,7 @@ class AppFunctionActivityScopedRegistrationTest {
             assertActivityStates(
                 activityStates,
                 localActivityId,
-                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS)
+                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS),
             )
             assertActivityStatesDoesNotContainActivityId(activityStates, externalActivityId)
         }
@@ -628,13 +778,12 @@ class AppFunctionActivityScopedRegistrationTest {
     ) {
         val activityState = activityStates.single { it.activityId == expectedActivityId }
 
-        assertThat(activityState.functionNames).containsExactlyElementsIn(expectedFunctionNames);
+        assertThat(activityState.functionNames).containsExactlyElementsIn(expectedFunctionNames)
     }
 
     private fun assertActivityStatesDoesNotContainActivityId(
         activityStates: List<AppFunctionActivityState>,
         activityId: AppFunctionActivityId,
-
     ) {
         assertThat(activityStates.any { it.activityId == activityId }).isFalse()
     }
@@ -672,29 +821,25 @@ class AppFunctionActivityScopedRegistrationTest {
                 )
 
             return RegisteredActivityIds(
-                    localActivityId = localActivityIds.first(),
-                    externalActivityId = externalActivityIds.first(),
-                )
+                localActivityId = localActivityIds.first(),
+                externalActivityId = externalActivityIds.first(),
+            )
         }
     }
 
     private suspend fun withRegisteredActivityId(
         functionNameToRegister: AppFunctionName,
-        block: suspend (activityId: AppFunctionActivityId) -> Unit
+        block: suspend (activityId: AppFunctionActivityId) -> Unit,
     ) {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
+        ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.STARTED)
             scenario.onActivity { activity ->
                 activity.registerAppFunction(functionNameToRegister.functionIdentifier)
             }
             scenario.onActivity { activity -> assertThat(activity.isRegistered).isTrue() }
 
-            val activityId = awaitRegisteredActivityIds(
-                functionNameToRegister,
-                numRegistrations = 1
-            ).single()
+            val activityId =
+                awaitRegisteredActivityIds(functionNameToRegister, numRegistrations = 1).single()
             block(activityId)
         }
     }
@@ -702,25 +847,19 @@ class AppFunctionActivityScopedRegistrationTest {
     private fun getExternalRegistrationIntent(
         packageName: String,
         activityName: String,
-        functionId: String
+        functionId: String,
     ): Intent {
         return Intent().apply {
-            component = ComponentName(
-                packageName,
-                activityName
-            )
+            component = ComponentName(packageName, activityName)
             action = ACTION_REGISTER_APP_FUNCTION
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtra(
-                DynamicRegistrationActivity.EXTRA_FUNCTION_ID,
-                functionId
-            )
+            putExtra(DynamicRegistrationActivity.EXTRA_FUNCTION_ID, functionId)
         }
     }
 
     private suspend fun awaitRegisteredActivityIds(
         functionName: AppFunctionName,
-        numRegistrations: Int = 1
+        numRegistrations: Int = 1,
     ): Set<AppFunctionActivityId> {
         var activityIds: Set<AppFunctionActivityId>? = null
         retryAssert {
@@ -734,15 +873,14 @@ class AppFunctionActivityScopedRegistrationTest {
         return activityIds!!
     }
 
-    private suspend fun getAppFunctionState(
-        functionName: AppFunctionName
-    ): List<AppFunctionState> = suspendCancellableCoroutine { continuation ->
-        manager.getAppFunctionStates(
-            listOf(functionName),
-            context.mainExecutor,
-            continuation.asOutcomeReceiver(),
-        )
-    }
+    private suspend fun getAppFunctionState(functionName: AppFunctionName): List<AppFunctionState> =
+        suspendCancellableCoroutine { continuation ->
+            manager.getAppFunctionStates(
+                listOf(functionName),
+                context.mainExecutor,
+                continuation.asOutcomeReceiver(),
+            )
+        }
 
     private suspend fun getAppFunctionActivityStates(
         activityIds: Set<AppFunctionActivityId>
