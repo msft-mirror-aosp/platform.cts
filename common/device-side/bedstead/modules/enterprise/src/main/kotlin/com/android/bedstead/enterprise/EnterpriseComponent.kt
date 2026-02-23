@@ -44,6 +44,7 @@ import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.devicepolicy.ProfileOwner
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.users.UserType.PRIVATE_PROFILE_TYPE_NAME
 import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder
 import com.android.bedstead.remotedpc.RemoteDpc
@@ -392,11 +393,17 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
      */
     fun ensureBackupNotActive(onUser: UserType) {
         val user = userTypeResolver.toUser(onUser)
-        ShellCommand.builder("bmgr")
-            .addOption("--user", user.id())
-            .addOperand("activate false")
-            .validate { it: String -> it.contains("deactivated") }
-            .execute()
+        if (canToggleBackupActivation(user)) {
+            ShellCommand.builder("bmgr")
+                .addOption("--user", user.id())
+                .addOperand("activate false")
+                .validate { it: String -> it.contains("deactivated") }
+                .execute()
+        }
+    }
+
+    private fun canToggleBackupActivation(user: UserReference): Boolean {
+        return user.type().name() != PRIVATE_PROFILE_TYPE_NAME
     }
 
     /**
