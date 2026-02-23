@@ -57,7 +57,7 @@ public class CVE_2022_20611 extends StsExtraBusinessLogicTestCase {
             runShellCommand("pm install-existing --user 0 " + protectedPkg);
             fail(
                     "Protected package '" + protectedPkg + "' could be uninstalled. "
-                    + "Vulnerable to b/242994180.");
+                    + "Vulnerable to b/242996180. Error message: " + res);
         }
     }
 }
