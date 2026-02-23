@@ -16,12 +16,16 @@
 
 package android.app.appfunctions.testutils
 
+import android.Manifest
 import android.content.ContentResolver
 import android.content.ContentValues
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import com.android.bedstead.nene.TestApis.permissions
+import com.android.bedstead.nene.utils.ShellCommand
+import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.delay
 import org.junit.Assert.fail
 
@@ -37,8 +41,8 @@ object CtsTestUtil {
     }
 
     /**
-     * Retries an assertion with a delay between attempts. If the assertion
-     * fails, the test will continue.
+     * Retries an assertion with a delay between attempts. If the assertion fails, the test will
+     * continue.
      */
     suspend fun safeRetryAssert(
         checkInterval: Long = RETRY_CHECK_INTERVAL_MILLIS,
@@ -126,6 +130,57 @@ object CtsTestUtil {
             return
         }
         fail("Uri $uri is still write accessible")
+    }
+
+    /** Freezes a process and waits for it to be frozen. */
+    suspend fun freezeProcess(context: Context, packageName: String, processName: String? = null) {
+        runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
+            val targetProcess =
+                if (processName == null) {
+                    packageName
+                } else {
+                    "$packageName:$processName"
+                }
+            ShellCommand.builder("am freeze $targetProcess").execute()
+
+            retryAssert {
+                val isFrozenOutput = ShellCommand.builder("am isfrozen $targetProcess").execute()
+                assertThat(isFrozenOutput).isEqualTo("true\n")
+            }
+        }
+    }
+
+    /** Unfreezes a process and waits for it to be unfrozen. */
+    suspend fun unfreezeProcess(
+        context: Context,
+        packageName: String,
+        processName: String? = null,
+    ) {
+        runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
+            val targetProcess =
+                if (processName == null) {
+                    packageName
+                } else {
+                    "$packageName:$processName"
+                }
+            ShellCommand.builder("am unfreeze $targetProcess").execute()
+
+            retryAssert {
+                val isFrozenOutput = ShellCommand.builder("am isfrozen $targetProcess").execute()
+                assertThat(isFrozenOutput).isEqualTo("false\n")
+            }
+        }
+    }
+
+    /** Same as [unfreezeProcess], but does not throw an exception if the process is not frozen. */
+    suspend fun safeUnfreezeProcess(
+        context: Context,
+        packageName: String,
+        processName: String? = null,
+    ) {
+        try {
+            unfreezeProcess(context, packageName, processName)
+        } catch (_: Exception) {}
     }
 
     private const val RETRY_CHECK_INTERVAL_MILLIS: Long = 1000

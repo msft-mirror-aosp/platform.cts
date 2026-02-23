@@ -131,6 +131,7 @@ class AppFunctionMetadataTestHelper {
     }
 
     object DynamicSchemaHelperApp {
+        const val REGISTRATION_SERVICE_PROCESS_NAME = "appfunctions_callback"
         const val PACKAGE_NAME = "android.app.appfunctions.cts.dynamic.schema"
         const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
 

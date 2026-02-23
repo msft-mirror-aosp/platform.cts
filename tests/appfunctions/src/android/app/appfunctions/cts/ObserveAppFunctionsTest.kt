@@ -34,12 +34,20 @@ import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
+import android.app.appfunctions.testutils.CtsTestUtil.freezeProcess
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
-import android.app.appfunctions.testutils.CtsTestUtil.safeRetryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
+import android.app.appfunctions.testutils.CtsTestUtil.safeRetryAssert
+import android.app.appfunctions.testutils.CtsTestUtil.safeUnfreezeProcess
+import android.app.appfunctions.testutils.CtsTestUtil.unfreezeProcess
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
+import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.os.IBinder
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -47,6 +55,7 @@ import androidx.core.os.asOutcomeReceiver
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
+import androidx.test.rule.ServiceTestRule
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
@@ -55,6 +64,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
@@ -78,6 +88,7 @@ import org.junit.runner.RunWith
 // TODO(b/478810311):
 //  1. Add granular package visibility tests for each of the 3 relevant permissions.
 //  2. Move duplicate test logic into base test methods.
+//  3. Add tests for EXECUTE_APP_FUNCTIONS_SYSTEM and DISCOVER_APP_FUNCTIONS.
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(
     Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS,
@@ -86,8 +97,10 @@ import org.junit.runner.RunWith
 class ObserveAppFunctionsTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    @get:Rule val activityScenarioRule =
-        ActivityScenarioRule(DynamicRegistrationActivity::class.java)
+    @get:Rule val serviceTestRule = ServiceTestRule()
+
+    @get:Rule
+    val activityScenarioRule = ActivityScenarioRule(DynamicRegistrationActivity::class.java)
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -100,8 +113,7 @@ class ObserveAppFunctionsTest {
     fun setup() = doBlocking {
         activityScenarioRule.scenario.moveToState(Lifecycle.State.CREATED)
         activityScenarioRule.scenario.onActivity { activity ->
-            this@ObserveAppFunctionsTest.activityAppFunctionManager =
-                activity.manager
+            this@ObserveAppFunctionsTest.activityAppFunctionManager = activity.manager
         }
 
         uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
@@ -532,7 +544,7 @@ class ObserveAppFunctionsTest {
                     .containsAtLeastElementsIn(
                         setOf(
                             CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
-                            CtsApp.FunctionNames.ADD
+                            CtsApp.FunctionNames.ADD,
                         )
                     )
             }
@@ -813,6 +825,103 @@ class ObserveAppFunctionsTest {
         }
     }
 
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun freezeProcessWithDynamicAppFunctionRegistered_shouldCallOnAppFunctionsChanged() =
+        doBlocking {
+            val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+            var observation: AppFunctionObservation? = null
+            val observer = TestClientObserver()
+
+            try {
+                service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+                observation = observeAppFunctions(observer)
+
+                freezeProcess(
+                    context,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+                )
+
+                retryAssert {
+                    assertThat(observer.updatedPackagesHistory).isEmpty()
+                    assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
+                    assertThat(observer.updatedFunctionStatesHistory.flatten())
+                        .contains(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                }
+            } finally {
+                observation?.cancel()
+                safeUnfreezeProcess(
+                    context,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+                )
+            }
+        }
+
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun unfreezerocessWithDynamicAppFunctionRegistered_shouldCallOnAppFunctionsChanged() =
+        doBlocking {
+            val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+            var observation: AppFunctionObservation? = null
+            val observer = TestClientObserver()
+
+            try {
+                service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+                freezeProcess(
+                    context,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+                )
+                observation = observeAppFunctions(observer)
+
+                unfreezeProcess(
+                    context,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+                )
+
+                retryAssert {
+                    assertThat(observer.updatedPackagesHistory).isEmpty()
+                    assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
+                    assertThat(observer.updatedFunctionStatesHistory.flatten())
+                        .contains(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                }
+            } finally {
+                observation?.cancel()
+                safeUnfreezeProcess(
+                    context,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+                )
+            }
+        }
+
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun killProcessWithDynamicAppFunctionRegistered_shouldCallOnAppFunctionsChanged() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        var observation: AppFunctionObservation? = null
+        val observer = TestClientObserver()
+
+        try {
+            service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+            observation = observeAppFunctions(observer)
+
+            ShellCommand.builder("am force-stop ${DynamicSchemaHelperApp.PACKAGE_NAME}").execute()
+
+            retryAssert {
+                assertThat(observer.updatedPackagesHistory).isEmpty()
+                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
+                    .contains(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+            }
+        } finally {
+            observation?.cancel()
+        }
+    }
+
     private fun observeAppFunctions(observer: TestClientObserver): AppFunctionObservation {
         return manager.observeAppFunctions(context.mainExecutor, observer)
     }
@@ -869,11 +978,7 @@ class ObserveAppFunctionsTest {
         observer: TestClientObserver,
     ) {
         observer.clearHistory()
-        uninstallPackage(
-            packageName,
-            context,
-            checkIndexation = true,
-        )
+        uninstallPackage(packageName, context, checkIndexation = true)
         // Ensure that the test only finish when the debounced callback is
         // triggered. To avoid affecting other tests.
         safeRetryAssert {
@@ -891,12 +996,7 @@ class ObserveAppFunctionsTest {
     ) {
         observer.clearHistory()
         // Reinstall base app to restore state for subsequent tests
-        installPackage(
-            apkPath,
-            packageName,
-            context,
-            checkIndexation = true,
-        )
+        installPackage(apkPath, packageName, context, checkIndexation = true)
         // Ensure that the test only finish when the debounced callback is
         // triggered. To avoid affecting other tests.
         safeRetryAssert {
@@ -904,6 +1004,21 @@ class ObserveAppFunctionsTest {
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
             assertThat(observer.updatedPackagesHistory.flatten()).contains(packageName)
         }
+    }
+
+    private fun bindToRegistrationService(
+        packageName: String
+    ): ITestAppFunctionRegistrationService {
+        val serviceIntent =
+            Intent().apply {
+                component =
+                    ComponentName(
+                        packageName,
+                        "android.app.appfunctions.testutils.TestAppFunctionRegistrationService",
+                    )
+            }
+        val binder: IBinder = serviceTestRule.bindService(serviceIntent)
+        return ITestAppFunctionRegistrationService.Stub.asInterface(binder)
     }
 
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
