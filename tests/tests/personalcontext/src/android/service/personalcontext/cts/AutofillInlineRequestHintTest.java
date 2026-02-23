@@ -27,6 +27,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.autofill.FillEventHistory;
 import android.service.personalcontext.Flags;
+import android.service.personalcontext.PersonalContextManager;
+import android.service.personalcontext.Token;
 import android.service.personalcontext.hint.AutofillInlineRequestHint;
 import android.service.personalcontext.hint.ContextHint;
 import android.util.Size;
@@ -36,15 +38,14 @@ import android.view.inputmethod.InlineSuggestionsRequest;
 import android.widget.inline.InlinePresentationSpec;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
 import java.util.List;
@@ -60,16 +61,15 @@ public class AutofillInlineRequestHintTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private AutoCloseable mMockCloseable;
+    private Token mToken;
 
     @Before
     public void setUp() throws RemoteException {
-        mMockCloseable = MockitoAnnotations.openMocks(this);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        mMockCloseable.close();
+        PersonalContextManager personalContextManager =
+                InstrumentationRegistry.getInstrumentation()
+                        .getContext()
+                        .getSystemService(PersonalContextManager.class);
+        mToken = personalContextManager.mintToken();
     }
 
     @ApiTest(
@@ -92,11 +92,12 @@ public class AutofillInlineRequestHintTest {
                         + "#setAugmentedAutofillProxy",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint.Builder"
                         + "#setFillEventHistory",
-                "android.service.personalcontext.hint.AutofillInlineRequestHint"
-                        + ".AugmentedAutofillProxy#AugmentedAutofillProxy",
+                "android.service.personalcontext.hint.AutofillInlineRequestHint.Builder#addToken",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint.Builder#build",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#getSessionId",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#getTaskId",
+                "android.service.personalcontext.hint.AutofillInlineRequestHint"
+                        + "#getRequestTimestamp",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint"
                         + "#getActivityComponent",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#getFocusedId",
@@ -107,6 +108,7 @@ public class AutofillInlineRequestHintTest {
                         + "#getAugmentedAutofillProxy",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint"
                         + "#getFillEventHistory",
+                "android.service.personalcontext.hint.AutofillInlineRequestHint#getTokens",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#equals",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#hashCode",
             })
@@ -134,6 +136,7 @@ public class AutofillInlineRequestHintTest {
                                 autofillValue,
                                 inlineSuggestionsRequest,
                                 new Binder())
+                        .addToken(mToken)
                         .setFillEventHistory(fillEventHistory)
                         .build();
 
@@ -143,6 +146,7 @@ public class AutofillInlineRequestHintTest {
         final AutofillInlineRequestHint outputAutofillHint = (AutofillInlineRequestHint) outputHint;
         assertThat(outputAutofillHint.getSessionId()).isEqualTo(sessionId);
         assertThat(outputAutofillHint.getTaskId()).isEqualTo(taskId);
+        assertThat(outputAutofillHint.getRequestTimestamp()).isEqualTo(requestTimestamp);
         assertThat(outputAutofillHint.getActivityComponent()).isEqualTo(activityComponent);
         assertThat(outputAutofillHint.getFocusedId()).isEqualTo(focusedId);
         assertThat(outputAutofillHint.getAutofillValue()).isEqualTo(autofillValue);
@@ -150,6 +154,7 @@ public class AutofillInlineRequestHintTest {
                 .isEqualTo(inlineSuggestionsRequest);
         assertThat(outputAutofillHint.getFillEventHistory().getClientState())
                 .isEqualTo(fillEventHistory.getClientState());
+        assertThat(outputAutofillHint.getTokens()).containsExactly(mToken);
 
         assertThat(outputAutofillHint).isEqualTo(hint);
         assertThat(outputAutofillHint.hashCode()).isEqualTo(hint.hashCode());
