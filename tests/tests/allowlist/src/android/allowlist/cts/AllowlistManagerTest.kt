@@ -209,8 +209,23 @@ class AllowlistManagerTest {
     @ApiTest(apis = ["android.allowlist.AllowlistManager#removeOnAllowlistChangedListener"])
     @Test
     fun testRemoveOnAllowlistChangedListener_withoutPermission_throwsException() {
+        val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, Bundle().apply {
+            putParcelableArrayList(
+                AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
+                arrayListOf(testPackage1)
+            )
+        })
+        val listener = Consumer<AllowlistRequest> {}
+
+        runWithShellPermissionIdentity {
+            allowlistManager.addOnAllowlistChangedListener(
+                request,
+                context.mainExecutor,
+                listener
+            )
+        }
         assertThrows(SecurityException::class.java) {
-            allowlistManager.removeOnAllowlistChangedListener(emptyListener)
+            allowlistManager.removeOnAllowlistChangedListener(listener)
         }
     }
 
