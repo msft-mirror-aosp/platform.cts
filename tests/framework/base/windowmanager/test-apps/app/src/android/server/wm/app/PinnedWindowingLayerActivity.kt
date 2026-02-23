@@ -198,7 +198,7 @@ class PinnedWindowingLayerActivity : Activity() {
     private fun getAppTask(): AppTask {
         val activityManager: ActivityManager = getSystemService(ActivityManager::class.java)
         val appTasks = activityManager.getAppTasks()
-        return checkNotNull(appTasks.filter { it.taskInfo.taskId == taskId }.firstOrNull()) {
+        return checkNotNull(appTasks.filter { it.taskInfo!!.taskId == taskId }.firstOrNull()) {
             "AppTask with taskId $taskId not found."
         }
     }

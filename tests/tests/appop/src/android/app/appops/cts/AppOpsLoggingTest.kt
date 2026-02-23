@@ -485,7 +485,7 @@ class AppOpsLoggingTest {
             val btScanner = btAdapter.bluetoothLeScanner
             val scanCallback = object : ScanCallback() {}
 
-            btScanner.startScan(scanCallback)
+            btScanner!!.startScan(scanCallback)
             try {
                 eventually {
                     assertThat(asyncNoted[0].op).isEqualTo(OPSTR_BLUETOOTH_SCAN)
