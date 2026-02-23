@@ -77,7 +77,6 @@ import org.mockito.ArgumentMatcher;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 /**
  * <p>Basic test for CameraDevice APIs.</p>
  */
@@ -3002,6 +3001,58 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             for (int j = i+1; j < cameraIdsUnderTest.length; j++) {
                 testTwoCameraDevicesAudioRestriction(cameraIdsUnderTest[i], cameraIdsUnderTest[j]);
+            }
+        }
+    }
+
+    /**
+     * Test that creating a capture session with a SurfaceTexture that was previously used for CPU
+     * drawing works correctly.
+     */
+    @Test
+    public void testSurfaceConnectionConflict() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            try {
+                Log.i(
+                        TAG,
+                        "Testing surface connection conflict for camera " + cameraIdsUnderTest[i]);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
+
+                if (!mStaticInfo.isColorOutputSupported()) {
+                    continue;
+                }
+
+                Size previewSize = mOrderedPreviewSizes.get(0);
+                SurfaceTexture st = new SurfaceTexture(1);
+                st.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
+
+                // Establish a CPU connection and then release the surface object.
+                Surface s1 = new Surface(st);
+                android.graphics.Canvas canvas = s1.lockCanvas(null);
+                s1.unlockCanvasAndPost(canvas);
+                s1.release();
+
+                // Now attempt to use the same SurfaceTexture with the camera.
+                Surface surface = new Surface(st);
+                List<Surface> outputSurfaces = new ArrayList<>();
+                outputSurfaces.add(surface);
+
+                mCameraSessionListener = new BlockingSessionCallback();
+                mCamera.createCaptureSession(outputSurfaces, mCameraSessionListener, mHandler);
+
+                mCameraSessionListener
+                        .getStateWaiter()
+                        .waitForState(
+                                BlockingSessionCallback.SESSION_CONFIGURED,
+                                SESSION_CONFIGURE_TIMEOUT_MS);
+                mCameraSession =
+                        mCameraSessionListener.waitAndGetSession(SESSION_CONFIGURE_TIMEOUT_MS);
+                mCameraSession.close();
+                surface.release();
+
+            } finally {
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
