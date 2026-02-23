@@ -531,9 +531,9 @@ public final class TestMeasurementUtil {
                         asWarning,
                         "svid: Space Vehicle ID. Constellation type " + "= CONSTELLATION_QZSS",
                         timeInNs,
-                        "[183, 206]",
+                        "[183, 212]",
                         svidValue,
-                        svid >= 183 && svid <= 206);
+                        svid >= 183 && svid <= 212);
                 break;
             case GnssStatus.CONSTELLATION_BEIDOU:
                 softAssert.assertOrWarnTrue(
