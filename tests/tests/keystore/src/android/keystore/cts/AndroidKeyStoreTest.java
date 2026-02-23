@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -871,11 +872,8 @@ public class AndroidKeyStoreTest {
 
     @Test
     public void testKeyStore_Aliases_NotInitialized_Unencrypted_Failure() throws Exception {
-        try {
-            mKeyStore.aliases();
-            fail("KeyStore should throw exception when not initialized");
-        } catch (KeyStoreException success) {
-        }
+        assertThrows("KeyStore should throw exception when not initialized",
+                KeyStoreException.class, () -> mKeyStore.aliases());
     }
 
     @Test
@@ -1398,11 +1396,8 @@ public class AndroidKeyStoreTest {
 
         final Certificate cert = generateCertificate(FAKE_RSA_CA_1);
 
-        try {
-            mKeyStore.setCertificateEntry(getTestAlias1(), cert);
-            fail("Should throw when trying to overwrite a PrivateKey entry with a Certificate");
-        } catch (KeyStoreException success) {
-        }
+        assertThrows("Should throw when trying to overwrite a PrivateKey entry with a Certificate",
+                KeyStoreException.class, () -> mKeyStore.setCertificateEntry(getTestAlias1(), cert));
     }
 
     @Test
@@ -1703,11 +1698,8 @@ public class AndroidKeyStoreTest {
         chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
         chain[1] = caCert;
 
-        try {
-            mKeyStore.setKeyEntry(getTestAlias1(), privKey, "foo".toCharArray(), chain);
-            fail("Should fail when a password is specified");
-        } catch (KeyStoreException success) {
-        }
+        assertThrows("Should fail when a password is specified",
+                KeyStoreException.class, () -> mKeyStore.setKeyEntry(getTestAlias1(), privKey, "foo".toCharArray(), chain));
     }
 
     @Test
@@ -1853,11 +1845,8 @@ public class AndroidKeyStoreTest {
 
             Certificate cert = generateCertificate(FAKE_RSA_USER_1);
 
-            try {
-                mKeyStore.setKeyEntry(getTestAlias1(), key1, null, new Certificate[] { cert });
-                fail("Should not allow setting of KeyEntry with wrong PrivaetKey");
-            } catch (KeyStoreException success) {
-            }
+            assertThrows("Should not allow setting of KeyEntry with wrong PrivaetKey",
+                    KeyStoreException.class, () -> mKeyStore.setKeyEntry(getTestAlias1(), key1, null, new Certificate[] { cert }));
         }
     }
 
@@ -1946,11 +1935,8 @@ public class AndroidKeyStoreTest {
     public void testKeyStore_Store_LoadStoreParam_Unencrypted_Failure() throws Exception {
         mKeyStore.load(null, null);
 
-        try {
-            mKeyStore.store(null);
-            fail("Should throw UnsupportedOperationException when trying to store");
-        } catch (UnsupportedOperationException success) {
-        }
+        assertThrows("Should throw UnsupportedOperationException when trying to store",
+                UnsupportedOperationException.class, () -> mKeyStore.store(null));
     }
 
     @Test
@@ -1958,20 +1944,14 @@ public class AndroidKeyStoreTest {
         byte[] buf = "FAKE KEYSTORE".getBytes();
         ByteArrayInputStream is = new ByteArrayInputStream(buf);
 
-        try {
-            mKeyStore.load(is, null);
-            fail("Should throw IllegalArgumentException when InputStream is supplied");
-        } catch (IllegalArgumentException success) {
-        }
+        assertThrows("Should throw IllegalArgumentException when InputStream is supplied",
+                IllegalArgumentException.class, () -> mKeyStore.load(is, null));
     }
 
     @Test
     public void testKeyStore_Load_PasswordSupplied_Unencrypted_Failure() throws Exception {
-        try {
-            mKeyStore.load(null, "password".toCharArray());
-            fail("Should throw IllegalArgumentException when password is supplied");
-        } catch (IllegalArgumentException success) {
-        }
+        assertThrows("Should throw IllegalArgumentException when password is supplied",
+                IllegalArgumentException.class, () -> mKeyStore.load(null, "password".toCharArray()));
     }
 
     @Test
@@ -1979,17 +1959,11 @@ public class AndroidKeyStoreTest {
         mKeyStore.load(null, null);
 
         OutputStream sink = new ByteArrayOutputStream();
-        try {
-            mKeyStore.store(sink, null);
-            fail("Should throw UnsupportedOperationException when trying to store");
-        } catch (UnsupportedOperationException success) {
-        }
+        assertThrows("Should throw UnsupportedOperationException when trying to store",
+                UnsupportedOperationException.class, () -> mKeyStore.store(sink, null));
 
-        try {
-            mKeyStore.store(sink, "blah".toCharArray());
-            fail("Should throw UnsupportedOperationException when trying to store");
-        } catch (UnsupportedOperationException success) {
-        }
+        assertThrows("Should throw UnsupportedOperationException when trying to store",
+                UnsupportedOperationException.class, () -> mKeyStore.store(sink, "blah".toCharArray()));
     }
 
     @Test
@@ -2490,29 +2464,20 @@ public class AndroidKeyStoreTest {
                         Arrays.asList(TestUtils.getKeyInfo(key).getDigests()), digest);
 
                 // Empty set of digests specified in import parameters
-                try {
-                    mKeyStore.setEntry(getTestAlias1(),
+                assertThrows(KeyStoreException.class, () -> mKeyStore.setEntry(getTestAlias1(),
                             new KeyStore.SecretKeyEntry(keyBeingImported),
-                            TestUtils.buildUpon(goodSpec).setDigests().build());
-                    fail();
-                } catch (KeyStoreException expected) {}
+                            TestUtils.buildUpon(goodSpec).setDigests().build()));
 
                 // A different digest specified in import parameters
                 String anotherDigest = "SHA-256".equalsIgnoreCase(digest) ? "SHA-384" : "SHA-256";
-                try {
-                    mKeyStore.setEntry(getTestAlias1(),
+                assertThrows(KeyStoreException.class, () -> mKeyStore.setEntry(getTestAlias1(),
                             new KeyStore.SecretKeyEntry(keyBeingImported),
-                            TestUtils.buildUpon(goodSpec).setDigests(anotherDigest).build());
-                    fail();
-                } catch (KeyStoreException expected) {}
-                try {
-                    mKeyStore.setEntry(getTestAlias1(),
+                            TestUtils.buildUpon(goodSpec).setDigests(anotherDigest).build()));
+                assertThrows(KeyStoreException.class, () -> mKeyStore.setEntry(getTestAlias1(),
                             new KeyStore.SecretKeyEntry(keyBeingImported),
                             TestUtils.buildUpon(goodSpec)
                                     .setDigests(digest, anotherDigest)
-                                    .build());
-                    fail();
-                } catch (KeyStoreException expected) {}
+                                    .build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -2544,10 +2509,7 @@ public class AndroidKeyStoreTest {
                 } else {
                     mKeyStore.deleteEntry(alias);
                     assertFalse(mKeyStore.containsAlias(alias));
-                    try {
-                        mKeyStore.setEntry(alias, entry, params);
-                        fail();
-                    } catch (KeyStoreException expected) {}
+                    assertThrows(KeyStoreException.class, () -> mKeyStore.setEntry(alias, entry, params));
                     assertFalse(mKeyStore.containsAlias(alias));
                 }
             } catch (Throwable e) {
@@ -2580,10 +2542,7 @@ public class AndroidKeyStoreTest {
                     } else {
                         mKeyStore.deleteEntry(alias);
                         assertFalse(mKeyStore.containsAlias(alias));
-                        try {
-                            mKeyStore.setEntry(alias, entry, params);
-                            fail();
-                        } catch (KeyStoreException expected) {}
+                        assertThrows(KeyStoreException.class, () -> mKeyStore.setEntry(alias, entry, params));
                     }
                 } catch (Throwable e) {
                     throw new RuntimeException(

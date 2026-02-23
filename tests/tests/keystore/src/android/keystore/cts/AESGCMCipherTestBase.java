@@ -17,7 +17,7 @@
 package android.keystore.cts;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.security.AlgorithmParameters;
@@ -192,10 +192,7 @@ abstract class AESGCMCipherTestBase extends BlockCipherTestBase {
         byte[] ciphertext = getKatCiphertext();
         ciphertext[ciphertext.length / 2] ^= 0x40;
         init(Cipher.DECRYPT_MODE, key, getKatAlgorithmParameterSpec());
-        try {
-            doFinal(ciphertext);
-            fail();
-        } catch (AEADBadTagException expected) {}
+        assertThrows(AEADBadTagException.class, () -> doFinal(ciphertext));
     }
 
     @Test
@@ -207,10 +204,7 @@ abstract class AESGCMCipherTestBase extends BlockCipherTestBase {
         aad[aad.length / 3] ^= 0x2;
         init(Cipher.DECRYPT_MODE, key, getKatAlgorithmParameterSpec());
         updateAAD(aad);
-        try {
-            doFinal(ciphertext);
-            fail();
-        } catch (AEADBadTagException expected) {}
+        assertThrows(AEADBadTagException.class, () -> doFinal(ciphertext));
     }
 
     @Test
