@@ -28,7 +28,13 @@ import android.app.privatecompute.MigrationRequestResult;
 import android.app.privatecompute.PccSandboxManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
+import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
@@ -51,6 +57,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -70,6 +79,136 @@ public class PccSandboxManagerTest {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mPccSandboxManager = mContext.getSystemService(PccSandboxManager.class);
         assertNotNull("PccSandboxManager service not available", mPccSandboxManager);
+    }
+
+    @Test
+    public void testIsPccTrustedSystemComponent_onlyTrustsValidComponents() {
+        Set<String> expectedTrustedPackages = getPccTrustedPackages();
+
+        // Iterate through ALL installed packages to ensure only expected packages return true.
+        List<PackageInfo> allPackages = mContext.getPackageManager().getInstalledPackages(0);
+        for (PackageInfo pkgInfo : allPackages) {
+            String packageName = pkgInfo.packageName;
+            int uid = pkgInfo.applicationInfo.uid;
+
+            boolean isTrusted = mPccSandboxManager.isPccTrustedSystemComponent(uid, packageName);
+
+            if (isTrusted) {
+                boolean isValidReason = false;
+
+                int appId = UserHandle.getAppId(uid);
+                if (appId == Process.SYSTEM_UID
+                        || appId == Process.BLUETOOTH_UID
+                        || appId == Process.PHONE_UID) {
+                    isValidReason = true;
+                } else if (mPccSandboxManager.isPrivateComputeServicesUid(uid)) {
+                    isValidReason = true;
+                } else if (expectedTrustedPackages.contains(packageName)) {
+                    // If it's trusted via config/role, it MUST be a system app
+                    boolean isSystemApp =
+                            (pkgInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0
+                                    || (pkgInfo.applicationInfo.flags
+                                                    & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)
+                                            != 0;
+                    assertTrue(
+                            "Trusted package " + packageName + " must be a system app",
+                            isSystemApp);
+
+                    isValidReason = true;
+                }
+
+                assertTrue(
+                        "Package "
+                                + packageName
+                                + " returned true for isPccTrustedSystemComponent but does not "
+                                + "hold a valid role, config, or system UID.",
+                        isValidReason);
+            }
+        }
+    }
+
+    /** Replicate PccSandboxManagerInternal#populatePccTrustedPackages. */
+    private Set<String> getPccTrustedPackages() {
+        Set<String> packages = new HashSet<>();
+
+        String settingsIntelligencePackage =
+                mContext.getString(
+                        Resources.getSystem()
+                                .getIdentifier(
+                                        "config_systemSettingsIntelligence", "string", "android"));
+        if (!settingsIntelligencePackage.isEmpty()) {
+            packages.add(settingsIntelligencePackage);
+        }
+
+        String systemUiPackage =
+                mContext.getString(
+                        Resources.getSystem()
+                                .getIdentifier("config_systemUi", "string", "android"));
+        if (!systemUiPackage.isEmpty()) {
+            packages.add(systemUiPackage);
+        }
+
+        String recentsUiComponent =
+                mContext.getString(
+                        Resources.getSystem()
+                                .getIdentifier("config_recentsComponentName", "string", "android"));
+        String recentsUiPackage = null;
+        if (!recentsUiComponent.isEmpty()) {
+            ComponentName cn = ComponentName.unflattenFromString(recentsUiComponent);
+            if (cn != null) {
+                recentsUiPackage = cn.getPackageName();
+            }
+        }
+        if (recentsUiPackage != null && !recentsUiPackage.isEmpty()) {
+            packages.add(recentsUiPackage);
+        }
+
+        String[] authorities = {
+            android.provider.MediaStore.AUTHORITY,
+            "telephony",
+            android.provider.ContactsContract.AUTHORITY,
+            android.provider.CalendarContract.AUTHORITY,
+            "downloads",
+            "com.android.externalstorage.documents",
+            android.provider.Settings.AUTHORITY,
+            android.provider.BlockedNumberContract.AUTHORITY
+        };
+
+        for (String auth : authorities) {
+            String pkg = resolveProviderPackageName(auth);
+            if (pkg != null) {
+                packages.add(pkg);
+            }
+        }
+
+        Intent setupWizardIntent = new Intent(Intent.ACTION_MAIN);
+        setupWizardIntent.addCategory("android.intent.category.SETUP_WIZARD");
+        List<ResolveInfo> setupMatches =
+                mContext.getPackageManager()
+                        .queryIntentActivities(
+                                setupWizardIntent,
+                                PackageManager.MATCH_SYSTEM_ONLY
+                                        | PackageManager.MATCH_DIRECT_BOOT_AWARE
+                                        | PackageManager.MATCH_DIRECT_BOOT_UNAWARE
+                                        | PackageManager.MATCH_DISABLED_COMPONENTS);
+
+        for (ResolveInfo info : setupMatches) {
+            if (info.activityInfo != null && info.activityInfo.packageName != null) {
+                packages.add(info.activityInfo.packageName);
+            }
+        }
+
+        return packages;
+    }
+
+    private String resolveProviderPackageName(String authority) {
+        final PackageManager pm = mContext.getPackageManager();
+        int flags =
+                PackageManager.MATCH_SYSTEM_ONLY
+                        | PackageManager.MATCH_DIRECT_BOOT_AWARE
+                        | PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
+        ProviderInfo providerInfo = pm.resolveContentProvider(authority, flags);
+        return providerInfo != null ? providerInfo.packageName : null;
     }
 
     @Test
