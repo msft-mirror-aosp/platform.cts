@@ -34,8 +34,7 @@ import java.util.concurrent.TimeUnit
  * be created if required.
  */
 class InputDeviceAssociationByDescriptor private constructor(
-        private val instrumentation: Instrumentation,
-        private val deviceId: Int,
+        private val inputManager: InputManager,
         val inputDeviceDescriptor: String,
         val associatedDisplay: Display
 ) : AutoCloseable {
@@ -80,24 +79,7 @@ class InputDeviceAssociationByDescriptor private constructor(
             WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(display.displayId)
             instrumentation.uiAutomation.syncInputTransactions()
 
-            return InputDeviceAssociationByDescriptor(
-                instrumentation,
-                deviceId,
-                descriptor,
-                display
-            )
-        }
-
-        fun disassociate(deviceId: Int) {
-            val descriptor = inputManager.getInputDevice(deviceId)!!.descriptor
-            runWithShellPermissionIdentity({
-                inputManager.removeUniqueIdAssociationByDescriptor(descriptor)
-            }, PERMISSION_ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
-
-            waitForDeviceUpdatesUntil {
-                val inputDevice = inputManager.getInputDevice(deviceId)!!
-                inputDevice.associatedDisplayId == Display.INVALID_DISPLAY
-            }
+            return InputDeviceAssociationByDescriptor(inputManager, descriptor, display)
         }
 
         private fun waitForDeviceUpdatesUntil(condition: () -> Boolean) {
@@ -133,7 +115,9 @@ class InputDeviceAssociationByDescriptor private constructor(
 
     override fun close() {
         if (!closed) {
-            Associator(instrumentation).disassociate(deviceId)
+            runWithShellPermissionIdentity({
+                inputManager.removeUniqueIdAssociationByDescriptor(inputDeviceDescriptor)
+            }, PERMISSION_ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
             closed = true
         }
     }
