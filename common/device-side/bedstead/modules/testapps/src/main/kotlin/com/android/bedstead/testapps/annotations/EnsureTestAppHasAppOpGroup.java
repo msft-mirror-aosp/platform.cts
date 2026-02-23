@@ -14,41 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations.enterprise;
+package com.android.bedstead.testapps.annotations;
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
 
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
-import com.android.queryable.annotations.Query;
+import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Register additional query parameters which should be applied to test apps for this test.
- *
- * <p>This is used in conjunction with e.g. @PolicyApplies test to restrict the DPCs used.
- */
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.TEST_APPS)
-public @interface AdditionalQueryParameters {
+@RepeatingAnnotation
+public @interface EnsureTestAppHasAppOpGroup {
+    EnsureTestAppHasAppOp[] value();
 
-    /**
-     * The test app to apply these query parameters to.
-     *
-     * <p>There should be a constant defined in the annotation you are trying to influence for the
-     * test apps they use.
-     */
-    String forTestApp();
-
-    /** The additional query to apply. */
-    Query query();
-
-    /**
+     /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher
@@ -57,8 +40,7 @@ public @interface AdditionalQueryParameters {
      * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any
-     * {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default ENSURE_HAS_SPECIFIED_USER_PRIORITY - 1;
+    int priority() default ENSURE_HAS_DELEGATE_PRIORITY + 1;
 }

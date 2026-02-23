@@ -33,13 +33,13 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
+import com.android.bedstead.enterprise.policies.SuspendPackage;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.policies.SuspendPackage;
 import com.android.bedstead.testapp.TestAppInstance;
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled;
 
 import org.junit.Before;
 import org.junit.ClassRule;

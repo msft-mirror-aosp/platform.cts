@@ -17,12 +17,7 @@ package com.android.bedstead.testapps
 
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.DeviceStateComponent
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
@@ -30,6 +25,11 @@ import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
+import com.android.bedstead.testapps.annotations.AdditionalQueryParameters
+import com.android.bedstead.testapps.annotations.EnsureTestAppDoesNotHavePermission
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasAppOp
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasPermission
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled
 import com.android.queryable.annotations.Query
 import com.google.errorprone.annotations.CanIgnoreReturnValue
 import org.junit.Assume

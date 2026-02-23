@@ -14,22 +14,34 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.testapps.annotations;
 
-import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.ENSURE_TEST_APP_INSTALLED_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
+import static com.android.bedstead.testapps.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 
-import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
+import com.android.bedstead.harrier.annotations.FailureMode;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Ensure that the given permission is not granted to the test app before running the test.
+ */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RepeatingAnnotation
-public @interface EnsureTestAppInstalledGroup {
-    EnsureTestAppInstalled[] value();
+@Repeatable(EnsureTestAppDoesNotHavePermissionGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.TEST_APPS)
+public @interface EnsureTestAppDoesNotHavePermission {
+    String[] value();
+
+    String testAppKey() default DEFAULT_KEY;
+
+    /** The action to be taken if the permission cannot be granted. */
+    FailureMode failureMode() default FailureMode.FAIL;
 
      /**
      * Priority sets the order that annotations will be resolved.
@@ -42,5 +54,5 @@ public @interface EnsureTestAppInstalledGroup {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default ENSURE_TEST_APP_INSTALLED_PRIORITY;
+    int priority() default ENSURE_HAS_DELEGATE_PRIORITY + 1;
 }

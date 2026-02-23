@@ -24,7 +24,7 @@ import com.google.auto.value.AutoAnnotation
  * responds to a specific Intent. The test will skip/fail if any package responds.
  *
  * If you'd rather ensures that at least one package on the device responds to a specific Intent
- * before running the test, see [EnsurePackageRespondsToIntent].
+ * before running the test, see [com.android.bedstead.testapps.annotations.EnsurePackageRespondsToIntent].
  */
 @Target(
     AnnotationTarget.FUNCTION,

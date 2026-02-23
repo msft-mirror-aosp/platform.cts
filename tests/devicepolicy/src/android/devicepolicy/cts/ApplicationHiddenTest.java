@@ -57,7 +57,6 @@ import com.android.bedstead.enterprise.policies.ApplicationHidden;
 import com.android.bedstead.enterprise.policies.ApplicationHiddenSystemOnly;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
@@ -65,6 +64,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.testapp.TestApp;
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;

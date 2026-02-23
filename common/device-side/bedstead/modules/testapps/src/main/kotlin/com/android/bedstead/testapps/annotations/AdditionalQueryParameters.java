@@ -14,39 +14,41 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.testapps.annotations;
 
-import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY;
+
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.queryable.annotations.Query;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Ensure that the given permission is granted to the test app before running the test.
+ * Register additional query parameters which should be applied to test apps for this test.
+ *
+ * <p>This is used in conjunction with e.g. @PolicyApplies test to restrict the DPCs used.
  */
-@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(EnsureTestAppHasPermissionGroup.class)
 @UsesAnnotationExecutor(UsesAnnotationExecutor.TEST_APPS)
-public @interface EnsureTestAppHasPermission {
-    String[] value();
+public @interface AdditionalQueryParameters {
 
-    String testAppKey() default DEFAULT_KEY;
+    /**
+     * The test app to apply these query parameters to.
+     *
+     * <p>There should be a constant defined in the annotation you are trying to influence for the
+     * test apps they use.
+     */
+    String forTestApp();
 
-    /** The minimum version where this permission is required. */
-    int minVersion() default 0;
+    /** The additional query to apply. */
+    Query query();
 
-    /** The maximum version where this permission is required. */
-    int maxVersion() default Integer.MAX_VALUE;
-
-    /** The action to be taken if the permission cannot be granted. */
-    FailureMode failureMode() default FailureMode.FAIL;
-
-     /**
+    /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher
@@ -55,7 +57,8 @@ public @interface EnsureTestAppHasPermission {
      * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any
+     * {@link int}.
      */
-    int priority() default ENSURE_HAS_DELEGATE_PRIORITY + 1;
+    int priority() default ENSURE_HAS_SPECIFIED_USER_PRIORITY - 1;
 }

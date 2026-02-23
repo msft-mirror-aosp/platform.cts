@@ -19,15 +19,15 @@ import android.content.Intent
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
 import com.android.bedstead.harrier.BedsteadServiceLocator
-import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
-import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.testapp.NotFoundException
+import com.android.bedstead.testapps.annotations.AdditionalQueryParameters
+import com.android.bedstead.testapps.annotations.EnsurePackageRespondsToIntent
+import com.android.bedstead.testapps.annotations.EnsureTestAppDoesNotHavePermission
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasAppOp
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasPermission
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled
 import com.android.queryable.queries.ActivityQuery
 import com.android.queryable.queries.IntentFilterQuery
 

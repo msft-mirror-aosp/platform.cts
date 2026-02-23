@@ -21,10 +21,6 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureInstrumented
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.InstrumentationComponent
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.secondaryUser
@@ -34,6 +30,10 @@ import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.testapp.NotFoundException
 import com.android.bedstead.testapp.TestApp
+import com.android.bedstead.testapps.annotations.EnsureTestAppDoesNotHavePermission
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasAppOp
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasPermission
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled
 import com.android.queryable.annotations.Query
 import com.android.queryable.annotations.StringQuery
 import com.google.common.truth.Truth.assertThat

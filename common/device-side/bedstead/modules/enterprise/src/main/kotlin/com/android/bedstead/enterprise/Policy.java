@@ -23,17 +23,15 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLI
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_CONTROLLER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_FINANCED_DEVICE_OWNER;
-import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_USER_CONTROLLER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_SINGLE_DEVICE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_SYSTEM_DEVICE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_USER_CONTROLLER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_IN_BACKGROUND;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_AFFILIATED_OTHER_USERS;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
@@ -46,6 +44,7 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NO
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.NO;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithDeviceControllerKt.includeRunOnAdditionalUserWithDeviceController;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithInitialUserControllerKt.includeRunOnAdditionalUserWithInitialUserController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUserKt.includeRunOnAffiliatedDeviceOwnerSecondaryUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUserKt.includeRunOnBackgroundDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileKt.includeRunOnCloneProfileAlongsideManagedProfile;
@@ -64,7 +63,6 @@ import static com.android.bedstead.enterprise.annotations.parameterized.IncludeR
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUserKt.includeRunOnSystemDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemUserWithDeviceControllerKt.includeRunOnSystemUserWithDeviceController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUserKt.includeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
-import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithInitialUserControllerKt.includeRunOnAdditionalUserWithInitialUserController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUserControllerKt.includeRunOnUserController;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_APP_RESTRICTIONS;
@@ -105,14 +103,14 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUna
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DynamicParameterizedAnnotation;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.CommonPermissions;
+import com.android.bedstead.testapps.annotations.EnsureTestAppDoesNotHavePermission;
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasAppOp;
+import com.android.bedstead.testapps.annotations.EnsureTestAppHasPermission;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;

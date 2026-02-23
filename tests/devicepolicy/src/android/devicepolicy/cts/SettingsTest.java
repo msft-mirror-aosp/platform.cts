@@ -31,10 +31,6 @@ import static org.testng.Assert.assertThrows;
 
 import android.os.Build;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureNotDemoMode;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
@@ -42,7 +38,12 @@ import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.enterprise.policies.SetDeviceOwnerSecureSetting;
 import com.android.bedstead.enterprise.policies.SetGlobalSetting;
 import com.android.bedstead.enterprise.policies.SetSecureSetting;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureNotDemoMode;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.testapps.annotations.AdditionalQueryParameters;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 
@@ -146,7 +147,7 @@ public final class SettingsTest {
 
     @CanSetPolicyTest(policy = SetDeviceOwnerSecureSetting.class)
     @Postsubmit(reason = "new test")
-    @com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters(
+    @AdditionalQueryParameters(
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isLessThan = Build.VERSION_CODES.R))
     )
@@ -187,7 +188,7 @@ public final class SettingsTest {
 
     @CanSetPolicyTest(policy = SetDeviceOwnerSecureSetting.class)
     @Postsubmit(reason = "new test")
-    @com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters(
+    @AdditionalQueryParameters(
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo = R))
     )
