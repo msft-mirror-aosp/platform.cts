@@ -47,26 +47,26 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
     private static final String APP_PACKAGE_NAME = "com.example.pcc.host.test";
 
     private int mInitialUserId = -1;
-    private int mUserId = -1;
+    private int mSecondaryUserId = -1;
 
     @Before
     public void setUp() throws Exception {
         getDevice().enableAdbRoot();
         mInitialUserId = getDevice().getCurrentUser();
-        mUserId = getDevice().createUser("test_user");
-        getDevice().switchUser(mUserId);
+        mSecondaryUserId = getDevice().createUser("test_user");
+        getDevice().switchUser(mSecondaryUserId);
     }
 
     @After
     public void tearDown() throws Exception {
-        if (mUserId != -1) {
-            if (isPackageInstalledForUser(APP_PACKAGE_NAME, mUserId)) {
-                uninstallPackageForUser(APP_PACKAGE_NAME, mUserId);
+        if (mSecondaryUserId != -1) {
+            if (isPackageInstalledForUser(APP_PACKAGE_NAME, mSecondaryUserId)) {
+                uninstallPackageForUser(APP_PACKAGE_NAME, mSecondaryUserId);
             }
             if (getDevice().getCurrentUser() != mInitialUserId) {
                 getDevice().switchUser(mInitialUserId);
             }
-            getDevice().removeUser(mUserId);
+            getDevice().removeUser(mSecondaryUserId);
         }
         if (isPackageInstalledForUser(APP_PACKAGE_NAME, mInitialUserId)) {
             uninstallPackageForUser(APP_PACKAGE_NAME, mInitialUserId);
@@ -82,89 +82,91 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
         // resources. So, we bundle all the lifecycle tests into a single test.
 
         // --- Install and Verify ---
-        installPackageAsUser(PCC_TEST_APK, true, mUserId);
-        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mUserId)).isTrue();
+        installPackageAsUser(PCC_TEST_APK, true, mSecondaryUserId);
+        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mSecondaryUserId)).isTrue();
 
         // Verify standard directories exist
         CommandResult ceResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getAppDataPath(mUserId, APP_PACKAGE_NAME, true));
+                                "ls " + getAppDataPath(mSecondaryUserId, APP_PACKAGE_NAME, true));
         CommandResult deResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getAppDataPath(mUserId, APP_PACKAGE_NAME, false));
+                                "ls " + getAppDataPath(mSecondaryUserId, APP_PACKAGE_NAME, false));
         assertThat(ceResult.getStatus()).isEqualTo(CommandStatus.SUCCESS);
         assertThat(deResult.getStatus()).isEqualTo(CommandStatus.SUCCESS);
 
-        assertSeLinuxLabel(mUserId, APP_PACKAGE_NAME);
-        assertPccDirectoriesExist(mUserId, APP_PACKAGE_NAME);
+        assertSeLinuxLabel(mSecondaryUserId, APP_PACKAGE_NAME);
+        assertPccDirectoriesExist(mSecondaryUserId, APP_PACKAGE_NAME);
 
         // --- Clear App Data and Verify ---
         getDevice()
                 .executeShellV2Command(
                         "touch "
-                                + getPccCachePath(mUserId, APP_PACKAGE_NAME, true)
+                                + getPccCachePath(mSecondaryUserId, APP_PACKAGE_NAME, true)
                                 + "/dummy_file.txt");
         getDevice()
                 .executeShellV2Command(
                         "touch "
-                                + getPccCachePath(mUserId, APP_PACKAGE_NAME, false)
+                                + getPccCachePath(mSecondaryUserId, APP_PACKAGE_NAME, false)
                                 + "/dummy_file.txt");
 
-        getDevice().executeShellV2Command("pm clear --user " + mUserId + " " + APP_PACKAGE_NAME);
+        getDevice()
+                .executeShellV2Command(
+                        "pm clear --user " + mSecondaryUserId + " " + APP_PACKAGE_NAME);
 
         CommandResult ceCacheResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getPccCachePath(mUserId, APP_PACKAGE_NAME, true));
+                                "ls " + getPccCachePath(mSecondaryUserId, APP_PACKAGE_NAME, true));
         CommandResult deCacheResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getPccCachePath(mUserId, APP_PACKAGE_NAME, false));
+                                "ls " + getPccCachePath(mSecondaryUserId, APP_PACKAGE_NAME, false));
         assertThat(ceCacheResult.getStdout().trim()).isEmpty();
         assertThat(deCacheResult.getStdout().trim()).isEmpty();
 
         // --- Uninstall and Verify ---
-        uninstallPackageForUser(APP_PACKAGE_NAME, mUserId);
-        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mUserId)).isFalse();
+        uninstallPackageForUser(APP_PACKAGE_NAME, mSecondaryUserId);
+        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mSecondaryUserId)).isFalse();
 
         // Verify standard directories are deleted
         ceResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getAppDataPath(mUserId, APP_PACKAGE_NAME, true));
+                                "ls " + getAppDataPath(mSecondaryUserId, APP_PACKAGE_NAME, true));
         deResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getAppDataPath(mUserId, APP_PACKAGE_NAME, false));
+                                "ls " + getAppDataPath(mSecondaryUserId, APP_PACKAGE_NAME, false));
         assertThat(ceResult.getStatus()).isNotEqualTo(CommandStatus.SUCCESS);
         assertThat(deResult.getStatus()).isNotEqualTo(CommandStatus.SUCCESS);
 
         // Verify PCC directories are deleted
-        assertPccDirectoriesDontExist(mUserId, APP_PACKAGE_NAME);
+        assertPccDirectoriesDontExist(mSecondaryUserId, APP_PACKAGE_NAME);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testInstallNonPccApp_onlyStandardDirectoriesExist() throws Exception {
-        installPackageAsUser(NON_PCC_TEST_APK, true, mUserId);
-        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mUserId)).isTrue();
+        installPackageAsUser(NON_PCC_TEST_APK, true, mSecondaryUserId);
+        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mSecondaryUserId)).isTrue();
 
         // Verify standard directories exist
         CommandResult ceResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getAppDataPath(mUserId, APP_PACKAGE_NAME, true));
+                                "ls " + getAppDataPath(mSecondaryUserId, APP_PACKAGE_NAME, true));
         CommandResult deResult =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getAppDataPath(mUserId, APP_PACKAGE_NAME, false));
+                                "ls " + getAppDataPath(mSecondaryUserId, APP_PACKAGE_NAME, false));
         assertThat(ceResult.getStatus()).isEqualTo(CommandStatus.SUCCESS);
         assertThat(deResult.getStatus()).isEqualTo(CommandStatus.SUCCESS);
 
         // Verify PCC directories don't exist
-        assertPccDirectoriesDontExist(mUserId, APP_PACKAGE_NAME);
+        assertPccDirectoriesDontExist(mSecondaryUserId, APP_PACKAGE_NAME);
     }
 
     @Test
@@ -172,7 +174,7 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
     public void testMultiUserIsolation() throws Exception {
         // Install for both users
         installPackageAsUser(PCC_TEST_APK, true, mInitialUserId);
-        installPackageAsUser(PCC_TEST_APK, true, mUserId);
+        installPackageAsUser(PCC_TEST_APK, true, mSecondaryUserId);
 
         // Create distinct files in each user's CE cache directory
         String initialUserFile = "initial_user_file.txt";
@@ -186,7 +188,7 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
         getDevice()
                 .executeShellV2Command(
                         "touch "
-                                + getPccCachePath(mUserId, APP_PACKAGE_NAME, true)
+                                + getPccCachePath(mSecondaryUserId, APP_PACKAGE_NAME, true)
                                 + "/"
                                 + testUserFile);
 
@@ -202,7 +204,7 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
         CommandResult testUserCache =
                 getDevice()
                         .executeShellV2Command(
-                                "ls " + getPccCachePath(mUserId, APP_PACKAGE_NAME, true));
+                                "ls " + getPccCachePath(mSecondaryUserId, APP_PACKAGE_NAME, true));
         assertThat(testUserCache.getStdout()).contains(testUserFile);
         assertThat(testUserCache.getStdout()).doesNotContain(initialUserFile);
     }
@@ -210,25 +212,81 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testNonPccToPccUpgrade_pccDirectoryAdded() throws Exception {
-        installPackageAsUser(NON_PCC_TEST_APK, true, mUserId);
+        installPackageAsUser(NON_PCC_TEST_APK, true, mSecondaryUserId);
 
-        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mUserId)).isTrue();
-        assertPccDirectoriesDontExist(mUserId, APP_PACKAGE_NAME);
+        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mSecondaryUserId)).isTrue();
+        assertPccDirectoriesDontExist(mSecondaryUserId, APP_PACKAGE_NAME);
 
-        installPackageAsUser(PCC_TEST_APK, true, mUserId, "-r", "-d");
-        assertPccDirectoriesExist(mUserId, APP_PACKAGE_NAME);
+        installPackageAsUser(PCC_TEST_APK, true, mSecondaryUserId, "-r", "-d");
+        assertPccDirectoriesExist(mSecondaryUserId, APP_PACKAGE_NAME);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testPccToNonPccUpgrade_pccDirectoryRemoved() throws Exception {
-        installPackageAsUser(PCC_TEST_APK, true, mUserId);
+        installPackageAsUser(PCC_TEST_APK, true, mSecondaryUserId);
 
-        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mUserId)).isTrue();
-        assertPccDirectoriesExist(mUserId, APP_PACKAGE_NAME);
+        assertThat(isPackageInstalledForUser(APP_PACKAGE_NAME, mSecondaryUserId)).isTrue();
+        assertPccDirectoriesExist(mSecondaryUserId, APP_PACKAGE_NAME);
 
-        installPackageAsUser(NON_PCC_TEST_APK, true, mUserId, "-r", "-d");
-        assertPccDirectoriesDontExist(mUserId, APP_PACKAGE_NAME);
+        installPackageAsUser(NON_PCC_TEST_APK, true, mSecondaryUserId, "-r", "-d");
+        assertPccDirectoriesDontExist(mSecondaryUserId, APP_PACKAGE_NAME);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
+    public void testPccDirectoryOwnership_onSecondaryUser_matchesUserUid() throws Exception {
+        // 1. Get the secondary user
+        assertThat(mSecondaryUserId).isNotEqualTo(mInitialUserId);
+
+        // 2. Install the PCC App for that user
+        installPackageAsUser(PCC_TEST_APK, true, mSecondaryUserId);
+
+        // 3. Get the Base PCC App ID (e.g., 30153) via dumpsys
+        int pccAppId = getPccAppId(APP_PACKAGE_NAME);
+        assertThat(pccAppId).isGreaterThan(0);
+
+        // 4. Calculate the expected User-Specific UID (e.g., 1030153)
+        // Formula: (UserId * 100000) + AppId
+        int expectedUserUid = (mSecondaryUserId * 100000) + pccAppId;
+
+        // 5. Inspect the filesystem owner of the PCC directory
+        // Path: /data/user/<userId>/<pkg>-pcc
+        // Command: stat -c '%u' <path> returns the numeric Owner UID
+        String pccDir = String.format("/data/user/%d/%s-pcc", mSecondaryUserId, APP_PACKAGE_NAME);
+
+        CommandResult result = getDevice().executeShellV2Command("stat -c '%u' " + pccDir);
+
+        if (result.getStatus() != CommandStatus.SUCCESS) {
+            // Fallback for cases where /data/user/X symlink might behave oddly, try /data/user_de
+            pccDir = String.format("/data/user_de/%d/%s-pcc", mSecondaryUserId, APP_PACKAGE_NAME);
+            result = getDevice().executeShellV2Command("stat -c '%u' " + pccDir);
+        }
+
+        assertThat(result.getStatus()).isEqualTo(CommandStatus.SUCCESS);
+        int actualOwnerUid = Integer.parseInt(result.getStdout().trim());
+
+        // 6. Assertions
+        assertThat(actualOwnerUid).isEqualTo(expectedUserUid);
+        assertThat(actualOwnerUid).isNotEqualTo(pccAppId);
+    }
+
+    /** Helper to parse 'pccId=30xxx' from dumpsys */
+    private int getPccAppId(String packageName) throws Exception {
+        String output = getDevice().executeShellCommand("dumpsys package " + packageName);
+        for (String line : output.split("\\n")) {
+            line = line.trim();
+            // Look for "pccId=30123"
+            if (line.contains("pccId=")) {
+                String[] parts = line.split("pccId=");
+                if (parts.length > 1) {
+                    // Extract the number (handle potential trailing text if any)
+                    String idStr = parts[1].split("\\s+")[0];
+                    return Integer.parseInt(idStr);
+                }
+            }
+        }
+        return -1;
     }
 
     private String getAppDataPath(int userId, String packageName, boolean isCe) {
