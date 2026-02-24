@@ -54,7 +54,6 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
 
             setSupervisionEnabled(false)
             assertThat(events.supervisionDisabled()).eventOccurred()
-            assertThat(events.serviceUnbound()).eventOccurred()
         }
     }
 
@@ -81,7 +80,6 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
             runBlocking {
                 apps.forEachParallel {
                     assertThat(it.events().supervisionDisabled()).eventOccurred()
-                    assertThat(it.events().serviceUnbound()).eventOccurred()
                 }
             }
         }

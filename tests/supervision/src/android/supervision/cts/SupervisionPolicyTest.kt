@@ -52,6 +52,7 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
     @Before
     fun setUp() {
         EventLogs.resetLogs()
+        setSupervisionEnabled(false)
     }
 
     @Test
@@ -133,7 +134,7 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
 
     @Test
     fun setPolicy_multipleSupervisionApps_mostRecentPolicyApplied() {
-        withTestApp(EMPTY_TEST_APP_PACKAGE_NAME) { _ ->
+        withTestApp(NOT_EMPTY_TEST_APP_PACKAGE_NAME) { testApp ->
             withSupervisionApps(count = 2) { apps ->
                 setSupervisionEnabled(true)
                 runBlocking {
@@ -141,9 +142,12 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
                         assertThat(it.events().supervisionEnabled()).eventOccurred()
                     }
                 }
-                val policy1 = EMPTY_TEST_APP_BLOCKED_POLICY
+                val policy1 = PackageUsagePolicy.Builder(
+                    testApp.packageName(),
+                    PackageUsagePolicy.TYPE_ALLOWED
+                ).build()
                 val policy2 = PackageUsagePolicy.Builder(
-                    EMPTY_TEST_APP_PACKAGE_NAME,
+                    testApp.packageName(),
                     PackageUsagePolicy.TYPE_ALLOWED
                 ).setVersion(1).build()
 
@@ -156,20 +160,24 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
 
     @Test
     fun setPolicy_multipleSupervisionApps_oneSetsAllNotified() {
-        withSupervisionApps(count = 3) { apps ->
+        withTestApp(NOT_EMPTY_TEST_APP_PACKAGE_NAME) { testApp ->
+            withSupervisionApps(count = 3) { apps ->
 
-            setSupervisionEnabled(true)
-            runBlocking {
-                apps.forEachParallel {
-                    assertThat(it.events().supervisionEnabled()).eventOccurred()
+                setSupervisionEnabled(true)
+                runBlocking {
+                    apps.forEachParallel {
+                        assertThat(it.events().supervisionEnabled()).eventOccurred()
+                    }
                 }
-            }
 
-            apps[0].supervisionManager().setPolicy(EMPTY_TEST_APP_BLOCKED_POLICY)
+                apps[0].supervisionManager().setPolicy(
+                    PackageUsagePolicy.Builder(testApp.packageName(),
+                        PackageUsagePolicy.TYPE_BLOCKED).build())
 
-            runBlocking {
-                apps.forEachParallel {
-                    assertThat(it.events().policyChanged()).eventOccurred()
+                runBlocking {
+                    apps.forEachParallel {
+                        assertThat(it.events().policyChanged()).eventOccurred()
+                    }
                 }
             }
         }
@@ -228,7 +236,6 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
         assertThat(getApplicationEnabledState(policy.packageName)).isEqualTo(expectedEnabledState)
     }
 
-
     private fun withTestApp(packageName: String, action: (app: TestAppInstance) -> Unit) {
         val app: TestApp = TestAppProvider().query().wherePackageName().isEqualTo(packageName).get()
 
@@ -264,15 +271,8 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
     }
 
     private companion object {
-        const val EMPTY_TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.EmptyTestApp"
         const val MULTIPLE_ACTIVITIES_TEST_APP_PACKAGE_NAME =
             "com.android.bedstead.testapp.MultipleActivitiesTestApp"
         const val NOT_EMPTY_TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.NotEmptyTestApp"
-        val EMPTY_TEST_APP_BLOCKED_POLICY =
-            PackageUsagePolicy.Builder(
-                EMPTY_TEST_APP_PACKAGE_NAME,
-                PackageUsagePolicy.TYPE_BLOCKED,
-            )
-                .build()
     }
 }
