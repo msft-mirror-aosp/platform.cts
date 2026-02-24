@@ -1048,6 +1048,7 @@ public class VirtualCameraTest {
                         .addStreamConfig(stream0Width, stream0Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
                         .addStreamConfig(stream1Width, stream1Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
                         .addStreamConfig(stream2Width, stream2Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                        .setConcurrentStreamConfigSupported(true)
                         .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
                         .setLensFacing(LENS_FACING_FRONT)
                         .build();
@@ -1114,23 +1115,6 @@ public class VirtualCameraTest {
         } finally {
             reader1.close();
             reader2.close();
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_STREAM_CLOSE_DEVICE_CLOSE)
-    public void createSession_calledTwice_fails() throws CameraAccessException {
-        mCameraManager.openCamera(FRONT_CAMERA_ID, mExecutor, mCameraStateCallback);
-        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
-                .onOpened(mCameraDeviceCaptor.capture());
-
-        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
-
-        try (ImageReader reader = createImageReader(YUV_420_888)) {
-            cameraDevice.createCaptureSession(createSessionConfig(reader));
-            cameraDevice.createCaptureSession(createSessionConfig(reader));
-
-            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS)).onConfigureFailed(any());
         }
     }
 
