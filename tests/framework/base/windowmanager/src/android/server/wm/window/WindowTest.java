@@ -760,11 +760,8 @@ public class WindowTest {
     @Test
     @UiThreadTest
     @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_SUPPORT_CUSTOM_DIM_COLOR)
-    public void testDimColorFromTheme() throws Throwable {
-        final Context themedContext =
-                new ContextThemeWrapper(mActivity, R.style.CustomDimColorTheme);
-
-        Dialog dialog = new Dialog(themedContext);
+    public void testDimColorFromTheme() {
+        Dialog dialog = new Dialog(mActivity, R.style.CustomDimColorTheme);
         dialog.show();
 
         try {
