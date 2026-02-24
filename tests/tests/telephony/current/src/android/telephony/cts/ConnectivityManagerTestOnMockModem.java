@@ -301,11 +301,11 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
                 .adoptShellPermissionIdentity("android.permission.READ_PHONE_STATE");
 
         ServiceState ss = sTelephonyManager.getServiceState();
-        assertNotNull(ss);
+        assertNotNull("ServiceState should not be null", ss);
 
         NetworkRegistrationInfo nri =
                 ss.getNetworkRegistrationInfo(domain, AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
-        assertNotNull(nri);
+        assertNotNull("NetworkRegistrationInfo should not be null", nri);
 
         reg = nri.getRegistrationState();
         Log.d(TAG, "SS: " + nri.registrationStateToString(reg));
@@ -396,12 +396,12 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
 
         // make sure the network is available
         sNetworkCallback.awaitNetwork();
-        assertTrue(getNetworkOnAvailable());
+        assertTrue("Network should be available", getNetworkOnAvailable());
 
         // make sure the network is validated
         sConnectivityManager.reportNetworkConnectivity(getDefaultNetwork(), false);
         waitForExpectedValidationState(true, TIMEOUT_NETWORK_VALIDATION);
-        assertTrue(getNetworkValidated());
+        assertTrue("Network should be validated", getNetworkValidated());
 
         // Leave Service
         Log.d(TAG, "testNetworkValidated: Leave Service");
@@ -480,7 +480,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
             // make sure the network is available
             sNetworkCallback.awaitNetwork();
             Log.d(TAG, "Check Data : " + getNetworkOnAvailable());
-            assertTrue(getNetworkOnAvailable());
+            assertTrue("Network should be available", getNetworkOnAvailable());
         }
 
         // Leave Service
@@ -636,4 +636,3 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
         }
     }
 }
-

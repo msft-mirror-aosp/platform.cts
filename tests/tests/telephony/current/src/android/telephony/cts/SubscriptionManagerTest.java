@@ -275,16 +275,19 @@ public class SubscriptionManagerTest {
 
     @Test
     public void testGetActiveSubscriptionInfoCount() throws Exception {
-        assertTrue(mSm.getActiveSubscriptionInfoCount() <=
-                mSm.getActiveSubscriptionInfoCountMax());
+        assertTrue(
+                "Active subscription count should not exceed max",
+                mSm.getActiveSubscriptionInfoCount() <= mSm.getActiveSubscriptionInfoCountMax());
     }
 
     @Test
     public void testGetActiveSubscriptionInfoForIcc() throws Exception {
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
-        assertNotNull(ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
-                (sm) -> sm.getActiveSubscriptionInfoForIcc(info.getIccId())));
+        assertNotNull(
+                "SubscriptionInfo for a valid ICCID should not be null",
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mSm, (sm) -> sm.getActiveSubscriptionInfoForIcc(info.getIccId())));
     }
 
     @Test
@@ -298,15 +301,19 @@ public class SubscriptionManagerTest {
 
     @Test
     public void testIsActiveSubscriptionId() throws Exception {
-        assertTrue(mSm.isActiveSubscriptionId(mSubId));
+        assertTrue(
+                "Default data subscription ID should be active",
+                mSm.isActiveSubscriptionId(mSubId));
     }
 
     @Test
     public void testGetSubscriptionIds() throws Exception {
         int slotId = SubscriptionManager.getSlotIndex(mSubId);
         int[] subIds = mSm.getSubscriptionIds(slotId);
-        assertNotNull(subIds);
-        assertTrue(ArrayUtils.contains(subIds, mSubId));
+        assertNotNull("Subscription ID list for a valid slot should not be null", subIds);
+        assertTrue(
+                "Default data subscription ID should be in the list for its slot",
+                ArrayUtils.contains(subIds, mSubId));
     }
 
     @Test
@@ -327,7 +334,9 @@ public class SubscriptionManagerTest {
 
     @Test
     public void testIsUsableSubscriptionId() throws Exception {
-        assertTrue(SubscriptionManager.isUsableSubscriptionId(mSubId));
+        assertTrue(
+                "Default data subscription ID should be usable",
+                SubscriptionManager.isUsableSubscriptionId(mSubId));
     }
 
     @Test
@@ -342,15 +351,23 @@ public class SubscriptionManagerTest {
         assertFalse("Active subscriber required", subList.isEmpty());
         assertNotEquals("Active subscriber required", 0, idList.length);
         for (int i = 0; i < subList.size(); i++) {
-            assertTrue(subList.get(i).getSubscriptionId() >= 0);
-            assertTrue(subList.get(i).getSimSlotIndex() >= 0);
-            assertTrue(ArrayUtils.contains(idList, subList.get(i).getSubscriptionId()));
+            assertTrue(
+                    "Subscription ID should be non-negative",
+                    subList.get(i).getSubscriptionId() >= 0);
+            assertTrue(
+                    "Sim slot index should be non-negative", subList.get(i).getSimSlotIndex() >= 0);
+            assertTrue(
+                    "Subscription ID from list should be in ID array",
+                    ArrayUtils.contains(idList, subList.get(i).getSubscriptionId()));
             if (i >= 1) {
-                assertTrue(subList.get(i - 1).getSimSlotIndex()
-                        <= subList.get(i).getSimSlotIndex());
-                assertTrue(subList.get(i - 1).getSimSlotIndex() < subList.get(i).getSimSlotIndex()
-                        || subList.get(i - 1).getSubscriptionId()
-                        < subList.get(i).getSubscriptionId());
+                assertTrue(
+                        "Subscription list should be sorted by slot index",
+                        subList.get(i - 1).getSimSlotIndex() <= subList.get(i).getSimSlotIndex());
+                assertTrue(
+                        "Subscription list should be sorted by subId if slot index is same",
+                        subList.get(i - 1).getSimSlotIndex() < subList.get(i).getSimSlotIndex()
+                                || subList.get(i - 1).getSubscriptionId()
+                                        < subList.get(i).getSubscriptionId());
             }
         }
     }
@@ -371,7 +388,9 @@ public class SubscriptionManagerTest {
                 .invokeMethodWithShellPermissions(allProfileSm,
                         SubscriptionManager::getActiveSubscriptionInfoList);
 
-        assertTrue(allProfileSubList.size() >= specificProfileSubList.size());
+        assertTrue(
+                "All-profile list should be at least as large as specific-profile list",
+                allProfileSubList.size() >= specificProfileSubList.size());
     }
 
     @Test
@@ -405,7 +424,9 @@ public class SubscriptionManagerTest {
         mSm.setSubscriptionPlans(mSubId, Arrays.asList(plan), SUBSCRIPTION_PLAN_EXPIRY_MS);
         Thread.sleep(SUBSCRIPTION_PLAN_EXPIRY_MS);
         Thread.sleep(SUBSCRIPTION_PLAN_CLEAR_WAIT_MS);
-        assertTrue(mSm.getSubscriptionPlans(mSubId).isEmpty());
+        assertTrue(
+                "Subscription plans should be empty after expiry",
+                mSm.getSubscriptionPlans(mSubId).isEmpty());
 
         // Push simple non-recurring plan and get it back
         ZonedDateTime start = ZonedDateTime.parse("2007-03-14T00:00:00.000Z");
@@ -454,7 +475,9 @@ public class SubscriptionManagerTest {
                 Arrays.asList(buildValidSubscriptionPlan(System.currentTimeMillis())));
 
         // Cellular is uncongested by default
-        assertTrue(cm.getNetworkCapabilities(net).hasCapability(NET_CAPABILITY_NOT_CONGESTED));
+        assertTrue(
+                "Cellular should be uncongested by default",
+                cm.getNetworkCapabilities(net).hasCapability(NET_CAPABILITY_NOT_CONGESTED));
 
         // Override should make it go congested
         {
@@ -463,7 +486,9 @@ public class SubscriptionManagerTest {
             });
             mSm.setSubscriptionOverrideCongested(
                     mSubId, true, TelephonyManager.getAllNetworkTypes(), 0);
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(
+                    "Timeout waiting for network to become congested",
+                    latch.await(10, TimeUnit.SECONDS));
         }
 
         // Clearing override should make it go uncongested
@@ -472,7 +497,9 @@ public class SubscriptionManagerTest {
                 return caps.hasCapability(NET_CAPABILITY_NOT_CONGESTED);
             });
             mSm.setSubscriptionOverrideCongested(mSubId, false, 0);
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(
+                    "Timeout waiting for network to become uncongested",
+                    latch.await(10, TimeUnit.SECONDS));
         }
 
         // Now revoke our access
@@ -498,7 +525,9 @@ public class SubscriptionManagerTest {
             mSm.addSubscriptionInfoRecord(uniqueId, displayName,
                     SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
-            assertNotNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
+            assertNotNull(
+                    "Remote SIM should be added successfully",
+                    mSm.getActiveSubscriptionInfoForIcc(uniqueId));
             mSm.removeSubscriptionInfoRecord(uniqueId,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             assertNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
@@ -562,7 +591,7 @@ public class SubscriptionManagerTest {
                     SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             SubscriptionInfo subInfo1 = mSm.getActiveSubscriptionInfoForIcc(uniqueId1);
-            assertNotNull(subInfo1);
+            assertNotNull("SubscriptionInfo for remote SIM 1 should not be null", subInfo1);
             // Verify getSubscriptionId returns the first remote SIM
             int subId1 = subInfo1.getSubscriptionId();
             assertEquals(
@@ -571,12 +600,16 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList contains the first remote SIM
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
-            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            assertNotNull("Active subscription ID list should not be null", subIdList);
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 1",
+                    ArrayUtils.contains(subIdList, subId1));
             // Verify getActiveSubscriptionInfoList contains the first remote SIM
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+            assertNotNull("Active subscription info list should not be null", subInfoList);
+            assertTrue(
+                    "Active sub info list should contain remote SIM 1",
+                    ArrayUtils.contains(subInfoList, subInfo1));
 
             // Insert second remote SIM
             mSm.addSubscriptionInfoRecord(
@@ -585,7 +618,7 @@ public class SubscriptionManagerTest {
                     SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             SubscriptionInfo subInfo2 = mSm.getActiveSubscriptionInfoForIcc(uniqueId2);
-            assertNotNull(subInfo2);
+            assertNotNull("SubscriptionInfo for remote SIM 2 should not be null", subInfo2);
             // Verify getSubscriptionId returns the second remote SIM (last inserted)
             int subId2 = subInfo2.getSubscriptionId();
             assertEquals(
@@ -594,14 +627,22 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList contains both remote SIMs
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
-            assertTrue(ArrayUtils.contains(subIdList, subId1));
-            assertTrue(ArrayUtils.contains(subIdList, subId2));
+            assertNotNull("Active subscription ID list should not be null", subIdList);
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 1",
+                    ArrayUtils.contains(subIdList, subId1));
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 2",
+                    ArrayUtils.contains(subIdList, subId2));
             // Verify getActiveSubscriptionInfoList contains both remote SIMs
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo2));
+            assertNotNull("Active subscription info list should not be null", subInfoList);
+            assertTrue(
+                    "Active sub info list should contain remote SIM 1",
+                    ArrayUtils.contains(subInfoList, subInfo1));
+            assertTrue(
+                    "Active sub info list should contain remote SIM 2",
+                    ArrayUtils.contains(subInfoList, subInfo2));
 
             // Remove second remote SIM
             mSm.removeSubscriptionInfoRecord(
@@ -614,14 +655,18 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList contains the first remote SIM, but not the second
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
-            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            assertNotNull("Active subscription ID list should not be null", subIdList);
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 1 after removing SIM 2",
+                    ArrayUtils.contains(subIdList, subId1));
             assertFalse(ArrayUtils.contains(subIdList, subId2));
             // Verify getActiveSubscriptionInfoList contains the first remote SIM, but not the
             // second
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+            assertNotNull("Active subscription info list should not be null", subInfoList);
+            assertTrue(
+                    "Active sub info list should contain remote SIM 1 after removing SIM 2",
+                    ArrayUtils.contains(subInfoList, subInfo1));
             assertFalse(ArrayUtils.contains(subInfoList, subInfo2));
 
             // Remove first remote SIM
@@ -635,12 +680,12 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList does not contain either remote SIM
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
+            assertNotNull("Active subscription ID list should not be null", subIdList);
             assertFalse(ArrayUtils.contains(subIdList, subId1));
             assertFalse(ArrayUtils.contains(subIdList, subId2));
             // Verify getActiveSubscriptionInfoList does not contain either remote SIM
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
+            assertNotNull("Active subscription info list should not be null", subInfoList);
             assertFalse(ArrayUtils.contains(subInfoList, subInfo1));
             assertFalse(ArrayUtils.contains(subInfoList, subInfo2));
         } finally {
@@ -712,7 +757,7 @@ public class SubscriptionManagerTest {
                     SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             SubscriptionInfo subInfo1 = mSm.getActiveSubscriptionInfoForIcc(uniqueId1);
-            assertNotNull(subInfo1);
+            assertNotNull("SubscriptionInfo for remote SIM 1 should not be null", subInfo1);
             // Verify getSubscriptionId returns the first remote SIM
             int subId1 = subInfo1.getSubscriptionId();
             assertEquals(
@@ -721,12 +766,16 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList contains the first remote SIM
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
-            assertTrue(ArrayUtils.contains(subIdList, subId1));
+            assertNotNull("Active subscription ID list should not be null", subIdList);
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 1",
+                    ArrayUtils.contains(subIdList, subId1));
             // Verify getActiveSubscriptionInfoList contains the first remote SIM
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
+            assertNotNull("Active subscription info list should not be null", subInfoList);
+            assertTrue(
+                    "Active sub info list should contain remote SIM 1",
+                    ArrayUtils.contains(subInfoList, subInfo1));
 
             // Insert second remote SIM
             mSm.addSubscriptionInfoRecord(
@@ -735,7 +784,7 @@ public class SubscriptionManagerTest {
                     SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             SubscriptionInfo subInfo2 = mSm.getActiveSubscriptionInfoForIcc(uniqueId2);
-            assertNotNull(subInfo2);
+            assertNotNull("SubscriptionInfo for remote SIM 2 should not be null", subInfo2);
             // Verify getSubscriptionId returns the second remote SIM (last inserted)
             int subId2 = subInfo2.getSubscriptionId();
             assertEquals(
@@ -744,14 +793,22 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList contains both remote SIMs
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
-            assertTrue(ArrayUtils.contains(subIdList, subId1));
-            assertTrue(ArrayUtils.contains(subIdList, subId2));
+            assertNotNull("Active subscription ID list should not be null", subIdList);
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 1",
+                    ArrayUtils.contains(subIdList, subId1));
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 2",
+                    ArrayUtils.contains(subIdList, subId2));
             // Verify getActiveSubscriptionInfoList contains both remote SIMs
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo1));
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo2));
+            assertNotNull("Active subscription info list should not be null", subInfoList);
+            assertTrue(
+                    "Active sub info list should contain remote SIM 1",
+                    ArrayUtils.contains(subInfoList, subInfo1));
+            assertTrue(
+                    "Active sub info list should contain remote SIM 2",
+                    ArrayUtils.contains(subInfoList, subInfo2));
 
             // Remove first remote SIM
             mSm.removeSubscriptionInfoRecord(
@@ -764,15 +821,19 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList contains the second remote SIM, but not the first
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
+            assertNotNull("Active subscription ID list should not be null", subIdList);
             assertFalse(ArrayUtils.contains(subIdList, subId1));
-            assertTrue(ArrayUtils.contains(subIdList, subId2));
+            assertTrue(
+                    "Active sub ID list should contain remote SIM 2 after removing SIM 1",
+                    ArrayUtils.contains(subIdList, subId2));
             // Verify getActiveSubscriptionInfoList contains the second remote SIM, but not the
             // first
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
+            assertNotNull("Active subscription info list should not be null", subInfoList);
             assertFalse(ArrayUtils.contains(subInfoList, subInfo1));
-            assertTrue(ArrayUtils.contains(subInfoList, subInfo2));
+            assertTrue(
+                    "Active sub info list should contain remote SIM 2 after removing SIM 1",
+                    ArrayUtils.contains(subInfoList, subInfo2));
 
             // Remove second remote SIM
             mSm.removeSubscriptionInfoRecord(
@@ -785,12 +846,12 @@ public class SubscriptionManagerTest {
                             SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB));
             // Verify getActiveSubscriptionIdList does not contain either remote SIM
             subIdList = mSm.getActiveSubscriptionIdList();
-            assertNotNull(subIdList);
+            assertNotNull("Active subscription ID list should not be null", subIdList);
             assertFalse(ArrayUtils.contains(subIdList, subId1));
             assertFalse(ArrayUtils.contains(subIdList, subId2));
             // Verify getActiveSubscriptionInfoList does not contain either remote SIM
             subInfoList = mSm.getActiveSubscriptionInfoList();
-            assertNotNull(subInfoList);
+            assertNotNull("Active subscription info list should not be null", subInfoList);
             assertFalse(ArrayUtils.contains(subInfoList, subInfo1));
             assertFalse(ArrayUtils.contains(subInfoList, subInfo2));
         } finally {
@@ -875,7 +936,9 @@ public class SubscriptionManagerTest {
             });
             mSm.setSubscriptionOverrideUnmetered(
                     mSubId, true, TelephonyManager.getAllNetworkTypes(), 0);
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(
+                    "Timeout waiting for network to become temporarily unmetered",
+                    latch.await(10, TimeUnit.SECONDS));
         }
 
         // Clearing override should make it go metered
@@ -885,7 +948,9 @@ public class SubscriptionManagerTest {
             });
             mSm.setSubscriptionOverrideUnmetered(
                     mSubId, false, TelephonyManager.getAllNetworkTypes(), 0);
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(
+                    "Timeout waiting for network to become metered",
+                    latch.await(10, TimeUnit.SECONDS));
         }
     }
 
@@ -922,7 +987,9 @@ public class SubscriptionManagerTest {
                 return caps.hasCapability(NET_CAPABILITY_TEMPORARILY_NOT_METERED);
             });
             mSm.setSubscriptionPlans(mSubId, Arrays.asList(unmeteredPlan));
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(
+                    "Timeout waiting for network to become unmetered",
+                    latch.await(10, TimeUnit.SECONDS));
         }
 
         // Metered plan should make it go metered
@@ -932,7 +999,9 @@ public class SubscriptionManagerTest {
             });
             mSm.setSubscriptionPlans(mSubId,
                     Arrays.asList(buildValidSubscriptionPlan(System.currentTimeMillis())));
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(
+                    "Timeout waiting for network to become metered",
+                    latch.await(10, TimeUnit.SECONDS));
         }
     }
 
@@ -1180,7 +1249,7 @@ public class SubscriptionManagerTest {
         try {
             setIdentifierAccess(true);
             infoList = mSm.getSubscriptionsInGroup(uuid);
-            assertNotNull(infoList);
+            assertNotNull("Subscription info list for group should not be null", infoList);
             assertEquals(1, infoList.size());
             assertEquals(uuid, infoList.get(0).getGroupUuid());
 
@@ -1190,8 +1259,10 @@ public class SubscriptionManagerTest {
 
             infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                     (sm) -> sm.getSubscriptionsInGroup(uuid));
-            assertNotNull(infoList);
-            assertTrue(infoList.isEmpty());
+            assertNotNull("Subscription info list for group should not be null", infoList);
+            assertTrue(
+                    "Subscription group should be empty after removing all subs",
+                    infoList.isEmpty());
         } finally {
             setIdentifierAccess(false);
         }
@@ -1218,8 +1289,8 @@ public class SubscriptionManagerTest {
         SubscriptionInfo info = mSm.getActiveSubscriptionInfo(mSubId);
         String mcc = info.getMccString();
         String mnc = info.getMncString();
-        assertTrue(mcc == null || mcc.length() <= 3);
-        assertTrue(mnc == null || mnc.length() <= 3);
+        assertTrue("MCC string length should be at most 3", mcc == null || mcc.length() <= 3);
+        assertTrue("MNC string length should be at most 3", mnc == null || mnc.length() <= 3);
     }
 
     @Test
@@ -1303,7 +1374,9 @@ public class SubscriptionManagerTest {
     public void testSubscriptionInfoCarrierId() {
         SubscriptionInfo info = mSm.getActiveSubscriptionInfo(mSubId);
         int carrierId = info.getCarrierId();
-        assertTrue(carrierId >= TelephonyManager.UNKNOWN_CARRIER_ID);
+        assertTrue(
+                "Carrier ID should be a valid non-negative value or UNKNOWN_CARRIER_ID",
+                carrierId >= TelephonyManager.UNKNOWN_CARRIER_ID);
     }
 
     @Test
@@ -1311,7 +1384,9 @@ public class SubscriptionManagerTest {
         List<SubscriptionInfo> infoList = mSm.getOpportunisticSubscriptions();
 
         for (SubscriptionInfo info : infoList) {
-            assertTrue(info.isOpportunistic());
+            assertTrue(
+                    "Subscription from getOpportunisticSubscriptions should be opportunistic",
+                    info.isOpportunistic());
         }
     }
 
@@ -1336,7 +1411,9 @@ public class SubscriptionManagerTest {
             List<SubscriptionInfo> subscriptionInfos = mSm.getCompleteActiveSubscriptionInfoList();
             boolean foundSub = subscriptionInfos.stream()
                     .anyMatch(x -> x.getSubscriptionId() == activeDataSubIdCurrent);
-            assertTrue(foundSub);
+            assertTrue(
+                    "Active data subscription ID must be in the complete active subscription list",
+                    foundSub);
         }
     }
 
@@ -1371,7 +1448,7 @@ public class SubscriptionManagerTest {
 
         byte[] backupData = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 SubscriptionManager::getAllSimSpecificSettingsForBackup);
-        assertTrue(backupData.length > 0);
+        assertTrue("Backup data should not be empty", backupData.length > 0);
 
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(CarrierConfigManager.KEY_EDITABLE_ENHANCED_4G_LTE_BOOL, true);
@@ -1977,8 +2054,10 @@ public class SubscriptionManagerTest {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
                 (sm) -> sm.setSubscriptionUserHandle(mSubId, currentUserHandle));
 
-        assertTrue(ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
-                (sm) -> sm.isSubscriptionAssociatedWithUser(mSubId)));
+        assertTrue(
+                "Subscription should be associated with the current user",
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mSm, (sm) -> sm.isSubscriptionAssociatedWithUser(mSubId)));
 
         // Testing with any random user which is not the current context user.
         UserHandle nonCurrentUserHandle = UserHandle.of(currentUserHandle.getIdentifier() + 1);

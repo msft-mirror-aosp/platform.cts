@@ -316,12 +316,14 @@ public class DataProfileTest {
         assertEquals(null, profile.getUserName());
         assertEquals(null, profile.getPassword());
         assertEquals(0, profile.getProfileId());
-        assertTrue(profile.getProtocolType() == ApnSetting.PROTOCOL_IPV4V6
-                || profile.getProtocolType() == ApnSetting.PROTOCOL_IP);
+        assertTrue(
+                "Protocol type should be IPV4V6 or IP",
+                profile.getProtocolType() == ApnSetting.PROTOCOL_IPV4V6
+                        || profile.getProtocolType() == ApnSetting.PROTOCOL_IP);
         assertEquals(ApnSetting.PROTOCOL_IP, profile.getRoamingProtocolType());
         assertEquals(ApnSetting.TYPE_NONE, profile.getSupportedApnTypesBitmask());
         assertEquals(DataProfile.TYPE_COMMON, profile.getType());
-        assertTrue(profile.isEnabled());
+        assertTrue("Profile should be enabled", profile.isEnabled());
         assertFalse(profile.isPersistent());
         assertFalse(profile.isPreferred());
         assertEquals(td, profile.getTrafficDescriptor());

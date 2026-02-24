@@ -258,7 +258,9 @@ public class MmsTest {
     @After
     public void tearDown() throws Exception {
         if (!TextUtils.isEmpty(mOriginalDefaultSmsApp)) {
-            assertTrue(DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
+            assertTrue(
+                    "Failed to restore default SMS app",
+                    DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
         }
     }
 
@@ -305,7 +307,9 @@ public class MmsTest {
         // Disable MMS carrier config
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(SmsManager.MMS_CONFIG_MMS_ENABLED, false);
-        assertTrue(overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), bundle));
+        assertTrue(
+                "Failed to override carrier config",
+                overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), bundle));
         assertFalse(doesSupportMMS());
 
         // It takes some time for the new carrier config loaded to MmsConfigManager
@@ -324,7 +328,9 @@ public class MmsTest {
         // Restore MMS config
         if (doesSupportMMS()) {
             bundle.putBoolean(SmsManager.MMS_CONFIG_MMS_ENABLED, true);
-            assertTrue(overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), bundle));
+            assertTrue(
+                    "Failed to override carrier config",
+                    overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), bundle));
         }
     }
 
@@ -379,8 +385,8 @@ public class MmsTest {
         final String fileName = "send." + String.valueOf(Math.abs(mRandom.nextLong())) + ".dat";
         final File sendFile = new File(context.getCacheDir(), fileName);
         final byte[] pdu = buildPdu(context, selfNumber, SUBJECT, MESSAGE_BODY);
-        assertNotNull(pdu);
-        assertTrue(writePdu(sendFile, pdu));
+        assertNotNull("PDU should not be null", pdu);
+        assertTrue("Failed to write PDU to file", writePdu(sendFile, pdu));
         final Uri contentUri = (new Uri.Builder())
                 .authority(PROVIDER_AUTHORITY)
                 .path(fileName)
@@ -398,7 +404,7 @@ public class MmsTest {
                     contentUri, null/*locationUrl*/, null/*configOverrides*/, pendingIntent,
                     messageId);
         }
-        assertTrue(mSentReceiver.waitForSuccess(SENT_TIMEOUT));
+        assertTrue("Timeout waiting for MMS sent", mSentReceiver.waitForSuccess(SENT_TIMEOUT));
         assertEquals(expectedErrorResultCode, mSentReceiver.getResultCode());
 
         if (expectedErrorResultCode == Activity.RESULT_OK) {
@@ -410,12 +416,16 @@ public class MmsTest {
 
         if (defaultSmsApp && expectedErrorResultCode == Activity.RESULT_OK) {
             // Default SMS App should receive android.provider.Telephony.WAP_PUSH_DELIVER
-            assertTrue(mDeliveryReceiver.waitForSuccess(SENT_TIMEOUT));
+            assertTrue(
+                    "Timeout waiting for MMS delivery",
+                    mDeliveryReceiver.waitForSuccess(SENT_TIMEOUT));
         } else {
             // Non-default SMS App should not receive android.provider.Telephony.WAP_PUSH_DELIVER.
             // Default SMS App will not receive android.provider.Telephony.WAP_PUSH_DELIVER in case
             // of fail to send a message.
-            assertTrue(mDeliveryReceiver.verifyNoCalls(NO_CALLS_TIMEOUT));
+            assertTrue(
+                    "Delivery receiver should not be called",
+                    mDeliveryReceiver.verifyNoCalls(NO_CALLS_TIMEOUT));
         }
         sendFile.delete();
     }

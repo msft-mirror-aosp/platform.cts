@@ -172,8 +172,9 @@ public class MbmsDownloadTestBase {
     private void setupDownloadSession() throws Exception {
         mDownloadSession = MbmsDownloadSession.create(
                 mContext, mCallbackExecutor, mCallback);
-        assertNotNull(mDownloadSession);
-        assertTrue(mCallback.waitOnMiddlewareReady());
+        assertNotNull("MbmsDownloadSession should not be null", mDownloadSession);
+        assertTrue(
+                "Timeout waiting for middleware ready callback", mCallback.waitOnMiddlewareReady());
         assertEquals(0, mCallback.getNumErrorCalls());
         Bundle initializeCall =  mMiddlewareControl.getDownloadSessionCalls().get(0);
         assertEquals(CtsDownloadService.METHOD_INITIALIZE,

@@ -227,7 +227,7 @@ public class MbmsDownloadSessionTest extends MbmsDownloadTestBase {
         mMiddlewareControl.forceErrorCode(
                 MbmsErrors.DownloadErrors.ERROR_CANNOT_CHANGE_TEMP_FILE_ROOT);
         mDownloadSession.setTempFileRootDirectory(tempFileRootDirectory);
-        assertNotNull(mCallback.waitOnError());
+        assertNotNull("Error callback should be invoked on failure", mCallback.waitOnError());
         assertNotSame(mDownloadSession.getTempFileRootDirectory(), tempFileDirName);
     }
 

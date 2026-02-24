@@ -368,7 +368,9 @@ public class CellInfoTest {
 
         if (mNetworkHalVersion >= RADIO_HAL_VERSION_1_2) {
             // In HAL 1.2 or greater, the connection status must be reported
-            assertTrue(info.getCellConnectionStatus() != CellInfo.CONNECTION_UNKNOWN);
+            assertTrue(
+                    "Cell connection status should not be UNKNOWN",
+                    info.getCellConnectionStatus() != CellInfo.CONNECTION_UNKNOWN);
         }
     }
 
@@ -545,10 +547,12 @@ public class CellInfoTest {
 
     private void verifyCellIdentityNrBands(int[] nrBands) {
         // Verify the registered cell reports non-null band.
-        assertNotNull(nrBands);
+        assertNotNull("NR bands should not be null", nrBands);
 
-        //Verify the registered cell reports at least one band.
-        assertTrue(Arrays.stream(nrBands).anyMatch(band -> band > 0));
+        // Verify the registered cell reports at least one band.
+        assertTrue(
+                "At least one NR band should be valid",
+                Arrays.stream(nrBands).anyMatch(band -> band > 0));
     }
 
     private void verifyCellInfoLteParcelandHashcode(CellInfoLte lte) {
@@ -723,10 +727,12 @@ public class CellInfoTest {
 
     private void verifyCellIdentityLteBands(int[] lteBands) {
         // Verify the registered cell reports non-null band.
-        assertNotNull(lteBands);
+        assertNotNull("LTE bands should not be null", lteBands);
 
-        //Verify the registered cell reports at least one band.
-        assertTrue(Arrays.stream(lteBands).anyMatch(band -> band > 0));
+        // Verify the registered cell reports at least one band.
+        assertTrue(
+                "At least one LTE band should be valid",
+                Arrays.stream(lteBands).anyMatch(band -> band > 0));
     }
 
     // Verify wcdma cell information is within correct range.

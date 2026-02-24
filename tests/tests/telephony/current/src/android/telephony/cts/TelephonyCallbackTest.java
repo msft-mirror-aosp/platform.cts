@@ -333,7 +333,7 @@ public class TelephonyCallbackTest {
                 }
             }
 
-            assertTrue(mOnServiceStateChangedCalled);
+            assertTrue("mOnServiceStateChangedCalled was not called", mOnServiceStateChangedCalled);
         } finally {
             // Test unregister
             unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
@@ -358,7 +358,7 @@ public class TelephonyCallbackTest {
                 }
             }
 
-            assertTrue(mOnServiceStateChangedCalled);
+            assertTrue("mOnServiceStateChangedCalled was not called", mOnServiceStateChangedCalled);
             assertServiceStateLocationSanitization(mServiceState);
         } finally {
             // Test unregister
@@ -385,7 +385,7 @@ public class TelephonyCallbackTest {
                 }
             }
 
-            assertTrue(mOnServiceStateChangedCalled);
+            assertTrue("mOnServiceStateChangedCalled was not called", mOnServiceStateChangedCalled);
         } finally {
             // Test unregister
             unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
@@ -409,7 +409,7 @@ public class TelephonyCallbackTest {
                     mLock.wait(WAIT_TIME);
                 }
             }
-            assertTrue(mOnServiceStateChangedCalled);
+            assertTrue("mOnServiceStateChangedCalled was not called", mOnServiceStateChangedCalled);
             assertServiceStateLocationSanitization(mServiceState);
         } finally {
             // Test unregister
@@ -455,7 +455,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnServiceStateChangedCalled);
+        assertTrue("mOnServiceStateChangedCalled was not called", mOnServiceStateChangedCalled);
 
         // un-register
         if (mServiceStateCallback != null) {
@@ -479,7 +479,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnServiceStateChangedCalled);
+        assertTrue("mOnServiceStateChangedCalled was not called", mOnServiceStateChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnServiceStateChangedCalled, mServiceStateCallback);
@@ -510,7 +510,7 @@ public class TelephonyCallbackTest {
         assumeTrue(
                 "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        assertTrue(mSignalStrength == null);
+        assertNull("mSignalStrength should be null", mSignalStrength);
 
         mSignalStrengthsCallback = new SignalStrengthsListener();
         registerTelephonyCallback(mSignalStrengthsCallback);
@@ -521,7 +521,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mSignalStrength != null);
+        assertNotNull("mSignalStrength should not be null", mSignalStrength);
         // Call SignalStrength methods to make sure they do not throw any exceptions
         getSignalStrength();
 
@@ -559,7 +559,9 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnMessageWaitingIndicatorChangedCalled);
+        assertTrue(
+                "mOnMessageWaitingIndicatorChangedCalled was not called",
+                mOnMessageWaitingIndicatorChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnMessageWaitingIndicatorChangedCalled,
@@ -641,7 +643,7 @@ public class TelephonyCallbackTest {
                 + mOnCallStatesChangedCalled);
 
         assertThat(mOnCallStatesChangedCalled).isTrue();
-        assertNotNull(mCallStateList);
+        assertNotNull("mCallStateList returned null", mCallStateList);
         if (mCallStateList.size() > 0) {
             assertThat(mCallStateList.get(0).getCallState()).isIn(PRECISE_CALL_STATE);
             assertThat(mCallStateList.get(0).getNetworkType()).isIn(NETWORK_TYPES);
@@ -721,7 +723,7 @@ public class TelephonyCallbackTest {
         }
 
         assertThat(mOnImsCallDisconnectCauseChangedCalled).isTrue();
-        assertNotNull(mImsReasonInfo);
+        assertNotNull("mImsReasonInfo returned null", mImsReasonInfo);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnImsCallDisconnectCauseChangedCalled,
@@ -933,7 +935,7 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnTelephonyDisplayInfoChanged);
+        assertTrue("mOnTelephonyDisplayInfoChanged was not called", mOnTelephonyDisplayInfoChanged);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnTelephonyDisplayInfoChanged, mDisplayInfoCallback);
@@ -969,7 +971,9 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnCallForwardingIndicatorChangedCalled);
+        assertTrue(
+                "mOnCallForwardingIndicatorChangedCalled was not called",
+                mOnCallForwardingIndicatorChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnCallForwardingIndicatorChangedCalled,
@@ -1007,7 +1011,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnCellLocationChangedCalled);
+        assertTrue("mOnCellLocationChangedCalled was not called", mOnCellLocationChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnCellLocationChangedCalled, mCellLocationCallback);
@@ -1042,7 +1046,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnCallStateChangedCalled);
+        assertTrue("mOnCallStateChangedCalled was not called", mOnCallStateChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnCallStateChangedCalled, mCallStateCallback);
@@ -1083,8 +1087,12 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnDataConnectionStateChangedCalled);
-        assertTrue(mOnDataConnectionStateChangedWithNetworkTypeCalled);
+        assertTrue(
+                "mOnDataConnectionStateChangedCalled was not called",
+                mOnDataConnectionStateChangedCalled);
+        assertTrue(
+                "mOnDataConnectionStateChangedWithNetworkTypeCalled was not called",
+                mOnDataConnectionStateChangedWithNetworkTypeCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnDataConnectionStateChangedCalled,
@@ -1120,7 +1128,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnDataActivityCalled);
+        assertTrue("mOnDataActivityCalled was not called", mOnDataActivityCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnDataActivityCalled, mDataActivityCallback);
@@ -1157,7 +1165,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnCellInfoChangedCalled);
+        assertTrue("mOnCellInfoChangedCalled was not called", mOnCellInfoChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnCellInfoChangedCalled, mCellInfoCallback);
@@ -1192,7 +1200,7 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnUserMobileDataStateChanged);
+        assertTrue("mOnUserMobileDataStateChanged was not called", mOnUserMobileDataStateChanged);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnUserMobileDataStateChanged, mUserMobileDataStateCallback);
@@ -1220,7 +1228,9 @@ public class TelephonyCallbackTest {
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
-        assertNull(mOnOutgoingSmsEmergencyNumberChanged);
+        assertNull(
+                "mOnOutgoingSmsEmergencyNumberChanged should be null",
+                mOnOutgoingSmsEmergencyNumberChanged);
 
         mOutgoingEmergencySmsCallback = new OutgoingEmergencySmsListener();
         registerTelephonyCallbackWithPermission(mOutgoingEmergencySmsCallback);
@@ -1243,7 +1253,9 @@ public class TelephonyCallbackTest {
                     InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
         }
 
-        assertNotNull(mOnOutgoingSmsEmergencyNumberChanged);
+        assertNotNull(
+                "mOnOutgoingSmsEmergencyNumberChanged was not called",
+                mOnOutgoingSmsEmergencyNumberChanged);
         assertEquals(mOnOutgoingSmsEmergencyNumberChanged.getNumber(), TEST_EMERGENCY_NUMBER);
 
         // Test unregister
@@ -1285,7 +1297,9 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnActiveDataSubscriptionIdChanged);
+        assertTrue(
+                "mOnActiveDataSubscriptionIdChanged was not called",
+                mOnActiveDataSubscriptionIdChanged);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnActiveDataSubscriptionIdChanged,
@@ -1318,7 +1332,7 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnBarringInfoChangedCalled);
+        assertTrue("mOnBarringInfoChangedCalled was not called", mOnBarringInfoChangedCalled);
 
         assertBarringInfoSane(mBarringInfo);
 
@@ -1340,7 +1354,7 @@ public class TelephonyCallbackTest {
     };
 
     private static void assertBarringInfoSane(BarringInfo barringInfo) {
-        assertNotNull(barringInfo);
+        assertNotNull("BarringInfo should not be null", barringInfo);
 
         // Flags to track whether we have had unknown and known barring types reported
         boolean hasBarringTypeUnknown = false;
@@ -1348,7 +1362,7 @@ public class TelephonyCallbackTest {
 
         for (int bsiType : sBarringServiceInfoTypes) {
             BarringInfo.BarringServiceInfo bsi = barringInfo.getBarringServiceInfo(bsiType);
-            assertNotNull(bsi);
+            assertNotNull("BarringServiceInfo for type " + bsiType + " is null", bsi);
             switch (bsi.getBarringType()) {
                 case BarringInfo.BarringServiceInfo.BARRING_TYPE_UNKNOWN:
                     hasBarringTypeUnknown = true;
@@ -1375,7 +1389,9 @@ public class TelephonyCallbackTest {
                     assertFalse(bsi.isConditionallyBarred());
                     assertEquals(0, bsi.getConditionalBarringFactor());
                     assertEquals(0, bsi.getConditionalBarringTimeSeconds());
-                    assertTrue(bsi.isBarred());
+                    assertTrue(
+                            "Service is unexpectedly unbarred for UNCONDITIONAL type",
+                            bsi.isBarred());
                     break;
 
                 case BarringInfo.BarringServiceInfo.BARRING_TYPE_CONDITIONAL:
@@ -1383,7 +1399,10 @@ public class TelephonyCallbackTest {
                     // If conditional barring is active, then the barring time and factor must
                     // be known (set), but the device may or may not be barred at the moment,
                     // so isConditionallyBarred() can be either true or false (hence not checked).
-                    assertTrue(BARRING_PERCENTAGES.contains(bsi.getConditionalBarringFactor()));
+                    assertTrue(
+                            "Invalid conditional barring factor for CONDITIONAL type, got: "
+                                    + bsi.getConditionalBarringFactor(),
+                            BARRING_PERCENTAGES.contains(bsi.getConditionalBarringFactor()));
                     assertNotEquals(0, bsi.getConditionalBarringTimeSeconds());
                     assertEquals(bsi.isBarred(), bsi.isConditionallyBarred());
                     break;
@@ -1408,7 +1427,8 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnBarringInfoChangedCalled);
+        assertTrue(
+                "Timeout waiting for onBarringInfoChanged callback", mOnBarringInfoChangedCalled);
 
         assertBarringInfoHasValidCellIdentity(mBarringInfo);
 
@@ -1417,7 +1437,7 @@ public class TelephonyCallbackTest {
     }
 
     private static void assertBarringInfoHasValidCellIdentity(BarringInfo barringInfo) {
-        assertNotNull(barringInfo);
+        assertNotNull("BarringInfo object is unexpectedly null", barringInfo);
 
         CellIdentity ci = barringInfo.getCellIdentity();
 
@@ -1431,7 +1451,10 @@ public class TelephonyCallbackTest {
                             || ci instanceof CellIdentityLte
                             || ci instanceof CellIdentityNr;
 
-            assertTrue(isKnownCellIdentityType);
+            assertTrue(
+                    "Unknown or unsupported CellIdentity type received, got: "
+                            + ci.getClass().getSimpleName(),
+                    isKnownCellIdentityType);
         }
     }
 
@@ -1521,7 +1544,9 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnPhysicalChannelConfigCalled);
+        assertTrue(
+                "Timeout waiting for onPhysicalChannelConfig callback",
+                mOnPhysicalChannelConfigCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnPhysicalChannelConfigCalled,
@@ -1556,7 +1581,7 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnDataEnabledChangedCalled);
+        assertTrue("mOnDataEnabledChangedCalled was not called", mOnDataEnabledChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnDataEnabledChangedCalled, mDataEnabledCallback);
@@ -1668,7 +1693,9 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnLinkCapacityEstimateChangedCalled);
+        assertTrue(
+                "mOnLinkCapacityEstimateChangedCalled was not called",
+                mOnLinkCapacityEstimateChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnLinkCapacityEstimateChangedCalled,
@@ -1717,7 +1744,9 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnEmergencyCallbackModeChangedCalled);
+        assertTrue(
+                "mOnEmergencyCallbackModeChangedCalled was not called",
+                mOnEmergencyCallbackModeChangedCalled);
 
         // Test unregister
         unRegisterTelephonyCallback(mOnEmergencyCallbackModeChangedCalled,
@@ -1775,7 +1804,9 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnCarrierRoamingNtnModeChangedCalled);
+        assertTrue(
+                "mOnCarrierRoamingNtnModeChangedCalled was not called",
+                mOnCarrierRoamingNtnModeChangedCalled);
 
         unRegisterTelephonyCallback(
                 mOnCarrierRoamingNtnModeChangedCalled, mCarrierRoamingNtnListener);
@@ -1792,7 +1823,9 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnCarrierRoamingNtnEligibleCalled);
+        assertTrue(
+                "mOnCarrierRoamingNtnEligibleCalled was not called",
+                mOnCarrierRoamingNtnEligibleCalled);
 
         unRegisterTelephonyCallback(mOnCarrierRoamingNtnEligibleCalled, mCarrierRoamingNtnListener);
     }
@@ -1808,7 +1841,9 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnCarrierRoamingNtnAvailableServiceCalled);
+        assertTrue(
+                "mOnCarrierRoamingNtnAvailableServiceCalled was not called",
+                mOnCarrierRoamingNtnAvailableServiceCalled);
 
         unRegisterTelephonyCallback(
                 mOnCarrierRoamingNtnAvailableServiceCalled, mCarrierRoamingNtnListener);
@@ -1825,7 +1860,9 @@ public class TelephonyCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnCarrierRoamingNtnSignalStrengthCalled);
+        assertTrue(
+                "mOnCarrierRoamingNtnSignalStrengthCalled was not called",
+                mOnCarrierRoamingNtnSignalStrengthCalled);
 
         unRegisterTelephonyCallback(
                 mOnCarrierRoamingNtnSignalStrengthCalled, mCarrierRoamingNtnListener);
@@ -1870,7 +1907,9 @@ public class TelephonyCallbackTest {
             }
         }
 
-        assertTrue(mOnDomainSelectionEmergencyModeChangedCalled);
+        assertTrue(
+                "mOnDomainSelectionEmergencyModeChangedCalled was not called",
+                mOnDomainSelectionEmergencyModeChangedCalled);
 
         unRegisterTelephonyCallback(
                 mOnDomainSelectionEmergencyModeChangedCalled,

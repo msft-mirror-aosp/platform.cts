@@ -70,9 +70,9 @@ public class CbGeoUtilsTest {
         CbGeoUtils.Polygon polygon = new CbGeoUtils.Polygon((vertices));
         assertEquals(vertices, polygon.getVertices());
 
-        assertTrue(polygon.contains(p1));
-        assertTrue(polygon.contains(p2));
-        assertTrue(polygon.contains(p3));
+        assertTrue("Polygon should contain vertex p1", polygon.contains(p1));
+        assertTrue("Polygon should contain vertex p2", polygon.contains(p2));
+        assertTrue("Polygon should contain vertex p3", polygon.contains(p3));
     }
 
     @Test
@@ -84,6 +84,6 @@ public class CbGeoUtilsTest {
         assertEquals(radius, circle.getRadius(), DELTA);
         assertEquals(p1, circle.getCenter());
         // circle should always contain its center
-        assertTrue(circle.contains(p1));
+        assertTrue("Circle should contain its center point", circle.contains(p1));
     }
 }
