@@ -26,6 +26,11 @@
         <scope>activity</scope>
     </appfunction>
     <appfunction>
+        <id>activityReturnInstanceId</id>
+        <enabled_by_default>true</enabled_by_default>
+        <scope>activity</scope>
+    </appfunction>
+    <appfunction>
         <id>activityDisabledByDefault</id>
         <enabled_by_default>false</enabled_by_default>
         <scope>activity</scope>
