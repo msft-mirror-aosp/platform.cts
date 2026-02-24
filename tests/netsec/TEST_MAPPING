@@ -1,0 +1,71 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsNetSecConfigAttributeTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigBasicDebugDisabledTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigBasicDebugEnabledTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigBasicDomainConfigTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigCleartextTrafficTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigDownloadManagerTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigInvalidPinTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigNestedDomainConfigTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigPrePCleartextTrafficTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigResourcesSrcTestCases"
+    },
+    {
+      "name": "CtsNetSecPolicyUsesCleartextTrafficFalseTestCases"
+    },
+    {
+      "name": "CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsNetSecConfigCertificateTransparencyDefaultTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigCertificateTransparencySdk36DefaultTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigCertificateTransparencyTestCases"
+    },
+    {
+      "name": "CtsNetSecConfigCustomTrustManagerTestCases",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsNetSecConfigEncryptedClientHelloTestCases"
+    },
+    {
+      "name": "NetSecConfigCertificateTransparencySctLogListTestCases"
+    },
+    {
+      "name": "NetSecConfigCertificateTransparencySctNoLogListTestCases"
+    },
+    {
+      "name": "CtsNetSecEncryptedClientHelloTestCases"
+    }
+  ]
+}
