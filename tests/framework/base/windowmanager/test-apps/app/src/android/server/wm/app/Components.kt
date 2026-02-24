@@ -118,6 +118,8 @@ object Components : ComponentsProvider() {
         component("ShowWhenLockedWithDialogNoPreviewActivity")
     @JvmField val TASK_MOVE_TEST_ACTIVITY = component("TaskMoveTestActivity")
     @JvmField val PINNED_WINDOWING_LAYER_ACTIVITY = component("PinnedWindowingLayerActivity")
+    @JvmField val TRANSPARENT_ACTIVITY = component("TransparentActivity")
+    @JvmField val MOVABLE_TASK_TRAMPOLINE_ACTIVITY = component("MovableTaskTrampolineActivity")
 
     @JvmField val TEST_ACTIVITY = component("TestActivity")
     @JvmField val TOP_ACTIVITY = component("TopActivity")
@@ -692,6 +694,16 @@ object Components : ComponentsProvider() {
         const val EXTRA_RESULT_DETAILS = "extra_action_result_details"
         const val EXTRA_BOUNDS = "extra_bounds"
         const val EXTRA_EXCEPTION = "extra_action_exception"
+    }
+
+    object MovableTaskTrampolineActivity {
+        const val ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT =
+                "action_notify_start_activity_with_movable_flag_result"
+        const val ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG =
+                "action_start_activity_with_movable_flag"
+        const val EXTRA_DISPLAY_ID_KEY = "extra_display_id_key"
+        const val EXTRA_SYNC_EXCEPTION_KEY = "extra_sync_exception_key"
+        const val EXTRA_ACTIVITY_NAME_KEY = "extra_activity_name_key"
     }
 
     @JvmStatic fun getPackageName() = packageName
