@@ -532,6 +532,15 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     private boolean hasNoNavigationDevice() {
+        if (InstrumentationRegistry.getInstrumentation()
+                .getContext()
+                .getResources()
+                .getConfiguration()
+                .navigation
+                != Configuration.NAVIGATION_NONAV) {
+            return false;
+        }
+
         return hasNoInputDeviceMatching(device ->
                 device.getSources() == InputDevice.SOURCE_DPAD
                         || device.getSources() == InputDevice.SOURCE_TRACKBALL);
