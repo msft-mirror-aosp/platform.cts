@@ -40,7 +40,7 @@ specs {
     required_values {
       key: "ble_cs_accuracy"
       value {
-        float_value: 0.5  # TODO(b/485299779): Change to range.
+        float_value: 0.9
       }
     }
   }
@@ -61,11 +61,11 @@ measurements {
   key: "ble_cs_accuracy"
   value {
     description:
-      "BLE Channel Sounding accuracy range at the 90th percentile, as "
-      "calculated by the Cumulative Distribution Function at the distance of "
-      "1 m."
+      "Percentile of BLE Channel Sounding reports that are accurate to within"
+      "+/- 0.5 m, as calculated with the Cumulative Distribution Function,"
+      "at the distance of 1 m."
     measurement_type: MEASUREMENT_TYPE_FLOAT
-    comparison: COMPARISON_INFO_ONLY  # TODO(b/485299779): Change to range
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
     proto_field_number: 4
   }
 }
