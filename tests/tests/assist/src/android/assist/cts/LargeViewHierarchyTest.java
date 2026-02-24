@@ -16,15 +16,16 @@
 
 package android.assist.cts;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
+import android.content.pm.PackageManager;
 import android.util.Log;
 
 import org.junit.Test;
 
-/**
- *  Test that the AssistStructure returned is properly formatted.
- */
+/** Test that the AssistStructure returned is properly formatted. */
 public class LargeViewHierarchyTest extends AssistTestBase {
     private static final String TAG = "LargeViewHierarchyTest";
     private static final String TEST_CASE_TYPE = Utils.LARGE_VIEW_HIERARCHY;
@@ -36,6 +37,11 @@ public class LargeViewHierarchyTest extends AssistTestBase {
 
     @Test
     public void testTextView() throws Exception {
+
+        assumeFalse(
+                "LargeViewHierarchyTest is not supported on Automotive",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         if (mActivityManager.isLowRamDevice()) {
             Log.d(TAG, "Not running assist tests on low-RAM device.");
             return;
@@ -47,7 +53,6 @@ public class LargeViewHierarchyTest extends AssistTestBase {
         waitForContext(latch);
         verifyAssistDataNullness(false, false, false, false);
 
-        verifyAssistStructure(Utils.getTestAppComponent(TEST_CASE_TYPE),
-                false /*FLAG_SECURE set*/);
+        verifyAssistStructure(Utils.getTestAppComponent(TEST_CASE_TYPE), false /*FLAG_SECURE set*/);
     }
 }

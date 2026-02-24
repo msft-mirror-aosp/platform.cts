@@ -17,6 +17,7 @@
 package android.assist.cts;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
@@ -58,6 +59,10 @@ public class WebViewTest extends AssistTestBase {
         if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WEBVIEW)) {
             return;
         }
+        assumeFalse(
+                "WebViewTest is not supported on Automotive",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         start3pApp(TEST_CASE_TYPE);
         startTest(TEST_CASE_TYPE);
         waitForAssistantToBeReady();
