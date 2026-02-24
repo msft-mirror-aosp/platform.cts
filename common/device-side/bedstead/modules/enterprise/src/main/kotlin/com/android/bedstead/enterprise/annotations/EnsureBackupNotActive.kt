@@ -24,6 +24,9 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
  *
  * This is useful for tests that are running on a secondary user, where the backup service might
  * be active from a previous test.
+ *
+ * Note that this annotation does not affect private profiles, as toggling private profile
+ * backup activation is not allowed by the framework.
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
