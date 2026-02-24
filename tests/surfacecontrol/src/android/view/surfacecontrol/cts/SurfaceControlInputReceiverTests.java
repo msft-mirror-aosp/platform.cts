@@ -21,10 +21,10 @@ import static android.server.wm.CtsWindowInfoUtils.assertAndDumpWindowState;
 import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
 import static android.server.wm.CtsWindowInfoUtils.sendTap;
 import static android.server.wm.CtsWindowInfoUtils.tapOnWindowCenter;
+import static android.server.wm.CtsWindowInfoUtils.waitForNthWindowFromTop;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
-import static android.server.wm.CtsWindowInfoUtils.waitForNthWindowFromTop;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowVisible;
 
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
@@ -71,8 +71,11 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.UinputTouchDevice;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -101,6 +104,7 @@ public class SurfaceControlInputReceiverTests {
     private TestActivity mActivity;
 
     private WindowManager mWm;
+    private UinputTouchDevice mTouchScreen;
 
     private int mDisplayId;
 
@@ -109,6 +113,16 @@ public class SurfaceControlInputReceiverTests {
         mActivityRule.getScenario().onActivity(a -> mActivity = a);
         mWm = mActivity.getWindowManager();
         mDisplayId = mActivity.getDisplayId();
+        mTouchScreen =
+                new UinputTouchScreen(
+                        InstrumentationRegistry.getInstrumentation(), mActivity.getDisplay());
+    }
+
+    @After
+    public void tearDown() {
+        if (mTouchScreen != null) {
+            mTouchScreen.close();
+        }
     }
 
     @Test
@@ -211,19 +225,22 @@ public class SurfaceControlInputReceiverTests {
 
         final LinkedBlockingQueue<MotionEvent> motionEvents = new LinkedBlockingQueue<>();
         try {
-            String embeddedName = attachEmbeddedWindow[0].attachEmbeddedSurfaceControl(sc,
-                    mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                    sBounds.width(),
-                    sBounds.height(), false, new IMotionEventReceiver.Stub() {
-                        @Override
-                        public void onMotionEventReceived(MotionEvent motionEvent) {
-                            try {
-                                motionEvents.put(motionEvent);
-                            } catch (InterruptedException e) {
-                                Log.e(TAG, "Failed to add input event to queue", e);
-                            }
-                        }
-                    });
+            String embeddedName =
+                    attachEmbeddedWindow[0].attachEmbeddedSurfaceControl(
+                            sc,
+                            mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
+                            sBounds.width(),
+                            sBounds.height(),
+                            new IMotionEventReceiver.Stub() {
+                                @Override
+                                public void onMotionEventReceived(MotionEvent motionEvent) {
+                                    try {
+                                        motionEvents.put(motionEvent);
+                                    } catch (InterruptedException e) {
+                                        Log.e(TAG, "Failed to add input event to queue", e);
+                                    }
+                                }
+                            });
 
             assertNotNull("Failed to receive embedded client name", embeddedName);
 
@@ -359,28 +376,33 @@ public class SurfaceControlInputReceiverTests {
     @Test
     public void testTransferGestureFromHostToEmbeddedRemote()
             throws InterruptedException, RemoteException {
-        RemoteSurfaceControlInputReceiverHelper helper =
-                new RemoteSurfaceControlInputReceiverHelper(mActivity);
+        RemoteSurfaceController helper = new RemoteSurfaceController(mActivity);
         try {
             final LinkedBlockingQueue<MotionEvent> embeddedMotionEvents =
                     new LinkedBlockingQueue<>();
             CountDownLatch hostReceivedTouchLatch = new CountDownLatch(1);
-            helper.setup(false /* zOrderOnTop */, false /* transferTouchToHost */, (v, event) -> {
-                mWm.transferTouchGesture(
-                        mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                        helper.mEmbeddedTransferToken);
-                hostReceivedTouchLatch.countDown();
-                return false;
-            }, new IMotionEventReceiver.Stub() {
-                @Override
-                public void onMotionEventReceived(MotionEvent motionEvent) {
-                    try {
-                        embeddedMotionEvents.put(MotionEvent.obtain(motionEvent));
-                    } catch (InterruptedException e) {
-                        Log.e(TAG, "Failed to add input event to queue", e);
-                    }
-                }
-            });
+            helper.setup(
+                    false /* zOrderOnTop */,
+                    (v, event) -> {
+                        mWm.transferTouchGesture(
+                                mActivity
+                                        .getWindow()
+                                        .getRootSurfaceControl()
+                                        .getInputTransferToken(),
+                                helper.mEmbeddedTransferToken);
+                        hostReceivedTouchLatch.countDown();
+                        return false;
+                    },
+                    new IMotionEventReceiver.Stub() {
+                        @Override
+                        public void onMotionEventReceived(MotionEvent motionEvent) {
+                            try {
+                                embeddedMotionEvents.put(MotionEvent.obtain(motionEvent));
+                            } catch (InterruptedException e) {
+                                Log.e(TAG, "Failed to add input event to queue", e);
+                            }
+                        }
+                    });
             Rect bounds = new Rect();
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be visible",
@@ -424,22 +446,22 @@ public class SurfaceControlInputReceiverTests {
                 return false;
             }, event -> {
                 if (event instanceof MotionEvent) {
-                    mWm.transferTouchGesture(helper.mEmbeddedTransferToken,
-                            mActivity.getWindow()
-                                    .getRootSurfaceControl().getInputTransferToken());
                     embeddedReceivedTouch.countDown();
                 }
                 return false;
             });
-            Point tappedCoords = new Point();
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(helper.mEmbeddedSc);
-            tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, tappedCoords, mDisplayId);
-            assertTrue("Failed to receive touch event on embedded",
-                    embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
             Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken, mDisplayId);
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
+            UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(centerCoordRelativeToWindow);
+            assertTrue(
+                    "Failed to receive touch event on embedded",
+                    embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
+            mWm.transferTouchGesture(
+                    helper.mEmbeddedTransferToken,
+                    mActivity.getWindow().getRootSurfaceControl().getInputTransferToken());
+            pointer.lift();
             assertMotionEventInWindow(hostMotionEvent, centerCoordRelativeToWindow);
         } finally {
             helper.tearDown();
@@ -449,26 +471,28 @@ public class SurfaceControlInputReceiverTests {
     @Test
     public void testTransferGestureFromEmbeddedToHostRemote()
             throws InterruptedException, RemoteException {
-        RemoteSurfaceControlInputReceiverHelper helper =
-                new RemoteSurfaceControlInputReceiverHelper(mActivity);
+        RemoteSurfaceController helper = new RemoteSurfaceController(mActivity);
         try {
             final LinkedBlockingQueue<MotionEvent> hostMotionEvent =
                     new LinkedBlockingQueue<>();
             CountDownLatch embeddedReceivedTouch = new CountDownLatch(1);
-            helper.setup(true /* zOrderOnTop */, true /* transferTouchToHost */, (v, event) -> {
-                try {
-                    hostMotionEvent.put(MotionEvent.obtain(event));
-                } catch (InterruptedException e) {
-                    Log.e(TAG, "Failed to add input event to queue", e);
-                }
-                return false;
-            }, new IMotionEventReceiver.Stub() {
-                @Override
-                public void onMotionEventReceived(MotionEvent motionEvent) {
-                    Log.d(TAG, "onMotionEventReceived. Transfer");
-                    embeddedReceivedTouch.countDown();
-                }
-            });
+            helper.setup(
+                    true /* zOrderOnTop */,
+                    (v, event) -> {
+                        try {
+                            hostMotionEvent.put(MotionEvent.obtain(event));
+                        } catch (InterruptedException e) {
+                            Log.e(TAG, "Failed to add input event to queue", e);
+                        }
+                        return false;
+                    },
+                    new IMotionEventReceiver.Stub() {
+                        @Override
+                        public void onMotionEventReceived(MotionEvent motionEvent) {
+                            Log.d(TAG, "onMotionEventReceived. Transfer");
+                            embeddedReceivedTouch.countDown();
+                        }
+                    });
             Rect bounds = new Rect();
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be visible",
@@ -482,12 +506,15 @@ public class SurfaceControlInputReceiverTests {
                                 }
                                 return false;
                             }, Duration.ofSeconds(WAIT_TIME_S)));
+
             final Point coord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
-            sendTap(InstrumentationRegistry.getInstrumentation(), coord);
-
+            mTouchScreen.touchDown(coord);
             assertTrue("Failed to receive touch event on embedded",
                     embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
+
+            helper.transferInputFromEmbeddedToHost();
+
             final Point expectedCoord = new Point(bounds.width() / 2, bounds.height() / 2);
             assertMotionEventInWindow(hostMotionEvent, expectedCoord);
         } finally {
@@ -664,7 +691,7 @@ public class SurfaceControlInputReceiverTests {
         }
     }
 
-    private static class RemoteSurfaceControlInputReceiverHelper {
+    private static class RemoteSurfaceController {
         private final Activity mActivity;
 
         private IAttachEmbeddedWindow mIAttachEmbeddedWindow;
@@ -673,11 +700,16 @@ public class SurfaceControlInputReceiverTests {
 
         private String mEmbeddedName;
 
-        RemoteSurfaceControlInputReceiverHelper(Activity activity) {
+        RemoteSurfaceController(Activity activity) {
             mActivity = activity;
         }
 
-        public void setup(boolean zOrderOnTop, boolean transferTouchToHost,
+        void transferInputFromEmbeddedToHost() throws InterruptedException, RemoteException {
+            mIAttachEmbeddedWindow.transferInputFromEmbeddedToHost();
+        }
+
+        void setup(
+                boolean zOrderOnTop,
                 View.OnTouchListener hostTouchListener,
                 IMotionEventReceiver.Stub motionEventReceiver)
                 throws InterruptedException, RemoteException {
@@ -726,11 +758,13 @@ public class SurfaceControlInputReceiverTests {
                     embeddedServiceReady.await(WAIT_TIME_S, TimeUnit.SECONDS));
             assertTrue("Failed to create SurfaceView SurfaceControl",
                     surfaceViewCreatedLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-            mEmbeddedName = mIAttachEmbeddedWindow.attachEmbeddedSurfaceControl(
-                    surfaceView.getSurfaceControl(),
-                    surfaceView.getRootSurfaceControl().getInputTransferToken(), sBounds.width(),
-                    sBounds.height(), transferTouchToHost,
-                    motionEventReceiver);
+            mEmbeddedName =
+                    mIAttachEmbeddedWindow.attachEmbeddedSurfaceControl(
+                            surfaceView.getSurfaceControl(),
+                            surfaceView.getRootSurfaceControl().getInputTransferToken(),
+                            sBounds.width(),
+                            sBounds.height(),
+                            motionEventReceiver);
             assertNotNull("SurfaceControl client token was null", mEmbeddedName);
 
             surfaceView.setOnTouchListener(hostTouchListener);

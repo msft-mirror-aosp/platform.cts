@@ -28,14 +28,14 @@ interface IAttachEmbeddedWindow {
     void relayout(in LayoutParams lp);
     void sendCrash();
     String attachEmbeddedSurfaceControl(in SurfaceControl sc, in InputTransferToken hostToken,
-            int width, int height, boolean transferTouchToHost,
+            int width, int height,
             in @nullable IMotionEventReceiver motionEventReceiver);
     InputTransferToken getEmbeddedInputTransferToken();
     void tearDownEmbeddedSurfaceControl();
 
     boolean attachEmbeddedASurfaceControl(in SurfaceControl parentSc,
             in InputTransferToken hostToken, int width, int height, boolean batched,
-            boolean transferTouchToHost, in @nullable IMotionEventReceiver receiver);
+            in @nullable IMotionEventReceiver receiver);
     // Makes a `transferTouchGesture` request to transfer touch gesture from embedded to host.
     void transferInputFromEmbeddedToHost();
     void tearDownEmbeddedASurfaceControl();
