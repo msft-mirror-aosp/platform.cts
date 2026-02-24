@@ -300,6 +300,11 @@ public class TestShareIdentityActivity extends Activity {
      */
     private static final int DEFAULT_SHARING_TEST_CASE_ACTIVITY_RESULT_OVERLOAD_CALLER = 26;
     /**
+     * Test case to verify the launching app's identity is not shared when an intermediate activity
+     * forwards the result using FLAG_ACTIVITY_FORWARD_RESULT without explicitly opting in.
+     */
+    private static final int START_ACTIVITY_FOR_RESULT_FORWARD_TEST_CASE = 28;
+    /**
      * Action for which the runtime receiver registers in the app driving the test.
      */
     private static final String TEST_BROADCAST_RUNTIME_ACTION =
@@ -384,6 +389,10 @@ public class TestShareIdentityActivity extends Activity {
                 break;
             case SEND_ORDERED_BROADCAST_MANIFEST_RECEIVER_OPT_OUT_TEST_CASE:
                 testSendBroadcast(testId, true, true, false, true);
+                break;
+            case START_ACTIVITY_FOR_RESULT_FORWARD_TEST_CASE:
+                intent.setFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                startActivity(intent);
                 break;
             default:
                 Log.e(TAG, "Unexpected test case received: " + testCase);
