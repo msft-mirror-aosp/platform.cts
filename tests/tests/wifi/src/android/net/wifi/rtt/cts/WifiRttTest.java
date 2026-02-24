@@ -1667,6 +1667,105 @@ public class WifiRttTest extends TestBase {
         }
     }
 
+    /**
+     * Test Wi-Fi RTT 11az ranging operation against the conservative error model.
+     *
+     * The test performs the following steps:
+     * - Scan for visible APs for the test AP (which is validated to support IEEE 802.11az).
+     * - Perform N (constant) RTT operations.
+     * - For each successful result, calculate the maximum allowed standard deviation using the
+     * formula from go/rtt-11az-error-guide.
+     * - Validate that the reported Standard Deviation (result.getDistanceStdDevMm()) is less than
+     * or equal to the calculated model error.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    public void testRangingToTest11azApErrorModel() throws InterruptedException {
+        assumeTrue(mCharacteristics != null && mCharacteristics.getBoolean(
+                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
+        ScanResult testAp = getS11AzScanResult();
+        assertNotNull("Cannot find any test APs which support RTT / IEEE 802.11az"
+                + " - please verify that your test setup includes them!", testAp);
+        RangingRequest.Builder builder = new RangingRequest.Builder();
+        builder.addAccessPoint(testAp);
+        RangingRequest request = builder.build();
+
+        for (int i = 0; i < NUM_OF_RTT_ITERATIONS; ++i) {
+            ResultCallback callback = new ResultCallback();
+            mWifiRttManager.startRanging(request, mExecutor, callback);
+            assertTrue("Wi-Fi RTT results: no callback on iteration " + i,
+                    callback.waitForCallback());
+
+            List<RangingResult> currentResults = callback.getResults();
+            assertNotNull("Wi-Fi RTT results: null results (onRangingFailure) on iteration " + i,
+                    currentResults);
+            assertEquals("Wi-Fi RTT results: unexpected # of results (expect 1) on iteration " + i,
+                    1, currentResults.size());
+            RangingResult result = currentResults.get(0);
+            assertEquals("Wi-Fi RTT results: invalid result (wrong BSSID) entry on iteration " + i,
+                    result.getMacAddress().toString(), testAp.BSSID);
+
+            if (result.getStatus() == RangingResult.STATUS_SUCCESS) {
+                assertTrue("Wi-Fi RTT results: should be a 802.11az measurement",
+                        result.is80211azNtbMeasurement());
+
+                int bandwidth = result.getMeasurementBandwidth();
+                int numTxStreams = result.get80211azNumberOfTxSpatialStreams();
+                int numRxStreams = result.get80211azNumberOfRxSpatialStreams();
+                int pathDiversity = numTxStreams * numRxStreams;
+                assertTrue("Path diversity must be positive", pathDiversity > 0);
+                if (pathDiversity <= 2) {
+                    Log.w(TAG, "Low path diversity (" + pathDiversity
+                            + "), may not be sufficient for good multipath mitigation.");
+                }
+
+                // Convert channel width to MHz
+                double b = switch (bandwidth) {
+                    case ScanResult.CHANNEL_WIDTH_20MHZ -> 20;
+                    case ScanResult.CHANNEL_WIDTH_40MHZ -> 40;
+                    case ScanResult.CHANNEL_WIDTH_80MHZ -> 80;
+                    case ScanResult.CHANNEL_WIDTH_160MHZ -> 160;
+                    case ScanResult.CHANNEL_WIDTH_320MHZ -> 320;
+                    default -> {
+                        Log.e(TAG, "Unknown bandwidth: " + bandwidth);
+                        yield -1.0; // Indicate error
+                    }
+                };
+
+                assertTrue("Unknown bandwidth received: " + bandwidth, b > 0);
+
+                // Fixed parameters from the guide
+                double s = 100.0;
+                double m = 0.8;
+                double q = 0.5;
+                double p = (double) pathDiversity;
+
+                // Model formula components
+                double q_val = 0.41 / q;
+                double b_val = (-23198.38 / (b * b * b)) + (2098.56 / (b * b)) + (38.29 / b) + 0.46;
+                double s_val = 1.0 / Math.sqrt(s / 100.0);
+                double p_val = Math.pow(0.75 + 0.25 * (1.0 - m), Math.log(p) / Math.log(2));
+
+                double modeledErrorMeters = 1.5 * q_val * b_val * s_val * p_val;
+                double modeledErrorMm = modeledErrorMeters * 1000.0;
+
+                int reportedStdDevMm = result.getDistanceStdDevMm();
+                assertTrue("Reported Standard Deviation should be positive, but was "
+                        + reportedStdDevMm, reportedStdDevMm > 0);
+
+                Log.d(TAG, "Iteration " + i + ": Bandwidth=" + b + "MHz, PathDiversity=" + p
+                        + ", ReportedStdDevMm=" + reportedStdDevMm + ", ModeledErrorMm="
+                        + String.format("%.2f", modeledErrorMm));
+
+                assertTrue("Reported Standard Deviation (" + reportedStdDevMm
+                        + " mm) exceeds the calculated model error (" + String.format("%.2f",
+                        modeledErrorMm) + " mm)", reportedStdDevMm <= modeledErrorMm);
+            }
+            Thread.sleep(INTERVAL_MS);
+        }
+    }
+
+
     /** Test setProximityDetectionDeviceName API */
     @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_PROXIMITY_RANGING)
