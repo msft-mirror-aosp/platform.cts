@@ -642,6 +642,14 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
         runPhase("testApexSetsUpdatedSystemAppFlag_postUpdate");
     }
 
+    @Test
+    @LargeTest
+    public void testApkInUpdatedApexDoesNotSetUpdatedSystemAppFlag() throws Exception {
+        runPhase("testApkInApexDoesNotSetUpdatedSystemAppFlag");
+        installV2Apex();
+        runPhase("testApkInApexDoesNotSetUpdatedSystemAppFlag");
+    }
+
     /**
      * Test non-priv apps cannot access /data/app-staging folder contents
      */

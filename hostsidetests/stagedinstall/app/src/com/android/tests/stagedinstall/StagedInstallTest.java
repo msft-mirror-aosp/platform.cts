@@ -1178,6 +1178,17 @@ public class StagedInstallTest {
     }
 
     @Test
+    public void testApkInApexDoesNotSetUpdatedSystemAppFlag() throws Exception {
+        final PackageInfo info = InstallUtils.getPackageInfo(SHIM_PACKAGE_NAME);
+        assertThat(info).isNotNull();
+        boolean isSystemApp = (info.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+        boolean isUpdatedSystemApp =
+                (info.applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+        assertThat(isSystemApp).isTrue();
+        assertThat(isUpdatedSystemApp).isFalse();
+    }
+
+    @Test
     public void testRebootlessUpdate() throws Exception {
         InstallUtils.dropShellPermissionIdentity();
         InstallUtils.adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGE_UPDATES);
