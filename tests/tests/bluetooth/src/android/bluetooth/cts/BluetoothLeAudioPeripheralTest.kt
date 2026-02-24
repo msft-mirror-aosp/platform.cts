@@ -34,6 +34,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bluetooth.flags.Flags
 import com.android.modules.utils.build.SdkLevel
 import com.google.common.truth.Truth.assertThat
+import java.time.Duration
+import java.util.concurrent.Executor
 import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeTrue
@@ -48,8 +50,6 @@ import org.mockito.Mockito.timeout
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
 import org.mockito.kotlin.mock
-import java.time.Duration
-import java.util.concurrent.Executor
 
 @RunWith(AndroidJUnit4::class)
 class BluetoothLeAudioPeripheralTest {
@@ -83,12 +83,9 @@ class BluetoothLeAudioPeripheralTest {
         }
 
         assertThat(
-            mAdapter.getProfileProxy(
-                mContext,
-                mListener,
-                BluetoothProfile.LE_AUDIO_PERIPHERAL,
-            ),
-        ).isTrue()
+                mAdapter.getProfileProxy(mContext, mListener, BluetoothProfile.LE_AUDIO_PERIPHERAL)
+            )
+            .isTrue()
         val captor = ArgumentCaptor.forClass(BluetoothProfile::class.java)
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
             .onServiceConnected(eq(BluetoothProfile.LE_AUDIO_PERIPHERAL), captor.capture())
@@ -147,8 +144,7 @@ class BluetoothLeAudioPeripheralTest {
         }
 
         // Verify returns false when invalid input is given
-        assertThat(mService.getConnectionState(null))
-            .isEqualTo(BluetoothProfile.STATE_DISCONNECTED)
+        assertThat(mService.getConnectionState(null)).isEqualTo(BluetoothProfile.STATE_DISCONNECTED)
 
         // Verify returns false if bluetooth is not enabled
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue()
