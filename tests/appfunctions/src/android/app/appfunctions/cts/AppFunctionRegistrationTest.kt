@@ -75,6 +75,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.lifecycle.Lifecycle
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.rule.ServiceTestRule
@@ -438,6 +439,77 @@ class AppFunctionRegistrationTest {
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
     }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_unbindService_unregistersAppFunction() = doBlocking {
+        try {
+            val serviceIntent = Intent(
+                context, LocalAppFunctionRegistrationService::class.java
+            )
+
+            val binder = serviceTestRule.bindService(serviceIntent)
+            val service = (binder as LocalAppFunctionRegistrationService.LocalBinder).getService()
+            assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
+
+            // Wait for the service to register the function.
+            assertFunctionEnabledState(
+                CURRENT_PKG,
+                CONCAT_STRINGS_FUNCTION_ID,
+                appContextAppFunctionManager,
+                isEnabled = true
+            )
+
+            serviceTestRule.unbindService()
+
+            assertFunctionEnabledState(
+                CURRENT_PKG,
+                CONCAT_STRINGS_FUNCTION_ID,
+                appContextAppFunctionManager,
+                isEnabled = false
+            )
+        } finally {
+            LocalAppFunctionRegistrationService.registration?.unregister()
+            LocalAppFunctionRegistrationService.registration = null
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_finishActivity_unregistersAppFunction() = doBlocking {
+        ActivityScenario.launch<DynamicRegistrationActivity>(
+            Intent(context, DynamicRegistrationActivity::class.java)
+        ).use { scenario ->
+            scenario.moveToState(Lifecycle.State.STARTED)
+            scenario.onActivity { activity ->
+                activity.manager.registerAppFunction(
+                        CONCAT_STRINGS_FUNCTION_ID,
+                        activity.mainExecutor,
+                        ConcatStrings()
+                    )
+             }
+            assertFunctionEnabledState(
+                AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
+                CONCAT_STRINGS_FUNCTION_ID,
+                appContextAppFunctionManager,
+                isEnabled = true
+            )
+            scenario.onActivity { activity -> activity.finish() }
+        }
+        retryAssert {
+            assertFunctionEnabledState(
+                AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
+                CONCAT_STRINGS_FUNCTION_ID,
+                appContextAppFunctionManager,
+                isEnabled = false
+            )
+        }
+    }
+
 
     @Test
     @IncludeRunOnPrimaryUser

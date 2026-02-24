@@ -5,16 +5,22 @@ package android.app.appfunctions.testutils;
  */
 interface ITestAppFunctionRegistrationService {
     /**
-     * Registers an app function from the service's process. FunctionId is taken from the
-     * AppFunction class.
+     * Registers an app function from the service's process.
+     *
+     * Service will automatically unregister this function in onDestroy if
+     * unregisterAppFunction is not called.
+     *
      * @param functionId The id of the app function.
      * @return true if the registration was successful
      */
     boolean registerAppFunction(String functionId);
 
     /**
-     * Registers one or several app functions from the service's process. FunctionIds are taken
-     * from the AppFunction class.
+     * Registers one or several app functions from the service's process.
+     *
+     * Service will automatically unregister these functions in onDestroy if
+     * unregisterAppFunction is not called.
+     *
      * @param functionIds The ids of the app functions.
      * @return true if the registration was successful
      */
