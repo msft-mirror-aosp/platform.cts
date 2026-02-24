@@ -1029,7 +1029,8 @@
     <!-- CtsNetSecConfigBasicDomainConfigTestCases -->
     <option name="compatibility:include-filter" value="CtsNetSecConfigBasicDomainConfigTestCases android.security.net.config.cts.DomainConfigTest#testDefaultConfig"/>
     <!-- CtsNetSecConfigCertificateTransparencyTestCases -->
-    <option name="compatibility:include-filter" value="CtsNetSecConfigCertificateTransparencyTestCases android.security.net.config.cts.LogListVerificationTest#testX509TrustManagerExtensions_whenLogListPresent_sctDomain_connectionSucceeds"/>
+    <option name="compatibility:include-filter"
+        value="CtsNetSecConfigCertificateTransparencyTestCases android.security.net.config.cts.LogListPresentVerificationTest#testX509TrustManagerExtensions_sctDomain_connectionSucceeds" />
     <!-- CtsNetSecConfigCleartextTrafficTestCases -->
     <option name="compatibility:include-filter" value="CtsNetSecConfigCleartextTrafficTestCases android.security.net.config.cts.CleartextPermittedTest#testCleartextAllowed"/>
     <option name="compatibility:include-filter" value="CtsNetSecConfigCleartextTrafficTestCases android.security.net.config.cts.CleartextPermittedTest#testDefaultDenied"/>

@@ -23,7 +23,6 @@ import static android.security.net.config.cts.CertificateTransparencyTestUtils.S
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.downloadLogList;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.BroadcastReceiver;
@@ -37,12 +36,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.net.URL;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -52,9 +49,10 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.X509TrustManager;
 
+/** CT tests when the log list is present on the device. */
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
-public class LogListVerificationTest extends BaseTestCase {
+public class LogListPresentVerificationTest extends BaseTestCase {
 
     private static final Context sContext =
             InstrumentationRegistry.getInstrumentation().getContext();
@@ -80,8 +78,7 @@ public class LogListVerificationTest extends BaseTestCase {
     }
 
     @Test
-    public void testCTVerification_whenLogListPresent_sctDomain_connectionSucceeds()
-            throws Exception {
+    public void testCTVerification_sctDomain_connectionSucceeds() throws Exception {
         assumeLogListPresent();
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
@@ -99,26 +96,7 @@ public class LogListVerificationTest extends BaseTestCase {
     }
 
     @Test
-    public void testCTVerification_whenLogListAbsent_sctDomain_failsOpen() throws Exception {
-        assumeLogListPresent();
-        // Check multiple domains as part of the retrospective for b/408109183
-        URL url = new URL(SCT_PROVIDED_DOMAIN);
-        URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
-
-        HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
-        HttpsURLConnection urlConnection2 = (HttpsURLConnection) url2.openConnection();
-        urlConnection.connect();
-        urlConnection2.connect();
-
-        assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
-        assertEquals(urlConnection2.getResponseCode(), HTTP_OK_RESPONSE_CODE);
-        urlConnection.disconnect();
-        urlConnection2.disconnect();
-    }
-
-    @Test
-    public void testX509TrustManagerExtensions_whenLogListPresent_sctDomain_connectionSucceeds()
-            throws Exception {
+    public void testX509TrustManagerExtensions_sctDomain_connectionSucceeds() throws Exception {
         assumeLogListPresent();
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
