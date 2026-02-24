@@ -1,9 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.cts.allowcomponentaccess.source_block_cert_wrong">
+    package="com.android.cts.allowcomponentaccess.source_block_cert_missing">
     <allow-component-access>
-        <!-- Correct package name, but WRONG certificate digest -->
-        <package android:name="com.android.cts.allowcomponentaccess.target_allow"
-            android:certDigest="FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" />
+        <package android:name="com.android.cts.allowcomponentaccess.target_allow" />
         <package android:name="android.content.cts"
             android:certDigest="6cecc50e34ae31bfb5678986d6d6d3736c571ded2f2459527793e1f054eb0c9b">
             <additional-certificate
@@ -33,5 +32,6 @@
     <queries>
         <package android:name="com.android.cts.allowcomponentaccess.target_allow" />
         <package android:name="android.content.cts" />
+        <package android:name="com.android.cts.dummy" />
     </queries>
 </manifest>

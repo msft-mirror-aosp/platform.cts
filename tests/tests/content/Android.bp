@@ -357,7 +357,7 @@ android_test {
         ":CtsAllowComponentAccessTargetNoTag",
         ":CtsAllowComponentAccessTargetBlock",
         ":CtsAllowComponentAccessTargetAllow",
-        ":CtsAllowComponentAccessSourceAllowCertPrimary",
+        ":CtsAllowComponentAccessSourceBlockCertMissing",
         ":CtsAllowComponentAccessSourceAllowCertAdditional",
         ":CtsAllowComponentAccessSourceBlockCertWrong",
     ],

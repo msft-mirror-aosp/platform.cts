@@ -44,13 +44,24 @@ public class ActionRelayReceiver extends BroadcastReceiver {
         if (action == null) action = Constants.ACTION_TYPE_BIND;
 
         if (Constants.ACTION_TYPE_BIND.equals(action)) {
-            relayBind(context.getApplicationContext(), intent, targetPkg);
+            relayBind(
+                    context.getApplicationContext(),
+                    intent,
+                    targetPkg,
+                    /* checkPolicyOnly= */ false);
         } else if (Constants.ACTION_TYPE_BROADCAST.equals(action)) {
             relayBroadcast(context.getApplicationContext(), intent, targetPkg);
+        } else if (Constants.ACTION_TYPE_CHECK_POLICY_ONLY.equals(action)) {
+            relayBind(
+                    context.getApplicationContext(),
+                    intent,
+                    targetPkg,
+                    /* checkPolicyOnly= */ true);
         }
     }
 
-    private void relayBind(Context context, Intent triggerIntent, String targetPkg) {
+    private void relayBind(
+            Context context, Intent triggerIntent, String targetPkg, boolean checkPolicyOnly) {
         Intent serviceIntent = new Intent();
         serviceIntent.setClassName(targetPkg, Constants.TARGET_SERVICE_CLASS);
 
@@ -59,7 +70,7 @@ public class ActionRelayReceiver extends BroadcastReceiver {
         serviceIntent.setAction(UUID.randomUUID().toString());
 
         Bundle extras = triggerIntent.getExtras();
-        if (extras != null) {
+        if (extras != null && !checkPolicyOnly) {
             serviceIntent.putExtras(extras);
         }
 
@@ -71,11 +82,26 @@ public class ActionRelayReceiver extends BroadcastReceiver {
                     @Override
                     public void onServiceDisconnected(ComponentName name) {}
                 };
-
+        boolean amsAllowed = false;
         try {
             context.bindService(serviceIntent, conn, Context.BIND_AUTO_CREATE);
+            amsAllowed = true;
         } catch (SecurityException e) {
             // Expected behavior if the access is blocked by the OS
+        }
+        // If this is just a policy check, and AMS allowed it, fire the test callback.
+        if (checkPolicyOnly && amsAllowed && extras != null) {
+            IBinder binder = extras.getBinder(Constants.CALLBACK_BINDER);
+            if (binder != null) {
+                android.content.pm.cts.allowcomponentaccess.ITestCallback callback =
+                        android.content.pm.cts.allowcomponentaccess.ITestCallback.Stub.asInterface(
+                                binder);
+                try {
+                    callback.onActionReceived();
+                } catch (android.os.RemoteException e) {
+                    // ignore
+                }
+            }
         }
     }
 

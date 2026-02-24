@@ -3,7 +3,23 @@
     package="com.android.cts.allowcomponentaccess.source_block">
 
     <allow-component-access>
-        <package android:name="android.content.cts" />
+        <package android:name="android.content.cts"
+            android:certDigest="6cecc50e34ae31bfb5678986d6d6d3736c571ded2f2459527793e1f054eb0c9b">
+            <additional-certificate
+                android:certDigest="a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc" />
+            <additional-certificate
+                android:certDigest="c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8" />
+            <additional-certificate
+                android:certDigest="301aa3cb081134501c45f1422abc66c24224fd5ded5fdc8f17e697176fd866aa" />
+            <additional-certificate
+                android:certDigest="1975b2f17177bc89a5dff31f9e64a6cae281a53dc1d1d59b1d147fe1c82afa00" />
+            <additional-certificate
+                android:certDigest="f0fd6c5b410f25cb25c3b53346c8972fae30f8ee7411df910480ad6b2d60db83" />
+            <additional-certificate
+                android:certDigest="7ce83c1b71f3d572fed04c8d40c5cb10ff75e6d87d9df6fbd53f0468c2905053" />
+            <additional-certificate
+                android:certDigest="d22cc500299fb22873a01a010de1c82fbe4d061119b94814dd301dab50cb7678" />
+        </package>
     </allow-component-access>
     <application>
         <receiver android:name="com.android.cts.allowcomponentaccess.source.ActionRelayReceiver"

@@ -3,12 +3,18 @@
     package="com.android.cts.allowcomponentaccess.target_allow">
 
     <allow-component-access>
-        <package android:name="com.android.cts.allowcomponentaccess.source_notag" />
-        <package android:name="com.android.cts.allowcomponentaccess.source_allow" />
-        <package android:name="com.android.cts.allowcomponentaccess.source_block" />
-        <package android:name="com.android.cts.allowcomponentaccess.source_allow_cert_primary" />
-        <package android:name="com.android.cts.allowcomponentaccess.source_allow_cert_additional" />
-        <package android:name="com.android.cts.allowcomponentaccess.source_block_cert_wrong" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_notag"
+            android:certDigest="fb968ba6d2818420b3fc04254551a97677cd8770083e53c5af29537c09054eb9" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_allow"
+            android:certDigest="fb968ba6d2818420b3fc04254551a97677cd8770083e53c5af29537c09054eb9" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_block"
+            android:certDigest="fb968ba6d2818420b3fc04254551a97677cd8770083e53c5af29537c09054eb9" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_allow_cert_primary"
+            android:certDigest="fb968ba6d2818420b3fc04254551a97677cd8770083e53c5af29537c09054eb9" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_allow_cert_additional"
+            android:certDigest="fb968ba6d2818420b3fc04254551a97677cd8770083e53c5af29537c09054eb9" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_block_cert_wrong"
+            android:certDigest="fb968ba6d2818420b3fc04254551a97677cd8770083e53c5af29537c09054eb9" />
     </allow-component-access>
 
     <application android:label="CtsServerAllow">

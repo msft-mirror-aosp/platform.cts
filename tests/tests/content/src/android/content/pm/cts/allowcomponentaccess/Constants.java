@@ -31,12 +31,13 @@ public class Constants {
             "com.android.cts.allowcomponentaccess.source_allow";
     public static final String PKG_SOURCE_BLOCK =
             "com.android.cts.allowcomponentaccess.source_block";
-    public static final String PKG_SOURCE_ALLOW_CERT_PRIMARY =
-            "com.android.cts.allowcomponentaccess.source_allow_cert_primary";
+    public static final String PKG_SOURCE_BLOCK_CERT_MISSING =
+            "com.android.cts.allowcomponentaccess.source_block_cert_missing";
     public static final String PKG_SOURCE_ALLOW_CERT_ADDITIONAL =
             "com.android.cts.allowcomponentaccess.source_allow_cert_additional";
     public static final String PKG_SOURCE_BLOCK_CERT_WRONG =
             "com.android.cts.allowcomponentaccess.source_block_cert_wrong";
+    public static final String PKG_PREINSTALLED_TARGET = "com.android.shell";
 
     // --- Actions ---
     public static final String ACTION_RELAY = "com.android.cts.allowcomponentaccess.ACTION_RELAY";
@@ -45,6 +46,7 @@ public class Constants {
     // --- Action Types (Values) ---
     public static final String ACTION_TYPE_BIND = "BIND";
     public static final String ACTION_TYPE_BROADCAST = "BROADCAST";
+    public static final String ACTION_TYPE_CHECK_POLICY_ONLY = "CHECK_POLICY";
 
     // --- Bundle Keys ---
     public static final String TARGET_PKG = "target_pkg";

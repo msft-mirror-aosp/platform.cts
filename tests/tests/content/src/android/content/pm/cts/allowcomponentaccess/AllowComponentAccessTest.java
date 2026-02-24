@@ -21,9 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -213,17 +211,6 @@ public class AllowComponentAccessTest {
 
     @Test
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_ALLOW_COMPONENT_ACCESS)
-    public void testBindService_sourceAllowCertPrimary_targetAllow_bindSucceed() throws Exception {
-        boolean success =
-                triggerSourceAction(
-                        Constants.PKG_SOURCE_ALLOW_CERT_PRIMARY,
-                        Constants.PKG_TARGET_ALLOW,
-                        Constants.ACTION_TYPE_BIND);
-        assertThat(success).isTrue();
-    }
-
-    @Test
-    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_ALLOW_COMPONENT_ACCESS)
     public void testBindService_sourceAllowCertAdditional_targetAllow_bindSucceed()
             throws Exception {
         boolean success =
@@ -243,6 +230,28 @@ public class AllowComponentAccessTest {
                         Constants.PKG_SOURCE_BLOCK_CERT_WRONG,
                         Constants.PKG_TARGET_ALLOW,
                         Constants.ACTION_TYPE_BIND);
+        assertThat(success).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_ALLOW_COMPONENT_ACCESS)
+    public void testBindService_preinstalledTargetNoCert_Allowed() throws Exception {
+        boolean success =
+                triggerSourceAction(
+                        Constants.PKG_SOURCE_ALLOW,
+                        Constants.PKG_PREINSTALLED_TARGET,
+                        Constants.ACTION_TYPE_CHECK_POLICY_ONLY);
+        assertThat(success).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_ALLOW_COMPONENT_ACCESS)
+    public void testBindService_nonPreinstalledTargetNoCert_bindBlocked() throws Exception {
+        boolean success =
+                triggerSourceAction(
+                        Constants.PKG_SOURCE_BLOCK_CERT_MISSING,
+                        Constants.PKG_TARGET_ALLOW,
+                        Constants.ACTION_TYPE_CHECK_POLICY_ONLY);
         assertThat(success).isFalse();
     }
 
@@ -282,42 +291,5 @@ public class AllowComponentAccessTest {
         context.sendBroadcast(intent);
 
         return latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Helper: Attempts to bind to the Target Service directly from the Test Runner process. Use
-     * this when the Test Runner has adopted special permissions (like Shell/System).
-     *
-     * @param targetPkg The package name of the app receiving the connection.
-     */
-    private boolean bindToTargetDirectly(String targetPkg) throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        ServiceConnection conn =
-                new ServiceConnection() {
-                    @Override
-                    public void onServiceConnected(ComponentName name, IBinder service) {
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onServiceDisconnected(ComponentName name) {}
-                };
-
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        Intent intent = new Intent();
-        intent.setComponent(new ComponentName(targetPkg, Constants.TARGET_SERVICE_CLASS));
-
-        try {
-            boolean bindInitiated = context.bindService(intent, conn, Context.BIND_AUTO_CREATE);
-            if (!bindInitiated) return false;
-
-            return latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } finally {
-            // Clean up connection to avoid leaking
-            try {
-                context.unbindService(conn);
-            } catch (Exception e) {
-            }
-        }
     }
 }
