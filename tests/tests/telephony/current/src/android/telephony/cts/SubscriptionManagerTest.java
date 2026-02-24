@@ -519,6 +519,25 @@ public class SubscriptionManagerTest {
         }
     }
 
+    /** Verify that CanManageSubscription() is granted with CarrierPrivileges. */
+    @Test
+    public void testCanManageSubscription() throws Exception {
+        List<SubscriptionInfo> subInfoList = mSm.getActiveSubscriptionInfoList();
+        assertTrue(subInfoList.size() > 0);
+        for (SubscriptionInfo si : subInfoList) {
+            assertFalse(mSm.canManageSubscription(si));
+        }
+
+        for (SubscriptionInfo si : subInfoList) {
+            CarrierPrivilegeUtils.withCarrierPrivileges(
+                    InstrumentationRegistry.getContext(),
+                    si.getSubscriptionId(),
+                    () -> {
+                        assertTrue(mSm.canManageSubscription(si));
+                    });
+        }
+    }
+
     /**
      * Verifies the lifecycle of adding and removing two remote SIMs, with the second remote SIM
      * being removed first.
