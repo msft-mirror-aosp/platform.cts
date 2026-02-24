@@ -92,6 +92,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "IGNORE_FULL_BACKUP_CONTENT_IN_D2D",
                     "IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS",
                     "LOOPER_CLEARS_THREAD_INTERRUPTED",
+                    "MASK_PRESENTATION_FLAGS_ON_INTERNAL_DISPLAYS",
                     "MEDIA_FGS_STATE_TRANSITION",
                     "NEVER_SANDBOX_DISPLAY_APIS",
                     "OVERRIDE_ANY_ORIENTATION",
