@@ -3225,7 +3225,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         // check that tethering is supported by the device
-        if (!sTetheringManager.isTetheringSupported()) {
+        if (!ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sTetheringManager.isTetheringSupported())) {
             return;
         }
         runWithScanning(() -> {
@@ -3294,7 +3295,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         // check that tethering is supported by the device
-        if (!sTetheringManager.isTetheringSupported()) {
+        if (!ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sTetheringManager.isTetheringSupported())) {
             return;
         }
         runWithScanning(() -> {
@@ -3496,7 +3498,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         // check that tethering is supported by the device
-        if (!sTetheringManager.isTetheringSupported()) {
+        if (!ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sTetheringManager.isTetheringSupported())) {
             return;
         }
         if (shouldSkipCountryCodeDependentTest()) {
