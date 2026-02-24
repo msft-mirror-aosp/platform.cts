@@ -47,6 +47,7 @@ import org.mockito.Mockito.eq
 import org.mockito.Mockito.timeout
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
+import org.mockito.kotlin.mock
 import java.time.Duration
 import java.util.concurrent.Executor
 
@@ -55,8 +56,6 @@ class BluetoothLeAudioPeripheralTest {
     @get:Rule val mFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @get:Rule val mockitoRule = MockitoJUnit.rule()
-
-    @Mock private lateinit var mCallback: BluetoothLeAudioPeripheral.Callback
 
     @Mock private lateinit var mListener: BluetoothProfile.ServiceListener
 
@@ -160,17 +159,18 @@ class BluetoothLeAudioPeripheralTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_PERIPHERAL_FEATURE)
     fun registerUnregisterCallback() {
+        val callback = mock<BluetoothLeAudioPeripheral.Callback>()
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.registerCallback(mExecutor, mCallback)
+            mService.registerCallback(mExecutor, callback)
         }
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.unregisterCallback(mCallback)
+            mService.unregisterCallback(callback)
         }
 
         Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED).use {
             // Verify parameter
             assertThrows(NullPointerException::class.java) {
-                mService.registerCallback(null as Executor, mCallback)
+                mService.registerCallback(null as Executor, callback)
             }
             assertThrows(NullPointerException::class.java) {
                 mService.registerCallback(mExecutor, null as BluetoothLeAudioPeripheral.Callback)
@@ -180,8 +180,8 @@ class BluetoothLeAudioPeripheralTest {
             }
 
             // Test success register unregister
-            mService.registerCallback(mExecutor, mCallback)
-            mService.unregisterCallback(mCallback)
+            mService.registerCallback(mExecutor, callback)
+            mService.unregisterCallback(callback)
         }
     }
 
@@ -191,7 +191,8 @@ class BluetoothLeAudioPeripheralTest {
     @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_PERIPHERAL_FEATURE)
     @Suppress("DirectInvocationOnMock")
     fun fakeCallbackCoverage() {
-        mCallback.onStreamTypesChanged(mDevice, 0)
+        val callback = mock<BluetoothLeAudioPeripheral.Callback>()
+        callback.onStreamTypesChanged(mDevice, 0)
     }
 
     @Test

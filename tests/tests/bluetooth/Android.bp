@@ -29,6 +29,7 @@ android_test {
         "ctstestrunner-axt",
         "flag-junit",
         "kotlin-test",
+        "mockito-kotlin2",
         "mockito-target-inline",
         "PlatformProperties",
     ],
