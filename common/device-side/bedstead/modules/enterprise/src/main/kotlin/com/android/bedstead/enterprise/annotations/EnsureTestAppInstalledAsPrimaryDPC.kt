@@ -17,8 +17,8 @@ package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled
 import com.android.queryable.annotations.Query
 
 /**

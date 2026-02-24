@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations
+package com.android.bedstead.testapps.annotations
 
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.Intent
+import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.google.auto.value.AutoAnnotation
 
 /**
@@ -65,11 +70,6 @@ annotation class EnsurePackageRespondsToIntent (
  * Return an instance of the generated class that conforms to the specification of
  * [EnsurePackageRespondsToIntent]. See [AutoAnnotation].
  */
-fun ensurePackageRespondsToIntent(action: String): EnsurePackageRespondsToIntent {
-    return ensurePackageRespondsToIntent(Intent(action))
-}
-
-@AutoAnnotation
-private fun ensurePackageRespondsToIntent(intent: Intent): EnsurePackageRespondsToIntent {
-    return AutoAnnotation_EnsurePackageRespondsToIntentKt_ensurePackageRespondsToIntent(intent)
-}
+fun ensurePackageRespondsToIntent(action: String) = EnsurePackageRespondsToIntent(
+    intent = Intent(action)
+)

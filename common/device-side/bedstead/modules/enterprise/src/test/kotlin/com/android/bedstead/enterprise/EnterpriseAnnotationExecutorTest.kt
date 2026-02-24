@@ -44,7 +44,6 @@ import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrima
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance
@@ -65,9 +64,7 @@ import com.android.bedstead.enterprise.policies.DisallowBluetooth
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.profile
@@ -86,6 +83,8 @@ import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder
 import com.android.bedstead.remotedpc.RemoteDpc
+import com.android.bedstead.testapps.annotations.AdditionalQueryParameters
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled
 import com.android.bedstead.testapps.testApp
 import com.android.queryable.annotations.BooleanQuery
 import com.android.queryable.annotations.IntegerQuery

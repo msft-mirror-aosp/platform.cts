@@ -21,7 +21,6 @@ import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.
 import static com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolderKt.ensureHasDevicePolicyManagerRoleHolder;
 import static com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt.ensureHasWorkProfile;
 import static com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntentKt.ensureNoPackageRespondsToIntent;
-import static com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntentKt.ensurePackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntentKt.requireNoPackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntentKt.requirePackageRespondsToIntent;
 import static com.android.bedstead.nene.utils.Assert.assertThrows;
@@ -29,6 +28,7 @@ import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+import static com.android.bedstead.testapps.annotations.EnsurePackageRespondsToIntentKt.ensurePackageRespondsToIntent;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 

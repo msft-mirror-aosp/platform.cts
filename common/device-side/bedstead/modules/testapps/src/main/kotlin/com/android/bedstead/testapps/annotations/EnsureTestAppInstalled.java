@@ -14,22 +14,50 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.testapps.annotations;
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
-import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.queryable.annotations.Query;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Mark that a test requires the given test app to be installed on the given user.
+ *
+ * <p>You should use {@code DeviceState} to ensure that the device enters
+ * the correct state for the method.
+ */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RepeatingAnnotation
-public @interface EnsureTestAppDoesNotHavePermissionGroup {
-    EnsureTestAppDoesNotHavePermission[] value();
+@Repeatable(EnsureTestAppInstalledGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.TEST_APPS)
+public @interface EnsureTestAppInstalled {
+
+    int ENSURE_TEST_APP_INSTALLED_PRIORITY = MIDDLE;
+
+    String DEFAULT_KEY = "testApp";
+
+    /**
+     * A key which uniquely identifies the test app for the test.
+     *
+     * <p>This can be used with e.g. {@code DeviceState#testApp} and
+     * {@link AdditionalQueryParameters}.
+     */
+    String key() default DEFAULT_KEY;
+
+    /** Query specifying the testapp. Defaults to any test app. */
+    Query query() default @Query();
+
+    /** The user the testApp should be installed on. */
+    UserType onUser() default UserType.INSTRUMENTED_USER;
 
      /**
      * Priority sets the order that annotations will be resolved.
@@ -42,5 +70,5 @@ public @interface EnsureTestAppDoesNotHavePermissionGroup {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default ENSURE_HAS_DELEGATE_PRIORITY + 1;
+    int priority() default ENSURE_TEST_APP_INSTALLED_PRIORITY;
 }

@@ -20,11 +20,11 @@ import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled;
 import com.android.compatibility.common.util.CddTest;
 import com.android.interactive.Step;
 import com.android.interactive.annotations.Interactive;
