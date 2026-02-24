@@ -17,8 +17,8 @@
 package android.keystore.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.security.keystore.BackendBusyException;
 
@@ -52,20 +52,9 @@ public class BackendBusyExceptionTest {
         backendBusyException = new BackendBusyException(10, "Message", new Exception());
         assertEquals(backendBusyException.getBackOffHintMillis(), 10);
 
-        try {
-            new BackendBusyException(-1);
-            fail("Expected IllegalArgumentException.");
-        } catch (IllegalArgumentException e) {}
-
-        try {
-            new BackendBusyException(-1, "Message");
-            fail("Expected IllegalArgumentException.");
-        } catch (IllegalArgumentException e) {}
-
-        try {
-            new BackendBusyException(-1, "Message", new Exception());
-            fail("Expected IllegalArgumentException.");
-        } catch (IllegalArgumentException e) {}
+        assertThrows(IllegalArgumentException.class, () -> new BackendBusyException(-1));
+        assertThrows(IllegalArgumentException.class, () -> new BackendBusyException(-1, "Message"));
+        assertThrows(IllegalArgumentException.class, () -> new BackendBusyException(-1, "Message", new Exception()));
     }
 
     /**

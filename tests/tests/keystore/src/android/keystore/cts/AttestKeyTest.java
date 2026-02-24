@@ -27,7 +27,7 @@ import static android.security.keystore.KeyProperties.SIGNATURE_PADDING_RSA_PSS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
@@ -114,16 +114,14 @@ public class AttestKeyTest {
         generateKeyPair(KEY_ALGORITHM_EC,
                 new KeyGenParameterSpec.Builder(nonAttestKeyAlias, PURPOSE_SIGN).build());
 
-        try {
+        InvalidAlgorithmParameterException e = assertThrows(InvalidAlgorithmParameterException.class, () -> {
             generateKeyPair(KEY_ALGORITHM_EC,
                     new KeyGenParameterSpec.Builder(attestedKeyAlias, PURPOSE_SIGN)
                             .setAttestationChallenge("challenge".getBytes())
                             .setAttestKeyAlias(nonAttestKeyAlias)
                             .build());
-            fail("Expected exception.");
-        } catch (InvalidAlgorithmParameterException e) {
-            assertThat(e.getMessage(), is("Invalid attestKey, does not have PURPOSE_ATTEST_KEY"));
-        }
+        });
+        assertThat(e.getMessage(), is("Invalid attestKey, does not have PURPOSE_ATTEST_KEY"));
     }
 
     @Test
@@ -134,18 +132,16 @@ public class AttestKeyTest {
         generateKeyPair(KEY_ALGORITHM_EC,
                 new KeyGenParameterSpec.Builder(attestKeyAlias, PURPOSE_ATTEST_KEY).build());
 
-        try {
+        InvalidAlgorithmParameterException e = assertThrows(InvalidAlgorithmParameterException.class, () -> {
             generateKeyPair(KEY_ALGORITHM_EC,
                     new KeyGenParameterSpec
                             .Builder(attestedKeyAlias, PURPOSE_SIGN)
                             // Don't set attestation challenge
                             .setAttestKeyAlias(attestKeyAlias)
                             .build());
-            fail("Expected exception.");
-        } catch (InvalidAlgorithmParameterException e) {
-            assertThat(e.getMessage(),
-                    is("AttestKey specified but no attestation challenge provided"));
-        }
+        });
+        assertThat(e.getMessage(),
+                is("AttestKey specified but no attestation challenge provided"));
     }
 
     @Test
@@ -162,18 +158,16 @@ public class AttestKeyTest {
                         .setIsStrongBoxBacked(true)
                         .build());
 
-        try {
+        InvalidAlgorithmParameterException e = assertThrows(InvalidAlgorithmParameterException.class, () -> {
             generateKeyPair(KEY_ALGORITHM_EC,
                     new KeyGenParameterSpec.Builder(attestedKeyAlias, PURPOSE_SIGN)
                             .setAttestationChallenge("challenge".getBytes())
                             .setAttestKeyAlias(strongBoxAttestKeyAlias)
                             .build());
-            fail("Expected exception.");
-        } catch (InvalidAlgorithmParameterException e) {
-            assertThat(e.getMessage(),
-                    is("Invalid security level: Cannot sign non-StrongBox key with StrongBox "
-                            + "attestKey"));
-        }
+        });
+        assertThat(e.getMessage(),
+                is("Invalid security level: Cannot sign non-StrongBox key with StrongBox "
+                        + "attestKey"));
     }
 
     @Test
@@ -185,19 +179,17 @@ public class AttestKeyTest {
         generateKeyPair(KEY_ALGORITHM_EC,
                 new KeyGenParameterSpec.Builder(teeAttestKeyAlias, PURPOSE_ATTEST_KEY).build());
 
-        try {
+        InvalidAlgorithmParameterException e = assertThrows(InvalidAlgorithmParameterException.class, () -> {
             generateKeyPair(KEY_ALGORITHM_EC,
                     new KeyGenParameterSpec.Builder("attestedKey", PURPOSE_SIGN)
                             .setAttestationChallenge("challenge".getBytes())
                             .setAttestKeyAlias(teeAttestKeyAlias)
                             .setIsStrongBoxBacked(true)
                             .build());
-            fail("Expected exception.");
-        } catch (InvalidAlgorithmParameterException e) {
-            assertThat(e.getMessage(),
-                    is("Invalid security level: Cannot sign StrongBox key with non-StrongBox "
-                            + "attestKey"));
-        }
+        });
+        assertThat(e.getMessage(),
+                is("Invalid security level: Cannot sign StrongBox key with non-StrongBox "
+                        + "attestKey"));
     }
 
     private void assumeAttestKey() {

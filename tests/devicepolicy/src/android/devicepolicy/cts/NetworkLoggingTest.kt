@@ -177,18 +177,25 @@ class NetworkLoggingTest {
             setNetworkLoggingEnabled(true)
             Log.d(TAG, "Enabled logging")
 
+            val successfullyConnectedDomains = mutableListOf<String>()
             testApp.install(TestApis.users().instrumented()).use { primaryApp ->
                 REACHABLE_DOMAINS.forEach {
-                    Truth.assertWithMessage(
-                        "Failed to connect to $it, ensure the device has connectivity"
-                    ).that(primaryApp.makeHttpRequest("https://$it")).isTrue()
+                    if (primaryApp.makeHttpRequest("https://$it")) {
+                        successfullyConnectedDomains.add(it)
+                    } else {
+                        Log.w(TAG, "Could not connect to $it, ignoring")
+                    }
                 }
             }
+            assertWithMessage("Could not connect to any of the test domains, "
+                    + "ensure the device has connectivity")
+                .that(successfullyConnectedDomains).isNotEmpty()
 
             val logs = getLogs()
-            val connected = logs.filterIsInstance<ConnectEvent>().map{it.inetAddress}.toSet()
+            val connected = logs.filterIsInstance<ConnectEvent>()
+                .map{it.inetAddress}.toSet()
 
-            REACHABLE_DOMAINS.forEach {
+            successfullyConnectedDomains.forEach {
                 Truth.assertWithMessage("Can't find connect event for $it")
                     .that(connected).containsAnyIn(InetAddress.getAllByName(it))
             }

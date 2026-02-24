@@ -32,7 +32,6 @@ import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.setInteractionAllowlist
 import android.app.appfunctions.testutils.CheckAttribution.Companion.CHECK_ATTRIBUTION_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings
@@ -42,8 +41,11 @@ import android.app.appfunctions.testutils.CtsTestUtil.assertReadAccessible
 import android.app.appfunctions.testutils.CtsTestUtil.assertReadInaccessible
 import android.app.appfunctions.testutils.CtsTestUtil.assertWriteAccessible
 import android.app.appfunctions.testutils.CtsTestUtil.assertWriteInaccessible
+import android.app.appfunctions.testutils.CtsTestUtil.freezeProcess
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
+import android.app.appfunctions.testutils.CtsTestUtil.safeUnfreezeProcess
+import android.app.appfunctions.testutils.CtsTestUtil.unfreezeProcess
 import android.app.appfunctions.testutils.DisabledByDefault
 import android.app.appfunctions.testutils.DisabledByDefault.Companion.DISABLED_BY_DEFAULT_FUNCTION_ID
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
@@ -81,6 +83,7 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSec
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.utils.ShellCommand
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -107,8 +110,8 @@ class AppFunctionRegistrationTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
     @get:Rule val serviceTestRule = ServiceTestRule()
 
-    @get:Rule val activityScenarioRule =
-        ActivityScenarioRule(DynamicRegistrationActivity::class.java)
+    @get:Rule
+    val activityScenarioRule = ActivityScenarioRule(DynamicRegistrationActivity::class.java)
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -130,15 +133,13 @@ class AppFunctionRegistrationTest {
     fun setup() = doBlocking {
         activityScenarioRule.scenario.moveToState(Lifecycle.State.CREATED)
         activityScenarioRule.scenario.onActivity { activity ->
-            this@AppFunctionRegistrationTest.activityAppFunctionManager =
-                activity.manager
+            this@AppFunctionRegistrationTest.activityAppFunctionManager = activity.manager
         }
         val appAppFunctionManager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(appAppFunctionManager)
         this@AppFunctionRegistrationTest.appContextAppFunctionManager = appAppFunctionManager
 
         uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
-
 
         if (android.app.appfunctions.flags.Flags.enableAppFunctionPermissionV2()) {
             AppFunctionUtils.enableAllowlist()
@@ -555,6 +556,68 @@ class AppFunctionRegistrationTest {
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun execute_functionFromFrozenProcess_fail() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+        freezeProcess(
+            context,
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+        )
+        try {
+            val request =
+                createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
+
+            val response = appContextAppFunctionManager.executeAppFunction(request)
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_DISABLED)
+        } finally {
+            safeUnfreezeProcess(
+                context,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+            )
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun execute_functionFromUnfrozenProcess_success() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+        freezeProcess(
+            context,
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+        )
+        unfreezeProcess(
+            context,
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+        )
+        try {
+            val request =
+                createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
+
+            val response = appContextAppFunctionManager.executeAppFunction(request)
+            assertThat(response.exceptionOrNull()).isNull()
+            assertConcatStringsResponseCorrect(response)
+        } finally {
+            safeUnfreezeProcess(
+                context,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+            )
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun execute_outputsInvalidArgumentException_propagatesToCaller() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
@@ -884,6 +947,71 @@ class AppFunctionRegistrationTest {
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun isAppFunctionEnabled_shouldReturnFalse_whenProcessIsFrozen() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+        freezeProcess(
+            context,
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+        )
+        try {
+            val result =
+                appContextAppFunctionManager.isAppFunctionEnabled(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            assertThat(result.getOrThrow()).isFalse()
+        } finally {
+            safeUnfreezeProcess(
+                context,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+            )
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun isAppFunctionEnabled_shouldReturnTrue_whenProcessIsUnfrozen() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
+        freezeProcess(
+            context,
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+        )
+        unfreezeProcess(
+            context,
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+        )
+        try {
+            val result =
+                appContextAppFunctionManager.isAppFunctionEnabled(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            assertThat(result.getOrThrow()).isTrue()
+        } finally {
+            safeUnfreezeProcess(
+                context,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.REGISTRATION_SERVICE_PROCESS_NAME,
+            )
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
     @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_INTERACTION_API)
     fun execute_withAttribution_attributionNotPropagated() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
@@ -891,8 +1019,8 @@ class AppFunctionRegistrationTest {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val attribution =
                 AppInteractionAttribution.Builder(
-                    AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
-                )
+                        AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
+                    )
                     .build()
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -918,14 +1046,10 @@ class AppFunctionRegistrationTest {
     private fun registerAppFunction(
         functionId: String,
         function: AppFunction,
-        manager: AppFunctionManager
+        manager: AppFunctionManager,
     ): AppFunctionRegistration {
         val registration =
-            manager.registerAppFunction(
-                functionId,
-                testRegistrationExecutor,
-                function,
-            )
+            manager.registerAppFunction(functionId, testRegistrationExecutor, function)
         registrations.add(registration)
         return registration
     }
@@ -933,7 +1057,7 @@ class AppFunctionRegistrationTest {
     private fun registerAppFunctions(
         functionIds: List<String>,
         functions: List<AppFunction>,
-        manager: AppFunctionManager
+        manager: AppFunctionManager,
     ): AppFunctionRegistration {
         val requests =
             functionIds.zip(functions).map { (id, function) ->

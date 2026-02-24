@@ -149,7 +149,7 @@ class TaskMoveTestActivity : Activity() {
         val activityManager = getSystemService(ActivityManager::class.java)
         val appTasks = activityManager.appTasks
         for (task in appTasks) {
-            if (task.taskInfo.taskId == taskId) {
+            if (task.taskInfo!!.taskId == taskId) {
                 return task
             }
         }

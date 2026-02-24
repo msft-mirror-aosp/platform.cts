@@ -95,7 +95,7 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
                                     }
                                     String packageName = resolveInfo.activityInfo.packageName;
                                     return TELECOM_PACKAGE_NAME.equals(packageName)
-                                            || TELECOM_UI_PACKAGE_NAME.equals(packageName);
+                                            || getTelecomUiPackageName().equals(packageName);
                                 });
 
         assertTrue(
@@ -135,7 +135,7 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
         String packageName = activities.get(0).activityInfo.packageName;
         boolean isAllowedPackage =
                 TELECOM_PACKAGE_NAME.equals(packageName)
-                        || TELECOM_UI_PACKAGE_NAME.equals(packageName);
+                        || getTelecomUiPackageName().equals(packageName);
 
         assertTrue(
                 "Handler for MANAGE_BLOCKED_NUMBERS must be in an allowed package ("
@@ -253,4 +253,12 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
         }
         return packageInfoList;
     }
+
+    private String getTelecomUiPackageName() {
+        TelecomManager telecomManager = mContext.getSystemService(TelecomManager.class);
+        Intent intent = telecomManager.createManageBlockedNumbersIntent();
+        return intent != null && intent.getPackage() != null
+                            ? intent.getPackage() : TELECOM_UI_PACKAGE_NAME;
+    }
+
 }

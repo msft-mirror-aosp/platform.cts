@@ -157,8 +157,8 @@ public class VideoCodecClaimsPerformanceTestBase {
                 for (PerformancePoint pp : pps) {
                     if (pp.covers(PPReq)) {
                         covers = true;
-                        coversTarget = true;
                         if (isSecure) secureCodecCoversTarget = true;
+                        else coversTarget = true;
                         break;
                     }
                     if (pp.covers(PPMinReq)) {

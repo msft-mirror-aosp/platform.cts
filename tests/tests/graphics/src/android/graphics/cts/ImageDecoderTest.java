@@ -3311,6 +3311,8 @@ public class ImageDecoderTest {
             assertNotNull(result);
             assertNotEquals(0, result.getWidth());
             assertNotEquals(0, result.getHeight());
+        } catch (FileNotFoundException e) {
+            fail("DNG asset " + filename + " not found!");
         } catch (IOException e) {
             // Acceptable behavior for these images
         }

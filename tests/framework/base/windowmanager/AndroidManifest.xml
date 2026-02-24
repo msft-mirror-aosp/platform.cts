@@ -52,82 +52,101 @@
              android:resizeableActivity="true"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$FirstActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$FirstActivity"
+             android:configChanges="allKnown"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SecondActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SecondActivity"
+             android:configChanges="allKnown"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$ThirdActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$ThirdActivity"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SideActivity"
                   android:taskAffinity="nobody.but.SideActivity"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TranslucentActivity"
-             android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+             android:theme="@android:style/Theme.Translucent.NoTitleBar"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SecondTranslucentActivity"
-             android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+             android:theme="@android:style/Theme.Translucent.NoTitleBar"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.CallbackTrackingActivity"
-             android:configChanges="keyboard|keyboardHidden|navigation"/>
+             android:configChanges="allKnown"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SecondCallbackTrackingActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SecondCallbackTrackingActivity"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TranslucentCallbackTrackingActivity"
-             android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+             android:theme="@android:style/Theme.Translucent.NoTitleBar"
+             android:configChanges="allKnown"/>
 
         <!-- The "android:configChanges:screenSize|density"below is to prevent activity recreation
              during tests on AAOS builds. -->
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$ShowWhenLockedCallbackTrackingActivity"
-                  android:configChanges="screenSize|density|keyboard|keyboardHidden|navigation" />
+                  android:configChanges="allKnown" />
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SecondProcessCallbackTrackingActivity"
              android:process=":SecondProcess"
-             android:exported="true"/>
+             android:exported="true"
+             android:configChanges="allKnown"/>
 
         <provider android:name="android.server.wm.activity.lifecycle.EventLog"
              android:authorities="android.server.wm.lifecycle.logprovider"
              android:exported="true"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$LaunchForResultActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$LaunchForResultActivity"
+             android:configChanges="allKnown"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$ResultActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$ResultActivity"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TranslucentResultActivity"
-                  android:theme="@android:style/Theme.Dialog"/>
+                  android:theme="@android:style/Theme.Dialog"
+                  android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SingleTopActivity"
-             android:launchMode="singleTop"/>
+             android:launchMode="singleTop"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.LifecycleConfigChangeHandlingActivity"
-             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density"/>
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$PipActivity"
-             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
+             android:configChanges="allKnown"
              android:supportsPictureInPicture="true"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SlowActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SlowActivity"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$NoDisplayActivity"
-             android:theme="@android:style/Theme.NoDisplay"/>
+             android:theme="@android:style/Theme.NoDisplay"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$DifferentAffinityActivity"
-             android:taskAffinity="nobody.but.DifferentAffinityActivity"/>
+             android:taskAffinity="nobody.but.DifferentAffinityActivity"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TransitionSourceActivity"
-             android:theme="@style/window_activity_transitions"/>
+             android:theme="@style/window_activity_transitions"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TransitionDestinationActivity"
-             android:theme="@style/window_activity_transitions"/>
+             android:theme="@style/window_activity_transitions"
+             android:configChanges="allKnown"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$LaunchForwardResultActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$LaunchForwardResultActivity"
+             android:configChanges="allKnown"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TrampolineActivity"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TrampolineActivity"
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleLegacySplitScreenTests$ShowImeActivity"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTopResumedStateTests$NoRelaunchCallbackTrackingActivity"
             android:resizeableActivity="true"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen|keyboard|keyboardHidden|navigation"/>
+            android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.multidisplay.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
              android:allowEmbedded="true"/>
@@ -135,14 +154,14 @@
         <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity"
              android:resizeableActivity="true"
              android:theme="@style/no_starting_window"
-             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen|keyboard|keyboardHidden|navigation"/>
+             android:configChanges="allKnown"/>
         <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivity2"/>
         <activity android:name="android.server.wm.ime.MultiDisplayImeTests$ImeTestActivityWithBrokenContextWrapper"/>
 
         <activity android:name="android.server.wm.multidisplay.MultiDisplayClientTests$ClientTestActivity"/>
         <activity android:name="android.server.wm.multidisplay.MultiDisplayClientTests$NoRelaunchActivity"
              android:resizeableActivity="true"
-             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen|keyboard|keyboardHidden|navigation"/>
+             android:configChanges="allKnown"/>
 
         <activity android:name="android.server.wm.window.HideOverlayWindowsTest$SystemWindowActivity"
                   android:process=":swa"

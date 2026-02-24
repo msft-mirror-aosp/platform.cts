@@ -1286,6 +1286,13 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.button);
         final Button button = mActivity.findViewById(R.id.button);
+
+        // Scroll so the buttons are entirely on screen, with no animation to help with flakiness
+        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
+        scrollView.setSmoothScrollingEnabled(false);
+        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(button));
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
+
         final int[] buttonLocation = new int[2];
         button.getLocationOnScreen(buttonLocation);
         final int buttonX = button.getWidth() / 2;
@@ -3085,7 +3092,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_HOVER_MOVE,
                 xOnScreen, yOnScreen, 0);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        sInstrumentation.sendPointerSync(event);
+        sUiAutomation.injectInputEvent(event, true);
         event.recycle();
     }
 
@@ -3093,7 +3100,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         MotionEvent event = MotionEvent.obtain(eventTime, eventTime, MotionEvent.ACTION_HOVER_EXIT,
                 xOnScreen, yOnScreen, 0);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        sInstrumentation.sendPointerSync(event);
+        sUiAutomation.injectInputEvent(event, true);
         event.recycle();
     }
 

@@ -18,6 +18,7 @@ package android.cts.backup.delayedfullrestoreapp;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.backup.DelayedRestoreRequest;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -52,7 +53,8 @@ public class DelayedFullRestoreDeviceTest {
     @Test
     public void writeFilesAndAssertSuccess() throws Exception {
         Files.write(backupFile.toPath(), FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
-        assertThat(Files.readAllBytes(backupFile.toPath())).isEqualTo(FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
+        assertThat(Files.readAllBytes(backupFile.toPath()))
+                .isEqualTo(FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -64,6 +66,17 @@ public class DelayedFullRestoreDeviceTest {
     @Test
     public void assertFilesRestored() throws Exception {
         assertThat(backupFile.exists()).isTrue();
-        assertThat(Files.readAllBytes(backupFile.toPath())).isEqualTo(FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
+        assertThat(Files.readAllBytes(backupFile.toPath()))
+                .isEqualTo(FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testOnDelayedFullRestore_coverage() throws Exception {
+        DelayedFullBackupAgent agent = new DelayedFullBackupAgent();
+        DelayedRestoreRequest request =
+                new DelayedRestoreRequest.Builder(DelayedRestoreRequest.TYPE_APP_INSTALL)
+                        .setPackageName("dummy_package")
+                        .build();
+        agent.onDelayedFullRestore(request);
     }
 }

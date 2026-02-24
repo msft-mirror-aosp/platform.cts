@@ -17,6 +17,7 @@
 package android.video.cts;
 
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.video.cts.VideoCodecClaimsPerformanceTest.requiredMediaTypesListDec;
 
 import static org.junit.Assert.assertTrue;
 
@@ -135,8 +136,11 @@ public class HevcVp9ClaimsPerformanceTest {
         for (VideoCodecClaimsPerformanceTestBase baseInstance : mBaseInstances) {
             result |= baseInstance.deviceClaimsPerformanceSupported();
         }
-        assertTrue("Device implementations must support at least one of H.265 or VP9 decoding\n"
-                        + mBaseInstances.get(0).mTestConfig,
-                result);
+        if ((requiredMediaTypesListDec.contains(MediaFormat.MIMETYPE_VIDEO_HEVC))
+                || requiredMediaTypesListDec.contains(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            assertTrue("Device implementations must support at least one of H.265 or VP9 decoding\n"
+                            + mBaseInstances.get(0).mTestConfig,
+                    result);
+        }
     }
 }
