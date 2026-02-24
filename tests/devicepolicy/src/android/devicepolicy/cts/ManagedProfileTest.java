@@ -34,6 +34,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
@@ -62,6 +63,7 @@ public final class ManagedProfileTest {
 
     @Test
     @EnsureHasNoDpc
+    @RequireFeature("android.software.managed_users")
     public void startActivityInManagedProfile_activityStarts() {
         // We want a fresh - properly created work profile
         try (RemoteDpc dpc = RemoteDpc.createWorkProfile();
@@ -83,6 +85,7 @@ public final class ManagedProfileTest {
     @Test
     @EnsureHasNoDpc
     @EnsureHasPermission(CREATE_USERS)
+    @RequireFeature("android.software.managed_users")
     public void createProfile_noProfileExists_creates() {
         UserHandle profile = null;
         try {
