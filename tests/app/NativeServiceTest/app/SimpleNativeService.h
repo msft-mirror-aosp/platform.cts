@@ -30,4 +30,8 @@ public:
     ndk::ScopedAStatus getPid(int32_t* pid) override;
     ndk::ScopedAStatus getUid(int32_t* uid) override;
     ndk::ScopedAStatus crash() override;
+    ndk::ScopedAStatus redirectStdio(const ndk::ScopedFileDescriptor& stdoutFd,
+                                     const ndk::ScopedFileDescriptor& stderrFd) override;
+    ndk::ScopedAStatus loadLibrary(const std::string& libName) override;
+    ndk::ScopedAStatus callFunc(const std::string& funcName) override;
 };
