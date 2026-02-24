@@ -5484,6 +5484,24 @@
                     android.media.AudioTrack#stop" />
         </activity>
 
+        <activity android:name=".audio.AudioDataPathsUSBMultichannelActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_USB_multichannel_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output:android.software.webview" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+            <meta-data android:name="CddTest" android:value="5.6/H-1-10" />
+        </activity>
+
         <activity android:name=".audio.AudioLoopbackLatencyActivity"
             android:exported="true"
             android:label="@string/audio_loopback_latency_test">

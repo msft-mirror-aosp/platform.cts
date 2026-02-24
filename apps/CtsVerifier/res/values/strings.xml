@@ -5803,6 +5803,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_info">Info</string>
     <string name="audio_general_ok">Ok</string>
     <string name="audio_general_start">Start</string>
+    <string name="audio_general_prev">Prev</string>
+    <string name="audio_general_next">Next</string>
     <string name="audio_general_stop">Stop</string>
     <string name="audio_general_done">Done</string>
     <string name="audio_general_close">Close</string>
@@ -5992,6 +5994,14 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="audio_datapaths_usb_interface_nodevices">There is no peripheral currently available for this test.
         Please connect a USB Interface peripheral configured for loopback.</string>
+
+    <string name="audio_datapaths_USB_multichannel_test">Audio Data Paths USB Multichannel Test</string>
+    <string name="audio_datapaths_USB_multichannel_info">This test verifies support for multi-channel output devices for USB audio devices.
+        \nThis includes Quad, 5.1, and 7.1 channel masks.
+        \nHandheld devices claiming Media Performance Class C (Android 17) MUST pass this test.
+    </string>
+    <string name="audio_datapaths_usb_multichannel_nodevices">There is no peripheral currently available for this test.
+        Please connect a USB audio device supporting at least 8 channels.</string>
 
     <string name="audio_datapaths_noio">"No valid datapaths. PASS."</string>
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
