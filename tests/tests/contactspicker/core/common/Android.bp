@@ -16,27 +16,15 @@ package {
     default_team: "trendy_team_android_data_aegis",
 }
 
-android_test {
-    name: "CtsContactsPickerCoreTestCases",
-    defaults: ["cts_defaults"],
+java_library {
+    name: "contacts-picker-cts-common",
     static_libs: [
-        "contacts-picker-cts-common",
-        "android.content.flags-aconfig-java-export",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
         "junit",
         "truth",
         "ub-uiautomator",
         "platform-test-rules",
         "Nene",
-        "bedstead-multiuser",
-        "bedstead-enterprise",
     ],
     srcs: ["src/**/*.java"],
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    sdk_version: "test_current",
 }

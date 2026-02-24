@@ -19,16 +19,13 @@ package com.android.contactspicker.cts;
 import static android.provider.ContactsPickerSessionContract.ACTION_PICK_CONTACTS;
 import static android.provider.ContactsPickerSessionContract.EXTRA_PICK_CONTACTS_REQUESTED_DATA_FIELDS;
 
-import static com.google.common.truth.Truth.assertThat;
+import static com.android.contactspicker.cts.common.ContactsPickerTestHelper.verifyUriReturned;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Activity;
-import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -37,7 +34,6 @@ import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Email;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.CommonDataKinds.StructuredName;
-import android.provider.ContactsContract.Data;
 import android.provider.ContactsPickerSessionContract;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
@@ -47,6 +43,8 @@ import android.support.test.uiautomator.Until;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.contactspicker.cts.common.ContactsPickerTestHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -74,11 +72,12 @@ public class ContactsPickerSelectionTest {
 
     private UiDevice mUiDevice;
     // Map of Contact Name -> ContactDataIds
-    private static final Map<String, ContactDataIds> sContactDataIdMap = new HashMap<>();
+    private static final Map<String, ContactsPickerTestHelper.ContactDataIds> sContactDataIdMap =
+            new HashMap<>();
     private static final List<Long> sCreatedContactDataIds = new ArrayList<>();
     private static final List<Long> sCreatedRawContactIds = new ArrayList<>();
-    private static final ContentResolver sResolver =
-            InstrumentationRegistry.getInstrumentation().getContext().getContentResolver();
+    private static final Context sContext =
+            InstrumentationRegistry.getInstrumentation().getContext();
 
     private static final int TIMEOUT_MS = 2000;
     private static final int CP2_IDLE_MS = 2000;
@@ -97,14 +96,16 @@ public class ContactsPickerSelectionTest {
 
         createTestContacts();
         // Wait for CP2 to process the newly created contacts.
-        ContactsPickerTestHelper.waitForContactsToBeCreated(sResolver, sCreatedContactDataIds);
+        ContactsPickerTestHelper.waitForContactsToBeCreated(
+                sContext.getContentResolver(), sCreatedContactDataIds);
     }
 
     @After
     public void tearDown() {
         mUiDevice.pressHome();
 
-        ContactsPickerTestHelper.removeTestContacts(sResolver, sCreatedRawContactIds);
+        ContactsPickerTestHelper.removeTestContacts(
+                sContext, sCreatedRawContactIds, sContext.getUser());
         sCreatedRawContactIds.clear();
         sContactDataIdMap.clear();
         SystemClock.sleep(CP2_IDLE_MS);
@@ -126,6 +127,7 @@ public class ContactsPickerSelectionTest {
                 List.of(CONTACT_PHONE),
                 (resultCode, resultData) ->
                         verifyUriReturned(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
                                 resultCode,
                                 resultData,
                                 ContactsContract.AUTHORITY,
@@ -148,6 +150,7 @@ public class ContactsPickerSelectionTest {
                 List.of(CONTACT_MULTI),
                 (resultCode, resultData) ->
                         verifyUriReturned(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
                                 resultCode,
                                 resultData,
                                 ContactsContract.AUTHORITY,
@@ -172,6 +175,7 @@ public class ContactsPickerSelectionTest {
                 List.of(CONTACT_PHONE),
                 (resultCode, resultData) ->
                         verifyUriReturned(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
                                 resultCode,
                                 resultData,
                                 ContactsPickerSessionContract.AUTHORITY,
@@ -196,6 +200,7 @@ public class ContactsPickerSelectionTest {
                 List.of(CONTACT_MULTI),
                 (resultCode, resultData) ->
                         verifyUriReturned(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
                                 resultCode,
                                 resultData,
                                 ContactsPickerSessionContract.AUTHORITY,
@@ -223,6 +228,7 @@ public class ContactsPickerSelectionTest {
                 List.of(CONTACT_PHONE, CONTACT_MULTI),
                 (resultCode, resultData) ->
                         verifyUriReturned(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
                                 resultCode,
                                 resultData,
                                 ContactsPickerSessionContract.AUTHORITY,
@@ -250,6 +256,7 @@ public class ContactsPickerSelectionTest {
                 List.of(CONTACT_MULTI),
                 (resultCode, resultData) ->
                         verifyUriReturned(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
                                 resultCode,
                                 resultData,
                                 ContactsPickerSessionContract.AUTHORITY,
@@ -325,45 +332,8 @@ public class ContactsPickerSelectionTest {
         }
     }
 
-    private void verifyUriReturned(
-            int resultCode,
-            Intent resultData,
-            String expectedAuthority,
-            List<Long> expectedDataIds) {
-        assertThat(resultCode).isEqualTo(Activity.RESULT_OK);
-        assertThat(resultData).isNotNull();
-        Uri sessionUri = resultData.getData();
-        assertThat(sessionUri).isNotNull();
-        assertThat(sessionUri.getAuthority()).contains(expectedAuthority);
-
-        // Query the session URI to verify it contains the correct Data ID
-        try (Cursor cursor =
-                sResolver.query(sessionUri, new String[] {Data._ID}, null, null, null)) {
-            assertThat(cursor).isNotNull();
-            assertThat(cursor.getCount()).isEqualTo(expectedDataIds.size());
-            List<Long> actualDataIds = new ArrayList<>();
-            while (cursor.moveToNext()) {
-                actualDataIds.add(cursor.getLong(0));
-            }
-            assertThat(actualDataIds).containsExactlyElementsIn(expectedDataIds);
-        }
-    }
-
     private interface ResultVerifier {
         void verify(int resultCode, Intent resultData);
-    }
-
-    /** A data class to hold the mapping of MimeType to Data ID for a single contact. */
-    private static class ContactDataIds {
-        private final Map<String, Long> mMimeTypeToDataId;
-
-        ContactDataIds(Map<String, Long> mimeTypeToDataId) {
-            this.mMimeTypeToDataId = mimeTypeToDataId;
-        }
-
-        Long get(String mimeType) {
-            return mMimeTypeToDataId.get(mimeType);
-        }
     }
 
     /** Subsection: Setup for contacts removal and creation for this test. */
@@ -385,11 +355,12 @@ public class ContactsPickerSelectionTest {
         allData.put(StructuredName.CONTENT_ITEM_TYPE, name);
 
         ContactsPickerTestHelper.ContactCreationResult result =
-                ContactsPickerTestHelper.createContact(sResolver, allData);
+                ContactsPickerTestHelper.createContact(sContext, allData, sContext.getUser());
 
         if (result.rawContactId != -1) {
             sCreatedRawContactIds.add(result.rawContactId);
-            sContactDataIdMap.put(name, new ContactDataIds(result.mimeTypeToDataId));
+            sContactDataIdMap.put(
+                    name, new ContactsPickerTestHelper.ContactDataIds(result.mimeTypeToDataId));
         }
         sCreatedContactDataIds.addAll(result.mimeTypeToDataId.values());
     }
