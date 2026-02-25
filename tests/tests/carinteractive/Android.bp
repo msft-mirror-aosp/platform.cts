@@ -42,6 +42,7 @@ android_test {
     data: [
         ":CtsAutoVoipTestApp",
         ":CtsAutoMediaTestApp",
+        ":CtsBackPressTestApp",
     ],
 
     test_config: "InteractiveAndroidTest.xml",

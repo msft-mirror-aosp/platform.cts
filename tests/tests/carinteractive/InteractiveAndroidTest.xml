@@ -15,6 +15,7 @@
         <option name="test-file-name" value="CtsCarInteractiveTestCases.apk" />
         <option name="test-file-name" value="CtsAutoVoipTestApp.apk"/>
         <option name="test-file-name" value="CtsAutoMediaTestApp.apk"/>
+        <option name="test-file-name" value="CtsBackPressTestApp.apk"/>
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.car.interactive.cts" />
