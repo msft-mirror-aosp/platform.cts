@@ -45,6 +45,8 @@ android_test {
         "bedstead-flags",
         "bedstead-root",
         "testng",
+        "kotlin-test",
+        "kotlinx_coroutines_test",
     ],
     asset_dirs: ["assets"],
     manifest: "AndroidManifest.xml",

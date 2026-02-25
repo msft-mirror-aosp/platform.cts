@@ -80,6 +80,7 @@ class AppFunctionMetadataTestHelper {
                                 "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
                             .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
                             .setPropertyString("functionId", "add")
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
@@ -108,6 +109,7 @@ class AppFunctionMetadataTestHelper {
                                 "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
                             .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
                             .setPropertyString("functionId", "add_disabledByDefault")
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
@@ -254,10 +256,8 @@ class AppFunctionMetadataTestHelper {
                                 "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
                                     ".dynamic.schema",
                             )
-                            .setPropertyString(
-                                "packageName",
-                                "android.app.appfunctions.cts.dynamic.schema",
-                            )
+                            .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
                                 true,
@@ -300,7 +300,11 @@ class AppFunctionMetadataTestHelper {
                             )
                             .setPropertyString(
                                 "packageName",
-                                "android.app.appfunctions.cts.dynamic.schema",
+                                PACKAGE_NAME,
+                            )
+                            .setPropertyLong(
+                                "packageNameHash",
+                                PACKAGE_NAME.hashCode().toLong(),
                             )
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
                             .setPropertyString("scope", "global")
@@ -319,7 +323,11 @@ class AppFunctionMetadataTestHelper {
                             )
                             .setPropertyString(
                                 "packageName",
-                                "android.app.appfunctions.cts.dynamic.schema",
+                                PACKAGE_NAME,
+                            )
+                            .setPropertyLong(
+                                "packageNameHash",
+                                PACKAGE_NAME.hashCode().toLong()
                             )
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
@@ -405,7 +413,8 @@ class AppFunctionMetadataTestHelper {
                                 "$PACKAGE_NAME/add",
                                 "AppFunctionStaticMetadata-android.app.appfunctions.cts",
                             )
-                            .setPropertyString("packageName", "android.app.appfunctions.cts")
+                            .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
                                 true,

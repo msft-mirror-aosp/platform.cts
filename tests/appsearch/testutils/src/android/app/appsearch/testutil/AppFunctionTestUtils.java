@@ -82,6 +82,7 @@ public final class AppFunctionTestUtils {
     public static final String PROPERTY_SCHEMA_VERSION = "schemaVersion";
     public static final String PROPERTY_SCHEMA_CATEGORY = "schemaCategory";
     public static final String PROPERTY_SERVICE_NAME = "serviceName";
+    public static final String PROPERTY_PACKAGE_NAME_HASH = "packageNameHash";
     public static final String PROPERTY_DISPLAY_NAME_STRING_RES = "displayNameStringRes";
     public static final String PROPERTY_ENABLED_BY_DEFAULT = "enabledByDefault";
     public static final String PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS =
@@ -100,10 +101,17 @@ public final class AppFunctionTestUtils {
      * test app A.
      */
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global");
+            buildAppFunctionDocument(
+                    TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global");
 
-    public static final GenericDocument APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES =
-            buildAppFunctionDocument(TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global", /* addAppLevelProperties= */ true);
+    public static final GenericDocument
+            APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES =
+                    buildAppFunctionDocument(
+                            TEST_APP_A_PKG,
+                            "print1",
+                            TEST_APP_FUNCTIONS_SERVICE,
+                            "global",
+                            /* addAppLevelProperties= */ true);
 
     /**
      * Print app function generic document as defined in the app_appfunctions_v2.xml of dynamic
@@ -170,7 +178,8 @@ public final class AppFunctionTestUtils {
      * test app B.
      */
     public static final GenericDocument APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_B_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global");
+            buildAppFunctionDocument(
+                    TEST_APP_B_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global");
 
     /** Updates the enabled state of the AppFunctionService for a given package. */
     public static void updateAppFunctionServiceEnabledState(
@@ -444,6 +453,7 @@ public final class AppFunctionTestUtils {
         if (addAppLevelProperties) {
             builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
             builder.setPropertyString(PROPERTY_SCOPE, scope);
+            builder.setPropertyLong(PROPERTY_PACKAGE_NAME_HASH, packageName.hashCode());
         }
 
         GenericDocument schemaMetadata =
