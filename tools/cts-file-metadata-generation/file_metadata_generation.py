@@ -86,6 +86,11 @@ def _handle_unspecified_file(metadata: metadata_pb2.FileMetadata) -> None:
     metadata.file_type = metadata_pb2.FileMetadata.FileType.TYPE_UNSPECIFIED
 
 
+def _is_config_file(file_name: str) -> bool:
+    """Checks whether the given file is a configuration file."""
+    return file_name.endswith(('.config', '.configv2'))
+
+
 def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> None:
     """Extracts the information from a configuration file and adds to the FileMetadata proto."""
     metadata.file_type = metadata_pb2.FileMetadata.FileType.TYPE_CONFIG
@@ -234,8 +239,8 @@ def _get_default_file_metadata(
 def _list_test_modules(top_directory: str) -> set[str]:
     """Lists all test modules in the given directory.
 
-    This function walks through the directory and identifies configuration files (".config") to
-    extract the test modules.
+    This function walks through the directory and identifies configuration files (".config") or
+    (".configv2") to extract the test modules.
 
     Args:
         top_directory: The directory to scan for test modules.
@@ -246,7 +251,7 @@ def _list_test_modules(top_directory: str) -> set[str]:
     test_modules = set()
     for root, _, files in os.walk(top_directory):
         for file_name in files:
-            if file_name.endswith('.config'):
+            if _is_config_file(file_name):
                 test_modules.add(_get_base_file_name(file_name))
     return test_modules
 
@@ -272,7 +277,7 @@ def _get_metadata(
         for file_name in files:
             file_path = str(os.path.join(root, file_name))
             metadata = _get_default_file_metadata(file_name, root, top_directory, test_modules)
-            if file_name.endswith('.config'):
+            if _is_config_file(file_name):
                 _handle_config_file(metadata, file_path)
             elif file_name.endswith('.apk'):
                 _handle_apk_file(metadata, file_path, aapt2_tool, default_sdk_version)
