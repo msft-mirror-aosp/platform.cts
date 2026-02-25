@@ -66,5 +66,4 @@ java_test_helper_library {
 android_test_helper_app {
     name: "CtsWindowManagerExternalApp",
     srcs: ["src/android/server/wm/ExternalActivity.java"],
-    test_suites: ["cts"],
 }
