@@ -21,16 +21,18 @@ import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionObservation
 import android.app.appfunctions.AppFunctionObserver
 import android.app.appfunctions.AppFunctionPackageMetadata
-import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.AppFunctionSearchSpec
+import android.app.appfunctions.cts.AppFunctionActivityScopedRegistrationTest.Companion.REGISTRATION_ACTIVITY
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.assertAppFunctionPackageMetadataEquals
+import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.searchAppFunctions
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.flags.Flags
@@ -43,6 +45,7 @@ import android.app.appfunctions.testutils.CtsTestUtil.safeUnfreezeProcess
 import android.app.appfunctions.testutils.CtsTestUtil.unfreezeProcess
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
+import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -51,10 +54,9 @@ import android.os.IBinder
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import androidx.core.os.asOutcomeReceiver
 import androidx.lifecycle.Lifecycle
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ServiceTestRule
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
@@ -68,27 +70,21 @@ import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
+import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
-import com.google.common.util.concurrent.MoreExecutors
-import java.lang.UnsupportedOperationException
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.suspendCancellableCoroutine
 import org.junit.After
 import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-// TODO(b/478810311):
-//  1. Add granular package visibility tests for each of the 3 relevant permissions.
-//  2. Move duplicate test logic into base test methods.
-//  3. Add tests for EXECUTE_APP_FUNCTIONS_SYSTEM and DISCOVER_APP_FUNCTIONS.
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(
     Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS,
@@ -97,13 +93,13 @@ import org.junit.runner.RunWith
 class ObserveAppFunctionsTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    @get:Rule val serviceTestRule = ServiceTestRule()
-
     @get:Rule
     val activityScenarioRule = ActivityScenarioRule(DynamicRegistrationActivity::class.java)
 
+    @get:Rule val serviceTestRule = ServiceTestRule()
+
     private val context: Context
-        get() = ApplicationProvider.getApplicationContext()
+        get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private lateinit var manager: AppFunctionManager
 
@@ -133,30 +129,50 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+    )
+    fun packageInstalled_withExecuteAndQueryAllPermissions_shouldSeeUpdate() = doBlocking {
+        assertPackageInstallationNotified()
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+    )
+    fun packageInstalled_withDiscoverAndQueryAllPermissions_shouldSeeUpdate() = doBlocking {
+        assertPackageInstallationNotified()
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
     @EnsureDoesNotHavePermission(
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
-    @Ignore("b/478851326 - Enable after checking permissions in the observer.")
-    fun packageInstalled_noExecuteOrReadPermission_doNotSeeUpdates() = doBlocking {
-        val observer = TestClientObserver()
-        var observation: AppFunctionObservation? = null
-        try {
-            observation = observeAppFunctions(observer)
-
-            installPackage(
-                UpdatableHelperApp.ApkPaths.BASE_APP,
-                UpdatableHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
-            )
-
-            assertThat(observer.updatedPackagesHistory).isEmpty()
-            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
-        } finally {
-            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
-            observation?.cancel()
-        }
+    fun packageInstalled_withExecuteSystemAndQueryAllPermissions_shouldSeeUpdate() = doBlocking {
+        assertPackageInstallationNotified()
     }
 
     @Test
@@ -164,40 +180,70 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
+    @EnsureDoesNotHavePermission(
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
+    )
+    fun packageInstalled_withoutAnyPermissions_shouldNotSeeUpdates() = doBlocking {
+        assertPackageInstallationNotNotified()
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.QUERY_ALL_PACKAGES,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+    )
+    @RequireRootInstrumentation(
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
+            "using Bedstead"
+    )
+    fun packageInstalled_withExecutePermissionOnly_shouldNotSeeUpdate() = doBlocking {
+        assertPackageInstallationNotNotified()
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.DISCOVER_APP_FUNCTIONS)
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+    )
+    @RequireRootInstrumentation(
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
+            "using Bedstead"
+    )
+    fun packageInstalled_withDiscoverPermissionOnly_shouldNotSeeUpdate() = doBlocking {
+        assertPackageInstallationNotNotified()
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
-    fun packageInstalled_withAllPermissions_seesAllUpdates() = doBlocking {
-        val observer = TestClientObserver()
-        var observation: AppFunctionObservation? = null
-        try {
-            observation = observeAppFunctions(observer)
-
-            assertThat(observer.updatedPackagesHistory).isEmpty()
-
-            installPackage(
-                UpdatableHelperApp.ApkPaths.BASE_APP,
-                UpdatableHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
-            )
-
-            retryAssert {
-                assertThat(observer.updatedPackagesHistory).hasSize(1)
-                assertThat(observer.updatedPackagesHistory.flatten())
-                    .contains(UpdatableHelperApp.PACKAGE_NAME)
-
-                assertPackageHasAtLeastFunctions(
-                    UpdatableHelperApp.PACKAGE_NAME,
-                    setOf(UpdatableHelperApp.FunctionNames.PRINT_1),
-                )
-            }
-        } finally {
-            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
-            observation?.cancel()
-        }
+    @RequireRootInstrumentation(
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
+            "using Bedstead"
+    )
+    fun packageInstalled_withExecuteSystemPermissionOnly_shouldNotSeeUpdate() = doBlocking {
+        assertPackageInstallationNotNotified()
     }
 
     @Test
@@ -205,10 +251,7 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun packageUpdated_topLevelDocumentsAdded_callsOnPackageChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -257,10 +300,7 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun packageUpdated_topLevelDocumentsRemoved_callsOnPackageChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -309,15 +349,11 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun packageUpdated_functionAdded_callsOnAppFunctionsChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            uninstallPackage(DynamicSchemaHelperApp.PACKAGE_NAME, context, checkIndexation = true)
             installPackage(
                 DynamicSchemaHelperApp.ApkPaths.ONE_FUNCTION_REMOVED,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
@@ -361,10 +397,7 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun packageUpdated_functionRemoved_callsOnAppFunctionsChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -411,11 +444,7 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
-    @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun packageUpdated_changedSchema_callsOnPackageChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -461,10 +490,7 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun packageUninstalled_callsOnPackageChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -502,63 +528,27 @@ class ObserveAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
     )
-    fun changeStaticFunctionEnabledState_callsOnAppFunctionsChanged() = doBlocking {
+    fun changeEnabledState_withExecuteAndQueryAllPermission_shouldSeeAllUpdates() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            val observer = TestClientObserver()
-            // TODO(b/478810311): test with non-root package
-
             observation = observeAppFunctions(observer)
 
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
-                AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
-            )
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD.functionIdentifier,
+            assertChangedEnabledStateNotified(
+                observer,
+                CtsApp.FunctionNames.ADD,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
-            retryAssert {
-                assertThat(
-                        isAppFunctionEnabled(
-                            CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
-                        )
-                    )
-                    .isTrue()
-                assertThat(
-                        isAppFunctionEnabled(
-                            CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.ADD.functionIdentifier,
-                        )
-                    )
-                    .isFalse()
-            }
-
-            retryAssert {
-                assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
-                assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .containsAtLeastElementsIn(
-                        setOf(
-                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
-                            CtsApp.FunctionNames.ADD,
-                        )
-                    )
-            }
+            assertChangedEnabledStateNotified(
+                observer,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
         } finally {
             observation?.cancel()
-            // Reset back to default
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
-                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-            )
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD.functionIdentifier,
-                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-            )
+            resetEnabledStates()
         }
     }
 
@@ -568,34 +558,236 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun changeEnabledState_withDiscoverAndQueryAllPermission_shouldSeeAllUpdates() = doBlocking {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        try {
+            observation = observeAppFunctions(observer)
+
+            assertChangedEnabledStateNotified(
+                observer,
+                CtsApp.FunctionNames.ADD,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            assertChangedEnabledStateNotified(
+                observer,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+        } finally {
+            observation?.cancel()
+            resetEnabledStates()
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun changeEnabledState_withExecuteSystemAndQueryAllPermission_shouldSeeAllUpdates() =
+        doBlocking {
+            val observer = TestClientObserver()
+            var observation: AppFunctionObservation? = null
+            try {
+                observation = observeAppFunctions(observer)
+
+                assertChangedEnabledStateNotified(
+                    observer,
+                    CtsApp.FunctionNames.ADD,
+                    AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+                )
+                assertChangedEnabledStateNotified(
+                    observer,
+                    DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                    AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+                )
+            } finally {
+                observation?.cancel()
+                resetEnabledStates()
+            }
+        }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    @RequireRootInstrumentation(
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
+            "using Bedstead"
+    )
+    fun changeEnabledState_withExecutePermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        try {
+            observation = observeAppFunctions(observer)
+
+            assertChangedEnabledStateNotified(
+                observer,
+                CtsApp.FunctionNames.ADD,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            assertChangedEnabledStateNotNotified(
+                observer,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+
+            assertSeesUpdateAfterVisibilityGranted(observer)
+        } finally {
+            observation?.cancel()
+            resetEnabledStates()
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.DISCOVER_APP_FUNCTIONS)
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    @RequireRootInstrumentation(
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
+            "using Bedstead"
+    )
+    fun changeEnabledState_withDiscoverPermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        try {
+            observation = observeAppFunctions(observer)
+
+            assertChangedEnabledStateNotified(
+                observer,
+                CtsApp.FunctionNames.ADD,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            assertChangedEnabledStateNotNotified(
+                observer,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+
+            assertSeesUpdateAfterVisibilityGranted(observer)
+        } finally {
+            observation?.cancel()
+            resetEnabledStates()
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
+    @EnsureDoesNotHavePermission(
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
     )
+    @RequireRootInstrumentation(
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
+            "using Bedstead"
+    )
+    fun changeEnabledState_withExecuteSystemPermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        try {
+            observation = observeAppFunctions(observer)
+
+            assertChangedEnabledStateNotified(
+                observer,
+                CtsApp.FunctionNames.ADD,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            assertChangedEnabledStateNotNotified(
+                observer,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+
+            assertSeesUpdateAfterVisibilityGranted(observer)
+        } finally {
+            observation?.cancel()
+            resetEnabledStates()
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+    )
+    fun changeEnabledState_withoutAnyPermission_shouldOnlySeeSelfUpdate() = doBlocking {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        try {
+            observation = observeAppFunctions(observer)
+
+            assertChangedEnabledStateNotified(
+                observer,
+                CtsApp.FunctionNames.ADD,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            assertChangedEnabledStateNotNotified(
+                observer,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+        } finally {
+            observation?.cancel()
+            resetEnabledStates()
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun registerDynamicFunction_callsOnAppFunctionsChangedIfEnabled() = doBlocking {
         var observation: AppFunctionObservation? = null
         val observer = TestClientObserver()
-        // TODO(b/478810311): test with non-root package
         observation = observeAppFunctions(observer)
 
-        var registration: AppFunctionRegistration? = null
+        val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         try {
-            registration =
-                activityAppFunctionManager.registerAppFunction(
-                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
-                    MoreExecutors.directExecutor(),
-                ) { _, _, _ ->
-                    throw UnsupportedOperationException("Stub!")
-                }
+            assertThat(registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .contains(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                    .contains(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
             observation?.cancel()
-            registration?.unregister()
+            registrationService.safeUnregister(CONCAT_STRINGS_FUNCTION_ID)
         }
     }
 
@@ -604,37 +796,28 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun unregisterDynamicFunction_callsOnAppFunctionsChangedIfEnabled() = doBlocking {
         var observation: AppFunctionObservation? = null
-        var registration: AppFunctionRegistration? = null
+        val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         try {
-            registration =
-                activityAppFunctionManager.registerAppFunction(
-                    // TODO(b/478810311): test with non-root package
-                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
-                    MoreExecutors.directExecutor(),
-                ) { _, _, _ ->
-                    throw UnsupportedOperationException("Stub!")
-                }
+            assertThat(registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
 
             val observer = TestClientObserver()
 
             observation = observeAppFunctions(observer)
 
-            registration.unregister()
+            assertThat(registrationService.unregisterAppFunction(CONCAT_STRINGS_FUNCTION_ID))
+                .isTrue()
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .contains(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                    .contains(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
             observation?.cancel()
-            registration?.unregister()
+            registrationService.safeUnregister(CONCAT_STRINGS_FUNCTION_ID)
         }
     }
 
@@ -643,10 +826,7 @@ class ObserveAppFunctionsTest {
     @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureDoesNotHavePermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
     fun packageInstalled_crossUser_failsWithoutPermission() = doBlocking {
         val secondaryUser = sDeviceState.additionalUser()
@@ -755,10 +935,7 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun packageInstalled_afterObservationCancelled_doesNotNotify() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -787,39 +964,36 @@ class ObserveAppFunctionsTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
-    fun changeStaticFunctionEnabledState_afterObservationCancelled_doesNotNotify() = doBlocking {
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun changeEnabledState_afterObservationCancelled_doesNotNotify() = doBlocking {
         var observation: AppFunctionObservation? = null
         try {
             val observer = TestClientObserver()
-            // TODO(b/478810311): test with non-root package
 
             observation = observeAppFunctions(observer)
             observation.cancel()
 
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             retryAssert {
-                assertThat(
-                        isAppFunctionEnabled(
-                            CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
-                        )
-                    )
-                    .isTrue()
+                assertFunctionEnabledState(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionIdentifier,
+                    manager,
+                    isEnabled = true,
+                )
             }
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
             observation?.cancel()
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
         }
@@ -861,7 +1035,7 @@ class ObserveAppFunctionsTest {
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun unfreezerocessWithDynamicAppFunctionRegistered_shouldCallOnAppFunctionsChanged() =
+    fun unfreezeProcessWithDynamicAppFunctionRegistered_shouldCallOnAppFunctionsChanged() =
         doBlocking {
             val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
             var observation: AppFunctionObservation? = null
@@ -926,6 +1100,183 @@ class ObserveAppFunctionsTest {
         return manager.observeAppFunctions(context.mainExecutor, observer)
     }
 
+    private suspend fun assertPackageInstallationNotified() {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        try {
+            observation = observeAppFunctions(observer)
+
+            installPackage(
+                UpdatableHelperApp.ApkPaths.BASE_APP,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = true,
+            )
+
+            retryAssert {
+                assertThat(observer.updatedPackagesHistory).hasSize(1)
+                assertThat(observer.updatedPackagesHistory.flatten())
+                    .contains(UpdatableHelperApp.PACKAGE_NAME)
+
+                assertPackageHasAtLeastFunctions(
+                    UpdatableHelperApp.PACKAGE_NAME,
+                    setOf(UpdatableHelperApp.FunctionNames.PRINT_1),
+                )
+            }
+        } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
+            observation?.cancel()
+        }
+    }
+
+    private suspend fun assertPackageInstallationNotNotified() {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        try {
+            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
+
+            observation = observeAppFunctions(observer)
+
+            installPackage(
+                UpdatableHelperApp.ApkPaths.BASE_APP,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = true,
+            )
+
+            // TODO(b/478810311): Use a privileged observer from a different package to ensure that
+            //  observer notifications have already been dispatch by the time we check for
+            //  no-notification.
+            repeat(5) {
+                assertThat(observer.updatedPackagesHistory).isEmpty()
+                delay(1000)
+            }
+        } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
+            observation?.cancel()
+        }
+    }
+
+    private suspend fun assertChangedEnabledStateNotified(
+        observer: TestClientObserver,
+        appFunctionName: AppFunctionName,
+        @AppFunctionManager.EnabledState state: Int,
+    ) {
+        observer.clearHistory()
+
+        if (appFunctionName.packageName == context.packageName) {
+            manager.setAppFunctionEnabled(appFunctionName.functionIdentifier, state)
+        } else {
+            setAppFunctionEnabledRemote(
+                appFunctionName.packageName,
+                appFunctionName.functionIdentifier,
+                state,
+            )
+        }
+
+        retryAssert {
+            assertFunctionEnabledState(
+                appFunctionName.packageName,
+                appFunctionName.functionIdentifier,
+                manager,
+                isEnabled = state == AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+            )
+        }
+
+        retryAssert {
+            assertThat(observer.updatedFunctionStatesHistory.flatten()).contains(appFunctionName)
+        }
+    }
+
+    private suspend fun assertChangedEnabledStateNotNotified(
+        observer: TestClientObserver,
+        appFunctionName: AppFunctionName,
+        @AppFunctionManager.EnabledState state: Int,
+    ) {
+        observer.clearHistory()
+
+        if (appFunctionName.packageName == context.packageName) {
+            manager.setAppFunctionEnabled(appFunctionName.functionIdentifier, state)
+        } else {
+            setAppFunctionEnabledRemote(
+                appFunctionName.packageName,
+                appFunctionName.functionIdentifier,
+                state,
+            )
+        }
+
+        retryAssert {
+            assertFunctionEnabledState(
+                appFunctionName.packageName,
+                appFunctionName.functionIdentifier,
+                manager,
+                isEnabled = state == AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+            )
+        }
+
+        // TODO(b/478810311): Use a privileged observer from a different package to ensure that
+        //  observer notifications have already been dispatch by the time we check for
+        //  no-notification.
+        repeat(5) {
+            assertThat(observer.updatedFunctionStatesHistory.flatten())
+                .doesNotContain(appFunctionName)
+            delay(1000)
+        }
+    }
+
+    private suspend fun assertSeesUpdateAfterVisibilityGranted(observer: TestClientObserver) {
+        val remoteFunction = DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT
+        // Grant implicit visibility by starting activity.
+        TestApis.context()
+            .instrumentedContext()
+            .startActivity(
+                Intent().apply {
+                    component =
+                        ComponentName(DynamicSchemaHelperApp.PACKAGE_NAME, REGISTRATION_ACTIVITY)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+
+        observer.clearHistory()
+
+        setAppFunctionEnabledRemote(
+            remoteFunction.packageName,
+            remoteFunction.functionIdentifier,
+            AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+        )
+
+        retryAssert {
+            assertFunctionEnabledState(
+                remoteFunction.packageName,
+                remoteFunction.functionIdentifier,
+                manager,
+                isEnabled = true,
+            )
+        }
+
+        retryAssert {
+            assertThat(observer.updatedFunctionStatesHistory.flatten()).contains(remoteFunction)
+        }
+    }
+
+    private suspend fun resetEnabledStates() {
+        manager.setAppFunctionEnabled(
+            CtsApp.FunctionNames.ADD.functionIdentifier,
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
+        setAppFunctionEnabledRemote(
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionIdentifier,
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
+        setAppFunctionEnabledRemote(
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionIdentifier,
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
+        TestApis.activities().clearAllActivities()
+    }
+
     private suspend fun assertPackageHasNoAppFunctions(packageName: String) {
         val searchSpec = AppFunctionSearchSpec.Builder().setPackageNames(setOf(packageName)).build()
         val afMetadata = manager.searchAppFunctions(searchSpec)
@@ -957,18 +1308,6 @@ class ObserveAppFunctionsTest {
         assertAppFunctionPackageMetadataEquals(
             searchResults.first().packageMetadata,
             expectedPackageMetadata,
-        )
-    }
-
-    private suspend fun isAppFunctionEnabled(
-        targetPackage: String,
-        functionIdentifier: String,
-    ): Boolean = suspendCancellableCoroutine { continuation ->
-        manager.isAppFunctionEnabled(
-            functionIdentifier,
-            targetPackage,
-            context.mainExecutor,
-            continuation.asOutcomeReceiver(),
         )
     }
 
@@ -1010,22 +1349,32 @@ class ObserveAppFunctionsTest {
         packageName: String
     ): ITestAppFunctionRegistrationService {
         val serviceIntent =
-            Intent().apply {
-                component =
-                    ComponentName(
-                        packageName,
-                        "android.app.appfunctions.testutils.TestAppFunctionRegistrationService",
-                    )
+            if (packageName == CtsApp.PACKAGE_NAME) {
+                Intent(context, TestAppFunctionRegistrationService::class.java)
+            } else {
+                Intent().apply {
+                    component =
+                        ComponentName(
+                            packageName,
+                            "android.app.appfunctions.testutils.TestAppFunctionRegistrationService",
+                        )
+                }
             }
         val binder: IBinder = serviceTestRule.bindService(serviceIntent)
         return ITestAppFunctionRegistrationService.Stub.asInterface(binder)
     }
 
+    private fun ITestAppFunctionRegistrationService.safeUnregister(functionType: String) {
+        try {
+            unregisterAppFunction(functionType)
+        } catch (_: Exception) {}
+    }
+
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
 
     class TestClientObserver : AppFunctionObserver {
-        val updatedPackagesHistory: MutableSet<Set<String>> = mutableSetOf()
-        val updatedFunctionStatesHistory: MutableSet<Set<AppFunctionName>> = mutableSetOf()
+        val updatedPackagesHistory: MutableList<List<String>> = mutableListOf()
+        val updatedFunctionStatesHistory: MutableList<List<AppFunctionName>> = mutableListOf()
 
         fun clearHistory() {
             updatedPackagesHistory.clear()
@@ -1033,11 +1382,11 @@ class ObserveAppFunctionsTest {
         }
 
         override fun onAppFunctionMetadataChanged(packageNames: Set<String>) {
-            updatedPackagesHistory.add(packageNames)
+            updatedPackagesHistory.add(packageNames.toList())
         }
 
         override fun onAppFunctionStatesChanged(appFunctions: Set<AppFunctionName>) {
-            updatedFunctionStatesHistory.add(appFunctions)
+            updatedFunctionStatesHistory.add(appFunctions.toList())
         }
     }
 
