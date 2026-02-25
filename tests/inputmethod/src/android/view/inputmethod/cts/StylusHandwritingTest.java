@@ -120,6 +120,7 @@ import com.android.cts.mockime.MockImeSession;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -2176,6 +2177,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * TODO(b/210039666): Support instant apps for this test.
      */
     @Test
+    @Ignore("b/487213818")
     @ApiTest(apis = {
             "android.view.inputmethod.InputMethodManager#acceptStylusHandwritingDelegation",
             "android.view.inputmethod.InputMethodManager#acceptStylusHandwritingDelegationAsync",
