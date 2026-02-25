@@ -16,6 +16,8 @@
 
 package android.video.cts;
 
+import static android.video.cts.VideoCodecClaimsPerformanceTest.requiredMediaTypesListDec;
+
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaFormat;
@@ -88,6 +90,10 @@ public class HevcVp9ClaimsPerformanceTest {
         }
 
         final List<Object[]> updatedArgsList = new ArrayList<>();
+        if ((!requiredMediaTypesListDec.contains(MediaFormat.MIMETYPE_VIDEO_HEVC))
+                && !requiredMediaTypesListDec.contains(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            return updatedArgsList;
+        }
         for (Object[] arg : argsList) {
             int argLength = arg.length;
             Object[] argUpdate = new Object[argLength + 1];
