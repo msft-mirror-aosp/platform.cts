@@ -148,11 +148,13 @@ public class ImsCallingTest extends ImsCallingBase {
         sMockModemManager = new MockModemManager();
         // SLOT 0
         sTestPreconditionsSet =
-                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT);
+                sMockModemManager.connectMockModemService();
         if (!sTestPreconditionsSet) {
             Log.w(LOG_TAG, "beforeAllTests: couldn't connect mock modem");
             return;
         }
+
+        sMockModemManager.insertSimCard(sTestSlot, MOCK_SIM_PROFILE_ID_TWN_CHT);
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -197,6 +199,7 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
+            sMockModemManager.removeSimCard(sTestSlot);
             boolean success = sMockModemManager.disconnectMockModemService();
             if (!success) {
                 Log.w(LOG_TAG, "afterAllTests: couldn't disconnect mock modem");

@@ -155,7 +155,9 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
         assertTrue("Failed to connect to mock modem service",
-                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+                sMockModemManager.connectMockModemService());
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(sTestSlot, MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -230,6 +232,7 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
+            sMockModemManager.removeSimCard(sTestSlot);
             assertTrue("Failed to disconnect from mock modem service",
                     sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;

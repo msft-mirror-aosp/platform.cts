@@ -100,7 +100,8 @@ public class DataServiceTestOnMockModem {
         MockModemManager.enforceMockModemDeveloperSetting();
         mMockModemManager = new MockModemManager();
         assertNotNull(mMockModemManager);
-        assertTrue(mMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertTrue(mMockModemManager.connectMockModemService());
+        assertTrue(mMockModemManager.insertSimCard(TEST_SLOT, MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         int sub = SubscriptionManager.getSubscriptionId(TEST_SLOT);
         if (SubscriptionManager.isValidSubscriptionId(sub)) {
@@ -209,6 +210,7 @@ public class DataServiceTestOnMockModem {
         // Rebind all interfaces which is binding to MockModemService to default.
         if (mMockModemManager != null) {
             assertTrue(mMockModemManager.changeNetworkService(TEST_SLOT, 310260, false));
+            mMockModemManager.removeSimCard(TEST_SLOT);
             assertTrue(mMockModemManager.disconnectMockModemService());
             mMockModemManager = null;
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
