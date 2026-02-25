@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.bluetooth.cts
 
 import android.Manifest.permission.BLUETOOTH_CONNECT
 import android.Manifest.permission.BLUETOOTH_PRIVILEGED
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothLeAudioPeripheral
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.test_utils.BlockingBluetoothAdapter
 import android.bluetooth.test_utils.Permissions
-import android.content.Context
 import android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -53,51 +50,43 @@ import org.mockito.kotlin.mock
 
 @RunWith(AndroidJUnit4::class)
 class BluetoothLeAudioPeripheralTest {
-    @get:Rule val mFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
     @get:Rule val mockitoRule = MockitoJUnit.rule()
 
-    @Mock private lateinit var mListener: BluetoothProfile.ServiceListener
+    @Mock private lateinit var listener: BluetoothProfile.ServiceListener
 
-    private val mAdapter: BluetoothAdapter =
-        android.bluetooth.test_utils.BlockingBluetoothAdapter.adapter
-    private val mDevice: BluetoothDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC")
-    private val mContext: Context = InstrumentationRegistry.getInstrumentation().context
-    private val mExecutor: Executor = mContext.mainExecutor
+    private val adapter = BlockingBluetoothAdapter.adapter
+    private val device = adapter.getRemoteDevice("00:11:22:AA:BB:CC")
+    private val context = InstrumentationRegistry.getInstrumentation().context
+    private val executor = context.mainExecutor
 
-    private lateinit var mService: BluetoothLeAudioPeripheral
-
-    companion object {
-        private val PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500)
-    }
+    private lateinit var service: BluetoothLeAudioPeripheral
 
     @Before
     fun setUp() {
         assumeTrue(SdkLevel.isAtLeastT())
-        assumeTrue(mContext.packageManager.hasSystemFeature(FEATURE_BLUETOOTH_LE))
+        assumeTrue(context.packageManager.hasSystemFeature(FEATURE_BLUETOOTH_LE))
         assertThat(BlockingBluetoothAdapter.enable()).isTrue()
 
         // Make sure we don't run on products having no TMAP roles defined
         Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED).use {
-            assumeTrue(BluetoothProfile.LE_AUDIO_PERIPHERAL in mAdapter.getSupportedProfiles())
+            assumeTrue(BluetoothProfile.LE_AUDIO_PERIPHERAL in adapter.getSupportedProfiles())
         }
 
-        assertThat(
-                mAdapter.getProfileProxy(mContext, mListener, BluetoothProfile.LE_AUDIO_PERIPHERAL)
-            )
+        assertThat(adapter.getProfileProxy(context, listener, BluetoothProfile.LE_AUDIO_PERIPHERAL))
             .isTrue()
         val captor = ArgumentCaptor.forClass(BluetoothProfile::class.java)
-        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+        verify(listener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
             .onServiceConnected(eq(BluetoothProfile.LE_AUDIO_PERIPHERAL), captor.capture())
-        mService = captor.value as BluetoothLeAudioPeripheral
-        assertThat(mService).isNotNull()
+        service = captor.value as BluetoothLeAudioPeripheral
+        assertThat(service).isNotNull()
     }
 
     @After
     fun tearDown() {
         Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED).use {
-            if (BluetoothProfile.LE_AUDIO_PERIPHERAL in mAdapter.getSupportedProfiles()) {
-                mAdapter.closeProfileProxy(BluetoothProfile.LE_AUDIO_PERIPHERAL, mService)
+            if (BluetoothProfile.LE_AUDIO_PERIPHERAL in adapter.getSupportedProfiles()) {
+                adapter.closeProfileProxy(BluetoothProfile.LE_AUDIO_PERIPHERAL, service)
             }
         }
     }
@@ -105,8 +94,8 @@ class BluetoothLeAudioPeripheralTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_PERIPHERAL_FEATURE)
     fun closeProfileProxy() {
-        mService.close()
-        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+        service.close()
+        verify(listener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
             .onServiceDisconnected(eq(BluetoothProfile.LE_AUDIO_PERIPHERAL))
     }
 
@@ -114,41 +103,41 @@ class BluetoothLeAudioPeripheralTest {
     @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_PERIPHERAL_FEATURE)
     fun getConnectedDevices() {
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.connectedDevices
+            service.connectedDevices
         }
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue()
 
         // Verify returns empty list if bluetooth is not enabled
-        assertThat(mService.connectedDevices).isEmpty()
+        assertThat(service.connectedDevices).isEmpty()
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_PERIPHERAL_FEATURE)
     fun getDevicesMatchingConnectionStates() {
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.getDevicesMatchingConnectionStates(intArrayOf(STATE_CONNECTED))
+            service.getDevicesMatchingConnectionStates(intArrayOf(STATE_CONNECTED))
         }
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue()
 
         // Verify returns empty list if bluetooth is not enabled
-        assertThat(mService.getDevicesMatchingConnectionStates(null)).isEmpty()
+        assertThat(service.getDevicesMatchingConnectionStates(null)).isEmpty()
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_PERIPHERAL_FEATURE)
     fun getConnectionState() {
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.getConnectionState(mDevice)
+            service.getConnectionState(device)
         }
 
         // Verify returns false when invalid input is given
-        assertThat(mService.getConnectionState(null)).isEqualTo(BluetoothProfile.STATE_DISCONNECTED)
+        assertThat(service.getConnectionState(null)).isEqualTo(BluetoothProfile.STATE_DISCONNECTED)
 
         // Verify returns false if bluetooth is not enabled
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue()
-        assertThat(mService.getConnectionState(mDevice))
+        assertThat(service.getConnectionState(device))
             .isEqualTo(BluetoothProfile.STATE_DISCONNECTED)
     }
 
@@ -157,27 +146,27 @@ class BluetoothLeAudioPeripheralTest {
     fun registerUnregisterCallback() {
         val callback = mock<BluetoothLeAudioPeripheral.Callback>()
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.registerCallback(mExecutor, callback)
+            service.registerCallback(executor, callback)
         }
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.unregisterCallback(callback)
+            service.unregisterCallback(callback)
         }
 
         Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED).use {
             // Verify parameter
             assertThrows(NullPointerException::class.java) {
-                mService.registerCallback(null as Executor, callback)
+                service.registerCallback(null as Executor, callback)
             }
             assertThrows(NullPointerException::class.java) {
-                mService.registerCallback(mExecutor, null as BluetoothLeAudioPeripheral.Callback)
+                service.registerCallback(executor, null as BluetoothLeAudioPeripheral.Callback)
             }
             assertThrows(NullPointerException::class.java) {
-                mService.unregisterCallback(null as BluetoothLeAudioPeripheral.Callback)
+                service.unregisterCallback(null as BluetoothLeAudioPeripheral.Callback)
             }
 
             // Test success register unregister
-            mService.registerCallback(mExecutor, callback)
-            mService.unregisterCallback(callback)
+            service.registerCallback(executor, callback)
+            service.unregisterCallback(callback)
         }
     }
 
@@ -188,7 +177,7 @@ class BluetoothLeAudioPeripheralTest {
     @Suppress("DirectInvocationOnMock")
     fun fakeCallbackCoverage() {
         val callback = mock<BluetoothLeAudioPeripheral.Callback>()
-        callback.onStreamTypesChanged(mDevice, 0)
+        callback.onStreamTypesChanged(device, 0)
     }
 
     @Test
@@ -199,20 +188,24 @@ class BluetoothLeAudioPeripheralTest {
                 BluetoothLeAudioPeripheral.STREAM_TYPE_CALL
 
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.setStreamTypesEnabled(mDevice, testEnabledStreamTypes, true)
+            service.setStreamTypesEnabled(device, testEnabledStreamTypes, true)
         }
         Permissions.enforce(listOf(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT)) {
-            mService.getEnabledStreamTypes(mDevice)
+            service.getEnabledStreamTypes(device)
         }
 
         Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED).use {
             // setStreamTypesEnabled should do nothing if CTS doesn't run with a compatible remote
             // device
-            mService.setStreamTypesEnabled(mDevice, testEnabledStreamTypes, true)
+            service.setStreamTypesEnabled(device, testEnabledStreamTypes, true)
             // getEnabledStreamTypes should return STREAM_TYPE_NONE if CTS doesn't run with a
             // compatible remote device
-            assertThat(mService.getEnabledStreamTypes(mDevice))
+            assertThat(service.getEnabledStreamTypes(device))
                 .isEqualTo(BluetoothLeAudioPeripheral.STREAM_TYPE_NONE)
         }
+    }
+
+    companion object {
+        private val PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500)
     }
 }
