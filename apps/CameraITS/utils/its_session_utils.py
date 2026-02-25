@@ -107,7 +107,6 @@ TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
                                 f'{TABLET_REQUIREMENTS_URL}')
 TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 USE_CASE_CROPPED_RAW = 6
-VIDEO_SCENES = ('scene_video',)
 JPG_SCENES = ('scene_wide_gamut',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 MARGINAL_PASSING_MESSAGE = '***Marginally passing test***'
@@ -3116,9 +3115,6 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
       file_name = f'{scene}_{chart_scaling}x_scaled' + file_extension
     if 'scene' not in file_name:
       file_name = f'scene{file_name}'
-    if scene in VIDEO_SCENES:
-      root_file_name, _ = os.path.splitext(file_name)
-      file_name = root_file_name + '.mp4'
 
     file_path = os.path.join(scene_path, file_name)
     logging.debug('Loading file: %s', file_path)
@@ -3128,20 +3124,16 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
           'Invalid scaling factor. '
           'Please check the available scaling factor in scene directory.')
   else:
-    # Calculate camera_fov, which determines the image/video to load on tablet.
+    # Calculate camera_fov, which determines the image to load on tablet.
     file_name = cam.get_file_name_to_load(chart_distance, camera_fov, scene, file_extension)
     if 'scene' not in file_name:
       file_name = f'scene{file_name}'
 
-    if scene in VIDEO_SCENES:
-      root_file_name, _ = os.path.splitext(file_name)
-      file_name = root_file_name + '.mp4'
-
   logging.debug('Displaying %s on the tablet', file_name)
 
-  # Display the image/video on the tablet using the default media player.
-  view_file_type = 'image/png' if scene not in VIDEO_SCENES else 'video/mp4'
-  uri_prefix = 'file://mnt' if scene not in VIDEO_SCENES else ''
+  # Display the image on the tablet using the default media player.
+  view_file_type = 'image/png'
+  uri_prefix = 'file://mnt'
   tablet.adb.shell(
       f'am start -a android.intent.action.VIEW -t {view_file_type} '
       f'-d {uri_prefix}/sdcard/Download/{file_name}')

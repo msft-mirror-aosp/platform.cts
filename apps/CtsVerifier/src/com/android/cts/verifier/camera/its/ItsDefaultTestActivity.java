@@ -48,7 +48,6 @@ public class ItsDefaultTestActivity extends ItsTestActivity {
                 "scene_extensions/scene_low_light",
                 "scene_tele/scene6_tele",
                 "scene_tele/scene7_tele",
-                "scene_video",
                 "sensor_fusion",
                 "scene_flash",
                 "scene_ip",
@@ -68,7 +67,6 @@ public class ItsDefaultTestActivity extends ItsTestActivity {
                 "scene4",
                 "scene_tele/scene6_tele",
                 "scene_tele/scene7_tele",
-                "scene_video",
                 "sensor_fusion");
     }
 
