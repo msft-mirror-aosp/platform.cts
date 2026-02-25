@@ -96,10 +96,8 @@ public class BluetoothGattCallbackTest {
         mCallbacks.onMtuChanged(mBluetoothGatt, 0, BluetoothGatt.GATT_SUCCESS);
         mCallbacks.onServiceChanged(mBluetoothGatt);
 
-        if (Flags.leSubrateApi()) {
-            mCallbacks.onSubrateChange(
-                    mBluetoothGatt, BluetoothGatt.SUBRATE_MODE_OFF, BluetoothStatusCodes.SUCCESS);
-        }
+        mCallbacks.onSubrateChange(
+                mBluetoothGatt, BluetoothGatt.SUBRATE_MODE_OFF, BluetoothStatusCodes.SUCCESS);
 
         if (Flags.gattOffloadApi()) {
             mCallbacks.onCharacteristicsOffloaded(

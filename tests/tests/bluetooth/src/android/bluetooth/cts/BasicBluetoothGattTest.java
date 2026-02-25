@@ -39,7 +39,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -47,7 +46,6 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
@@ -201,7 +199,6 @@ public class BasicBluetoothGattTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
     public void requestSubrateMode_withDisabledAdapter() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
@@ -236,7 +233,6 @@ public class BasicBluetoothGattTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_LE_SUBRATE_API)
     public void requestSubrateMode_verifyPermissionsAndParameters() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
