@@ -28,7 +28,6 @@ sh_test_host {
     ],
     data: [
         ":sepolicy-cil-files",
-        ":libsepolwrap",
     ],
 }
 
