@@ -103,7 +103,7 @@ public final class DeviceUtils {
         // This only happens when SaveUI#hide() is called
         // Does not work if SaveDialog is not show in the first place
         public static void assertHidden() throws IOException {
-            DeviceUtils.Logcat.includes("SaveUI:V", "Hiding save dialog.");
+            DeviceUtils.Logcat.includes("SaveUI:D", "Hiding save dialog.");
         }
     }
 
