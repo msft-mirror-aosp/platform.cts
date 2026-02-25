@@ -205,8 +205,12 @@ public class TestBase extends WifiJUnit4TestBase {
         }
         mCharacteristics = mWifiRttManager.getRttCharacteristics();
         if (WifiBuildCompat.isAtLeastC() && Flags.proximityRanging()) {
-            mProximityDetectionCharacteristics =
-                    mWifiRttManager.getProximityDetectionCharacteristics();
+            try {
+                mProximityDetectionCharacteristics =
+                        mWifiRttManager.getProximityDetectionCharacteristics();
+            } catch (SecurityException e) {
+                mProximityDetectionCharacteristics = null;
+            }
             if (mProximityDetectionCharacteristics == null) {
                 Log.w(TAG, "Proximity detection feature is not supported");
             }
