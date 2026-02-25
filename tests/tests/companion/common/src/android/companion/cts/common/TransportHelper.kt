@@ -25,6 +25,7 @@ import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * A CDM message wrapper.
@@ -66,10 +67,17 @@ data class CdmMessage(val type: Int, val sequence: Int, val payload: ByteArray) 
         const val MESSAGE_RESPONSE_SUCCESS = 0x33838567
         const val MESSAGE_RESPONSE_FAILURE = 0x33706573
 
+        private val metadataSequence: AtomicInteger = AtomicInteger()
+
         fun forMetadataUpdate(metadata: PersistableBundle): CdmMessage {
             val bytes = ByteArrayOutputStream()
             metadata.writeToStream(bytes)
-            return CdmMessage(MESSAGE_REQUEST_METADATA_UPDATE, -1, bytes.toByteArray())
+            // Each metadata must have a different sequence number.
+            return CdmMessage(
+                MESSAGE_REQUEST_METADATA_UPDATE,
+                metadataSequence.incrementAndGet(),
+                bytes.toByteArray()
+            )
         }
     }
 }
@@ -83,14 +91,14 @@ class MessageFeeder : InputStream() {
     private var currentMessage: ByteBuffer? = null
 
     fun feedMessage(message: CdmMessage) {
-        val message = ByteBuffer.allocate(12 + message.payload.size)
+        messageQueue.offer(
+            ByteBuffer.allocate(12 + message.payload.size)
             .putInt(message.type)
             .putInt(message.sequence)
             .putInt(message.payload.size)
             .put(message.payload)
             .array()
-
-        messageQueue.offer(message)
+        )
     }
 
     fun feedMessage(messageType: Int, payload: ByteArray) {
@@ -109,9 +117,12 @@ class MessageFeeder : InputStream() {
         if (currentMessage != null && currentMessage!!.hasRemaining()) {
             return true
         }
-
-        val nextMessageBytes = messageQueue.poll(100, TimeUnit.MILLISECONDS)
-        if (nextMessageBytes == null || nextMessageBytes.isEmpty()) {
+        // Keep waiting until we received the next message
+        var nextMessageBytes: ByteArray? = null
+        while (nextMessageBytes == null) {
+            nextMessageBytes = messageQueue.poll(100, TimeUnit.MILLISECONDS)
+        }
+        if (nextMessageBytes.isEmpty()) {
             currentMessage = null
             return false
         } else {
@@ -145,6 +156,10 @@ class MessageFeeder : InputStream() {
     override fun available(): Int {
         return currentMessage?.remaining() ?: 0
     }
+
+    override fun close() {
+        signalEndOfStream()
+    }
 }
 
 /**
@@ -154,7 +169,7 @@ class MessageDemuxer(
     private val messageCallback: (CdmMessage) -> Unit
 ) : OutputStream() {
 
-    private val outputBuffer = ByteBuffer.allocate(4096)
+    private var outputBuffer = ByteBuffer.allocate(4096)
     private val outputMessages = LinkedBlockingQueue<CdmMessage>()
 
     @Synchronized
@@ -177,7 +192,7 @@ class MessageDemuxer(
             newBuffer.order(outputBuffer.order())
             newBuffer.put(temp)
             newBuffer.put(b, off, len)
-            outputBuffer.put(b, off, len)
+            outputBuffer = newBuffer
         } else {
             outputBuffer.put(b, off, len)
         }

@@ -60,11 +60,13 @@ android_test {
         "bedstead-enterprise",
         "junit",
         "kotlin-test",
+        "CrossDeviceSync-testlib",
     ],
     libs: [
         "android.test.base.stubs.system",
         "android.test.runner.stubs.system",
     ],
+    jni_libs: ["submerge_java_shared"],
 
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
