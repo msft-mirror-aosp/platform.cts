@@ -1,5 +1,7 @@
 package android.telephony.cts;
 
+import static android.telephony.TelephonyManager.SATELLITE_PURCHASE_MODE_STATE_ACTIVE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -1227,6 +1229,77 @@ public class TelephonyRegistryManagerTest {
             assertNotNull("No emergency mode notification received", actualVal);
             assertEquals(expectedVal, actualVal);
         } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    telephonyManager, (tm) -> tm.unregisterTelephonyCallback(listener));
+        }
+    }
+
+    private static class SatellitePurchaseModeListener extends TelephonyCallback
+            implements TelephonyCallback.SatellitePurchaseModeListener {
+        private final LinkedBlockingQueue<Boolean> mQueueEnabled;
+        private final LinkedBlockingQueue<Integer> mQueueState;
+
+        SatellitePurchaseModeListener(
+                LinkedBlockingQueue<Boolean> queueEnabled,
+                LinkedBlockingQueue<Integer> queueState) {
+            mQueueEnabled = queueEnabled;
+            mQueueState = queueState;
+        }
+
+        @Override
+        public void onSatellitePurchaseModeChanged(
+                int subId,
+                boolean isEnabled,
+                @TelephonyManager.SatellitePurchaseModeState int purchaseModeState) {
+            mQueueEnabled.offer(isEnabled);
+            mQueueState.offer(purchaseModeState);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL_26Q4)
+    public void testNotifySatellitePurchaseModeChanged() throws Exception {
+        LinkedBlockingQueue<Boolean> queueEnabled = new LinkedBlockingQueue<>(1);
+        LinkedBlockingQueue<Integer> queueState = new LinkedBlockingQueue<>(1);
+        SatellitePurchaseModeListener listener =
+                new SatellitePurchaseModeListener(queueEnabled, queueState);
+
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        telephonyManager = telephonyManager.createForSubscriptionId(defaultSubId);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+
+        boolean testValEnabled = true;
+        int testValState = SATELLITE_PURCHASE_MODE_STATE_ACTIVE;
+
+        // Consume the initial value set by registering the listener.
+        boolean initialValEnabled = queueEnabled.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        int initialValState = queueState.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyRegistryMgr,
+                    (trm) ->
+                            trm.notifySatellitePurchaseModeChanged(
+                                    defaultSubId, testValEnabled, testValState));
+
+            Boolean resultValEnabled = queueEnabled.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            Integer resultValState = queueState.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("No satellite purchase mode notification received", resultValEnabled);
+            assertEquals(testValEnabled, resultValEnabled);
+            assertNotNull("No satellite purchase mode notification received", resultValState);
+            assertEquals(testValState, (int) resultValState);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyRegistryMgr,
+                    (trm) ->
+                            trm.notifySatellitePurchaseModeChanged(
+                                    defaultSubId, initialValEnabled, initialValState));
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     telephonyManager, (tm) -> tm.unregisterTelephonyCallback(listener));
         }
