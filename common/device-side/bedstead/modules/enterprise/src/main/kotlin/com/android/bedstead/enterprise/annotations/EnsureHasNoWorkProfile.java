@@ -38,7 +38,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequireFeature("android.software.managed_users")
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface EnsureHasNoWorkProfile {
     /** Which user type the work profile should not be attached to. */
