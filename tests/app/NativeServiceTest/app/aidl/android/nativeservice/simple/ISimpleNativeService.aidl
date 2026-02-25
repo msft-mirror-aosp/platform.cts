@@ -24,4 +24,10 @@ interface ISimpleNativeService {
     int getUid();
     // Crashes the process running this service.
     oneway void crash();
+    // Redirects stdout and stderr to the given fds.
+    void redirectStdio(in ParcelFileDescriptor stdoutFd, in ParcelFileDescriptor stderrFd);
+    // Loads a library with dlopen(RTLD_GLOBAL).
+    void loadLibrary(String libName);
+    // Looks up a function by its name and calls it.
+    void callFunc(String funcName);
 }
