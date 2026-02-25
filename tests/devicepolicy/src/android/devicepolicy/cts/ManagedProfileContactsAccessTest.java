@@ -32,16 +32,16 @@ import android.app.admin.RemoteDevicePolicyManager;
 import android.content.Context;
 import android.util.ArraySet;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.IntTestParameter;
-import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.policies.ManagedProfileContactAccess;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.IntTestParameter;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.internal.R;
 
@@ -260,5 +260,17 @@ public class ManagedProfileContactsAccessTest {
                 TEST_SYSTEM_PACKAGE)).isTrue();
         assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_PACKAGE_ONE)).isTrue();
+    }
+
+    @CanSetPolicyTest(policy = ManagedProfileContactAccess.class)
+    @ApiTest(apis = "android.app.DevicePolicyManager#setManagedProfileContactsAccessPolicy")
+    public void setManagedProfileContactsAccess_packagePolicyWithLongPackageName_throwsException() {
+        String longPackageName = new String(new char[256]).replace('\0', 'A');
+        PackagePolicy policy =
+                new PackagePolicy(PackagePolicy.PACKAGE_POLICY_ALLOWLIST, Set.of(longPackageName));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mRemoteDevicePolicyManager.setManagedProfileContactsAccessPolicy(policy));
     }
 }
