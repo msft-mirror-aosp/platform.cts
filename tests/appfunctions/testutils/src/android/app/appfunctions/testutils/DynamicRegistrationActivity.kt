@@ -17,6 +17,7 @@
 package android.app.appfunctions.testutils
 
 import android.app.Activity
+import android.app.appfunctions.AppFunction
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
 import android.content.Intent
@@ -35,7 +36,7 @@ class DynamicRegistrationActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        instanceId = UUID.randomUUID().toString()
+        instanceId = intent.getStringExtra(EXTRA_INSTANCE_ID) ?: UUID.randomUUID().toString()
         manager = getSystemService(AppFunctionManager::class.java)
         handleIntent(intent)
     }
@@ -59,7 +60,7 @@ class DynamicRegistrationActivity : Activity() {
             registration = manager.registerAppFunction(
                 functionId,
                 mainExecutor,
-                ConcatStrings()
+                getAppFunctionFromFuncionId(functionId)
             )
             logDebugMessage("successfully registered a function.")
         } catch (e: Exception) {
@@ -93,8 +94,32 @@ class DynamicRegistrationActivity : Activity() {
         Log.d("DynamicActivity", "[$instanceId] " + message)
     }
 
+    fun getAppFunctionFromFuncionId(functionId: String): AppFunction {
+        return when (functionId) {
+            ConcatStrings.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID -> ConcatStrings()
+            ConcatStrings.CONCAT_STRINGS_FUNCTION_ID -> ConcatStrings()
+            ThrowUnknownException.THROW_UNKNOWN_EXCEPTION_FUNCTION_ID ->
+                ThrowUnknownException()
+            OutputInvalidArgumentException.OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID ->
+                OutputInvalidArgumentException()
+            ReturnInstanceId.RETURN_INSTANCE_ID -> ReturnInstanceId(instanceId)
+            else -> throw IllegalArgumentException("Unknown function id: " + functionId)
+        }
+    }
+
     companion object {
+        /**
+         * Action to register an AppFunction. See [EXTRA_FUNCTION_ID] for the
+         * function to register. Function will be unregistered in onDestroy.
+         * See getAppFunctionFromFuncionId for the list of supported functions.
+         */
         const val ACTION_REGISTER_APP_FUNCTION = "android.cts.appfunctions.REGISTER_APP_FUNCTION"
+        /** Extra to specify the function to register. */
         const val EXTRA_FUNCTION_ID = "FUNCTION_ID"
+        /**
+         * Extra to specify the instance id of the activity. Generated randomly
+         * if not specified.
+         */
+        const val EXTRA_INSTANCE_ID = "INSTANCE_ID"
     }
 }

@@ -149,6 +149,9 @@ class AppFunctionMetadataTestHelper {
             val DYNAMIC_ACTIVITY_CONCAT_STRINGS =
                 AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
 
+            val DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID =
+                AppFunctionName(PACKAGE_NAME, "activityReturnInstanceId")
+
             val DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT =
                 AppFunctionName(PACKAGE_NAME, "activityDisabledByDefault")
 
@@ -174,6 +177,7 @@ class AppFunctionMetadataTestHelper {
                 setOf(
                     DYNAMIC_ACTIVITY_CONCAT_STRINGS,
                     DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT,
+                    DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID,
                     ACTIVITY_SCOPE,
                     DYNAMIC_CONCAT_STRINGS,
                     DYNAMIC_LONG_RUNNING,
@@ -197,6 +201,7 @@ class AppFunctionMetadataTestHelper {
                     ACTIVITY_SCOPE,
                     DYNAMIC_ACTIVITY_CONCAT_STRINGS,
                     DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT,
+                    DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID
                 )
 
             val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPED_FUNCTIONS

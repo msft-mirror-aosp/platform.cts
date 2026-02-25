@@ -67,7 +67,6 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
 class AppFunctionActivityScopedRegistrationTest {
-    // TODO(b/482000294): add external same activity multi-instance tests
 
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -666,6 +665,41 @@ class AppFunctionActivityScopedRegistrationTest {
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun execute_twoInstancesOfSameActivityRegistered_targetsCorrectActivity() = doBlocking {
+        startExternalReturnInstanceIdActivity("instance1")
+        val activityIds1 =
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID,
+                numRegistrations = 1
+            )
+
+        startExternalReturnInstanceIdActivity("instance2")
+        awaitRegisteredActivityIds(
+            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID,
+            numRegistrations = 2
+        )
+
+        // Target execution request to the first activity
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID
+                )
+                .setActivityId(activityIds1.single())
+                .build()
+
+        val response = manager.executeAppFunction(request)
+        assertThat(response.exceptionOrNull()).isNull()
+        assertThat(
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
+            .isEqualTo("instance1")
+    }
+
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun getAppFunctionActivityState_inTheSeparateApp_returnsRegisteredFunction() = doBlocking {
         TestApis.activities()
             .startActivity(
@@ -889,6 +923,24 @@ class AppFunctionActivityScopedRegistrationTest {
             activityIds,
             context.mainExecutor,
             continuation.asOutcomeReceiver(),
+        )
+    }
+
+    private fun startExternalReturnInstanceIdActivity(instanceId: String) {
+        val functionId =
+            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID.functionIdentifier
+        context.startActivity(
+            Intent().apply {
+                component =
+                    ComponentName(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        REGISTRATION_ACTIVITY,
+                    )
+                action = ACTION_REGISTER_APP_FUNCTION
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                putExtra(DynamicRegistrationActivity.EXTRA_FUNCTION_ID, functionId)
+                putExtra(DynamicRegistrationActivity.EXTRA_INSTANCE_ID, instanceId)
+            }
         )
     }
 
