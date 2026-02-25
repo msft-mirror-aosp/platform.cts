@@ -20,7 +20,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.Settings
 import android.text.Editable
@@ -45,7 +44,6 @@ import android.widget.TextView
 import androidx.test.filters.MediumTest
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.PollingCheck
-import com.android.graphics.hwui.flags.Flags
 import org.junit.After
 import org.junit.Ignore
 import org.junit.Rule
@@ -54,7 +52,6 @@ import org.junit.runner.RunWith
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(Flags.FLAG_HIGH_CONTRAST_TEXT_SMALL_TEXT_RECT)
 @Ignore("See b/416795321")
 class TextViewHighContrastTextTests : ActivityTestBase() {
 
