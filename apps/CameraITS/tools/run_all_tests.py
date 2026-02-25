@@ -87,7 +87,6 @@ _TABLET_SCENES = (
     os.path.join('scene_extensions', 'scene_low_light'),
     os.path.join('scene_tele', 'scene6_tele'),
     os.path.join('scene_tele', 'scene7_tele'),
-    'scene_video',
 )
 
 # Scenes that use the 'sensor_fusion' test rig
@@ -189,9 +188,6 @@ _SCENE_REQ = types.MappingProxyType({
     'feature_combination': 'The same scene as sensor_fusion, '
                            'separated for easier testing.',
     'scene_flash': 'A checkerboard pattern chart with lights off.',
-    'scene_video': 'A tablet displayed scene with a series of circles moving '
-                   'at different simulated frame rates. '
-                   'See tests/scene_video/scene_video.mp4',
     'scene_ip': 'A chart with features such as QR code, color checker chart, '
                 'dead leaf patch, dynamic range chart used to analyze metrics '
                 'such as brightness, sharpness, color accuracy.',
@@ -238,9 +234,6 @@ SUB_CAMERA_TESTS = {
     ),
     'scene_tele/scene7_tele': (
         'test_multi_camera_switch_tele',
-    ),
-    'scene_video': (
-        'test_preview_frame_drop',
     ),
     'sensor_fusion': (
         'test_sensor_fusion',
