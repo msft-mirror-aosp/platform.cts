@@ -81,12 +81,10 @@ public class BluetoothGattServerCallbackTest {
         mCallbacks.onPhyRead(
                 mDevice, BluetoothDevice.PHY_LE_2M, BluetoothDevice.PHY_LE_2M, GATT_SUCCESS);
 
-        if (Flags.leSubrateApi()) {
-            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_OFF, GATT_SUCCESS);
-            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_LOW, GATT_SUCCESS);
-            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_BALANCED, GATT_SUCCESS);
-            mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_HIGH, GATT_SUCCESS);
-        }
+        mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_OFF, GATT_SUCCESS);
+        mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_LOW, GATT_SUCCESS);
+        mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_BALANCED, GATT_SUCCESS);
+        mCallbacks.onSubrateChange(mDevice, BluetoothGatt.SUBRATE_MODE_HIGH, GATT_SUCCESS);
 
         if (Flags.gattOffloadApi()) {
             mCallbacks.onCharacteristicsOffloaded(
