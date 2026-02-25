@@ -17,10 +17,16 @@ package android.content.pm.cts.shortcutmanager;
 
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
@@ -40,13 +46,19 @@ import android.os.Process;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 
+import androidx.test.runner.AndroidJUnit4;
+
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.List;
 
 @CddTest(requirement="3.8.1/C-4-1")
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
     private static final String TAG = "ShortcutMRPT";
 
@@ -56,6 +68,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
     protected WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
     @CddTest(requirement="[3.8.1/C-2-1],[3.8.1/C-3-1]")
+    @Test
     public void testIsRequestPinShortcutSupported() {
 
         // Launcher 1 supports it.
@@ -76,6 +89,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
     /**
      * A test for {@link ShortcutManager#requestPinShortcut}, a very simple case.
      */
+    @Test
     public void testRequestPinShortcut() {
         Log.i(TAG, "Testing with launcher1.");
 
@@ -144,6 +158,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
         Log.i(TAG, "Done testing with launcher1.");
     }
 
+    @Test
     public void testRequestPinShortcut_multiLaunchers() {
         testRequestPinShortcut();
 
@@ -196,6 +211,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
         Log.i(TAG, "Done testing with launcher2.");
     }
 
+    @Test
     public void testRequestPinShortcut_multiLaunchers_withDynamic() {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 
@@ -322,6 +338,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
     /**
      * Same as {@link ShortcutManager#requestPinShortcut} except the app has no main activities.
      */
+    @Test
     public void testRequestPinShortcut_noMainActivity() {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 
@@ -365,6 +382,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
     /**
      * Same as {@link ShortcutManager#requestPinShortcut} except the app has no main activities.
      */
+    @Test
     public void testRequestPinShortcutExcludedFromLauncher_ThrowsException() {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 
@@ -389,6 +407,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
      * Tests that {@link ShortcutManager#requestPinShortcut} allows launching an activity directly
      * as the pin result callback.
      */
+    @Test
     public void testRequestPinShortcut_directActivityLaunch() {
         Log.i(TAG, "testRequestPinShortcut: package4 requesting pin on launcher1, "
             + "callback launches cts activity");
@@ -422,6 +441,7 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
      * Tests that {@link ShortcutManager#requestPinShortcut} does not allow indirectly launching an
      * activity through a service trampoline.
      */
+    @Test
     public void testRequestPinShortcut_indirectActivityLaunch() {
         Log.i(TAG, "testRequestPinShortcut: package4 requesting pin on launcher1, "
             + "callback launches package4 service trampoline to cts activity");

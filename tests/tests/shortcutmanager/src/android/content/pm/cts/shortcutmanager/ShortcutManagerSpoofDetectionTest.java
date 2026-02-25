@@ -27,12 +27,17 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests to make sure the service will detect it when a caller is spoofing the package name
  * to a package name with a different UID.
  */
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerSpoofDetectionTest extends ShortcutManagerCtsTestsBase {
 
     @Override
@@ -48,6 +53,7 @@ public class ShortcutManagerSpoofDetectionTest extends ShortcutManagerCtsTestsBa
         );
     }
 
+    @Test
     public void testPublisherSpoofing() {
         assertCallingPackageMismatch("setDynamicShortcuts", mPackageContext4, () -> {
             getManager().setDynamicShortcuts(list(makeShortcut("s1")));
@@ -81,6 +87,7 @@ public class ShortcutManagerSpoofDetectionTest extends ShortcutManagerCtsTestsBa
         });
     }
 
+    @Test
     public void testLauncherSpoofing() {
         assertCallingPackageMismatch("hasShortcutHostPermission", mLauncherContext4, () -> {
             getLauncherApps().hasShortcutHostPermission();

@@ -15,22 +15,33 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertDynamicShortcutCountExceeded;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 @CddTest(requirement="3.8.1/C-4-1")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
     /**
      * Basic tests: single app, single activity, no manifest shortcuts.
      */
+    @Test
     public void testNumDynamicShortcuts() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(makeShortcut("s1"))));
@@ -84,6 +95,7 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
     /**
      * Manifest shortcuts are included in the count too.
      */
+    @Test
     public void testWithManifest() throws Exception {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             enableManifestActivity("Launcher_manifest_1", true);
@@ -157,6 +169,7 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testChangeActivity() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             setTargetActivityOverride("Launcher");
@@ -224,6 +237,7 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testWithPinned() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, mMaxShortcuts))));

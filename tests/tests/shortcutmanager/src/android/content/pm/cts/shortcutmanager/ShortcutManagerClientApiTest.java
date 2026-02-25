@@ -15,6 +15,8 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertExpectException;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
@@ -23,6 +25,12 @@ import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.set;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import android.app.PendingIntent;
 import android.content.ComponentName;
@@ -36,10 +44,12 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
-import junit.framework.AssertionFailedError;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -53,17 +63,8 @@ import java.io.OutputStream;
  */
 @CddTest(requirement="3.8.1/C-4-1")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-    }
 
     @Override
     protected String getOverrideConfig() {
@@ -76,6 +77,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
                 + "icon_quality=100";
     }
 
+    @Test
     public void testShortcutInfoMissingMandatoryFields() {
 
         final ComponentName mainActivity = new ComponentName(
@@ -253,6 +255,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
                 });
     }
 
+    @Test
     public void testSetDynamicShortcuts() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(
@@ -370,6 +373,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testSetDynamicShortcuts_details() throws Exception {
         final Icon icon1 = Icon.createWithBitmap(BitmapFactory.decodeResource(
                 getTestContext().getResources(), R.drawable.black_16x64));
@@ -570,6 +574,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testSetDynamicShortcuts_wasPinned() throws Exception {
         // Create s1 as a floating pinned shortcut.
         runWithCallerWithStrictMode(mPackageContext1, () -> {
@@ -596,6 +601,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         testSetDynamicShortcuts_details();
     }
 
+    @Test
     public void testSetDynamicShortcuts_withCapabilities() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(
@@ -655,6 +661,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testAddDynamicShortcuts() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().addDynamicShortcuts(list(
@@ -789,6 +796,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testAddDynamicShortcuts_details() throws Exception {
         final Icon icon1 = Icon.createWithBitmap(BitmapFactory.decodeResource(
                 getTestContext().getResources(), R.drawable.black_16x64));
@@ -950,6 +958,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testAddDynamicShortcuts_wasPinned() throws Exception {
         // Create s1 as a floating pinned shortcut.
         runWithCallerWithStrictMode(mPackageContext1, () -> {
@@ -976,6 +985,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         testAddDynamicShortcuts_details();
     }
 
+    @Test
     public void testUpdateShortcut() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(
@@ -1128,6 +1138,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testUpdateShortcut_details() throws Exception {
         final Icon icon1 = Icon.createWithBitmap(BitmapFactory.decodeResource(
                 getTestContext().getResources(), R.drawable.black_16x64));
@@ -1469,13 +1480,14 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
             try {
                 assertIconDimensions(mLauncherContext1, mPackageContext1.getPackageName(), "s1",
                         icon2);
-            } catch (AssertionFailedError expected) {
+            } catch (AssertionError expected) {
                 success = true;
             }
             assertTrue(success);
         });
     }
 
+    @Test
     public void testDisableAndEnableShortcut() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(
@@ -1674,6 +1686,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testImmutableShortcuts() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             enableManifestActivity("Launcher_manifest_2", true);
@@ -1732,6 +1745,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
                 () -> getManager().updateShortcuts(list(makeShortcut("ms21"))));
     }
 
+    @Test
     public void testManifestDefinition() throws Exception {
         final Icon iconMs21 = loadPackageDrawableIcon(mPackageContext1, "black_16x16");
 
@@ -1811,6 +1825,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testDynamicIntents() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
 
@@ -1878,6 +1893,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testManifestWithErrors() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             enableManifestActivity("Launcher_manifest_error_1", true);
@@ -1896,6 +1912,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testManifestDisabled() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             enableManifestActivity("Launcher_manifest_4a", true);
@@ -1938,6 +1955,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testMiscShortcutInfo() {
         final Icon icon1 = Icon.createWithBitmap(BitmapFactory.decodeResource(
                 getTestContext().getResources(), R.drawable.black_16x64));
@@ -1971,6 +1989,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
                 });
     }
 
+    @Test
     public void testGetShortcuts() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             enableManifestActivity("Launcher_manifest_2", true);
@@ -2044,6 +2063,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testPushDynamicShortcut() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             // Push as first shortcut
@@ -2179,6 +2199,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testRemoveLongLivedShortcuts() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             getManager().addDynamicShortcuts(list(makeLongLivedShortcut("s1"),
@@ -2201,6 +2222,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testShortcutsWithUriIcons() throws Exception {
         File file = new File(getTestContext().getFilesDir(), "testimage.jpg");
         try {
@@ -2235,6 +2257,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         }
     }
 
+    @Test
     public void testGetShortcutIntent_ReturnPendingIntentForLauncher() throws Exception {
         // Create s1 as a floating pinned shortcut.
         runWithCallerWithStrictMode(mPackageContext1, () -> {
@@ -2254,6 +2277,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testGetShortcutIntent_ThrowsSecurityExceptionForNonLauncher() throws Exception {
         // Create s1 as a floating pinned shortcut.
         runWithCallerWithStrictMode(mPackageContext1, () -> {
@@ -2274,6 +2298,7 @@ public class ShortcutManagerClientApiTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testSetShortcutsExcludedFromLauncher_ExcludedFromSearchResults() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(
