@@ -32,21 +32,21 @@ import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_S
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER
 import com.android.bedstead.enterprise.annotations.canSetPolicyTest
 import com.android.bedstead.enterprise.annotations.cannotSetPolicyTest
-import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnCloneProfileAlongsideOrganizationOwnedProfile
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnAdditionalUserWithDeviceController
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnAdditionalUserWithInitialUserController
 import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnAffiliatedDeviceOwnerSecondaryUser
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnCloneProfileAlongsideOrganizationOwnedProfile
 import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnFinancedDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnPrivateProfileAlongsideOrganizationOwnedProfile
 import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnSingleDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnSystemDeviceOwnerUser
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnSystemUserWithDeviceController
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnUserController
 import com.android.bedstead.enterprise.annotations.policyAppliesTest
 import com.android.bedstead.enterprise.annotations.policyDoesNotApplyTest
 import com.android.bedstead.enterprise.annotations.usesEnterprisePolicies
-import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnUserController
-import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnAdditionalUserWithDeviceController
-import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnAdditionalUserWithInitialUserController
-import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnSystemUserWithDeviceController
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DynamicParameterizedAnnotation
 import com.android.bedstead.harrier.annotations.parameterized.includeNone
@@ -55,7 +55,6 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
 
 @EnterprisePolicy(dpc = [APPLIED_BY_SYSTEM_DEVICE_OWNER or APPLIES_TO_OWN_USER])
 class AppliedBySystemDeviceOwner
@@ -77,22 +76,25 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
-                        policy = arrayOf(
-                            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-                            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
-                        )
+                        policy =
+                            arrayOf(
+                                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class
+                                    .java,
+                                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+                            )
                     )
                 ),
-                /* classAnnotations= */ listOf()
+                /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).containsExactly(
-            includeRunOnSystemDeviceOwnerUser(),
-            includeRunOnSingleDeviceOwnerUser(),
-            includeRunOnAffiliatedProfileOwnerAdditionalUser(),
-            includeRunOnProfileOwnerPrimaryUser(),
-            includeRunOnProfileOwnerProfileWithNoDeviceOwner()
-        )
+        assertThat(parameterizedAnnotations)
+            .containsExactly(
+                includeRunOnSystemDeviceOwnerUser(),
+                includeRunOnSingleDeviceOwnerUser(),
+                includeRunOnAffiliatedProfileOwnerAdditionalUser(),
+                includeRunOnProfileOwnerPrimaryUser(),
+                includeRunOnProfileOwnerProfileWithNoDeviceOwner(),
+            )
     }
 
     @Test
@@ -101,22 +103,25 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
-                        policyUnion = arrayOf(
-                            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-                            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
-                        )
+                        policyUnion =
+                            arrayOf(
+                                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class
+                                    .java,
+                                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).containsExactly(
-            includeRunOnSystemDeviceOwnerUser(),
-            includeRunOnSingleDeviceOwnerUser(),
-            includeRunOnAffiliatedProfileOwnerAdditionalUser(),
-            includeRunOnProfileOwnerPrimaryUser(),
-            includeRunOnProfileOwnerProfileWithNoDeviceOwner()
-        )
+        assertThat(parameterizedAnnotations)
+            .containsExactly(
+                includeRunOnSystemDeviceOwnerUser(),
+                includeRunOnSingleDeviceOwnerUser(),
+                includeRunOnAffiliatedProfileOwnerAdditionalUser(),
+                includeRunOnProfileOwnerPrimaryUser(),
+                includeRunOnProfileOwnerProfileWithNoDeviceOwner(),
+            )
     }
 
     @Test
@@ -125,19 +130,20 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
-                        policyIntersection = arrayOf(
-                            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-                            AppliedByAffiliatedProfileOwnerProfileOrSystemDeviceOwnerOrAffiliatedProfileOwnerUserAppliesToParentPolicy::class.java,
-                            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
-                        )
+                        policyIntersection =
+                            arrayOf(
+                                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class
+                                    .java,
+                                AppliedByAffiliatedProfileOwnerProfileOrSystemDeviceOwnerOrAffiliatedProfileOwnerUserAppliesToParentPolicy::class
+                                    .java,
+                                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).containsExactly(
-            includeRunOnSystemDeviceOwnerUser())
-
+        assertThat(parameterizedAnnotations).containsExactly(includeRunOnSystemDeviceOwnerUser())
     }
 
     @Test
@@ -146,21 +152,23 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
-                        policyIntersection = arrayOf(
-                            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java
-                        )
+                        policyIntersection =
+                            arrayOf(
+                                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).containsExactly(
-            includeRunOnSystemDeviceOwnerUser(),
-            includeRunOnSingleDeviceOwnerUser(),
-            includeRunOnAffiliatedProfileOwnerAdditionalUser(),
-            includeRunOnProfileOwnerPrimaryUser(),
-            includeRunOnProfileOwnerProfileWithNoDeviceOwner()
-        )
+        assertThat(parameterizedAnnotations)
+            .containsExactly(
+                includeRunOnSystemDeviceOwnerUser(),
+                includeRunOnSingleDeviceOwnerUser(),
+                includeRunOnAffiliatedProfileOwnerAdditionalUser(),
+                includeRunOnProfileOwnerPrimaryUser(),
+                includeRunOnProfileOwnerProfileWithNoDeviceOwner(),
+            )
     }
 
     @Test
@@ -255,10 +263,11 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
-                        policyIntersection = arrayOf(
-                            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
-                            AppliedByAffiliatedProfileOwnerAppliesToParentPolicy::class.java
-                        )
+                        policyIntersection =
+                            arrayOf(
+                                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+                                AppliedByAffiliatedProfileOwnerAppliesToParentPolicy::class.java,
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
@@ -279,15 +288,16 @@ class BedsteadJUnit4AnnotationTest {
 
     @Test
     fun canSetPolicyTest_multiplePolicy_throws() {
-        val policyIntersectPolicies = arrayOf(
-            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
-        )
+        val policyIntersectPolicies =
+            arrayOf(
+                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
+                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+            )
 
         val policyUnionPolicies =
             arrayOf(
                 AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
+                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
             )
 
         assertThrows(IllegalStateException::class.java) {
@@ -295,7 +305,7 @@ class BedsteadJUnit4AnnotationTest {
                 arrayOf(
                     canSetPolicyTest(
                         policyIntersection = policyIntersectPolicies,
-                        policyUnion = policyUnionPolicies
+                        policyUnion = policyUnionPolicies,
                     )
                 ),
                 /* classAnnotations= */ listOf(),
@@ -326,22 +336,25 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     policyAppliesTest(
-                        policy = arrayOf(
-                            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-                            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
-                        )
+                        policy =
+                            arrayOf(
+                                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class
+                                    .java,
+                                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).containsExactly(
-            includeRunOnSystemDeviceOwnerUser(),
-            includeRunOnSingleDeviceOwnerUser(),
-            includeRunOnUnaffiliatedProfileOwnerAdditionalUser(),
-            includeRunOnProfileOwnerPrimaryUser(),
-            includeRunOnProfileOwnerProfileWithNoDeviceOwner()
-        )
+        assertThat(parameterizedAnnotations)
+            .containsExactly(
+                includeRunOnSystemDeviceOwnerUser(),
+                includeRunOnSingleDeviceOwnerUser(),
+                includeRunOnUnaffiliatedProfileOwnerAdditionalUser(),
+                includeRunOnProfileOwnerPrimaryUser(),
+                includeRunOnProfileOwnerProfileWithNoDeviceOwner(),
+            )
     }
 
     @Test
@@ -360,21 +373,24 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     policyDoesNotApplyTest(
-                        policy = arrayOf(
-                            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-                            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
-                        )
+                        policy =
+                            arrayOf(
+                                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class
+                                    .java,
+                                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).containsExactly(
-            includeRunOnAffiliatedDeviceOwnerSecondaryUser(),
-            includeRunOnCloneProfileAlongsideOrganizationOwnedProfile(),
-            includeRunOnPrivateProfileAlongsideOrganizationOwnedProfile(),
-            includeRunOnParentOfOrganizationOwnedProfileOwner()
-        )
+        assertThat(parameterizedAnnotations)
+            .containsExactly(
+                includeRunOnAffiliatedDeviceOwnerSecondaryUser(),
+                includeRunOnCloneProfileAlongsideOrganizationOwnedProfile(),
+                includeRunOnPrivateProfileAlongsideOrganizationOwnedProfile(),
+                includeRunOnParentOfOrganizationOwnedProfileOwner(),
+            )
     }
 
     @Test
@@ -393,10 +409,12 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     cannotSetPolicyTest(
-                        policy = arrayOf(
-                            AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class.java,
-                            AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java
-                        )
+                        policy =
+                            arrayOf(
+                                AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy::class
+                                    .java,
+                                AppliedByDeviceOwnerAppliesToOwnUserPolicy::class.java,
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
@@ -404,11 +422,12 @@ class BedsteadJUnit4AnnotationTest {
 
         assertThat(parameterizedAnnotations.size).isEqualTo(3)
 
-        val expectedAnnotationTypes = arrayOf(
-            IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance::class.java,
-            IncludeRunOnFinancedDeviceOwnerUser::class.java,
-            DynamicParameterizedAnnotation::class.java
-        )
+        val expectedAnnotationTypes =
+            arrayOf(
+                IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance::class.java,
+                IncludeRunOnFinancedDeviceOwnerUser::class.java,
+                DynamicParameterizedAnnotation::class.java,
+            )
 
         for (type in expectedAnnotationTypes) {
             val containsType = parameterizedAnnotations.stream().anyMatch { type.isInstance(it) }
@@ -544,37 +563,31 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyAppliesTest_userControllerAppliesToOwnUser_userControllerAppliesToOwnUser() {
         assertThat(
-            BedsteadJUnit4.getParameterizedAnnotations(
-                arrayOf(
-                    policyAppliesTest(
-                        policy = arrayOf(
-                            AppliedByUserControllerToOwnUserPolicy::class.java
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(
+                        policyAppliesTest(
+                            policy = arrayOf(AppliedByUserControllerToOwnUserPolicy::class.java)
                         )
-                    )
-                ),
-                /* classAnnotations= */ listOf(),
+                    ),
+                    /* classAnnotations= */ listOf(),
+                )
             )
-        ).containsExactly(
-            includeRunOnUserController(),
-        )
+            .containsExactly(includeRunOnUserController())
     }
 
     @Test
     fun policyDoesNotApplyTest_userControllerAppliesToOwnUser_returnsUserControllerRunOnAdditionalUser() {
         assertThat(
-            BedsteadJUnit4.getParameterizedAnnotations(
-                arrayOf(
-                    policyDoesNotApplyTest(
-                        policy = arrayOf(
-                            AppliedByUserControllerToOwnUserPolicy::class.java
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(
+                        policyDoesNotApplyTest(
+                            policy = arrayOf(AppliedByUserControllerToOwnUserPolicy::class.java)
                         )
-                    )
-                ),
-                /* classAnnotations= */ listOf(),
+                    ),
+                    /* classAnnotations= */ listOf(),
+                )
             )
-        ).containsExactly(
-            includeRunOnAdditionalUserWithInitialUserController(),
-        )
+            .containsExactly(includeRunOnAdditionalUserWithInitialUserController())
     }
 
     @Test
@@ -583,56 +596,50 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     cannotSetPolicyTest(
-                        policy = arrayOf(
-                            AppliedByAffiliatedProfileOwnerAppliesToParentPolicy::class.java
-                        )
+                        policy =
+                            arrayOf(
+                                AppliedByAffiliatedProfileOwnerAppliesToParentPolicy::class.java
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).doesNotContain(
-            includeRunOnUserController(),
-        )
-        assertThat(parameterizedAnnotations).doesNotContain(
-            includeRunOnAdditionalUserWithInitialUserController(),
-        )
+        assertThat(parameterizedAnnotations).doesNotContain(includeRunOnUserController())
+        assertThat(parameterizedAnnotations)
+            .doesNotContain(includeRunOnAdditionalUserWithInitialUserController())
     }
 
     @Test
     fun policyAppliesTest_deviceControllerAppliesToSystemUser_returnsIncludeRunOnSystemUserWithDeviceController() {
         assertThat(
-            BedsteadJUnit4.getParameterizedAnnotations(
-                arrayOf(
-                    policyAppliesTest(
-                        policy = arrayOf(
-                            AppliedByDeviceControllerToAppliesSystemUser::class.java
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(
+                        policyAppliesTest(
+                            policy =
+                                arrayOf(AppliedByDeviceControllerToAppliesSystemUser::class.java)
                         )
-                    )
-                ),
-                /* classAnnotations= */ listOf(),
+                    ),
+                    /* classAnnotations= */ listOf(),
+                )
             )
-        ).containsExactly(
-            includeRunOnSystemUserWithDeviceController(),
-        )
+            .containsExactly(includeRunOnSystemUserWithDeviceController())
     }
 
     @Test
     fun policyDoesNotApplyTest_deviceControllerAppliesToSystemUser_returnsIncludeRunOnAdditionalUserWithDeviceController() {
         assertThat(
-            BedsteadJUnit4.getParameterizedAnnotations(
-                arrayOf(
-                    policyDoesNotApplyTest(
-                        policy = arrayOf(
-                            AppliedByDeviceControllerToAppliesSystemUser::class.java
+                BedsteadJUnit4.getParameterizedAnnotations(
+                    arrayOf(
+                        policyDoesNotApplyTest(
+                            policy =
+                                arrayOf(AppliedByDeviceControllerToAppliesSystemUser::class.java)
                         )
-                    )
-                ),
-                /* classAnnotations= */ listOf(),
+                    ),
+                    /* classAnnotations= */ listOf(),
+                )
             )
-        ).containsExactly(
-            includeRunOnAdditionalUserWithDeviceController(),
-        )
+            .containsExactly(includeRunOnAdditionalUserWithDeviceController())
     }
 
     @Test
@@ -641,19 +648,18 @@ class BedsteadJUnit4AnnotationTest {
             BedsteadJUnit4.getParameterizedAnnotations(
                 arrayOf(
                     cannotSetPolicyTest(
-                        policy = arrayOf(
-                            AppliedByAffiliatedProfileOwnerAppliesToParentPolicy::class.java
-                        )
+                        policy =
+                            arrayOf(
+                                AppliedByAffiliatedProfileOwnerAppliesToParentPolicy::class.java
+                            )
                     )
                 ),
                 /* classAnnotations= */ listOf(),
             )
 
-        assertThat(parameterizedAnnotations).doesNotContain(
-            includeRunOnSystemUserWithDeviceController(),
-        )
-        assertThat(parameterizedAnnotations).doesNotContain(
-            includeRunOnAdditionalUserWithDeviceController(),
-        )
+        assertThat(parameterizedAnnotations)
+            .doesNotContain(includeRunOnSystemUserWithDeviceController())
+        assertThat(parameterizedAnnotations)
+            .doesNotContain(includeRunOnAdditionalUserWithDeviceController())
     }
 }
