@@ -6,12 +6,12 @@ package {
 java_library_host {
     name: "bedstead-core-annotations",
     srcs: [
-        "harrier/common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.kt",
-        "harrier/common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
-        "harrier/common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
-        "harrier/common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
+        "harrier/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.kt",
+        "harrier/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
+        "harrier/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
+        "harrier/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
         "modules/enterprise/src/main/kotlin/com/android/bedstead/enterprise/annotations/DevicePolicyRelevant.java",
-        "harrier/common/src/main/java/com/android/bedstead/harrier/annotations/FailureMode.java",
+        "harrier/src/main/java/com/android/bedstead/harrier/annotations/FailureMode.java",
     ],
 
     libs: [
