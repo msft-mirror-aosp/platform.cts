@@ -69,7 +69,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.RemoteInput;
-import android.app.WindowConfiguration;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -2853,8 +2852,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                             .startSync(LinearLayout::new, TestActivity2.class);
             expectImeInvisible(TIMEOUT);
 
-            // 3. Press the back key to show the first activity with the IME visible.
-            mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            // 3. Finish the second activity to show the first activity with the IME visible.
+            runOnMainSync(testActivity2::finish);
             mInstrumentation.waitForIdleSync();
             TestUtils.waitOnMainUntil(testActivity2::isStopped, TIMEOUT);
             expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
