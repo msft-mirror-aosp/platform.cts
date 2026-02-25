@@ -16,6 +16,9 @@
 
 package android.virtualdevice.cts.applaunch;
 
+import static android.content.res.Configuration.UI_MODE_TYPE_CAR;
+import static android.virtualdevice.cts.common.VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -25,6 +28,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import android.app.Activity;
 import android.app.UiModeManager;
+import android.companion.AssociationInfo;
+import android.companion.AssociationRequest;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
@@ -77,7 +82,18 @@ public class VirtualDeviceUiModeTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        mVirtualDevice = mRule.createManagedVirtualDevice();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        int uiMode = context.getResources().getConfiguration().uiMode;
+        mDefaultUiModeType = getUiModeType(uiMode);
+        if (mDefaultUiModeType == UI_MODE_TYPE_CAR) {
+            // To change UI mode with TYPE_CAR, the device must have the AAP device profile
+            AssociationInfo ai =
+                    mRule.createManagedAssociation(
+                            AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION);
+            mVirtualDevice = mRule.createManagedVirtualDevice(DEFAULT_VIRTUAL_DEVICE_PARAMS, ai);
+        } else {
+            mVirtualDevice = mRule.createManagedVirtualDevice();
+        }
         VirtualDisplay virtualDisplay =
                 mRule.createManagedVirtualDisplay(
                         mVirtualDevice,
@@ -85,13 +101,10 @@ public class VirtualDeviceUiModeTest {
         Display display = virtualDisplay.getDisplay();
         mDisplayId = display.getDisplayId();
 
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
         mDefaultUiModeManager = context.getSystemService(UiModeManager.class);
         mVirtualUiModeManager =
                 context.createDisplayContext(display).getSystemService(UiModeManager.class);
 
-        int uiMode = context.getResources().getConfiguration().uiMode;
-        mDefaultUiModeType = getUiModeType(uiMode);
         mDefaultNightMode = getNightMode(uiMode);
 
         mNewUiModeType =
