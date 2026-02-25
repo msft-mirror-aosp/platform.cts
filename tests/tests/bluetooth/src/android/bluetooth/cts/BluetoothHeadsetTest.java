@@ -41,12 +41,12 @@ import android.bluetooth.BluetoothHeadset;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.sysprop.BluetoothProperties;
-import android.bluetooth.test_utils.Permissions;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -309,12 +309,11 @@ public class BluetoothHeadsetTest {
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mService.getCodecType(mDevice))
                 .isEqualTo(BluetoothHeadset.CODEC_TYPE_UNSUPPORTED);
-
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_HFP_GET_CODEC_API)
     @Test
     public void getCodecType_withoutPermission_throwsSecurityException() {
-       Permissions.enforce(BLUETOOTH_CONNECT, () -> mService.getCodecType(mDevice));
+        Permissions.enforce(BLUETOOTH_CONNECT, () -> mService.getCodecType(mDevice));
     }
 }
