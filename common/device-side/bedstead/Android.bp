@@ -1,0 +1,22 @@
+package {
+    default_team: "trendy_team_enterprise",
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+java_library_host {
+    name: "bedstead-core-annotations",
+    srcs: [
+        "harrier/common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.kt",
+        "harrier/common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
+        "harrier/common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
+        "harrier/common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
+        "modules/enterprise/src/main/kotlin/com/android/bedstead/enterprise/annotations/DevicePolicyRelevant.java",
+        "harrier/common/src/main/java/com/android/bedstead/harrier/annotations/FailureMode.java",
+    ],
+
+    libs: [
+        "androidx.annotation_annotation",
+    ],
+
+    plugins: ["auto_annotation_plugin"],
+}

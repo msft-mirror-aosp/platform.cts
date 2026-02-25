@@ -17,24 +17,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_library_host {
-    name: "bedstead-core-annotations",
-    srcs: [
-        "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.kt",
-        "common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/enterprise/DevicePolicyRelevant.java",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/FailureMode.java",
-    ],
-
-    libs: [
-        "androidx.annotation_annotation",
-    ],
-
-    plugins: ["auto_annotation_plugin"],
-}
-
 android_library {
     name: "HarrierInternal",
     sdk_version: "system_current",
