@@ -73,6 +73,15 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       else:
         camera_facing = 'rear'
       logging.debug('Camera facing: %s', camera_facing)
+
+      self.dut.adb.shell(['input', 'keyevent', 'KEYCODE_POWER'])
+      self.dut.adb.shell(['input', 'keyevent', 'KEYCODE_WAKEUP'])
+      # Dismiss keyguard
+      self.dut.adb.shell(['wm', 'dismiss-keyguard'])
+      self.dut.adb.shell(
+          'am start -n com.android.cts.verifier/.CtsVerifierActivity'
+      )
+      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SEC)
       # Get default camera app pkg name
       pkg_name = cam.get_default_camera_pkg()
       logging.debug('Default camera pkg name: %s', pkg_name)
