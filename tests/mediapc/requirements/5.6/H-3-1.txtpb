@@ -30,6 +30,12 @@ specs {
         int_value: 0
       }
     }
+    required_values {
+      key: "alternate_num_voices"
+      value {
+        int_value: 50
+      }
+    }
   }
 }
 measurements {
@@ -39,6 +45,15 @@ measurements {
     measurement_type: MEASUREMENT_TYPE_INT
     comparison: COMPARISON_LESS_THAN_OR_EQUAL
     proto_field_number: 3
+  }
+}
+measurements {
+  key: "alternate_num_voices"
+  value {
+    description: "The number of voices for high workload in the test."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
   }
 }
 is_non_cts_test: true
