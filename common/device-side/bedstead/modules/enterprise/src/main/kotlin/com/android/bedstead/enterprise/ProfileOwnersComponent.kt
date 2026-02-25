@@ -29,7 +29,6 @@ import com.android.bedstead.harrier.UserType.ADDITIONAL_USER
 import com.android.bedstead.harrier.UserType.INITIAL_USER
 import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
 import com.android.bedstead.harrier.UserType.SECONDARY_USER
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.multiuser.UsersComponent
@@ -45,6 +44,7 @@ import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.bedstead.testapp.TestAppQueryBuilder
 import com.android.bedstead.testapps.TestAppsComponent
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled
 
 /**
  * Manages profile owners for device state tests.

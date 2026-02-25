@@ -692,10 +692,13 @@ class AutoRevokeTest {
     }
 
     private fun goToPermissions(packageName: String = supportedAppPackageName) {
-        context.startActivity(Intent(ACTION_AUTO_REVOKE_PERMISSIONS)
+        val intent = Intent(ACTION_AUTO_REVOKE_PERMISSIONS)
                 .setData(Uri.fromParts("package", packageName, null))
                 .addFlags(FLAG_ACTIVITY_NEW_TASK)
-                .addFlags(FLAG_ACTIVITY_CLEAR_TASK))
+                .addFlags(FLAG_ACTIVITY_CLEAR_TASK)
+        val options = android.app.ActivityOptions.makeBasic()
+        options.setLaunchWindowingMode(1) // Fullscreen
+        context.startActivity(intent, options.toBundle())
 
         waitForIdle()
         scrollToLabel("Permissions")

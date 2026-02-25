@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.testapps.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
 
@@ -28,8 +28,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RepeatingAnnotation
-public @interface EnsureTestAppHasPermissionGroup {
-    EnsureTestAppHasPermission[] value();
+public @interface EnsureTestAppDoesNotHavePermissionGroup {
+    EnsureTestAppDoesNotHavePermission[] value();
 
      /**
      * Priority sets the order that annotations will be resolved.

@@ -91,15 +91,20 @@ public abstract class AudioDataPathsBaseActivity
 
     // UI
     protected View mStartButton;
+    protected View mNextButton;
+    protected View mPrevButton;
     protected View mCancelButton;
     protected View mClearResultsButton;
     protected View mShowResultsButton;
     protected View mShareResultsButton;
 
+    protected View mNavigationRow;
+
     protected AudioLoopbackUtilitiesHandler mUtiltitiesHandler;
 
     private TextView mRoutesTx;
     private View mResultsView;
+    private TextView mCurrentTestView;
 
     private WaveScopeView mWaveView = null;
 
@@ -119,6 +124,8 @@ public abstract class AudioDataPathsBaseActivity
 
     protected boolean mIsHandheld;
     protected boolean mIsEmulator;
+
+    protected boolean mIsManualMode = false;
 
     // Analysis
     private BaseSineAnalyzer mAnalyzer = new BaseSineAnalyzer();
@@ -167,6 +174,11 @@ public abstract class AudioDataPathsBaseActivity
 
         mStartButton = findViewById(R.id.audio_datapaths_start);
         mStartButton.setOnClickListener(this);
+        mNextButton = findViewById(R.id.audio_datapaths_next);
+        mNextButton.setOnClickListener(this);
+        mPrevButton = findViewById(R.id.audio_datapaths_prev);
+        mPrevButton.setOnClickListener(this);
+        mNavigationRow = findViewById(R.id.audio_datapaths_navigation);
         mCancelButton = findViewById(R.id.audio_datapaths_cancel);
         mCancelButton.setOnClickListener(this);
         mCancelButton.setEnabled(false);
@@ -200,6 +212,7 @@ public abstract class AudioDataPathsBaseActivity
                     .setOrientation(LinearLayout.VERTICAL);
         }
 
+        mCurrentTestView = findViewById(R.id.audio_datapaths_current_test);
         mWaveView = findViewById(R.id.uap_recordWaveView);
         mWaveView.setBackgroundColor(Color.DKGRAY);
         mWaveView.setTraceColor(Color.WHITE);
@@ -312,7 +325,8 @@ public abstract class AudioDataPathsBaseActivity
         // Playback Specification
         final int mOutDeviceType; // TYPE_BUILTIN_SPEAKER for example
         final int mOutSampleRate;
-        final int mOutChannelCount;
+        int mOutChannelCount;
+        int mOutChannelMask = 0;
         int mOutPerformanceMode;
         //TODO - Add usage and content types to output stream
 
@@ -572,6 +586,11 @@ public abstract class AudioDataPathsBaseActivity
             mAnalysisChannel = channel;
         }
 
+        void setChannelMask(int channelMask) {
+            mOutChannelMask = channelMask;
+            mOutChannelCount = Integer.bitCount(channelMask);
+        }
+
         void setSources(AudioSourceProvider sourceProvider, AudioSinkProvider sinkProvider) {
             mSourceProvider = sourceProvider;
             mSinkProvider = sinkProvider;
@@ -756,7 +775,11 @@ public abstract class AudioDataPathsBaseActivity
                 mDuplexAudioManager.setSources(mSourceProvider, mSinkProvider);
                 mDuplexAudioManager.setPlayerRouteDevice(mOutDeviceInfo);
                 mDuplexAudioManager.setPlayerSampleRate(mOutSampleRate);
-                mDuplexAudioManager.setNumPlayerChannels(mOutChannelCount);
+                if (mOutChannelMask != 0) {
+                    mDuplexAudioManager.setPlayerChannelMask(mOutChannelMask);
+                } else {
+                    mDuplexAudioManager.setNumPlayerChannels(mOutChannelCount);
+                }
                 mDuplexAudioManager.setPlayerSharingMode(mTransferType == TRANSFER_MMAP_EXCLUSIVE
                         ? BuilderBase.SHARING_MODE_EXCLUSIVE : BuilderBase.SHARING_MODE_SHARED);
                 mDuplexAudioManager.setPlayerPerformanceMode(mOutPerformanceMode);
@@ -1200,6 +1223,37 @@ public abstract class AudioDataPathsBaseActivity
         private boolean mIsTestModulesGathered = false;
         private int mTestStartDelayMillis = 0;
 
+        private boolean mManualMode;
+
+        public void setManualMode(boolean manualMode) {
+            mManualMode = manualMode;
+        }
+
+        public void runNextTest() {
+            advanceTestModule(); // Start the next test, if any.
+            // Schedule the end of this test and the beginning of the next.
+            synchronized (mTimerMutex) {
+                if (mTimer != null) {
+                    // Analyze data for the same amount of time for every test.
+                    mTimer.schedule(new MyTimerTask(), ANALYSIS_TIME_MILLIS);
+                }
+            }
+        }
+
+        public void runPrevTest() {
+            // We want to go back to the previous test.
+            // mTestStep is the index of the test that just finished.
+            if (mTestStep >= 0) {
+                mTestModules.get(mTestStep).clearTestState();
+                mTestStep--;
+                if (mTestStep >= 0) {
+                    mTestModules.get(mTestStep).clearTestState();
+                    mTestStep--;
+                }
+            }
+            runNextTest();
+        }
+
         public void initializeTests() {
             // Get the test modules from the sub-class
             if (!mIsTestModulesGathered) {
@@ -1232,6 +1286,11 @@ public abstract class AudioDataPathsBaseActivity
 
         public void clearTestModules() {
             mTestModules.clear();
+        }
+
+        public void reset() {
+            clearTestModules();
+            mIsTestModulesGathered = false;
         }
 
         public boolean hasRun() {
@@ -1459,6 +1518,16 @@ public abstract class AudioDataPathsBaseActivity
                 return TestModule.TESTSTATUS_NOT_RUN;
             }
 
+            if (mManualMode) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        showDeviceView();
+                        mUtiltitiesHandler.setEnabled(false);
+                    }
+                });
+            }
+
             return testModule.startTestModule();
         }
 
@@ -1466,16 +1535,35 @@ public abstract class AudioDataPathsBaseActivity
         private static final int ANALYSIS_TIME_MILLIS = 1000;
 
         class MyTimerTask extends TimerTask {
+            @Override
             public void run() {
                 completeTestStep(); // Finish the currently running test, if any.
-                advanceTestModule(); // Start the next test, if any.
-                // Schedule the end of this test and the beginning of the next.
-                synchronized (mTimerMutex) {
-                    if (mTimer != null) {
-                        // Analyze data for the same amount of time for every test.
-                        mTimer.schedule(new MyTimerTask(), ANALYSIS_TIME_MILLIS);
-                    }
+                if (mManualMode) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mNavigationRow.setVisibility(View.VISIBLE);
+                            mPrevButton.setEnabled(mTestStep >= 0);
+                            mNextButton.setEnabled(mTestStep + 1 < mTestModules.size());
+                            if (mTestStep + 1 < mTestModules.size()) {
+                                TestModule nextModule = mTestModules.get(mTestStep + 1);
+                                if (mCurrentTestView != null) {
+                                    mCurrentTestView.setText(
+                                            "Pending: " + nextModule.getDescription());
+                                }
+                            } else {
+                                if (mCurrentTestView != null) {
+                                    mCurrentTestView.setText("All Tests Done");
+                                }
+                                mPrevButton.setEnabled(true);
+                                mNextButton.setEnabled(false);
+                                completeTest();
+                            }
+                        }
+                    });
+                    return;
                 }
+                runNextTest();
             }
         }
 
@@ -1486,6 +1574,8 @@ public abstract class AudioDataPathsBaseActivity
 
             mTestStep = TESTSTEP_NONE;
             mTestCanceledByUser = false;
+
+            mNavigationRow.setVisibility(View.GONE);
 
             mUtiltitiesHandler.setEnabled(false);
             synchronized (mTimerMutex) {
@@ -1649,6 +1739,10 @@ public abstract class AudioDataPathsBaseActivity
                     @Override
                     public void run() {
                         displayTestDevices();
+                        TestModule module = getActiveTestModule();
+                        if (module != null && mCurrentTestView != null) {
+                            mCurrentTestView.setText(module.getDescription());
+                        }
                     }
                 });
 
@@ -1671,6 +1765,21 @@ public abstract class AudioDataPathsBaseActivity
                             + " status:" + testModule.getTestStateString());
                     // Otherwise, playing/recording failed, look for the next TestModule
                     mDuplexAudioManager.unwind();
+                    if (mManualMode) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (mCurrentTestView != null) {
+                                    mCurrentTestView.setText(
+                                            "Failed: " + testModule.getDescription());
+                                }
+                                mNavigationRow.setVisibility(View.VISIBLE);
+                                mPrevButton.setEnabled(mTestStep >= 0);
+                                mNextButton.setEnabled(mTestStep + 1 < mTestModules.size());
+                            }
+                        });
+                        return;
+                    }
                 }
             }
 
@@ -1903,6 +2012,22 @@ public abstract class AudioDataPathsBaseActivity
         }
     }
 
+    protected void setManualMode(boolean manualMode) {
+        mIsManualMode = manualMode;
+        updateManualModeUI();
+        if (mTestManager != null) {
+            mTestManager.setManualMode(mIsManualMode);
+            mTestManager.reset();
+            mTestManager.initializeTests();
+        }
+    }
+
+    private void updateManualModeUI() {
+        if (mNavigationRow != null) {
+            mNavigationRow.setVisibility(mIsManualMode ? View.VISIBLE : View.GONE);
+        }
+    }
+
     //
     // AudioMultiApiActivity Overrides
     //
@@ -1912,6 +2037,7 @@ public abstract class AudioDataPathsBaseActivity
         stopTest();
         mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
         mTestManager = mTestManagers.get(api);
+        mTestManager.setManualMode(mIsManualMode);
         mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
         mTestManager.validateTestDevices();
         mResultsView.invalidate();
@@ -1928,6 +2054,12 @@ public abstract class AudioDataPathsBaseActivity
         int id = view.getId();
         if (id == R.id.audio_datapaths_start) {
             startTest(mActiveTestAPI);
+        } else if (id == R.id.audio_datapaths_next) {
+            mNavigationRow.setVisibility(View.GONE);
+            mTestManager.runNextTest();
+        } else if (id == R.id.audio_datapaths_prev) {
+            mNavigationRow.setVisibility(View.GONE);
+            mTestManager.runPrevTest();
         } else if (id == R.id.audio_datapaths_cancel) {
             mTestManager.cancelTest();
             mTestManager.completeTest();

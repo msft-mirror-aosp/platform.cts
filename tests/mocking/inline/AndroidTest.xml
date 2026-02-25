@@ -30,7 +30,7 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.inline.mocking.cts" />
         <option name="runtime-hint" value="120s" />
-        <!-- test-timeout unit is ms, value = 17 min -->
-        <option name="test-timeout" value="1020000" />
+        <!-- test-timeout unit is ms, value = 26 min -->
+        <option name="test-timeout" value="1560000" />
     </test>
 </configuration>

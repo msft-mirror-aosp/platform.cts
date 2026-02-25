@@ -1246,6 +1246,27 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     public void testImeState_AlwaysHidden_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+        // TODO(b/486765752): The code below is a temporary workaround for b/459725967, where this
+        //  test could finish in a dirty state and cause the next test to misleadingly fail. Simply
+        //  attempting to show the IME at the end is sufficient to work around the issue.
+        try (MockImeSession imeSession =
+                MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                        new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final EditText editText = launchTestActivity(marker);
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
+            runOnMainSync(() -> imm.showSoftInput(editText, 0));
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+
+            // Hackily await ImeInsetsSourceProvider#setServerVisible(true)
+            SystemClock.sleep(TimeUnit.SECONDS.toMillis(1));
+        }
     }
 
     private void runImeDoesntReshowAfterKeyguardTest(int softInputState) throws Exception {

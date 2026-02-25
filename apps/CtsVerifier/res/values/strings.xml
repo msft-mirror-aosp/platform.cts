@@ -5803,6 +5803,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_info">Info</string>
     <string name="audio_general_ok">Ok</string>
     <string name="audio_general_start">Start</string>
+    <string name="audio_general_prev">Prev</string>
+    <string name="audio_general_next">Next</string>
     <string name="audio_general_stop">Stop</string>
     <string name="audio_general_done">Done</string>
     <string name="audio_general_close">Close</string>
@@ -5992,6 +5994,14 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="audio_datapaths_usb_interface_nodevices">There is no peripheral currently available for this test.
         Please connect a USB Interface peripheral configured for loopback.</string>
+
+    <string name="audio_datapaths_USB_multichannel_test">Audio Data Paths USB Multichannel Test</string>
+    <string name="audio_datapaths_USB_multichannel_info">This test verifies support for multi-channel output devices for USB audio devices.
+        \nThis includes Quad, 5.1, and 7.1 channel masks.
+        \nHandheld devices claiming Media Performance Class C (Android 17) MUST pass this test.
+    </string>
+    <string name="audio_datapaths_usb_multichannel_nodevices">There is no peripheral currently available for this test.
+        Please connect a USB audio device supporting at least 8 channels.</string>
 
     <string name="audio_datapaths_noio">"No valid datapaths. PASS."</string>
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
@@ -6465,6 +6475,19 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_aec_mandatory_test">Is AEC mandatory in this device?</string>
     <string name="audio_aec_no_aec_support">No AEC Support.</string>
     <string name="audio_aec_no_aec_pass">AEC is not supported on this device. Test may pass.</string>
+
+    <!-- Audio Playback Parameters Test -->
+    <string name="audio_playback_params_test">Audio Playback Parameters Test</string>
+    <string name="audio_playback_params_info">
+        This test checks that audio playback parameters are working correctly.
+        Please ensure that the device has speaker and microphone available as it runs in loopback mode.
+
+        Press "Test" to start. The test will:
+        1. Play a sound at 1.0x speed and record it via the loopback (control).
+        2. Play a sound at 2.0x speed and record it via the loopback.
+        3. Play the recording from step 2 back at 0.5x speed and record it again.
+        4. Analyze the recordings to ensure the final recording matches the control sound.
+    </string>
 
     <!-- Audio Connection Test -->
     <string name="audio_disconnect_test">Audio Stream Disconnect Test</string>
@@ -8103,5 +8126,21 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTry exploring the task bar, usually located at the bottom of the screen, if it exists,
         or using the Overview/Recents screen.
     </string>
+
+    <!-- Strings for Pinned Windowing Layer Test -->
+    <string name="pinned_layer_test_title">Pinned Windowing Layer Test</string>
+    <string name="pinned_layer_test_info">This test verifies that the system provides mandatory user controls for tasks in the pinned windowing layer.</string>
+    <string name="pinned_layer_perm_fail_title">Install-time Permission Missing</string>
+    <string name="pinned_layer_perm_fail_desc">The assumption about this test has failed. This device or build did not grant the required pinned layer permission at install time. Press \'Acknowledge\' to finish the test.</string>
+    <string name="pinned_layer_pip_missing_title">Picture-in-Picture Permission Required</string>
+    <string name="pinned_layer_pip_missing_desc">Picture-in-Picture permission is required. Please go to the system app settings for CtsVerifier and find the Picture-in-Picture setting to enable it. Press \'Acknowledge\' when done to re-run the check.</string>
+    <string name="pinned_layer_close_affordance_title">Close Action Verification</string>
+    <string name="pinned_layer_close_affordance_desc">1. Tap \'Launch Pinned Activity\' and then \'Enter Pinned Mode\'.\n2. If the request is rejected, try switching the activity to different windowing modes (e.g., Fullscreen, Desktop Mode, Freeform, etc.) and try again.\n3. If it fails to enter pinned mode in all available modes, mark the test as \'Pass\' at the bottom of the screen (feature unsupported).\n4. Otherwise, use the system-provided close button or action to dismiss the window.\n5. If successfully closed, return here and tap \'Acknowledge\'. If no close option exists, tap \'Fail\'.</string>
+    <string name="pinned_layer_disable_affordance_title">Disable Action Verification</string>
+    <string name="pinned_layer_disable_affordance_desc">1. Tap \'Launch Pinned Activity\' and then \'Enter Pinned Mode\'.\n2. If the request is rejected, try switching the activity to different windowing modes (e.g., Fullscreen, Desktop Mode, Freeform, etc.) and try again.\n3. If it fails to enter pinned mode in all available modes, mark the test as \'Pass\' at the bottom of the screen (feature unsupported).\n4. Otherwise, use a settings button or action in the system UI that leads to Picture-in-Picture settings.\n5. Disable the feature and verify the window is dismissed. If successful, tap \'Acknowledge\'. Otherwise, tap \'Fail\'.</string>
+    <string name="pinned_layer_launch_sample_button">Launch Pinned Activity</string>
+    <string name="pinned_layer_acknowledge_button">Acknowledge</string>
+    <string name="pinned_layer_enter_pinned_button">Enter Pinned Mode</string>
+    <string name="pinned_layer_failed_enter_pinned">Request rejected. Try switching windowing modes (like Desktop Mode) and try again.</string>
 
 </resources>

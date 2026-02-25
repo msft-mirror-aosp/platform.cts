@@ -102,9 +102,9 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
         waitForLogcat(
                 TIMEOUT_SECONDS,
                 separator,
+                "onEstimateFullBackupBytes",
                 "Full backup requested",
-                "Full backup requested",
-                "onEstimateFullBackupBytes");
+                "Full backup requested");
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER)

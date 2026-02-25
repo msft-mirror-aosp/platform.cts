@@ -139,6 +139,8 @@
     <!-- Needed for self-movable tasks tests -->
     <uses-permission android:name="android.permission.REPOSITION_SELF_WINDOWS"/>
 
+    <uses-permission android:name="android.permission.USE_PINNED_WINDOWING_LAYER" />
+
     <application android:debuggable="true"
                  android:networkSecurityConfig="@xml/network_security_config"
                  android:label="@string/app_name"
@@ -5271,6 +5273,18 @@
                 android.media.audiofx.AcousticEchoCanceler#getEnabled" />
         </activity>
 
+        <activity android:name=".audio.AudioPlaybackParametersActivity"
+            android:exported="true"
+            android:label="@string/audio_playback_params_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="CddTest" android:value="5.5.5/C-1-1" />
+        </activity>
+
         <activity android:name=".audio.AudioDisconnectActivity"
             android:exported="true"
             android:label="@string/audio_disconnect_test">
@@ -5482,6 +5496,24 @@
                     android.media.AudioRecord#stopRecording|
                     android.media.AudioTrack#play|
                     android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsUSBMultichannelActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_USB_multichannel_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output:android.software.webview" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+            <meta-data android:name="CddTest" android:value="5.6/H-1-10" />
         </activity>
 
         <activity android:name=".audio.AudioLoopbackLatencyActivity"
@@ -6896,6 +6928,29 @@
 
         <activity
             android:name=".sysui.SampleActivity"
+            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen">
+
+            <meta-data android:name="NonApiTest" android:value="Helper class" />
+        </activity>
+
+        <activity android:name=".sysui.PinnedLayerTestActivity"
+            android:label="@string/pinned_layer_test_title"
+            android:exported="true"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="ApiTest"
+                android:value="android.app.ActivityManager.AppTask#requestWindowingLayer" />
+            <meta-data android:name="test_category" android:value="SysUI" />
+            <meta-data android:name="test_required_features" android:value="android.software.freeform_window_management" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sysui.PinnedSampleActivity"
             android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen">
 
             <meta-data android:name="NonApiTest" android:value="Helper class" />

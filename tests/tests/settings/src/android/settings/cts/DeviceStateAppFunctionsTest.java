@@ -51,7 +51,6 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet;
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.EnsureUnlocked;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
@@ -60,6 +59,7 @@ import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled;
 import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.ClassRule;

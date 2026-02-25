@@ -16,9 +16,9 @@
 package com.android.bedstead.testapps
 
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
+import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled
 
 /**
  * Get a [TestAppProvider] which is cleared between tests.

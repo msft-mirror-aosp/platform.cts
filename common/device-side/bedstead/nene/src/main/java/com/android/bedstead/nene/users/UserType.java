@@ -27,6 +27,7 @@ public final class UserType {
     public static final String SYSTEM_USER_TYPE_NAME = "android.os.usertype.full.SYSTEM";
     public static final String MANAGED_PROFILE_TYPE_NAME = "android.os.usertype.profile.MANAGED";
     public static final String CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE";
+    public static final String PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE";
     public static final String USER_TYPE_FULL_GUEST = "android.os.usertype.full.GUEST";
 
     public static final int UNLIMITED = -1;

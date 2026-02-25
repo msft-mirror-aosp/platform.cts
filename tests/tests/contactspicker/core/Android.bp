@@ -20,6 +20,7 @@ android_test {
     name: "CtsContactsPickerCoreTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "contacts-picker-cts-common",
         "android.content.flags-aconfig-java-export",
         "androidx.test.rules",
         "compatibility-device-util-axt",
@@ -29,6 +30,8 @@ android_test {
         "ub-uiautomator",
         "platform-test-rules",
         "Nene",
+        "bedstead-multiuser",
+        "bedstead-enterprise",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [

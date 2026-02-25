@@ -186,42 +186,55 @@ public class EmbeddedSCVHService extends Service {
         }
 
         @Override
-        public String attachEmbeddedSurfaceControl(SurfaceControl parentSc,
-                InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
+        public String attachEmbeddedSurfaceControl(
+                SurfaceControl parentSc,
+                InputTransferToken hostToken,
+                int width,
+                int height,
                 @Nullable IMotionEventReceiver receiver) {
             CountDownLatch registeredLatch = new CountDownLatch(1);
             String name = "Child SurfaceControl";
-            mHandler.post(() -> {
-                mSurfaceControl = new SurfaceControl.Builder().setName(name)
-                        .setParent(parentSc).setBufferSize(width, height).build();
-                new SurfaceControl.Transaction().setVisibility(mSurfaceControl, true).setCrop(
-                        mSurfaceControl, new Rect(0, 0, width, height)).apply();
+            mHandler.post(
+                    () -> {
+                        mHostInputTransferToken = hostToken;
+                        mSurfaceControl =
+                                new SurfaceControl.Builder()
+                                        .setName(name)
+                                        .setParent(parentSc)
+                                        .setBufferSize(width, height)
+                                        .build();
+                        new SurfaceControl.Transaction()
+                                .setVisibility(mSurfaceControl, true)
+                                .setCrop(mSurfaceControl, new Rect(0, 0, width, height))
+                                .apply();
 
-                Surface surface = new Surface(mSurfaceControl);
-                Canvas c = surface.lockCanvas(null);
-                c.drawColor(Color.BLUE);
-                surface.unlockCanvasAndPost(c);
+                        Surface surface = new Surface(mSurfaceControl);
+                        Canvas c = surface.lockCanvas(null);
+                        c.drawColor(Color.BLUE);
+                        surface.unlockCanvasAndPost(c);
 
-                mEmbeddedInputTransferToken = mWm.registerBatchedSurfaceControlInputReceiver(
-                        hostToken, mSurfaceControl, Choreographer.getInstance(),
-                        event -> {
-                            if (event instanceof MotionEvent) {
-                                if (transferTouchToHost) {
-                                    mWm.transferTouchGesture(mEmbeddedInputTransferToken,
-                                            hostToken);
-                                }
-
-                                try {
-                                    receiver.onMotionEventReceived(
-                                            MotionEvent.obtain((MotionEvent) event));
-                                } catch (RemoteException e) {
-                                    Log.e(TAG, "Failed to send motion event to host", e);
-                                }
-                            }
-                            return false;
-                        });
-                registeredLatch.countDown();
-            });
+                        mEmbeddedInputTransferToken =
+                                mWm.registerBatchedSurfaceControlInputReceiver(
+                                        hostToken,
+                                        mSurfaceControl,
+                                        Choreographer.getInstance(),
+                                        event -> {
+                                            if (event instanceof MotionEvent) {
+                                                try {
+                                                    receiver.onMotionEventReceived(
+                                                            MotionEvent.obtain(
+                                                                    (MotionEvent) event));
+                                                } catch (RemoteException e) {
+                                                    Log.e(
+                                                            TAG,
+                                                            "Failed to send motion event to host",
+                                                            e);
+                                                }
+                                            }
+                                            return false;
+                                        });
+                        registeredLatch.countDown();
+                    });
 
             try {
                 if (!registeredLatch.await(WAIT_TIME_S, TimeUnit.SECONDS)) {
@@ -259,7 +272,6 @@ public class EmbeddedSCVHService extends Service {
                 int width,
                 int height,
                 boolean batched,
-                boolean transferTouchToHost,
                 @Nullable IMotionEventReceiver receiver) {
             CountDownLatch registeredLatch = new CountDownLatch(2);
             mHandler.post(
@@ -290,14 +302,6 @@ public class EmbeddedSCVHService extends Service {
                                         new InputReceiver() {
                                             @Override
                                             public boolean onMotionEvent(MotionEvent motionEvent) {
-                                                if (transferTouchToHost
-                                                        && mEmbeddedInputTransferToken != null
-                                                        && motionEvent.getAction()
-                                                                == MotionEvent.ACTION_DOWN) {
-                                                    mWm.transferTouchGesture(
-                                                            mEmbeddedInputTransferToken, hostToken);
-                                                }
-
                                                 try {
                                                     receiver.onMotionEventReceived(
                                                             MotionEvent.obtain(motionEvent));

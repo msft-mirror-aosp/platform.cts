@@ -116,7 +116,8 @@ public class InputDeviceKeyLayoutMapTest {
                             "F23",
                             "F24",
                             // List of 26Q2 flagged keys.
-                            "ACCESSIBILITY"));
+                            "ACCESSIBILITY",
+                            "CONTEXTUAL_INSERT"));
 
     private static final Set<String> EXCLUDED_KEYS =
             new HashSet<>(

@@ -43,6 +43,8 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.contactspicker.cts.common.ContactsPickerTestHelper;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -119,8 +121,9 @@ public class ContactsPickerViewTest {
     public static void tearDownClass() {
         // Remove test contacts
         ContactsPickerTestHelper.removeTestContacts(
-                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver(),
-                sCreatedRawContactIds);
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                sCreatedRawContactIds,
+                InstrumentationRegistry.getInstrumentation().getContext().getUser());
         sCreatedRawContactIds.clear();
         sCreatedDataIds.clear();
         // Give CP2 a bit of time to settle.
@@ -470,10 +473,9 @@ public class ContactsPickerViewTest {
     private static void createContactHelper(Map<String, Object> mimeTypeToValue) {
         ContactsPickerTestHelper.ContactCreationResult result =
                 ContactsPickerTestHelper.createContact(
-                        InstrumentationRegistry.getInstrumentation()
-                                .getContext()
-                                .getContentResolver(),
-                        mimeTypeToValue);
+                        InstrumentationRegistry.getInstrumentation().getContext(),
+                        mimeTypeToValue,
+                        InstrumentationRegistry.getInstrumentation().getContext().getUser());
         if (result.rawContactId != -1) {
             sCreatedRawContactIds.add(result.rawContactId);
         }

@@ -254,7 +254,9 @@ fun awaitAppState(pkg: String, stateMatcher: Matcher<Int>) {
 fun startApp(packageName: String) {
     val context = InstrumentationRegistry.getTargetContext()
     val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-    context.startActivity(intent)
+    val options = android.app.ActivityOptions.makeBasic()
+    options.setLaunchWindowingMode(1) // WINDOWING_MODE_FULLSCREEN
+    context.startActivity(intent, options.toBundle())
     awaitAppState(packageName, Matchers.lessThanOrEqualTo(IMPORTANCE_TOP_SLEEPING))
     waitForIdle()
 }
