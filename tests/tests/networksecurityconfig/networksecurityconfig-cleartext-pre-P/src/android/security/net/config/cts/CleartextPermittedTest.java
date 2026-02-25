@@ -22,8 +22,8 @@ import javax.net.ssl.X509TrustManager;
 
 public class CleartextPermittedTest extends BaseTestCase {
     public void testDefaultAllowed() throws Exception {
-        TestUtils.assertCleartextConnectionSucceeds("example.com", 80);
-        TestUtils.assertTlsConnectionSucceeds("example.com", 443);
+        TestUtils.assertCleartextConnectionSucceeds("google.com", 80);
+        TestUtils.assertTlsConnectionSucceeds("google.com", 443);
     }
 
     public void testCleartextBlocked() throws Exception {
