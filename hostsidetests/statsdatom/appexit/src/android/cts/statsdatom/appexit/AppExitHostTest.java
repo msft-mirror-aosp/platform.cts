@@ -16,6 +16,7 @@
 
 package android.cts.statsdatom.appexit;
 
+import static android.app.AppExitReasonCode.REASON_EXIT_SELF;
 import static android.app.AppExitReasonCode.REASON_OTHER;
 import static android.app.AppExitReasonCode.REASON_PERMISSION_CHANGE;
 import static android.app.AppExitSubReasonCode.SUBREASON_ISOLATED_NOT_NEEDED;
@@ -60,6 +61,7 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
     private static final long APP_EXIT_INFO_STATSD_LOG_DEBOUNCE_MSEC = 15_000;
     private static final String PERM_PACKAGE_USAGE_STATS = "android.permission.PACKAGE_USAGE_STATS";
     private static final String PERM_READ_LOGS = "android.permission.READ_LOGS";
+    private static final int TEST_EXIT_CODE = 123;
 
     private IBuildInfo mCtsBuild;
 
@@ -124,6 +126,22 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
             assertThat(appDied.getSubReason()).isEqualTo(SUBREASON_ISOLATED_NOT_NEEDED);
             assertThat(appDied.getImportance()).isEqualTo(IMPORTANCE_SERVICE);
         });
+    }
+
+    @Test
+    public void testLogStatsdExitSelf() throws Exception {
+        final String helperPackage = HELPER_PKG2;
+        final int expectedUid = getAppUid(helperPackage);
+        performLogStatsdTest(
+                "testExitCode",
+                helperPackage,
+                1,
+                appDied -> {
+                    assertThat(appDied.getUid()).isEqualTo(expectedUid);
+                    assertThat(appDied.getProcessName()).isEqualTo(helperPackage);
+                    assertThat(appDied.getReason()).isEqualTo(REASON_EXIT_SELF);
+                    assertThat(appDied.getExitStatus()).isEqualTo(TEST_EXIT_CODE);
+                });
     }
 
     private void performLogStatsdTest(String testMethod, String targetPackage, int expectedSize,
