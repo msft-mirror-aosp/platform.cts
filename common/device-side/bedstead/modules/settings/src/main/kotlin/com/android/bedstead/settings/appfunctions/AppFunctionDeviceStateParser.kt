@@ -86,12 +86,20 @@ class AppFunctionDeviceStateParser(
         }
     }
 
-    private fun GenericDocument.asPerScreenDeviceStates() = PerScreenDeviceStates(
-        intentUri = getPropertyString("intentUri"),
-        deviceStateItems = getPropertyDocumentArray("deviceStateItems")?.map {
-            it.asDeviceStateItem()
-        } ?: emptyList()
-    )
+    private fun GenericDocument.asPerScreenDeviceStates(): PerScreenDeviceStates {
+        val description = getPropertyString("description")!!
+        val closingBracketIndex = description.indexOf(']')
+        return PerScreenDeviceStates(
+            key = description.takeIf {
+                it.startsWith(KEY_PREFIX)
+            }?.substring(KEY_PREFIX.length, closingBracketIndex),
+            intentUri = getPropertyString("intentUri"),
+            deviceStateItems = getPropertyDocumentArray("deviceStateItems")?.map {
+                it.asDeviceStateItem()
+            } ?: emptyList(),
+            description = description.substring(closingBracketIndex + 1)
+        )
+    }
 
     private fun GenericDocument.asDeviceStateItem() = DeviceStateItem(
         key = getPropertyString("key")!!,
@@ -109,5 +117,6 @@ class AppFunctionDeviceStateParser(
         internal const val LOG_TAG = "DeviceStateParser"
         private const val PER_SCREEN_DEVICE_STATES_SCHEMA =
             "com.google.android.appfunctions.schema.common.v1.devicestate.PerScreenDeviceStates"
+        private const val KEY_PREFIX = "[key="
     }
 }

@@ -19,11 +19,13 @@ import android.content.Intent
 import java.net.URISyntaxException
 
 /**
- * A human readable representation of AppFunction's PerScreenDeviceStates.
+ * A human-readable representation of AppFunction's PerScreenDeviceStates.
  */
 data class PerScreenDeviceStates(
+    val key: String?,
     val intentUri: String?,
-    val deviceStateItems: List<DeviceStateItem>
+    val deviceStateItems: List<DeviceStateItem>,
+    val description: String
 ) {
 
     /**
@@ -35,10 +37,12 @@ data class PerScreenDeviceStates(
             Intent.parseUri(intentUri, Intent.URI_INTENT_SCHEME)
         }
     }
+
+    override fun toString(): String = key ?: "description=$description"
 }
 
 /**
- * A human readable representation of AppFunction's DeviceStateItem.
+ * A human-readable representation of AppFunction's DeviceStateItem.
  */
 data class DeviceStateItem(
     val key: String,
@@ -50,7 +54,7 @@ data class DeviceStateItem(
 }
 
 /**
- * A human readable representation of AppFunction's LocalizedString.
+ * A human-readable representation of AppFunction's LocalizedString.
  */
 data class LocalizedString(
     val english: String,
