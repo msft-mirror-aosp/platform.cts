@@ -100,7 +100,7 @@ def do_capture_and_determine_sharpness(
     chart = opencv_processing_utils.get_patch_from_aruco_markers(
         img_bgr, corners, ids, use_outer_corner=True)
     if n == 0:
-      image_processing_utils.write_image(
+      image_processing_utils.write_uint8_image(
           chart, f'{name_with_log_path}_edge={edge_mode}.jpg')
       edge_mode_res = cap['metadata']['android.edge.mode']
     sharpness_list.append(
