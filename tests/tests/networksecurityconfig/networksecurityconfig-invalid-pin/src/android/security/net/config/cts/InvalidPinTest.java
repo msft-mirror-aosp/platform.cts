@@ -23,7 +23,7 @@ public class InvalidPinTest extends BaseTestCase {
     }
 
     public void testDefaultDomainUnaffected() throws Exception {
-        TestUtils.assertTlsConnectionSucceeds("example.com", 443);
+        TestUtils.assertTlsConnectionSucceeds("google.com", 443);
         TestUtils.assertTlsConnectionSucceeds("developer.android.com", 443);
     }
 }
