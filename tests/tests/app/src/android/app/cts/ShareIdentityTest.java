@@ -329,6 +329,13 @@ public class ShareIdentityTest {
      */
     private static final int DEFAULT_SHARING_TEST_CASE_SAME_UID_ACTIVITY_RESULT_OVERLOAD_CALLER =
             27;
+
+    /**
+     * Test case to verify the launching app's identity is not shared when an intermediate activity
+     * forwards the result using FLAG_ACTIVITY_FORWARD_RESULT without explicitly opting in.
+     */
+    private static final int START_ACTIVITY_FOR_RESULT_FORWARD_TEST_CASE = 28;
+
     /**
      * Action for which the runtime receiver registers to receive broadcasts from the test app.
      */
@@ -482,16 +489,15 @@ public class ShareIdentityTest {
     }
 
     @Test
-    @CddTest(requirement = "4/C-0-2")
-    public void testShareIdentity_startActivityForResult_identityNotAvailableToActivity()
+    @CddTest(requirement = "3.1/C-0-1")
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_IDENTITY_FOR_RESULT)
+    public void testShareIdentity_startActivityForResult_identityAvailableToActivity()
             throws Exception {
         // When an app launches an activity with startActivityForResult, the launching app's
         // package name is available to the activity with Activity#getCallingPackage to allow
-        // any authorization checks to be performed. Since startActivityForResult requests can
-        // be chained, it's possible that the launching app is not the original app that
-        // requested the result. To avoid leaking any information about potential intermediate
-        // apps forwarding a request, startActivityForResult will not implicitly share an app's
-        // identity via getLaunchedFrom.
+        // any authorization checks to be performed. Starting in Android 17, the platform will
+        // also implicitly share the app's launching identity via the getLaunchedFrom APIs when
+        // the activity is started with startActivityForResult.
         TestData testData = new TestData(new CountDownLatch(1));
         int testId = TEST_ID.getAndIncrement();
         sTestIdToData.put(testId, testData);
@@ -501,14 +507,44 @@ public class ShareIdentityTest {
 
         assertTrue("Activity was not invoked by the timeout",
                 testData.countDownLatch.await(10, TimeUnit.SECONDS));
+        assertPackageVisibility(testData);
+    }
+
+    @Test
+    @CddTest(requirement = "3.1/C-0-1")
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_IDENTITY_FOR_RESULT)
+    public void testShareIdentity_startActivityForResultForwarded_identityNotAvailable()
+            throws Exception {
+        // While startActivityForResult will implicitly share the launching app's identity, if a
+        // startActivityForResult request is intercepted and forwarded to another app using
+        // FLAG_ACTIVITY_FORWARD_RESULT, the launching app's identity will no longer be implicitly
+        // shared and instead the launching app must explicitly opt-in to sharing their identity.
+        // This is intended to allow an app to distinguish whether it was started from the app to
+        // which the result will be returned or if the request was forwarded by another app.
+        TestData testData = new TestData(new CountDownLatch(1));
+        int testId = TEST_ID.getAndIncrement();
+        sTestIdToData.put(testId, testData);
+
+        Intent testIntent = new Intent(mContext, StartForResultTrampolineActivity.class);
+        testIntent.putExtra(TEST_ID_KEY, testId);
+        testIntent.putExtra(TEST_CASE_KEY, START_ACTIVITY_FOR_RESULT_FORWARD_TEST_CASE);
+        testIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        mContext.startActivity(testIntent);
+
+        assertTrue(
+                "Activity was not invoked by the timeout",
+                testData.countDownLatch.await(10, TimeUnit.SECONDS));
+
         assertEquals(
                 Process.INVALID_UID
-                        + " launchedFromUid expected for app invoking startActivityForResult and "
-                        + "not opting-in to sharing identity",
-                Process.INVALID_UID, testData.fromUid);
+                        + " launchedFromUid expected for app forwarding a result "
+                        + "without opting-in to sharing identity",
+                Process.INVALID_UID,
+                testData.fromUid);
         assertNull(
-                "null launchedFromPackage expected for app invoking startActivityForResult and "
-                        + "not opting-in to sharing identity",
+                "null launchedFromPackage expected for app forwarding a result "
+                        + "without opting-in to sharing identity",
                 testData.fromPackage);
     }
 
@@ -835,20 +871,22 @@ public class ShareIdentityTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.app.Activity#getInitialCaller", "android.app.ComponentCaller#getUid",
-            "android.app.ComponentCaller#getPackage"})
-    @CddTest(requirement = "4/C-0-2")
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_CONTENT_URI_PERMISSION_APIS)
+    @ApiTest(
+            apis = {
+                "android.app.Activity#getInitialCaller",
+                "android.app.ComponentCaller#getUid",
+                "android.app.ComponentCaller#getPackage"
+            })
+    @CddTest(requirement = "3.1/C-0-1")
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_IDENTITY_FOR_RESULT)
     public void
-    testActivityInitialCallerShareIdentity_startActivityForResult_identityNotAvailableToActivity()
-            throws Exception {
+            testActivityInitialCallerShareIdentity_startActivityForResult_identityNotAvailableToActivity()
+                    throws Exception {
         // When an app launches an activity with startActivityForResult, the launching app's
         // package name is available to the activity with Activity#getCallingPackage to allow
-        // any authorization checks to be performed. Since startActivityForResult requests can
-        // be chained, it's possible that the launching app is not the original app that
-        // requested the result. To avoid leaking any information about potential intermediate
-        // apps forwarding a request, startActivityForResult will not implicitly share an app's
-        // identity via getLaunchedFrom.
+        // any authorization checks to be performed. Starting in Android 17, the platform will
+        // also implicitly share the app's launching identity via the getLaunchedFrom APIs when
+        // the activity is started with startActivityForResult.
         TestData testData = new TestData(new CountDownLatch(1));
         int testId = TEST_ID.getAndIncrement();
         sTestIdToData.put(testId, testData);
@@ -859,15 +897,7 @@ public class ShareIdentityTest {
 
         assertTrue("Activity was not invoked by the timeout",
                 testData.countDownLatch.await(10, TimeUnit.SECONDS));
-        assertEquals(
-                Process.INVALID_UID
-                        + " Activity initial ComponentCaller#getUid expected for app invoking"
-                        + " startActivityForResult and not opting-in to sharing identity",
-                Process.INVALID_UID, testData.fromUid);
-        assertNull(
-                "null Activity initial ComponentCaller#getPackage expected for app invoking"
-                        + " startActivityForResult and not opting-in to sharing identity",
-                testData.fromPackage);
+        assertPackageVisibility(testData);
     }
 
     @Test
@@ -1505,6 +1535,26 @@ public class ShareIdentityTest {
             intent.putExtra(TEST_ID_KEY, testId);
             setResult(RESULT_OK, intent);
             finish();
+        }
+    }
+
+    /**
+     * Trampoline activity used to start the test component for a result, setting up the scenario
+     * for an intermediate app to forward the result back to {@link ShareIdentityTestActivity}.
+     */
+    public static class StartForResultTrampolineActivity extends Activity {
+        @Override
+        public void onStart() {
+            super.onStart();
+            int testId = getIntent().getIntExtra(TEST_ID_KEY, -1);
+            int testCase = getIntent().getIntExtra(TEST_CASE_KEY, -1);
+
+            Intent intent = new Intent();
+            intent.setComponent(TEST_COMPONENT);
+            intent.putExtra(TEST_ID_KEY, testId);
+            intent.putExtra(TEST_CASE_KEY, testCase);
+
+            startActivityForResult(intent, 1);
         }
     }
 
