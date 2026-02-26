@@ -700,6 +700,24 @@ public final class ActivityManagerFgsBgStartTest {
                         mInstrumentation, app1Info.uid, WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
 
         try {
+            // Grant required runtime permissions to APP1
+            PermissionUtils.grantPermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION);
+            TestUtils.waitUntil("Failed to grant ACCESS_FINE_LOCATION", WAITFOR_MSEC,
+                    () -> PermissionUtils.isGranted(PACKAGE_NAME_APP1,
+                            android.Manifest.permission.ACCESS_FINE_LOCATION));
+
+            PermissionUtils.grantPermission(PACKAGE_NAME_APP1, android.Manifest.permission.CAMERA);
+            TestUtils.waitUntil("Failed to grant CAMERA", WAITFOR_MSEC,
+                    () -> PermissionUtils.isGranted(PACKAGE_NAME_APP1,
+                            android.Manifest.permission.CAMERA));
+
+            PermissionUtils.grantPermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.RECORD_AUDIO);
+            TestUtils.waitUntil("Failed to grant RECORD_AUDIO", WAITFOR_MSEC,
+                    () -> PermissionUtils.isGranted(PACKAGE_NAME_APP1,
+                            android.Manifest.permission.RECORD_AUDIO));
+
             WaitForBroadcast waiter = createBroadcastWaiter(ACTION_START_FGSL_RESULT);
             // APP1 is in BG state, bind FGSL in APP1 first.
             enableFgsRestriction(false, true, null);
@@ -756,6 +774,12 @@ public final class ActivityManagerFgsBgStartTest {
                     Integer.valueOf(PROCESS_CAPABILITY_NONE));
         } finally {
             uid1Watcher.finish();
+            PermissionUtils.revokePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION);
+            PermissionUtils.revokePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.CAMERA);
+            PermissionUtils.revokePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.RECORD_AUDIO);
         }
     }
 
@@ -2096,6 +2120,18 @@ public final class ActivityManagerFgsBgStartTest {
                     Integer.valueOf(PROCESS_CAPABILITY_ALL));
             allowBgActivityStart(PACKAGE_NAME_APP1, false);
 
+            // Grant required runtime permissions to APP1
+            PermissionUtils.grantPermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.RECORD_AUDIO);
+            TestUtils.waitUntil("Failed to grant RECORD_AUDIO", WAITFOR_MSEC,
+                    () -> PermissionUtils.isGranted(PACKAGE_NAME_APP1,
+                            android.Manifest.permission.RECORD_AUDIO));
+
+            PermissionUtils.grantPermission(PACKAGE_NAME_APP1, android.Manifest.permission.CAMERA);
+            TestUtils.waitUntil("Failed to grant CAMERA", WAITFOR_MSEC,
+                    () -> PermissionUtils.isGranted(PACKAGE_NAME_APP1,
+                            android.Manifest.permission.CAMERA));
+
             // APP2 is in the background, from APP2, call startForeground() second time.
             // When APP2 calls Context.startService(), setFgsRestrictionLocked() is called,
             // because APP2 is in the background, mAllowStartForeground is set to false.
@@ -2145,6 +2181,10 @@ public final class ActivityManagerFgsBgStartTest {
                     Integer.valueOf(PROCESS_CAPABILITY_NONE));
         } finally {
             uid1Watcher.finish();
+            PermissionUtils.revokePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.RECORD_AUDIO);
+            PermissionUtils.revokePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.CAMERA);
         }
     }
 
