@@ -23,10 +23,13 @@ import static android.view.flags.Flags.FLAG_REDACT_OTP_APP_COMPAT_API;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.app.Instrumentation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -60,7 +63,6 @@ import org.junit.runner.RunWith;
 @EnsureHasNoDeviceOwner
 public class MmsSmsTest {
     private static final String TEST_ADDRESS = "+19998880001";
-    private static final int TEST_THREAD_ID_1 = 101;
 
     private SmsOtpTestHelper mSmsOtpTestHelper;
     private SmsTestHelper mSmsTestHelper;
@@ -108,13 +110,25 @@ public class MmsSmsTest {
         mSmsTestHelper = new SmsTestHelper();
     }
 
-    private void insertOtpMessage(String message) {
-        mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
-                TEST_ADDRESS,
-                message,
-                System.currentTimeMillis(),
-                SmsOtpTestHelper.CONTAINS_SMS_RETRIEVER_OTP,
-                TEST_THREAD_ID_1);
+    private long insertOtpMessage(String message) {
+        Uri uri =
+                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                        TEST_ADDRESS,
+                        message,
+                        System.currentTimeMillis(),
+                        SmsOtpTestHelper.CONTAINS_SMS_RETRIEVER_OTP,
+                        -1);
+        return getThreadId(uri);
+    }
+
+    private long getThreadId(Uri uri) {
+        try (Cursor cursor =
+                CONTEXT.getContentResolver()
+                        .query(uri, new String[] {Telephony.Sms.THREAD_ID}, null, null, null)) {
+            assertThat(cursor).isNotNull();
+            assertThat(cursor.moveToFirst()).isTrue();
+            return cursor.getLong(0);
+        }
     }
 
     @Test
@@ -135,11 +149,11 @@ public class MmsSmsTest {
     @Test
     public void testOtpSms_standardAppCantRead_mmsSmsConversationByThreadId() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
-        insertOtpMessage(message);
+        final long threadId = insertOtpMessage(message);
         try {
             Uri mmsSmsConversationUri =
                     ContentUris.withAppendedId(
-                            Telephony.MmsSms.CONTENT_CONVERSATIONS_URI, TEST_THREAD_ID_1);
+                            Telephony.MmsSms.CONTENT_CONVERSATIONS_URI, threadId);
             mSmsOtpTestHelper.assertSmsPresence(mmsSmsConversationUri, /* canRead */ true);
             stopBeingDefaultSmsApp();
             // Message should be inaccessible when querying by mms-sms conversation
@@ -180,9 +194,6 @@ public class MmsSmsTest {
         }
     }
 
-    /*
-    TODO: Enable the test after b/485898591 is fixed
-
     @Test
     public void testOtpSms_standardAppCantRead_mmsSmsSearch() {
         final String testWord = "xyz";
@@ -199,5 +210,50 @@ public class MmsSmsTest {
             ensureDefaultSmsApp();
         }
     }
-     */
+
+    @Test
+    public void testOtpSms_snippetRedacted_mmsSmsSimpleConversation() {
+        final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
+        insertOtpMessage(message);
+        try {
+            Uri uri =
+                    Telephony.MmsSms.CONTENT_CONVERSATIONS_URI
+                            .buildUpon()
+                            .appendQueryParameter("simple", "true")
+                            .build();
+            mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ false);
+            stopBeingDefaultSmsApp();
+            mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ true);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    public void testOtpSms_snippetRedacted_mmsSmsConversationRecipients() {
+        final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
+        final long threadId = insertOtpMessage(message);
+        try {
+            Uri uri = Uri.parse("content://mms-sms/conversations/" + threadId + "/recipients");
+            mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ false);
+            stopBeingDefaultSmsApp();
+            mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ true);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    public void testOtpSms_snippetRedacted_mmsSmsConversationSubject() {
+        final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
+        final long threadId = insertOtpMessage(message);
+        try {
+            Uri uri = Uri.parse("content://mms-sms/conversations/" + threadId + "/subject");
+            mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ false);
+            stopBeingDefaultSmsApp();
+            mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ true);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
 }
