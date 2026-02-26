@@ -83,6 +83,8 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -239,7 +241,9 @@ public class ArchiveTest {
         final UiAutomation uiAutomation =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
-        try {
+        try (PermissionContext withPermission =
+                TestApis.permissions().withPermission(
+                        android.Manifest.permission.DELETE_PACKAGES)) {
             // Install the archive installer
             installPackage(ARCHIVE_INSTALLER_APK);
             // Install the test app and set the installer to archive installer
@@ -249,9 +253,6 @@ public class ArchiveTest {
                     PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
             prepareDevice();
             LocalIntentSender sender = new LocalIntentSender();
-
-            // adopt DELETE_PACKAGES permission
-            uiAutomation.adoptShellPermissionIdentity(Manifest.permission.DELETE_PACKAGES);
 
             mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME, sender.getIntentSender());
 
@@ -288,7 +289,6 @@ public class ArchiveTest {
                     PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
         } finally {
             uninstallPackage(ARCHIVE_INSTALLER_APP_PACKAGE_NAME);
-            uiAutomation.dropShellPermissionIdentity();
         }
     }
 
@@ -300,42 +300,43 @@ public class ArchiveTest {
                 PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
         prepareDevice();
         LocalIntentSender sender = new LocalIntentSender();
-        runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME,
-                        sender.getIntentSender()),
-                Manifest.permission.DELETE_PACKAGES);
-        Intent intent = sender.getResult();
-        assertThat(intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100)).isEqualTo(
-                PackageInstaller.STATUS_PENDING_USER_ACTION);
 
-        Intent extraIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
-        extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
-        runWithShellPermissionIdentity(() -> mContext.startActivity(extraIntent),
-                Manifest.permission.DELETE_PACKAGES);
+        try (PermissionContext withPermission =
+                TestApis.permissions().withPermission(
+                        android.Manifest.permission.REQUEST_DELETE_PACKAGES)) {
+            mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME, sender.getIntentSender());
+            Intent intent = sender.getResult();
+            assertThat(intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100)).isEqualTo(
+                    PackageInstaller.STATUS_PENDING_USER_ACTION);
 
-        // wait for device idle
-        mUiDevice.waitForIdle();
+            Intent extraIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+            extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
+            TestApis.activities().startActivity(extraIntent);
 
-        assertThat(waitFor(Until.findObject(By.textContains("Archive")))).isNotNull();
-        assertThat(waitFor(Until.findObject(
-                By.textContains("data will be saved")))).isNotNull();
+            // wait for device idle
+            mUiDevice.waitForIdle();
 
-        // Confirm the archive app can be archived after user confirmation
-        UiObject2 clickableView = mUiDevice.findObject(getArchiveConfirmButtonBySelector());
-        if (clickableView == null) {
-            Assert.fail("Confirm button not shown");
-        }
-        clickableView.click();
+            assertThat(waitFor(Until.findObject(By.textContains("Archive")))).isNotNull();
+            assertThat(waitFor(Until.findObject(
+                    By.textContains("data will be saved")))).isNotNull();
 
-        for (int i = 0; i < 30; i++) {
-            // We can't detect the confirmation Toast with UiAutomator, so we'll poll
-            Thread.sleep(500);
-            if (!isInstalled()) {
-                break;
+            // Confirm the archive app can be archived after user confirmation
+            UiObject2 clickableView = mUiDevice.findObject(getArchiveConfirmButtonBySelector());
+            if (clickableView == null) {
+                Assert.fail("Confirm button not shown");
             }
+            clickableView.click();
+
+            for (int i = 0; i < 30; i++) {
+                // We can't detect the confirmation Toast with UiAutomator, so we'll poll
+                Thread.sleep(500);
+                if (!isInstalled()) {
+                    break;
+                }
+            }
+            assertTrue(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
+                    PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
         }
-        assertTrue(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
-                PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
     }
 
     @Test
@@ -609,7 +610,9 @@ public class ArchiveTest {
         final UiAutomation uiAutomation =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
-        try {
+        try (PermissionContext withPermission =
+                TestApis.permissions().withPermission(
+                        android.Manifest.permission.DELETE_PACKAGES)) {
             // install an installer app
             installPackage(ARCHIVE_INSTALLER_APK);
             // install a target app with a custom installer set
@@ -617,9 +620,6 @@ public class ArchiveTest {
 
             prepareDevice();
             LocalIntentSender archiveSender = new LocalIntentSender();
-
-            // adopt DELETE_PACKAGES permission
-            uiAutomation.adoptShellPermissionIdentity(Manifest.permission.DELETE_PACKAGES);
 
             mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME,
                     archiveSender.getIntentSender());
@@ -672,8 +672,6 @@ public class ArchiveTest {
             String command = String.format("pm install -r -t -g -i %s --pkg %s %s",
                     ARCHIVE_INSTALLER_APP_PACKAGE_NAME, ARCHIVE_APP_PACKAGE_NAME, ARCHIVE_APK);
             assertEquals("Success\n", SystemUtil.runShellCommand(command));
-        } finally {
-            uiAutomation.dropShellPermissionIdentity();
         }
     }
 

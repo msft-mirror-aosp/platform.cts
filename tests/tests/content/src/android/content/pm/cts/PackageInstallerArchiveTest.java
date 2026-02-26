@@ -515,7 +515,8 @@ public class PackageInstallerArchiveTest {
                                 () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
                                         new IntentSender((IIntentSender) mArchiveIntentSender))),
                         Manifest.permission.DELETE_PACKAGES);
-        assertThat(e).hasMessageThat().isEqualTo(PACKAGE_NAME + " is not installed.");
+        assertThat(e).hasMessageThat().isEqualTo(PACKAGE_NAME + " is not installed for user "
+                + UserHandle.myUserId() + ".");
     }
 
     @Test
