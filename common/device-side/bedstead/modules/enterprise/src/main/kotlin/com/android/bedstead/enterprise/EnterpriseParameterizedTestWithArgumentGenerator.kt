@@ -22,7 +22,6 @@ import org.junit.runners.model.FrameworkMethod
 /**
  * [ParameterizedTestWithArgumentGenerator] for bedstead-enterprise.
  */
-@Suppress("unused")
 class EnterpriseParameterizedTestWithArgumentGenerator : ParameterizedTestWithArgumentGenerator {
 
     override fun handleFrameworkMethod(
