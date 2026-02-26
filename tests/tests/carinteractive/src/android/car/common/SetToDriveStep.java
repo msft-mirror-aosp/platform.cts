@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.car.compat;
+package android.car.common;
 
 import com.android.interactive.annotations.NotFullyAutomated;
 import com.android.interactive.steps.ActAndWaitStep;
 
 @NotFullyAutomated(reason = "Needs to change drive state")
-public class DriveForDurationStep extends ActAndWaitStep {
-    public DriveForDurationStep() {
-        super(
-                "Please drive for at least 5 seconds.",
-                CarAlternativeControlsTest::hasMovedForDuration);
+public class SetToDriveStep extends ActAndWaitStep {
+    public SetToDriveStep() {
+        super("Set the gear to Drive.", BaseDrivingTest::isMovingState);
     }
 }
