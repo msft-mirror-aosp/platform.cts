@@ -207,7 +207,7 @@ private class Impl<A : Activity>(
         val bundle = ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle()
         val intent =
             Intent(Intent.ACTION_VIEW).setClass(instrumentation.targetContext, type)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
         SystemUtil.runWithShellPermissionIdentity({
             @Suppress("UNCHECKED_CAST")
             activity = instrumentation.startActivitySync(intent, bundle) as A
@@ -215,11 +215,14 @@ private class Impl<A : Activity>(
         waitUntilActivityReadyForInput()
 
         assertEquals(
-            "Ensure the activity is launched on the virtual display", displayId, activity.displayId
+            "Ensure the activity is launched on the virtual display",
+            displayId,
+            activity.displayId
         )
         assertEquals(
             "Ensure the activity is configured with the same density as the virtual display",
-             DENSITY, activity.resources.displayMetrics.densityDpi
+             DENSITY,
+            activity.resources.displayMetrics.densityDpi
         )
     }
 
