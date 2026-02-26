@@ -25,7 +25,7 @@ java_defaults {
     srcs: ["src/**/*.java"],
     asset_dirs: ["assets"],
     sdk_version: "current",
-    min_sdk_version: "4",
+    min_sdk_version: "21",
     aapt_include_all_resources: true,
     libs: ["CtsSplitApp"],
 }
@@ -34,8 +34,8 @@ android_test_helper_app {
     name: "CtsSplitAppFeatureWarm",
     defaults: ["CtsSplitAppFeatureWarmDefaults"],
     package_splits: [
-        "v7",
         "v23",
+        "v30",
     ],
     certificate: ":cts-testkey1",
     aaptflags: [
@@ -57,7 +57,7 @@ android_test_helper_app {
     name: "CtsNeedSplitFeatureWarm",
     defaults: ["CtsSplitAppFeatureWarmDefaults"],
     manifest: "needsplit/AndroidManifest.xml",
-    package_splits: ["v7"],
+    package_splits: ["v23"],
     certificate: ":cts-testkey1",
     aaptflags: [
         "--version-code 100",
@@ -89,7 +89,7 @@ android_test_helper_app {
     ],
     asset_dirs: ["revision_a/assets"],
     manifest: "revision_a/AndroidManifest.xml",
-    package_splits: ["v7"],
+    package_splits: ["v23"],
     certificate: ":cts-testkey1",
     aaptflags: [
         "--version-code 100",
