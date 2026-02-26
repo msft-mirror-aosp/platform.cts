@@ -8050,26 +8050,27 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_workload_mpc">Current Media Performance Class: </string>
     <string name="audio_workload_info">
         Tests the device\'s ability to handle switching from playing one sine wave to fifty sine
-        waves (simulating low to high audio workloads) without glitching.
+        waves (simulating low to high audio workloads) without glitching (xRun count = 0).
         \n\nTest Setup:
         \nEnsure the device\'s volume is turned on and set to an audible level.
         \n\nTest Process:
         \n1. Tap the "Start" button to begin the test.
-        \n2. Wait for 3 seconds for the test to complete.
+        \n2. Wait for the test to find the max number of voices without glitching.
         \n\nTest Criteria:
-        \nThe test passes if no glitches are detected (xRun count = 0).
-        For devices with Media Performance Class &gt;= 37, the test fails and the "Pass" button
-        is disabled if the xRun count is &gt; 0.
+        \nThe test fails and the "Pass" button
+        is disabled if Max Voices Reached is less than Min Voices Required.
         \n\n(see <a href="https://source.android.com/compatibility/android-cdd#2271_media">Android CDD § 2.2.7.1 Media [5.6/H-3-1]</a>)
     </string>
     <string name="audio_workload_instructions">
         \n1. Tap the \"Start\" button.
-        \n2. Wait for 3 seconds for the test to complete.
-        \n3. For MPC &gt;= 37, test fails on glitch.
+        \n2. Wait for the test to find the max number of voices without glitching.
+        \n3. Test fails if the required value is not reached.
     </string>
     <string name="audio_workload_cpu_affinity">CPUs:</string>
     <string name="audio_workload_start_audio">Start</string>
     <string name="audio_workload_stop_audio">Stop</string>
+    <string name="audio_workload_max_voices_reached">Max Voices Reached: </string>
+    <string name="audio_workload_min_voices_required">Min Voices Required: </string>
 
     <!-- Strings for the Drag and Drop Test test activity -->
     <string name="test_category_window_manager_tests">Android XR</string>

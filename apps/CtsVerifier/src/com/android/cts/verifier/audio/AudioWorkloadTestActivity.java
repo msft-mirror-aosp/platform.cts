@@ -20,11 +20,10 @@ import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 import static java.lang.Math.max;
 
+import android.graphics.Color;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.AudioCPUWorkloadRequirement;
-
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -42,10 +41,10 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.MultiLineChart;
+import com.google.common.collect.ImmutableSortedMap;
 import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.rules.TestName;
 
 @CddTest(requirements = "5.6/H-3-1")
@@ -69,28 +68,48 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
     private static final String KEY_HEAR_WORKLOAD = "hear_workload";
     private static final String KEY_CPU_AFFINITY_MASK = "cpu_affinity_mask";
     private static final String KEY_XRUN_COUNT_THRESHOLD = "xrun_count_threshold";
+    private static final String KEY_ALTERNATE_NUM_VOICES_THRESHOLD =
+            "alternate_num_voices_threshold";
+    private static final String KEY_ALTERNATE_NUM_VOICES_INCREMENT =
+            "alternate_num_voices_increment";
+    private static final String KEY_DEFAULT_ALTERNATE_NUM_VOICES =
+            "default_alternate_num_voices";
     private static final String KEY_MEDIA_PERFORMANCE_CLASS = "media_performance_class";
+    private static final String KEY_BEST_ALTERNATE_NUM_VOICES = "best_alternate_num_voices";
+    private static final String KEY_BEST_FINAL_XRUN_COUNT = "best_final_xrun_count";
+    private static final String KEY_BEST_TEST_DURATION_MS = "best_test_duration_ms";
 
-    private List<CallbackStatus> mCallbackStatuses = null;
     private boolean mTestRunning = false;
-    private long mTestDurationMs = 0;
-    private int mFinalXRunCount = 0;
-    private boolean mWorkloadTestPassed = false;
+    private TestResult mBestResult = null;
+    private TestResult mLastResult = null;
+    private int mAlternateNumVoices = DEFAULT_ALTERNATE_NUM_VOICES;
+    private boolean mUserStopped = false;
+    private Handler mHandler = new Handler(Looper.getMainLooper());
 
     public final TestName mTestName = new TestName();
     private static final int MEDIA_PERFORMANCE_CLASS = Build.VERSION.MEDIA_PERFORMANCE_CLASS;
     private static final boolean CLAIMS_MEDIA_PERFORMANCE = MEDIA_PERFORMANCE_CLASS != 0;
     public static final int MPC_CINNAMON_BUN = Build.VERSION_CODES.CINNAMON_BUN;
     private static final int TARGET_DURATION_MS = 3000;
+    private static final int TEST_SLEEP_DURATION_MS = 2000;
     private static final int NUM_BURSTS = 2;
     private static final int NUM_VOICES = 1;
-    private static final int ALTERNATE_NUM_VOICES = 50;
+    private static final int DEFAULT_ALTERNATE_NUM_VOICES = 20;
+    private static final int ALTERNATE_VOICES_INCREMENT = 5;
     private static final int ALTERNATING_PERIOD_MS = 50;
     private static final boolean ENABLE_ADPF = true;
     private static final boolean ENABLE_ADPF_WORKLOAD_INCREASE = false;
     private static final boolean HEAR_WORKLOAD = false;
     private static final int CPU_AFFINITY_MASK = 0;
     private static final int XRUN_COUNT_THRESHOLD = 0;
+    private static final int ALTERNATE_NUM_VOICES_THRESHOLD =
+            Optional.ofNullable(
+                            ImmutableSortedMap.<Integer, Integer>naturalOrder()
+                                    .put(MPC_CINNAMON_BUN, 50)
+                                    .build()
+                                    .floorEntry(MEDIA_PERFORMANCE_CLASS))
+                    .map(Map.Entry::getValue)
+                    .orElse(0);
 
     // JNI load
     static {
@@ -107,6 +126,8 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
 
     private TextView mStreamInfoView;
     private TextView mCurrentStatusView;
+    private TextView mMaxVoicesReachedView;
+    private TextView mMinVoicesRequiredView;
     private MultiLineChart mMultiLineChart;
     private MultiLineChart.Trace mCpuLoadTrace;
     private MultiLineChart.Trace mWorkloadTrace;
@@ -173,7 +194,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
                         if (isRunning()) {
                             mHandler.postDelayed(runnableCode, SNIFFER_UPDATE_PERIOD_MSEC);
                         } else {
-                            stopTest();
+                            stopWorkloadTest();
                         }
                     }
                 };
@@ -215,7 +236,11 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
 
         mStreamInfoView = (TextView) findViewById(R.id.stream_info_view);
         mCurrentStatusView = (TextView) findViewById(R.id.current_status_view);
-
+        mMaxVoicesReachedView = (TextView) findViewById(R.id.max_voices_reached_value_view);
+        mMinVoicesRequiredView = (TextView) findViewById(R.id.min_voices_required_value_view);
+        if (mMinVoicesRequiredView != null) {
+            mMinVoicesRequiredView.setText(String.valueOf(ALTERNATE_NUM_VOICES_THRESHOLD));
+        }
         mMultiLineChart = (MultiLineChart) findViewById(R.id.multiline_chart);
         mCpuLoadTrace =
                 mMultiLineChart.createTrace(
@@ -267,11 +292,6 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
         reportLog.addValue(KEY_NUM_BURSTS, NUM_BURSTS, ResultType.NEUTRAL, ResultUnit.NONE);
         reportLog.addValue(KEY_NUM_VOICES, NUM_VOICES, ResultType.NEUTRAL, ResultUnit.NONE);
         reportLog.addValue(
-                KEY_ALTERNATE_NUM_VOICES,
-                ALTERNATE_NUM_VOICES,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-        reportLog.addValue(
                 KEY_ALTERNATING_PERIOD_MS,
                 ALTERNATING_PERIOD_MS,
                 ResultType.NEUTRAL,
@@ -291,36 +311,80 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
         reportLog.addValue(
+                KEY_ALTERNATE_NUM_VOICES_THRESHOLD,
+                ALTERNATE_NUM_VOICES_THRESHOLD,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_DEFAULT_ALTERNATE_NUM_VOICES,
+                DEFAULT_ALTERNATE_NUM_VOICES,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_ALTERNATE_NUM_VOICES_INCREMENT,
+                ALTERNATE_VOICES_INCREMENT,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
                 KEY_MEDIA_PERFORMANCE_CLASS,
                 MEDIA_PERFORMANCE_CLASS,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
 
         // Report results if test is run
-        if (mCallbackStatuses != null && !mCallbackStatuses.isEmpty()) {
+        if (mLastResult != null) {
+            reportLog.addValue(
+                    KEY_ALTERNATE_NUM_VOICES,
+                    mLastResult.alternateNumVoices,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
             reportLog.addValue(
                     KEY_FINAL_XRUN_COUNT,
-                    mFinalXRunCount,
+                    mLastResult.finalXRunCount,
                     ResultType.LOWER_BETTER,
                     ResultUnit.COUNT);
             reportLog.addValue(
-                    KEY_TEST_DURATION_MS, mTestDurationMs, ResultType.NEUTRAL, ResultUnit.MS);
+                    KEY_TEST_DURATION_MS,
+                    mLastResult.durationMs,
+                    ResultType.NEUTRAL,
+                    ResultUnit.MS);
+        }
+
+        if(mBestResult != null) {
+            reportLog.addValue(
+                    KEY_BEST_ALTERNATE_NUM_VOICES,
+                    mBestResult.alternateNumVoices,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+            reportLog.addValue(
+                    KEY_BEST_FINAL_XRUN_COUNT,
+                    mBestResult.finalXRunCount,
+                    ResultType.LOWER_BETTER,
+                    ResultUnit.COUNT);
+            reportLog.addValue(
+                    KEY_BEST_TEST_DURATION_MS,
+                    mBestResult.durationMs,
+                    ResultType.NEUTRAL,
+                    ResultUnit.MS);
         }
         reportLog.submit();
-
     }
 
     private void recordPerformanceClassTestResults() {
+        if (mBestResult == null) {
+            return;
+        }
+
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mTestName);
-        AudioCPUWorkloadRequirement audioWorkloadRequirement = Requirements.addR5_6__H_3_1().to(pce);
-        audioWorkloadRequirement.setUnderrunCount(mFinalXRunCount);
+        AudioCPUWorkloadRequirement audioWorkloadRequirement =
+                Requirements.addR5_6__H_3_1().to(pce);
+        audioWorkloadRequirement.setUnderrunCount(mBestResult.finalXRunCount);
+        audioWorkloadRequirement.setAlternateNumVoices(mBestResult.alternateNumVoices);
         pce.submitAndVerify();
     }
 
     private boolean hasRun() {
-        return mCallbackStatuses != null
-                && !mCallbackStatuses.isEmpty()
-                && mTestDurationMs >= TARGET_DURATION_MS;
+        return mBestResult != null && mBestResult.durationMs >= TARGET_DURATION_MS;
     }
 
     @Override
@@ -332,6 +396,15 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
     }
 
     public void startTest(View view) {
+        mAlternateNumVoices = DEFAULT_ALTERNATE_NUM_VOICES;
+        mUserStopped = false;
+        mBestResult = null;
+        mLastResult = null;
+        updateMaxVoicesView();
+        startWorkloadTest();
+    }
+
+    private void startWorkloadTest() {
         int result = open();
         if (result != OPERATION_SUCCESS) {
             showErrorToast("open failed! Error:" + result);
@@ -345,7 +418,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
                         TARGET_DURATION_MS,
                         NUM_BURSTS,
                         NUM_VOICES,
-                        ALTERNATE_NUM_VOICES,
+                        mAlternateNumVoices,
                         ALTERNATING_PERIOD_MS,
                         ENABLE_ADPF,
                         ENABLE_ADPF_WORKLOAD_INCREASE,
@@ -360,25 +433,28 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
 
         mStartButton.setEnabled(false);
         mStopButton.setEnabled(true);
-        mCallbackStatuses = null;
 
         mUpdateThread = new UpdateThread();
         mUpdateThread.start();
     }
 
     public void stopTest(View view) {
-        stopTest();
+        mUserStopped = true;
+        stopWorkloadTest();
     }
 
-    private void stopTest() {
+    private void stopWorkloadTest() {
         int result = stop();
         if (result != OPERATION_SUCCESS) {
             showErrorToast("stop failed! Error:" + result);
         }
 
-        mCallbackStatuses = getCallbackStatistics();
-        drawCallbackStatistics(mCallbackStatuses);
-        evaluateTestResults();
+        var callbackStatuses = getCallbackStatistics();
+        drawCallbackStatistics(callbackStatuses);
+        mLastResult = evaluateTestResults(callbackStatuses, mAlternateNumVoices);
+        if (mBestResult == null || (mLastResult != null && mLastResult.passed)) {
+            mBestResult = mLastResult;
+        }
 
         if (mUpdateThread != null) {
             mUpdateThread.stop();
@@ -390,6 +466,32 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
             return;
         }
 
+        if (!mUserStopped) {
+            if (mLastResult != null && mLastResult.passed) {
+                // Success
+                updateMaxVoicesView();
+                mAlternateNumVoices += ALTERNATE_VOICES_INCREMENT;
+                showToast(
+                        "Success with "
+                                + mLastResult.alternateNumVoices
+                                + ", starting "
+                                + mAlternateNumVoices);
+                mHandler.postDelayed(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!mUserStopped) startWorkloadTest();
+                            }
+                        },
+                        TEST_SLEEP_DURATION_MS);
+                return; // Don't finish test yet
+            } else if (mBestResult != null && mBestResult.passed) {
+                showToast("Max voices reached: " + mBestResult.alternateNumVoices);
+            } else {
+                showToast("Failed at " + mAlternateNumVoices);
+            }
+        }
+
         mStartButton.setEnabled(true);
         mStopButton.setEnabled(false);
 
@@ -397,18 +499,24 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
         updatePassButtonState();
     }
 
-    private void evaluateTestResults() {
-        mWorkloadTestPassed = false;
-        if (mCallbackStatuses != null && !mCallbackStatuses.isEmpty()) {
-            CallbackStatus firstCallbackStatus = mCallbackStatuses.get(0);
-            CallbackStatus lastCallbackStatus = mCallbackStatuses.get(mCallbackStatuses.size() - 1);
-            long durationNs = lastCallbackStatus.finishTimeNs - firstCallbackStatus.beginTimeNs;
-            mTestDurationMs =  durationNs / NANOS_PER_MILLI;
-            mFinalXRunCount = lastCallbackStatus.xRunCount;
-            mWorkloadTestPassed =
-                    (mTestDurationMs >= TARGET_DURATION_MS)
-                            && (mFinalXRunCount <= XRUN_COUNT_THRESHOLD);
+    private static record TestResult(
+            boolean passed, long durationMs, int finalXRunCount, int alternateNumVoices) {}
+
+    private static TestResult evaluateTestResults(
+            List<CallbackStatus> callbackStatuses, int alternateNumVoices) {
+        if (callbackStatuses == null || callbackStatuses.isEmpty()) {
+            return null;
         }
+
+        CallbackStatus firstCallbackStatus = callbackStatuses.get(0);
+        CallbackStatus lastCallbackStatus = callbackStatuses.get(callbackStatuses.size() - 1);
+        long durationNs = lastCallbackStatus.finishTimeNs - firstCallbackStatus.beginTimeNs;
+        long testDurationMs = durationNs / NANOS_PER_MILLI;
+        int finalXRunCount = lastCallbackStatus.xRunCount;
+        boolean workloadTestPassed =
+                (testDurationMs >= TARGET_DURATION_MS) && (finalXRunCount <= XRUN_COUNT_THRESHOLD);
+        return new TestResult(
+                workloadTestPassed, testDurationMs, finalXRunCount, alternateNumVoices);
     }
 
     private void updatePassButtonState() {
@@ -421,8 +529,11 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
             getPassButton().setEnabled(false);
             return;
         }
-
-        getPassButton().setEnabled(mWorkloadTestPassed && isReportLogOkToPass());
+        boolean testPass =
+                mBestResult != null
+                        && mBestResult.alternateNumVoices >= ALTERNATE_NUM_VOICES_THRESHOLD
+                        && mBestResult.passed;
+        getPassButton().setEnabled(testPass && isReportLogOkToPass());
     }
 
     private void drawCallbackStatistics(List<CallbackStatus> callbackStatuses) {
@@ -435,7 +546,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
             // Time between callbacks in nanoseconds.
             double expectedCallbackTimeSeconds = (double) getBufferSizeInFrames() / getSampleRate();
 
-            float maxWorkloadValue = max(NUM_VOICES, ALTERNATE_NUM_VOICES);
+            float maxWorkloadValue = max(NUM_VOICES, mAlternateNumVoices);
             for (CallbackStatus callbackStatus : callbackStatuses) {
                 if (firstTimeNs == 0) {
                     firstTimeNs = callbackStatus.beginTimeNs;
@@ -460,6 +571,16 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
                 String.format(
                         "burst: %d, sr: %d, buffer: %d",
                         getFramesPerBurst(), getSampleRate(), getBufferSizeInFrames()));
+    }
+
+    private void updateMaxVoicesView() {
+        if (mMaxVoicesReachedView != null) {
+            String maxVoices =
+                    mBestResult != null && mBestResult.alternateNumVoices > 0 && mBestResult.passed
+                            ? String.valueOf(mBestResult.alternateNumVoices)
+                            : "N/A";
+            mMaxVoicesReachedView.setText(maxVoices);
+        }
     }
 
     protected void showErrorToast(String message) {
