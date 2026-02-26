@@ -26,6 +26,7 @@ import static junit.framework.Assert.assertEquals;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -35,6 +36,7 @@ import android.app.PendingIntent;
 import android.hardware.radio.AccessNetwork;
 import android.hardware.radio.network.NetworkInfo;
 import android.hardware.radio.network.SatelliteTechnology;
+import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -51,6 +53,8 @@ import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
+import android.telephony.satellite.EnableRequestAttributes;
+import android.telephony.satellite.EnableResponse;
 import android.telephony.satellite.PlmnSatelliteConfig;
 import android.telephony.satellite.SatelliteManager;
 
@@ -80,6 +84,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -136,6 +141,80 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         if (!shouldTestSatelliteWithMockService()) return;
         sMockModemManager.setSatelliteTechnology(SLOT_ID_0, SatelliteTechnology.SAT_TECH_NONE);
         cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testEnableSatelliteForAutoAndByUser() throws Exception {
+        logd(TAG, "testEnableSatelliteForAutoAndByUser");
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+
+        // 1. Enable Satellite
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Enable Satellite");
+        requestSatelliteEnabled(subId, true);
+
+        // 2. Verify Enabled
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Verify if Auto Satellite is enabled");
+        verifySatelliteEnabledStatus(subId, true);
+
+        // 3. Disable Satellite
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Disable Satellite");
+        requestSatelliteEnabled(subId, false);
+
+        // 4. Verify Disabled
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Verify if Auto Satellite is disabled");
+        verifySatelliteEnabledStatus(subId, false);
+
+        // 5. Enable Satellite
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Enable Satellite by user");
+        requestSatelliteEnabled(subId, true);
+
+        // 6. Verify Enabled
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Verify if Auto Satellite is enabled");
+        verifySatelliteEnabledStatus(subId, true);
+    }
+
+    private void requestSatelliteEnabled(int subId, boolean enable) throws Exception {
+        EnableRequestAttributes attributes = new EnableRequestAttributes.Builder(enable)
+                .setConnectType(CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC)
+                .setSatelliteEnablementRequestReason(SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER)
+                .build();
+
+        LinkedBlockingQueue<Integer> resultQueue = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestEnabled(subId, attributes, getContext().getMainExecutor(),
+                resultQueue::offer);
+        Integer errorCode = resultQueue.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        assertNotNull("Timeout waiting for requestEnabled result", errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
+    }
+
+    private void verifySatelliteEnabledStatus(int subId, boolean expectedEnabled) throws Exception {
+        final AtomicReference<EnableResponse> enableResponse = new AtomicReference<>();
+        final AtomicReference<SatelliteManager.SatelliteException> exception = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<EnableResponse, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(EnableResponse result) {
+                        enableResponse.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException ex) {
+                        exception.set(ex);
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestIsEnabled(subId, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC,
+                getContext().getMainExecutor(), receiver);
+        assertTrue("Timeout waiting for requestIsEnabled result", latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        assertNull("requestIsEnabled failed with error: " + (exception.get() == null ? "" : exception.get().getErrorCode()), exception.get());
+        assertNotNull(enableResponse.get());
+        assertEquals(expectedEnabled, enableResponse.get().isEnabled());
     }
 
     @Test
