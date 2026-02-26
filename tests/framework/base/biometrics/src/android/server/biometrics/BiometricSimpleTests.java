@@ -212,12 +212,14 @@ public class BiometricSimpleTests extends BiometricTestBase {
         final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
-        try {
+        try (ActivitySession activitySession =
+                new ActivitySession(
+                        this,
+                        new ComponentName(
+                                WalletTestHelperConstants.PACKAGE_NAME,
+                                WalletTestHelperConstants.ACTIVITY_NAME))) {
             // Launch the wallet test helper activity and wait for the broadcast result intent.
-            launchActivity(
-                    new ComponentName(
-                            WalletTestHelperConstants.PACKAGE_NAME,
-                            WalletTestHelperConstants.ACTIVITY_NAME));
+            launchActivityAndWaitForResumed(activitySession);
             Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
@@ -275,13 +277,15 @@ public class BiometricSimpleTests extends BiometricTestBase {
         final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
-        try {
-            // Not granting the wallet role to the wallet test helper app. Directly launch the
-            // activity and wait for the broadcast result intent.
-            launchActivity(
-                    new ComponentName(
-                            WalletTestHelperConstants.PACKAGE_NAME,
-                            WalletTestHelperConstants.ACTIVITY_NAME));
+        try (ActivitySession activitySession =
+                new ActivitySession(
+                        this,
+                        new ComponentName(
+                                WalletTestHelperConstants.PACKAGE_NAME,
+                                WalletTestHelperConstants.ACTIVITY_NAME))) {
+            // Directly launch the wallet test helper activity without granting the wallet role
+            // to the wallet test helper app and wait for the broadcast result intent.
+            launchActivityAndWaitForResumed(activitySession);
             Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
@@ -328,12 +332,14 @@ public class BiometricSimpleTests extends BiometricTestBase {
         final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
-        try {
+        try (ActivitySession activitySession =
+                new ActivitySession(
+                        this,
+                        new ComponentName(
+                                WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME,
+                                WalletTestHelperConstants.ACTIVITY_NAME))) {
             // Launch the wallet test helper activity and wait for the broadcast result intent.
-            launchActivity(
-                    new ComponentName(
-                            WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME,
-                            WalletTestHelperConstants.ACTIVITY_NAME));
+            launchActivityAndWaitForResumed(activitySession);
             Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
@@ -381,12 +387,14 @@ public class BiometricSimpleTests extends BiometricTestBase {
         final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
-        try {
+        try (ActivitySession activitySession =
+                new ActivitySession(
+                        this,
+                        new ComponentName(
+                                WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME,
+                                WalletTestHelperConstants.ACTIVITY_NAME))) {
             // Launch the wallet test helper activity and wait for the broadcast result intent.
-            launchActivity(
-                    new ComponentName(
-                            WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME,
-                            WalletTestHelperConstants.ACTIVITY_NAME));
+            launchActivityAndWaitForResumed(activitySession);
             Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
