@@ -490,7 +490,7 @@ public class ShareIdentityTest {
 
     @Test
     @CddTest(requirement = "3.1/C-0-1")
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_IDENTITY_FOR_RESULT)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_LAUNCHING_IDENTITY_FOR_RESULT)
     public void testShareIdentity_startActivityForResult_identityAvailableToActivity()
             throws Exception {
         // When an app launches an activity with startActivityForResult, the launching app's
@@ -512,7 +512,7 @@ public class ShareIdentityTest {
 
     @Test
     @CddTest(requirement = "3.1/C-0-1")
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_IDENTITY_FOR_RESULT)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_LAUNCHING_IDENTITY_FOR_RESULT)
     public void testShareIdentity_startActivityForResultForwarded_identityNotAvailable()
             throws Exception {
         // While startActivityForResult will implicitly share the launching app's identity, if a
@@ -878,7 +878,7 @@ public class ShareIdentityTest {
                 "android.app.ComponentCaller#getPackage"
             })
     @CddTest(requirement = "3.1/C-0-1")
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_IDENTITY_FOR_RESULT)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_IMPLICIT_SHARE_LAUNCHING_IDENTITY_FOR_RESULT)
     public void
             testActivityInitialCallerShareIdentity_startActivityForResult_identityNotAvailableToActivity()
                     throws Exception {
