@@ -121,9 +121,9 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testSingleLaunch() throws Exception {
-        launchActivityAndWait(FirstActivity.class);
+        launchActivityAndWait(NoRecreateFirstActivity.class);
 
-        TransitionVerifier.assertLaunchSequence(FirstActivity.class, getTransitionLog());
+        TransitionVerifier.assertLaunchSequence(NoRecreateFirstActivity.class, getTransitionLog());
     }
 
     @Test
@@ -394,12 +394,12 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testLaunchAndDestroy() throws Exception {
-        final Activity activity = launchActivityAndWait(FirstActivity.class);
+        final Activity activity = launchActivityAndWait(NoRecreateFirstActivity.class);
 
         activity.finish();
         waitAndAssertActivityStates(state(activity, ON_DESTROY));
 
-        assertLaunchAndDestroySequence(FirstActivity.class, getTransitionLog());
+        assertLaunchAndDestroySequence(NoRecreateFirstActivity.class, getTransitionLog());
     }
 
     @Test
@@ -421,7 +421,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         // Run activity start manually (without using instrumentation) to make it async and measure
         // time from the request correctly.
         // TODO verify
-        final Launcher launcher = new Launcher(NoDisplayActivity.class)
+        final Launcher launcher = new Launcher(NoRecreateNoDisplayActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setExtraFlags(EXTRA_LAUNCH_ACTIVITY, EXTRA_FINISH_IN_ON_CREATE)
                 .setExpectedState(ON_DESTROY)
@@ -430,16 +430,17 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
             launcher.setExtraFlags(EXTRA_NEW_TASK);
         }
         launcher.launch();
-        waitAndAssertActivityStates(state(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED));
+        waitAndAssertActivityStates(
+                state(NoRecreateCallbackTrackingActivity.class, ON_TOP_POSITION_GAINED));
 
         assertEntireSequence(Arrays.asList(
-                transition(NoDisplayActivity.class, ON_CREATE),
-                transition(CallbackTrackingActivity.class, ON_CREATE),
-                transition(CallbackTrackingActivity.class, ON_START),
-                transition(CallbackTrackingActivity.class, ON_POST_CREATE),
-                transition(CallbackTrackingActivity.class, ON_RESUME),
-                transition(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED),
-                transition(NoDisplayActivity.class, ON_DESTROY)),
+                transition(NoRecreateNoDisplayActivity.class, ON_CREATE),
+                transition(NoRecreateCallbackTrackingActivity.class, ON_CREATE),
+                transition(NoRecreateCallbackTrackingActivity.class, ON_START),
+                transition(NoRecreateCallbackTrackingActivity.class, ON_POST_CREATE),
+                transition(NoRecreateCallbackTrackingActivity.class, ON_RESUME),
+                transition(NoRecreateCallbackTrackingActivity.class, ON_TOP_POSITION_GAINED),
+                transition(NoRecreateNoDisplayActivity.class, ON_DESTROY)),
                 getTransitionLog(), "trampolineLaunch");
     }
 
@@ -617,7 +618,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         final ActivityMonitor resultMonitor = getInstrumentation().addMonitor(
                 ResultActivity.class.getName(), null /* result */, false /* block */);
 
-        new Launcher(LaunchForwardResultActivity.class)
+        new Launcher(NoRecreateLaunchForwardResultActivity.class)
                 .setExpectedState(ON_STOP)
                 .setNoInstance()
                 .launch();
@@ -625,7 +626,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         final Activity resultActivity = getInstrumentation()
                 .waitForMonitorWithTimeout(resultMonitor, 5000);
         getInstrumentation().runOnMainSync(resultActivity::finish);
-        waitAndAssertActivityStates(state(LaunchForwardResultActivity.class,
+        waitAndAssertActivityStates(state(NoRecreateLaunchForwardResultActivity.class,
                 ON_TOP_POSITION_GAINED));
 
         // verify the result have sent back to original activity
@@ -634,13 +635,13 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                         ON_TOP_POSITION_GAINED, ON_TOP_POSITION_LOST, ON_PAUSE, ON_STOP,
                         ON_RESTART, ON_START, ON_ACTIVITY_RESULT, ON_RESUME,
                         ON_TOP_POSITION_GAINED);
-        assertSequence(LaunchForwardResultActivity.class, getTransitionLog(),
+        assertSequence(NoRecreateLaunchForwardResultActivity.class, getTransitionLog(),
                 expectedSequence, "becomingVisibleResumed");
     }
 
     @Test
     public void testOnActivityResult() throws Exception {
-        new Launcher(LaunchForResultActivity.class)
+        new Launcher(NoRecreateLaunchForResultActivity.class)
                 .customizeIntent(LaunchForResultActivity.forwardFlag(
                         EXTRA_FINISH_IN_ON_RESUME,
                         EXTRA_SKIP_TOP_RESUMED_STATE))
@@ -650,13 +651,13 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         final List<String> expectedSequence =
                 Arrays.asList(ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME,
                         ON_PAUSE, ON_ACTIVITY_RESULT, ON_RESUME);
-        waitForActivityTransitions(LaunchForResultActivity.class, expectedSequence);
+        waitForActivityTransitions(NoRecreateLaunchForResultActivity.class, expectedSequence);
 
         // TODO(b/79218023): First activity might also be stopped before getting result.
         final List<String> sequenceWithStop =
                 Arrays.asList(ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME,
                         ON_PAUSE, ON_STOP, ON_RESTART, ON_START, ON_ACTIVITY_RESULT, ON_RESUME);
-        assertSequenceMatchesOneOf(LaunchForResultActivity.class, getTransitionLog(),
+        assertSequenceMatchesOneOf(NoRecreateLaunchForResultActivity.class, getTransitionLog(),
                 Arrays.asList(expectedSequence, sequenceWithStop), "activityResult");
     }
 
@@ -665,8 +666,9 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         final ActivityMonitor resultMonitor = getInstrumentation().addMonitor(
                 ResultActivity.class.getName(), null /* result */, false /* block */);
         final ActivityMonitor launchMonitor = getInstrumentation().addMonitor(
-                LaunchForResultActivity.class.getName(), null/* result */, false /* block */);
-        new Launcher(LaunchForResultActivity.class)
+                NoRecreateLaunchForResultActivity.class.getName(),
+                null/* result */, false /* block */);
+        new Launcher(NoRecreateLaunchForResultActivity.class)
                 // TODO (b/127741025) temporarily use setNoInstance, because startActivitySync will
                 // cause launch timeout when more than 2 activities start consecutively.
                 .setNoInstance()
@@ -691,10 +693,10 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
             expectedSequences = Arrays.asList(ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME,
                     ON_PAUSE, ON_STOP, ON_RESTART, ON_START, ON_ACTIVITY_RESULT, ON_RESUME);
         }
-        waitForActivityTransitions(LaunchForResultActivity.class, expectedSequences);
+        waitForActivityTransitions(NoRecreateLaunchForResultActivity.class, expectedSequences);
 
-        assertSequence(LaunchForResultActivity.class, getTransitionLog(), expectedSequences,
-                "activityResult");
+        assertSequence(NoRecreateLaunchForResultActivity.class, getTransitionLog(),
+                expectedSequences, "activityResult");
     }
 
     @Test
@@ -873,19 +875,20 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
     @Test
     public void testOnNewIntent() throws Exception {
         // Launch a singleTop activity
-        launchActivityAndWait(SingleTopActivity.class);
+        launchActivityAndWait(NoRecreateSingleTopActivity.class);
 
-        TransitionVerifier.assertLaunchSequence(SingleTopActivity.class, getTransitionLog());
+        TransitionVerifier.assertLaunchSequence(NoRecreateSingleTopActivity.class,
+                getTransitionLog());
 
         // Try to launch again
         getTransitionLog().clear();
-        new Launcher(SingleTopActivity.class)
+        new Launcher(NoRecreateSingleTopActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setNoInstance()
                 .launch();
 
         // Verify that the first activity was paused, new intent was delivered and resumed again
-        assertSequence(SingleTopActivity.class, getTransitionLog(),
+        assertSequence(NoRecreateSingleTopActivity.class, getTransitionLog(),
                 Arrays.asList(ON_TOP_POSITION_LOST, ON_PAUSE, ON_NEW_INTENT, ON_RESUME,
                         ON_TOP_POSITION_GAINED), "newIntent");
     }
@@ -893,8 +896,9 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
     @Test
     public void testOnNewIntentFromHidden() throws Exception {
         // Launch a singleTop activity
-        final Activity singleTopActivity = launchActivityAndWait(SingleTopActivity.class);
-        TransitionVerifier.assertLaunchSequence(SingleTopActivity.class, getTransitionLog());
+        final Activity singleTopActivity = launchActivityAndWait(NoRecreateSingleTopActivity.class);
+        TransitionVerifier.assertLaunchSequence(NoRecreateSingleTopActivity.class,
+                getTransitionLog());
         final int windowingModeOfSingleTopActivity =
                 mWmState.getWindowState(singleTopActivity.getComponentName()).getWindowingMode();
 
@@ -925,7 +929,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Try to launch again
         getTransitionLog().clear();
-        new Launcher(SingleTopActivity.class)
+        new Launcher(NoRecreateSingleTopActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setNoInstance()
                 .setOptions(optionsForRelaunch)
@@ -943,14 +947,16 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
             expectedSequence = Arrays.asList(ON_RESTART, ON_START, ON_NEW_INTENT, ON_RESUME,
                     ON_TOP_POSITION_GAINED);
         }
-        assertSequence(SingleTopActivity.class, getTransitionLog(), expectedSequence, "newIntent");
+        assertSequence(NoRecreateSingleTopActivity.class, getTransitionLog(), expectedSequence,
+                "newIntent");
     }
 
     @Test
     public void testOnNewIntentFromPaused() throws Exception {
         // Launch a singleTop activity
-        final Activity singleTopActivity = launchActivityAndWait(SingleTopActivity.class);
-        TransitionVerifier.assertLaunchSequence(SingleTopActivity.class, getTransitionLog());
+        final Activity singleTopActivity = launchActivityAndWait(NoRecreateSingleTopActivity.class);
+        TransitionVerifier.assertLaunchSequence(NoRecreateSingleTopActivity.class,
+                getTransitionLog());
 
         // Launch translucent activity, which will make the first one paused.
         launchActivityAndWait(TranslucentActivity.class);
@@ -960,7 +966,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Try to launch again
         getTransitionLog().clear();
-        new Launcher(SingleTopActivity.class)
+        new Launcher(NoRecreateSingleTopActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP)
                 .setNoInstance()
                 .launch();
@@ -969,13 +975,14 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         // Verify that the new intent was delivered and resumed again
         final List<String> expectedSequence =
                 Arrays.asList(ON_NEW_INTENT, ON_RESUME, ON_TOP_POSITION_GAINED);
-        waitForActivityTransitions(SingleTopActivity.class, expectedSequence);
-        assertSequence(SingleTopActivity.class, getTransitionLog(), expectedSequence, "newIntent");
+        waitForActivityTransitions(NoRecreateSingleTopActivity.class, expectedSequence);
+        assertSequence(NoRecreateSingleTopActivity.class, getTransitionLog(), expectedSequence,
+                "newIntent");
     }
 
     @Test
     public void testFinishInOnCreate() throws Exception {
-        verifyFinishAtStage(ResultActivity.class, EXTRA_FINISH_IN_ON_CREATE,
+        verifyFinishAtStage(NoRecreateResultActivity.class, EXTRA_FINISH_IN_ON_CREATE,
                 Arrays.asList(ON_CREATE, ON_DESTROY), "onCreate");
     }
 
@@ -987,21 +994,21 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testFinishInOnStart() throws Exception {
-        verifyFinishAtStage(ResultActivity.class, EXTRA_FINISH_IN_ON_START,
+        verifyFinishAtStage(NoRecreateResultActivity.class, EXTRA_FINISH_IN_ON_START,
                 Arrays.asList(ON_CREATE, ON_START, ON_POST_CREATE, ON_STOP,
                         ON_DESTROY), "onStart");
     }
 
     @Test
     public void testFinishInOnStartNoDisplay() throws Exception {
-        verifyFinishAtStage(NoDisplayActivity.class, EXTRA_FINISH_IN_ON_START,
+        verifyFinishAtStage(NoRecreateNoDisplayActivity.class, EXTRA_FINISH_IN_ON_START,
                 Arrays.asList(ON_CREATE, ON_START, ON_POST_CREATE, ON_STOP,
                         ON_DESTROY), "onStart");
     }
 
     @Test
     public void testFinishInOnResume() throws Exception {
-        verifyFinishAtStage(ResultActivity.class, EXTRA_FINISH_IN_ON_RESUME,
+        verifyFinishAtStage(NoRecreateResultActivity.class, EXTRA_FINISH_IN_ON_RESUME,
                 true /* skipTopResumedState */,
                 Arrays.asList(ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME, ON_PAUSE, ON_STOP,
                         ON_DESTROY), "onResume");
@@ -1009,7 +1016,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testFinishInOnResumeNoDisplay() throws Exception {
-        verifyFinishAtStage(NoDisplayActivity.class, EXTRA_FINISH_IN_ON_RESUME,
+        verifyFinishAtStage(NoRecreateNoDisplayActivity.class, EXTRA_FINISH_IN_ON_RESUME,
                 true /* skipTopResumedState */,
                 Arrays.asList(ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME, ON_PAUSE, ON_STOP,
                         ON_DESTROY), "onResume");
@@ -1040,20 +1047,20 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testFinishInOnPause() throws Exception {
-        verifyFinishAtStage(ResultActivity.class, EXTRA_FINISH_IN_ON_PAUSE, "onPause",
-                TranslucentActivity.class);
+        verifyFinishAtStage(NoRecreateResultActivity.class, EXTRA_FINISH_IN_ON_PAUSE, "onPause",
+                NoRecreateTranslucentActivity.class);
     }
 
     @Test
     public void testFinishInOnStop() throws Exception {
-        verifyFinishAtStage(ResultActivity.class, EXTRA_FINISH_IN_ON_STOP, "onStop",
-                FirstActivity.class);
+        verifyFinishAtStage(NoRecreateResultActivity.class, EXTRA_FINISH_IN_ON_STOP, "onStop",
+                NoRecreateFirstActivity.class);
     }
 
     @Test
     public void testFinishBelowDialogActivity() throws Exception {
-        verifyFinishAtStage(ResultActivity.class, EXTRA_FINISH_IN_ON_PAUSE, "onPause",
-                TranslucentCallbackTrackingActivity.class);
+        verifyFinishAtStage(NoRecreateResultActivity.class, EXTRA_FINISH_IN_ON_PAUSE, "onPause",
+                NoRecreateTranslucentCallbackTrackingActivity.class);
     }
 
     private void verifyFinishAtStage(Class<? extends Activity> activityClass,
@@ -1115,7 +1122,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     private void testSingleTopActivityForResult(boolean newTask) throws Exception {
         // Launch a singleTop activity
-        final Launcher launcher = new Launcher(SingleTopActivity.class)
+        final Launcher launcher = new Launcher(NoRecreateSingleTopActivity.class)
                 .setExtraFlags(EXTRA_LAUNCH_ACTIVITY);
 
         if (newTask) {
@@ -1126,7 +1133,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Verify the result have been sent back to original activity
         assertTransitionObserved(getTransitionLog(),
-                transition(SingleTopActivity.class, ON_ACTIVITY_RESULT),"activityResult");
+                transition(NoRecreateSingleTopActivity.class, ON_ACTIVITY_RESULT),"activityResult");
     }
 
     @Test
@@ -1158,4 +1165,28 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         assertTransitionNotObserved(getTransitionLog(),
                 transition(FirstActivity.class, ON_USER_LEAVE_HINT),"userLeaveHint");
     }
+
+    public static class NoRecreateFirstActivity extends FirstActivity {}
+
+    public static class NoRecreateCallbackTrackingActivity extends CallbackTrackingActivity {}
+
+    public static class NoRecreateSingleTopActivity extends SingleTopActivity {}
+
+    public static class NoRecreateNoDisplayActivity extends NoDisplayActivity {
+        @Override
+        protected Class<? extends Activity> getLaunchActivityClass() {
+            return NoRecreateCallbackTrackingActivity.class;
+        }
+    }
+
+    public static class NoRecreateResultActivity extends ResultActivity {}
+
+    public static class NoRecreateLaunchForResultActivity extends LaunchForResultActivity {}
+
+    public static class NoRecreateTranslucentCallbackTrackingActivity
+            extends TranslucentCallbackTrackingActivity {}
+
+    public static class NoRecreateTranslucentActivity extends TranslucentActivity {}
+
+    public static class NoRecreateLaunchForwardResultActivity extends LaunchForwardResultActivity {}
 }
