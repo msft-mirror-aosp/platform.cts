@@ -31,10 +31,6 @@
                 <action android:name="android.app.privatecompute.DataMigrationToPccService" />
             </intent-filter>
         </service>
-        <service
-            android:name=".services.PccStorageWriteService"
-            android:exported="true"
-            android:privateComputeCore="true"/>
     </application>
 
     <instrumentation
@@ -42,3 +38,4 @@
         android:targetPackage="com.android.cts.pcc.featuretests"
         android:label="CTS tests for PCC features not instrumented to run in PCC" />
 </manifest>
+
