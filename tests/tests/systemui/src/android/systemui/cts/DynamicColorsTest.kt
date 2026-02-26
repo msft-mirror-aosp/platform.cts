@@ -111,8 +111,7 @@ private data class SwatchData(
 
 enum class GroupType {
     DARK,
-    LIGHT,
-    FIXED,
+    LIGHT
 }
 
 @Composable
@@ -121,15 +120,10 @@ private fun DynamicColorsTable(params: DynamicColorsTest.DynamicColorParams) {
     val allTokenNames = if (BasePaletteTest.isOldSpec) TOKEN_NAMES_2021 else TOKENS_NAMES_2025
 
     allTokenNames.forEach { tokenName ->
-        val typeGroup =
-            if (tokenName.contains("_fixed")) {
-                listOf(GroupType.FIXED)
-            } else {
-                listOf(GroupType.LIGHT, GroupType.DARK)
-            }
+        val typeGroup = listOf(GroupType.LIGHT, GroupType.DARK)
 
         typeGroup.forEach { type ->
-            val suffix = if (type != GroupType.FIXED) "_" + type.name.lowercase() else ""
+            val suffix = "_" + type.name.lowercase()
             val resourceName = "system_$tokenName$suffix"
             val colorValue = getColorByName(BasePaletteTest.context, resourceName).toArgb()
             val colorHct = Hct.fromInt(colorValue)
@@ -164,12 +158,20 @@ private fun DynamicColorsTable(params: DynamicColorsTest.DynamicColorParams) {
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
         )
-    val infoTextStyle =
-        TextStyle(fontSize = 20.sp, fontFamily = FontFamily.Monospace, textAlign = TextAlign.Center)
+
+    val infoTextStyle = TextStyle(
+        fontSize = 20.sp,
+        fontFamily = FontFamily.Monospace,
+        textAlign = TextAlign.Center
+    )
 
     val columnGap = 40.dp
     val swatchPadding = 15.dp
     val pagePadding = 60.dp
+
+    // Pad labels to the length of the longest possible string to ensure consistent table width
+    val styleLabel = ThemeStyle.name(params.style).padEnd(13)
+    val contrastLabel = params.contrastName.padEnd(6)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -178,11 +180,11 @@ private fun DynamicColorsTable(params: DynamicColorsTest.DynamicColorParams) {
     ) {
         AliasedText(
             text =
-                "${DynamicColorsTest::class.simpleName} - " +
+                "| ${DynamicColorsTest::class.simpleName} - " +
                     "spec: ${if (BasePaletteTest.isOldSpec) "2021" else "2025"} | " +
                     "seed: ${params.color} | " +
-                    "style: ${ThemeStyle.name(params.style)} | " +
-                    "contrast: ${params.contrastName}",
+                    "style: $styleLabel | " +
+                    "contrast: $contrastLabel |",
             color = titleTextColor,
             style = titleTextStyle,
             modifier = Modifier.fillMaxWidth(),
@@ -194,7 +196,6 @@ private fun DynamicColorsTable(params: DynamicColorsTest.DynamicColorParams) {
                     when (groupType) {
                         GroupType.DARK -> ComposeColor.DarkGray
                         GroupType.LIGHT -> ComposeColor.LightGray
-                        GroupType.FIXED -> ComposeColor.Gray
                     }
                 Column(
                     verticalArrangement = Arrangement.spacedBy(swatchPadding),
@@ -204,7 +205,7 @@ private fun DynamicColorsTable(params: DynamicColorsTest.DynamicColorParams) {
                             .background(groupBackgroundColor)
                             .padding(columnGap / 2),
                 ) {
-                    val swatches = groupedSwatches[groupType] ?: emptyList()
+                    val swatches = (groupedSwatches[groupType] ?: emptyList())
                     swatches.forEach { swatch ->
                         SwatchItem(swatch, headingTextStyle, infoTextStyle, swatchPadding)
                     }
@@ -303,12 +304,12 @@ private val TOKEN_NAMES_2021 =
 
 // tokens added in 2025
 private val TOKENS_NAMES_2025 =
-    TOKEN_NAMES_2021 +
+    (TOKEN_NAMES_2021 +
         listOf(
                 "error_dim",
                 "palette_key_color_error",
                 "primary_dim",
                 "secondary_dim",
                 "tertiary_dim",
-            )
+            ))
             .sorted()
