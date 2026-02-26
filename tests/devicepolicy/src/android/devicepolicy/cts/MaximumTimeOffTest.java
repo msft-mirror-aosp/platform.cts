@@ -26,28 +26,44 @@ import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.test
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.testng.Assert.assertThrows;
 
+import android.app.admin.RemoteDevicePolicyManager;
+import android.app.admin.flags.Flags;
+import android.app.time.TimeConfiguration;
+import android.app.time.TimeManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 
+import android.content.IntentFilter;
+import android.os.SystemClock;
+import android.os.UserHandle;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.policies.MaximumTimeOff;
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.NotificationsTest;
-import com.android.bedstead.enterprise.policies.MaximumTimeOff;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.notifications.NotificationListener;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
@@ -87,6 +103,62 @@ public final class MaximumTimeOffTest {
                     .setPersonalAppsSuspended(dpc(sDeviceState).componentName(), false);
             dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
                     dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
+        }
+    }
+
+    @Test
+    @PolicyAppliesTest(policy = MaximumTimeOff.class)
+    @NotificationsTest
+    @Postsubmit(reason = "New test")
+    @RequireFlagsEnabled(Flags.FLAG_CHECK_PERSONAL_SUSPENSION_FOR_ALL_PROFILES)
+    public void setManagedProfileMaximumTimeOff_timeAdjusted_personalAppsAreSuspended()
+            throws Exception {
+        RemoteDevicePolicyManager dpm = dpc(sDeviceState).devicePolicyManager();
+        boolean originalAutoTimeEnabled = dpm.getAutoTimeEnabled(dpc(sDeviceState).componentName());
+        long originalTime = 0;
+        try (TestAppInstance personalInstance = sTestApp.install()) {
+            setAutoTimeEnabled(false);
+
+            TestAppActivityReference activity = personalInstance.activities().any();
+
+            dpm.setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1800_000);
+            setQuietModeAndWaitForUserStopped(sDeviceState);
+
+            originalTime = System.currentTimeMillis();
+            setTime(originalTime + 3600_000);
+
+            assertPackageSuspended(sTestApp.pkg());
+
+            startActivityWithoutBlocking(activity);
+            assertBlockedByAdminDialogAppears();
+        } finally {
+            // Do this first to make sure to restore time first. The other methods can throw
+            // exceptions.
+            if (originalTime != 0) {
+                setTime(originalTime);
+            }
+            setAutoTimeEnabled(originalAutoTimeEnabled);
+            workProfile(sDeviceState).setQuietMode(false);
+            dpm.setPersonalAppsSuspended(dpc(sDeviceState).componentName(), false);
+        }
+    }
+
+    private void setTime(long epochMillis) {
+        try (PermissionContext p =
+                TestApis.permissions().withPermission("android.permission.SET_TIME")) {
+            SystemClock.setCurrentTimeMillis(epochMillis);
+        }
+    }
+
+    private void setAutoTimeEnabled(boolean enabled) {
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withPermission("android.permission.MANAGE_TIME_AND_ZONE_DETECTION")) {
+            TimeManager timeManager =
+                    TestApis.context().instrumentedContext().getSystemService(TimeManager.class);
+            timeManager.updateTimeConfiguration(
+                    new TimeConfiguration.Builder().setAutoDetectionEnabled(enabled).build());
         }
     }
 
@@ -170,5 +242,35 @@ public final class MaximumTimeOffTest {
                 .toBeEqualTo(true)
                 .errorOnFail()
                 .await();
+    }
+
+    private static void setQuietModeAndWaitForUserStopped(DeviceState deviceState)
+            throws InterruptedException {
+        int workProfileUser = workProfile(deviceState).id();
+        CountDownLatch latch = new CountDownLatch(1);
+        BroadcastReceiver receiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        if (Intent.ACTION_USER_STOPPED.equals(intent.getAction())) {
+                            int user = intent.getIntExtra(Intent.EXTRA_USER_HANDLE, -1);
+                            if (user == workProfileUser) {
+                                latch.countDown();
+                            }
+                        }
+                    }
+                };
+        TestApis.context()
+                .instrumentedContext()
+                .registerReceiver(receiver, new IntentFilter(Intent.ACTION_USER_STOPPED));
+        try {
+            workProfile(deviceState).setQuietMode(true);
+            boolean success = latch.await(30, TimeUnit.SECONDS);
+            assertWithMessage("Work profile did not enter quiet mode in 30 seconds")
+                    .that(success)
+                    .isTrue();
+        } finally {
+            TestApis.context().instrumentedContext().unregisterReceiver(receiver);
+        }
     }
 }
