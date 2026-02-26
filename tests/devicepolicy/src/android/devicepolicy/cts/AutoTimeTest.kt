@@ -157,7 +157,7 @@ class AutoTimeTest {
     }
 
     fun setPolicy(scope: Int, policy: Int) {
-        dpcDPM.setIntegerPolicy(policyIdentifier.getId(), scope, policy)
+        dpcDPM.setPolicy_integer(policyIdentifier, scope, policy)
     }
 
     // The DevicePolicyManager of the DPC.
