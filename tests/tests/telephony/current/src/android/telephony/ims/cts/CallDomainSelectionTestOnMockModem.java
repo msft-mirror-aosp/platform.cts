@@ -124,7 +124,8 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertTrue(sMockModemManager.connectMockModemService());
+        assertTrue(sMockModemManager.insertSimCard(sTestSlot, MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         sCallStateChangeCallbackHandlerThread = new HandlerThread("TelephonyManagerCallbackTest");
         sCallStateChangeCallbackHandlerThread.start();
