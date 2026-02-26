@@ -124,6 +124,7 @@ public class MultiUserTest {
     public void testAdditionalUser() {
         final UserReference currentUser = sDeviceState.initialUser();
         final UserReference additionalUser = additionalUser(sDeviceState);
+        additionalUser.setSetupComplete(true);
 
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();

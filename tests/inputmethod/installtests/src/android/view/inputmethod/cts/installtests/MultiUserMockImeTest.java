@@ -254,6 +254,7 @@ public final class MultiUserMockImeTest {
     public void testFullUserSwitching() throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
         final UserReference additionalUser = additionalUser(sDeviceState);
+        additionalUser.setSetupComplete(true);
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();
 
@@ -342,6 +343,7 @@ public final class MultiUserMockImeTest {
         final UserReference currentUser = sDeviceState.initialUser();
         final UserReference workUser = workProfile(sDeviceState, currentUser);
         final UserReference additionalUser = additionalUser(sDeviceState);
+        additionalUser.setSetupComplete(true);
         final int currentUserId = currentUser.id();
         final int workUserId = workUser.id();
         final int additionalUserId = additionalUser.id();
