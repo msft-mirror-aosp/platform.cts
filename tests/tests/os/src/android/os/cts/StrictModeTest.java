@@ -319,7 +319,7 @@ public class StrictModeTest {
 
         inspectViolation(
                 () ->
-                        ((HttpURLConnection) new URL("http://example.com/").openConnection())
+                        ((HttpURLConnection) new URL("http://android.com/").openConnection())
                                 .getResponseCode(),
                 info -> assertThat(info.getViolationClass())
                         .isAssignableTo(CleartextNetworkViolation.class));
@@ -338,7 +338,7 @@ public class StrictModeTest {
 
         assertNoViolation(
                 () ->
-                        ((HttpURLConnection) new URL("https://example.com/").openConnection())
+                        ((HttpURLConnection) new URL("https://android.com/").openConnection())
                                 .getResponseCode());
     }
 
@@ -434,7 +434,7 @@ public class StrictModeTest {
 
         inspectViolation(
                 () ->
-                        ((HttpURLConnection) new URL("http://example.com/").openConnection())
+                        ((HttpURLConnection) new URL("http://android.com/").openConnection())
                                 .getResponseCode(),
                 info -> assertThat(info.getViolationClass())
                         .isAssignableTo(UntaggedSocketViolation.class));
@@ -443,7 +443,7 @@ public class StrictModeTest {
                 () -> {
                     TrafficStats.setThreadStatsTag(0xDECAFBAD);
                     try {
-                        ((HttpURLConnection) new URL("http://example.com/").openConnection())
+                        ((HttpURLConnection) new URL("http://android.com/").openConnection())
                                 .getResponseCode();
                     } finally {
                         TrafficStats.clearThreadStatsTag();
@@ -464,7 +464,7 @@ public class StrictModeTest {
         assertNoViolation(
                 () -> {
                     TrafficStats.setThreadStatsTag(0xDECAFBAD);
-                    try (Socket socket = new Socket("example.com", 80)) {
+                    try (Socket socket = new Socket("android.com", 80)) {
                         socket.getOutputStream().close();
                     } finally {
                         TrafficStats.clearThreadStatsTag();
@@ -473,7 +473,7 @@ public class StrictModeTest {
 
         inspectViolation(
                 () -> {
-                    try (Socket socket = new Socket("example.com", 80)) {
+                    try (Socket socket = new Socket("android.com", 80)) {
                         socket.getOutputStream().close();
                     }
                 },
@@ -564,7 +564,7 @@ public class StrictModeTest {
 
         inspectViolation(
                 () -> {
-                    try (Socket socket = new Socket("example.com", 80)) {
+                    try (Socket socket = new Socket("android.com", 80)) {
                         socket.getOutputStream().close();
                     }
                 },
@@ -572,7 +572,7 @@ public class StrictModeTest {
                         .isAssignableTo(NetworkViolation.class));
         inspectViolation(
                 () ->
-                        ((HttpURLConnection) new URL("http://example.com/").openConnection())
+                        ((HttpURLConnection) new URL("http://android.com/").openConnection())
                                 .getResponseCode(),
                 info -> assertThat(info.getViolationClass())
                         .isAssignableTo(NetworkViolation.class));
@@ -785,7 +785,7 @@ public class StrictModeTest {
         try {
             inspectViolation(
                     () ->
-                            ((HttpURLConnection) new URL("http://example.com/").openConnection())
+                            ((HttpURLConnection) new URL("http://android.com/").openConnection())
                                     .getResponseCode(),
                     info -> assertThat(info.getViolationClass())
                             .isAssignableTo(CleartextNetworkViolation.class));
