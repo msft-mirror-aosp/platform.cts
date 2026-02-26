@@ -293,10 +293,17 @@ public class BasicBluetoothGattTest {
     private void associateDevice() {
         int userId = mContext.getUser().getIdentifier();
         String packageName = mContext.getOpPackageName();
-        runShellCommand(
-                String.format(
-                        "cmd companiondevice associate %d %s %s",
-                        userId, packageName, TEST_DEVICE_ADDRESS));
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice associate %d %s --mac-address %s",
+                            userId, packageName, TEST_DEVICE_ADDRESS));
+        } else {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice associate %d %s %s",
+                            userId, packageName, TEST_DEVICE_ADDRESS));
+        }
         String output = runShellCommand("dumpsys companiondevice");
         assertThat(output).contains(packageName);
         assertThat(output).ignoringCase().contains(TEST_DEVICE_ADDRESS);
@@ -305,9 +312,16 @@ public class BasicBluetoothGattTest {
     private void removeAssociation() {
         int userId = mContext.getUser().getIdentifier();
         String packageName = mContext.getOpPackageName();
-        runShellCommand(
-                String.format(
-                        "cmd companiondevice disassociate %d %s %s",
-                        userId, packageName, TEST_DEVICE_ADDRESS));
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice disassociate %d %s --mac-address %s",
+                            userId, packageName, TEST_DEVICE_ADDRESS));
+        } else {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice disassociate %d %s %s",
+                            userId, packageName, TEST_DEVICE_ADDRESS));
+        }
     }
 }

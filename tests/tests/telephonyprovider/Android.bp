@@ -27,6 +27,7 @@ android_test {
         enabled: false,
     },
     static_libs: [
+        "android.companion.flags-aconfig-java",
         "compatibility-device-util-axt",
         "androidx.test.rules",
         "androidx.test.core",
@@ -47,7 +48,7 @@ android_test {
         "general-tests",
     ],
     sdk_version: "test_current",
-    data : [
+    data: [
         ":TestSmsRetrieverApp",
     ],
 }
