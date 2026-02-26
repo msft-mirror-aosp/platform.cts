@@ -34,12 +34,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
@@ -56,7 +54,6 @@ import org.json.JSONObject;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -88,9 +85,8 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 
     private AudioManager mAudioManager;
-    private RecyclerView mDeviceListView;
-    private DeviceAdapter mDeviceAdapter;
-    private List<DeviceData> mDeviceList;
+    private LinearLayout mDeviceListLayout;
+    private List<AudioDeviceTestHost> mTestHosts;
     private AudioDeviceCallback mAudioDeviceCallback;
     private TextView mFinalResultsText;
 
@@ -129,8 +125,7 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         getPassButton().setEnabled(false);
 
         mAudioManager = getSystemService(AudioManager.class);
-        mDeviceListView = findViewById(R.id.device_list);
-        mDeviceListView.setLayoutManager(new LinearLayoutManager(this));
+        mDeviceListLayout = findViewById(R.id.device_list_layout);
 
         mFinalResultsText = findViewById(R.id.final_test_result_text);
 
@@ -169,14 +164,28 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
     }
 
     private void setupDeviceList() {
-        mDeviceList = new ArrayList<>();
+        if (mTestHosts == null) {
+            mTestHosts = new ArrayList<>();
+            for (int deviceType : REQUIRED_DEVICES) {
+                mTestHosts.add(new AudioDeviceTestHost(deviceType));
+            }
+
+            mDeviceListLayout.removeAllViews();
+            LayoutInflater inflater = getLayoutInflater();
+            for (AudioDeviceTestHost host : mTestHosts) {
+                View view = host.inflate(inflater, mDeviceListLayout);
+                mDeviceListLayout.addView(view);
+            }
+        }
+
         Set<Integer> supportedDeviceTypes =
                 mAudioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
         List<AudioDeviceInfo> availableDevices = mAudioManager.getAvailableCommunicationDevices();
-        Set<Integer> processedDeviceTypes = new HashSet<>();
 
-        // Add supported devices in order.
-        for (int deviceType : REQUIRED_DEVICES) {
+        for (AudioDeviceTestHost host : mTestHosts) {
+            DeviceData deviceData = host.mDeviceData;
+            int deviceType = host.getDeviceType();
+
             boolean isSupported = supportedDeviceTypes.contains(deviceType);
             AudioDeviceInfo deviceInfo =
                     availableDevices.stream()
@@ -190,33 +199,26 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                             ? getDescriptiveDeviceName(deviceInfo)
                             : getDeviceName(deviceType);
 
-            mDeviceList.add(
-                    new DeviceData(
-                            name,
-                            deviceType,
-                            getDeviceInstruction(deviceType),
-                            isSupported,
-                            isAvailable));
-            processedDeviceTypes.add(deviceType);
-        }
-
-        if (mDeviceAdapter == null) {
-            mDeviceAdapter = new DeviceAdapter(mDeviceList);
-            mDeviceListView.setAdapter(mDeviceAdapter);
-        } else {
-            mDeviceAdapter.setDeviceData(mDeviceList);
-            mDeviceAdapter.notifyDataSetChanged();
+            deviceData.mName = name;
+            deviceData.mIsSupported = isSupported;
+            deviceData.mIsAvailable = isAvailable;
+            if (!isSupported) {
+                deviceData.mTestResult = TestResult.NOT_SUPPORTED;
+            }
+            host.updateView();
         }
 
         if (!hasMoreThanOneDeviceToTest()) {
-            mDeviceListView.setVisibility(View.GONE);
+            mDeviceListLayout.setVisibility(View.GONE);
+        } else {
+            mDeviceListLayout.setVisibility(View.VISIBLE);
         }
         updatePassButton(); // Update pass button state after setting up the device list.
     }
 
     private boolean hasMoreThanOneDeviceToTest() {
-        return mDeviceList != null
-                && mDeviceList.stream().filter(DeviceData::isSupported).count() > 1;
+        return mTestHosts != null
+                && mTestHosts.stream().filter(h -> h.mDeviceData.isSupported()).count() > 1;
     }
 
     private String getDeviceName(int deviceType) {
@@ -248,22 +250,18 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         };
     }
 
-    private void runTest(DeviceData deviceData) {
+    private void runTest(AudioDeviceTestHost host) {
+        DeviceData deviceData = host.mDeviceData;
         if (!deviceData.mIsSupported) {
             setTestResult(
-                    deviceData,
+                    host,
                     getString(R.string.audio_communication_latency_not_supported),
                     TestResult.NOT_SUPPORTED);
             return;
         }
 
         deviceData.mTestResult = TestResult.RUNNING;
-        int position = mDeviceList.indexOf(deviceData);
-        if (position >= 0) {
-            mDeviceAdapter.notifyItemChanged(position);
-        } else {
-            mDeviceAdapter.notifyDataSetChanged();
-        }
+        host.updateView();
         getPassButton().setEnabled(false);
 
         mExecutor.execute(
@@ -272,13 +270,13 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                             mAudioManager.getAvailableCommunicationDevices();
                     AudioDeviceInfo deviceToTest =
                             availableDevices.stream()
-                                    .filter(d -> d.getType() == deviceData.mDeviceType)
+                                    .filter(d -> d.getType() == host.getDeviceType())
                                     .findFirst()
                                     .orElse(null);
 
                     if (deviceToTest == null) {
                         setTestResult(
-                                deviceData,
+                                host,
                                 getString(
                                         R.string.audio_communication_latency_device_not_available),
                                 TestResult.FAIL);
@@ -292,12 +290,7 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                                 deviceData.mTestResultText = results.toString();
                                 deviceData.mTestResult =
                                         success ? TestResult.PASS : TestResult.FAIL;
-                                int finalPosition = mDeviceList.indexOf(deviceData);
-                                if (finalPosition >= 0) {
-                                    mDeviceAdapter.notifyItemChanged(finalPosition);
-                                } else {
-                                    mDeviceAdapter.notifyDataSetChanged();
-                                }
+                                host.updateView();
                                 updatePassButton();
                             });
                 });
@@ -313,29 +306,25 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         }
 
         boolean allTestsCompleted =
-                mDeviceList.stream()
+                mTestHosts.stream()
                         .allMatch(
-                                deviceData ->
-                                        deviceData.mTestResult == TestResult.PASS
-                                                || deviceData.mTestResult
+                                host ->
+                                        host.mDeviceData.mTestResult == TestResult.PASS
+                                                || host.mDeviceData.mTestResult
                                                         == TestResult.NOT_SUPPORTED);
 
         getPassButton().setEnabled(allTestsCompleted);
         mFinalResultsText.setVisibility(View.GONE);
     }
 
-    private void setTestResult(@Nullable DeviceData deviceData, String message, TestResult result) {
+    private void setTestResult(
+            @Nullable AudioDeviceTestHost host, String message, TestResult result) {
         mMainHandler.post(
                 () -> {
-                    if (deviceData != null) {
-                        deviceData.mTestResultText = message;
-                        deviceData.mTestResult = result;
-                        int position = mDeviceList.indexOf(deviceData);
-                        if (position >= 0) {
-                            mDeviceAdapter.notifyItemChanged(position);
-                        } else {
-                            mDeviceAdapter.notifyDataSetChanged();
-                        }
+                    if (host != null) {
+                        host.mDeviceData.mTestResultText = message;
+                        host.mDeviceData.mTestResult = result;
+                        host.updateView();
                     }
                     updatePassButton();
                 });
@@ -578,7 +567,8 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         TestStatus status = TestStatus.TEST_STATUS_PASSED;
         int notSupportedCount = 0;
 
-        for (DeviceData deviceData : mDeviceList) {
+        for (AudioDeviceTestHost host : mTestHosts) {
+            DeviceData deviceData = host.mDeviceData;
             boolean notSupported = deviceData.mTestResult == TestResult.NOT_SUPPORTED;
             if (notSupported) {
                 notSupportedCount++;
@@ -594,7 +584,7 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         }
         // For the cases when there is less than one supported device,
         // there are not enough devices to run the test thus not supported.
-        if (notSupportedCount >= mDeviceList.size() - 1) {
+        if (notSupportedCount >= mTestHosts.size() - 1) {
             status = TestStatus.TEST_STATUS_SKIPPED_UNSUPPORTED_DEVICE;
         }
         reportLog.addValues(KEY_LATENCY_RESULTS, resultsArray);
@@ -628,25 +618,20 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         }
 
         private void updateDeviceAvailability(AudioDeviceInfo[] devices, boolean isAvailable) {
-            List<Integer> changedIndices = new ArrayList<>();
+            boolean changed = false;
             for (AudioDeviceInfo newDevice : devices) {
-                for (int i = 0; i < mDeviceList.size(); i++) {
-                    DeviceData deviceData = mDeviceList.get(i);
-                    if (deviceData.mDeviceType == newDevice.getType()
+                for (AudioDeviceTestHost host : mTestHosts) {
+                    DeviceData deviceData = host.mDeviceData;
+                    if (host.getDeviceType() == newDevice.getType()
                             && deviceData.mIsAvailable != isAvailable) {
                         deviceData.mIsAvailable = isAvailable;
-                        changedIndices.add(i);
+                        changed = true;
+                        mMainHandler.post(host::updateView);
                     }
                 }
             }
-            if (!changedIndices.isEmpty()) {
-                mMainHandler.post(
-                        () -> {
-                            for (int index : changedIndices) {
-                                mDeviceAdapter.notifyItemChanged(index);
-                            }
-                            updatePassButton();
-                        });
+            if (changed) {
+                mMainHandler.post(AudioCommunicationLatencyActivity.this::updatePassButton);
             }
         }
     }
@@ -700,10 +685,10 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
 
     /** Data class to hold information for each audio device in the list. */
     private static class DeviceData {
-        final String mName;
         final int mDeviceType;
         final String mInstruction;
-        final boolean mIsSupported;
+        String mName;
+        boolean mIsSupported;
         boolean mIsAvailable;
         TestResult mTestResult = TestResult.NOT_TESTED;
         String mTestResultText = "";
@@ -712,20 +697,9 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         float mMinLatency;
         float mMaxLatency;
 
-        DeviceData(
-                String name,
-                int deviceType,
-                String instruction,
-                boolean isSupported,
-                boolean isAvailable) {
-            mName = name;
+        DeviceData(int deviceType, String instruction) {
             mDeviceType = deviceType;
             mInstruction = instruction;
-            mIsSupported = isSupported;
-            mIsAvailable = isAvailable;
-            if (!isSupported) {
-                mTestResult = TestResult.NOT_SUPPORTED;
-            }
         }
 
         boolean isSupported() {
@@ -763,59 +737,37 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         }
     }
 
-    /** RecyclerView Adapter for displaying the list of audio devices. */
-    private class DeviceAdapter extends RecyclerView.Adapter<DeviceViewHolder> {
-        private List<DeviceData> mDeviceData;
+    private class AudioDeviceTestHost {
+        final DeviceData mDeviceData;
+        View mView;
+        TextView mDeviceName;
+        TextView mDeviceInstructions;
+        Button mRunTestButton;
+        TextView mTestResultTextView;
 
-        DeviceAdapter(List<DeviceData> deviceData) {
-            setDeviceData(deviceData);
+        AudioDeviceTestHost(int deviceType) {
+            mDeviceData = new DeviceData(deviceType, getDeviceInstruction(deviceType));
         }
 
-        private void setDeviceData(List<DeviceData> deviceData) {
-            mDeviceData = deviceData;
+        int getDeviceType() {
+            return mDeviceData.mDeviceType;
         }
 
-        @NonNull
-        @Override
-        public DeviceViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view =
-                    LayoutInflater.from(parent.getContext())
-                            .inflate(R.layout.audio_comm_latency_list_item, parent, false);
-            return new DeviceViewHolder(view);
+        View inflate(LayoutInflater inflater, ViewGroup parent) {
+            mView = inflater.inflate(R.layout.audio_comm_latency_list_item, parent, false);
+            mDeviceName = mView.findViewById(R.id.device_name);
+            mDeviceInstructions = mView.findViewById(R.id.device_instructions);
+            mRunTestButton = mView.findViewById(R.id.run_test_button);
+            mTestResultTextView = mView.findViewById(R.id.test_result);
+
+            mRunTestButton.setOnClickListener(v -> runTest(this));
+            return mView;
         }
 
-        @Override
-        public void onBindViewHolder(DeviceViewHolder holder, int position) {
-            DeviceData currentDeviceData = mDeviceData.get(position);
-            holder.bind(currentDeviceData);
-        }
+        void updateView() {
+            mDeviceName.setText(mDeviceData.mName);
 
-        @Override
-        public int getItemCount() {
-            return mDeviceData.size();
-        }
-    }
-
-    /** ViewHolder for individual device items in the RecyclerView. */
-    private class DeviceViewHolder extends RecyclerView.ViewHolder {
-        private final TextView mDeviceName;
-        private final TextView mDeviceInstructions;
-        private final Button mRunTestButton;
-        private final TextView mTestResultTextView;
-
-        DeviceViewHolder(View itemView) {
-            super(itemView);
-            mDeviceName = itemView.findViewById(R.id.device_name);
-            mDeviceInstructions = itemView.findViewById(R.id.device_instructions);
-            mRunTestButton = itemView.findViewById(R.id.run_test_button);
-            mTestResultTextView = itemView.findViewById(R.id.test_result);
-        }
-
-        void bind(DeviceData currentDeviceData) {
-            mDeviceName.setText(currentDeviceData.mName);
-            mRunTestButton.setOnClickListener(v -> runTest(currentDeviceData));
-
-            if (!currentDeviceData.mIsSupported) {
+            if (!mDeviceData.mIsSupported) {
                 mRunTestButton.setVisibility(View.GONE);
                 mDeviceInstructions.setVisibility(View.GONE);
                 mTestResultTextView.setText(R.string.audio_communication_latency_not_supported);
@@ -824,22 +776,22 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
             }
 
             // Handle visibility and state based on availability and test result
-            if (currentDeviceData.mTestResult == TestResult.PASS) {
+            if (mDeviceData.mTestResult == TestResult.PASS) {
                 mRunTestButton.setVisibility(View.GONE);
                 mDeviceInstructions.setVisibility(View.GONE);
-            } else if (currentDeviceData.mIsAvailable) {
-                mRunTestButton.setEnabled(currentDeviceData.mTestResult != TestResult.RUNNING);
+            } else if (mDeviceData.mIsAvailable) {
+                mRunTestButton.setEnabled(mDeviceData.mTestResult != TestResult.RUNNING);
                 mRunTestButton.setVisibility(View.VISIBLE);
                 mDeviceInstructions.setVisibility(View.GONE);
             } else {
                 mRunTestButton.setEnabled(false);
                 mRunTestButton.setVisibility(View.VISIBLE);
-                mDeviceInstructions.setText(currentDeviceData.mInstruction);
+                mDeviceInstructions.setText(mDeviceData.mInstruction);
                 mDeviceInstructions.setVisibility(View.VISIBLE);
             }
 
             // Set test result text and visibility
-            switch (currentDeviceData.mTestResult) {
+            switch (mDeviceData.mTestResult) {
                 case NOT_TESTED -> mTestResultTextView.setVisibility(View.GONE);
                 case RUNNING -> {
                     mTestResultTextView.setText(R.string.audio_communication_latency_running);
@@ -849,19 +801,17 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                     mTestResultTextView.setText(
                             getString(
                                     R.string.audio_communication_latency_pass,
-                                    currentDeviceData.mTestResultText));
+                                    mDeviceData.mTestResultText));
                     mTestResultTextView.setVisibility(View.VISIBLE);
                 }
                 case FAIL -> {
                     mTestResultTextView.setText(
                             getString(
                                     R.string.audio_communication_latency_fail,
-                                    currentDeviceData.mTestResultText));
+                                    mDeviceData.mTestResultText));
                     mTestResultTextView.setVisibility(View.VISIBLE);
                 }
                 default -> {
-                    // Should be handled by the initial !currentDeviceData.isSupported check,
-                    // but included for completeness.
                     mTestResultTextView.setText(R.string.audio_communication_latency_not_supported);
                     mTestResultTextView.setVisibility(View.VISIBLE);
                 }
