@@ -199,6 +199,27 @@ class StopProcess() : AppFunction {
     }
 }
 
+class ReturnInstanceId(private val instanceId: String) : AppFunction {
+    override fun onExecuteAppFunction(
+        request: ExecuteAppFunctionRequest,
+        cancellationSignal: CancellationSignal,
+        callback: OutcomeReceiver<ExecuteAppFunctionResponse?, AppFunctionException?>,
+    ) {
+        val result: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyString(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE,
+                    instanceId
+                )
+                .build()
+        callback.onResult(ExecuteAppFunctionResponse(result))
+    }
+
+    companion object {
+        const val RETURN_INSTANCE_ID = "activityReturnInstanceId"
+    }
+}
+
 class CheckAttribution : AppFunction {
     override fun onExecuteAppFunction(
         request: ExecuteAppFunctionRequest,

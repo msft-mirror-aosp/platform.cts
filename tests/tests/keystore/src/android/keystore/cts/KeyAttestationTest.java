@@ -40,6 +40,8 @@ import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_RSA_OAEP;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1;
 import static android.security.keystore.KeyProperties.KEY_ALGORITHM_EC;
+import static android.security.keystore.KeyProperties.KEY_ALGORITHM_ML_DSA_65;
+import static android.security.keystore.KeyProperties.KEY_ALGORITHM_ML_DSA_87;
 import static android.security.keystore.KeyProperties.KEY_ALGORITHM_RSA;
 import static android.security.keystore.KeyProperties.PURPOSE_AGREE_KEY;
 import static android.security.keystore.KeyProperties.PURPOSE_DECRYPT;
@@ -703,6 +705,156 @@ public class KeyAttestationTest {
         } finally {
             keyStore.deleteEntry(keystoreAlias);
         }
+    }
+
+    @RequiresDevice
+    @Test
+    @ApiTest(apis = {"android.os.Build#VBMETA_PUBLIC_KEY_DIGEST"})
+    public void testMlDsaAttestation() throws Exception {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
+        if (!TestUtils.isAttestationSupported()) {
+            return;
+        }
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
+            return;
+        }
+
+        final @KeyProperties.PurposeEnum int[] purposes = {
+            PURPOSE_SIGN, PURPOSE_VERIFY, PURPOSE_SIGN | PURPOSE_VERIFY
+        };
+        final boolean[] devicePropertiesAttestationValues = {true, false};
+        final boolean[] includeValidityDatesValues = {true, false};
+        final String[] variants = new String[] {KEY_ALGORITHM_ML_DSA_65, KEY_ALGORITHM_ML_DSA_87};
+        final byte[][] challenges =
+                new byte[][] {
+                    new byte[0], // empty challenge
+                    "challenge".getBytes(), // short challenge
+                    new byte[128], // long challenge
+                };
+
+        for (int variantIndex = 0; variantIndex < variants.length; ++variantIndex) {
+            for (int challengeIndex = 0; challengeIndex < challenges.length; ++challengeIndex) {
+                for (int purposeIndex = 0; purposeIndex < purposes.length; ++purposeIndex) {
+                    for (boolean includeValidityDates : includeValidityDatesValues) {
+                        for (boolean devicePropertiesAttestation :
+                                devicePropertiesAttestationValues) {
+                            try {
+                                testMlDsaAttestation(
+                                        challenges[challengeIndex],
+                                        includeValidityDates,
+                                        variants[variantIndex],
+                                        purposes[purposeIndex],
+                                        devicePropertiesAttestation);
+                            } catch (Throwable e) {
+                                if (devicePropertiesAttestation
+                                        && isIgnorableIdAttestationFailure(e)) {
+                                    continue;
+                                }
+                                throw new Exception(
+                                        "Failed on variant "
+                                                + variantIndex
+                                                + " challenge "
+                                                + challengeIndex
+                                                + " purpose "
+                                                + purposeIndex
+                                                + " includeValidityDates "
+                                                + includeValidityDates
+                                                + " and devicePropertiesAttestation "
+                                                + devicePropertiesAttestation,
+                                        e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void testMlDsaAttestation(
+            byte[] challenge,
+            boolean includeValidityDates,
+            String variant,
+            @KeyProperties.PurposeEnum int purposes,
+            boolean devicePropertiesAttestation)
+            throws Exception {
+        Log.i(
+                TAG,
+                "ML-DSA key attestation with: challenge "
+                        + Arrays.toString(challenge)
+                        + " / includeValidityDates "
+                        + includeValidityDates
+                        + " / variant "
+                        + variant
+                        + " / purposes "
+                        + purposes
+                        + " / devicePropertiesAttestation "
+                        + devicePropertiesAttestation);
+
+        String keystoreAlias = "test_key";
+        Date startTime = new Date();
+        Date originationEnd = new Date(startTime.getTime() + ORIGINATION_TIME_OFFSET);
+        Date consumptionEnd = new Date(startTime.getTime() + CONSUMPTION_TIME_OFFSET);
+        KeyGenParameterSpec.Builder builder =
+                new KeyGenParameterSpec.Builder(keystoreAlias, purposes)
+                        .setAttestationChallenge(challenge)
+                        .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation);
+
+        if (includeValidityDates) {
+            builder.setKeyValidityStart(startTime)
+                    .setKeyValidityForOriginationEnd(originationEnd)
+                    .setKeyValidityForConsumptionEnd(consumptionEnd);
+        }
+
+        generateKeyPair(variant, builder.build());
+
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        try {
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
+            verifyCertificateChain(certificates, /* expectStrongBox= */ false);
+
+            X509Certificate attestationCert = (X509Certificate) certificates[0];
+            Attestation attestation = Attestation.loadFromCertificate(attestationCert);
+
+            checkMlDsaKeyDetails(attestationCert, attestation, variant);
+            checkKeyUsage(attestationCert, purposes, /* isStrongBox= */ false);
+            Set digests = ImmutableSet.of(KM_DIGEST_NONE);
+            checkKeyIndependentAttestationInfo(
+                    challenge,
+                    purposes,
+                    digests,
+                    startTime,
+                    includeValidityDates,
+                    devicePropertiesAttestation,
+                    attestation);
+        } finally {
+            keyStore.deleteEntry(keystoreAlias);
+        }
+    }
+
+    private void checkMlDsaKeyDetails(
+            X509Certificate attestationCert, Attestation attestation, String variant) {
+        // Note that getAlgorithm() returns "ML-DSA" regardless of variant.
+        assertThat(attestationCert.getPublicKey().getAlgorithm(), is("ML-DSA"));
+        AuthorizationList keyDetailsList;
+        AuthorizationList nonKeyDetailsList;
+        if (attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT
+                || attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_STRONG_BOX) {
+            keyDetailsList = attestation.getTeeEnforced();
+            nonKeyDetailsList = attestation.getSoftwareEnforced();
+        } else {
+            keyDetailsList = attestation.getSoftwareEnforced();
+            nonKeyDetailsList = attestation.getTeeEnforced();
+        }
+        assertNull(nonKeyDetailsList.getAlgorithm());
+        assertEquals(variant, keyDetailsList.mlDsaVariantAsString());
+
+        assertNull(keyDetailsList.getEcCurve());
+        assertNull(nonKeyDetailsList.getEcCurve());
+        assertNull(keyDetailsList.getRsaPublicExponent());
+        assertNull(nonKeyDetailsList.getRsaPublicExponent());
+        assertNull(keyDetailsList.getPaddingModes());
+        assertNull(nonKeyDetailsList.getPaddingModes());
     }
 
     @RequiresDevice

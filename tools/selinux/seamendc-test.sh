@@ -41,14 +41,10 @@ echo "(classorder (file))" >> definitions.cil
   test_sepolicy.cil definitions.cil
 
 # Diff the generated binary policies.
-./searchpolicy --allow --libpath libsepolwrap.so sepolicy+test-secilc.binary \
-  -s foo > secilc.diff
-./searchpolicy --allow --libpath libsepolwrap.so sepolicy+test-seamendc.binary \
-  -s foo > seamendc.diff
+./searchpolicy --allow sepolicy+test-secilc.binary -s foo > secilc.diff
+./searchpolicy --allow sepolicy+test-seamendc.binary -s foo > seamendc.diff
 diff secilc.diff seamendc.diff
 
-./searchpolicy --allow --libpath libsepolwrap.so sepolicy+test-secilc.binary \
-  -t foo > secilc.diff
-./searchpolicy --allow --libpath libsepolwrap.so sepolicy+test-seamendc.binary \
-  -t foo > seamendc.diff
+./searchpolicy --allow sepolicy+test-secilc.binary -t foo > secilc.diff
+./searchpolicy --allow sepolicy+test-seamendc.binary -t foo > seamendc.diff
 diff secilc.diff seamendc.diff

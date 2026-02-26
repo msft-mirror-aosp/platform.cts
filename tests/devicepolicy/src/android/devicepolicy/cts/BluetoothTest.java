@@ -281,6 +281,7 @@ public final class BluetoothTest {
     @Test
     @EnsureHasNoDpc
     @Postsubmit(reason = "new test")
+    @RequireFeature("android.software.managed_users")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void newManagedProfile_disallowBluetoothSharingIsSet() {
         try (RemoteDpc dpc = RemoteDpc.createWorkProfile()) {
@@ -292,6 +293,7 @@ public final class BluetoothTest {
     @Test
     @EnsureHasNoDpc
     @Postsubmit(reason = "new test")
+    @RequireFeature("android.software.managed_users")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void clearDisallowBluetoothSharing_newManagedProfile_disallowBluetoothSharingIsNotSet() {
         try (RemoteDpc dpc = RemoteDpc.createWorkProfile()) {
@@ -429,7 +431,7 @@ public final class BluetoothTest {
     @RequireRunOnInitialUser
     public void share_disallowBluetoothAndSharingRestrictionsAreNotSet_canShare() {
         Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
-      
+
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().current()))
@@ -448,7 +450,7 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void share_disallowBluetoothSharingRestrictionIsSet_canNotShare() {
         Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
-      
+
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().current()))
@@ -506,7 +508,7 @@ public final class BluetoothTest {
     @RequireNotHeadlessSystemUserMode(reason = "b/276405672 bluetooth restriction not enforced on secondary users")
     public void share_disallowBluetoothRestrictionIsSet_canNotShare() {
         Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
-        
+
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().system()))

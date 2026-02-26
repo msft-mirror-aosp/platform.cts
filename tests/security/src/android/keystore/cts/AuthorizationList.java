@@ -59,6 +59,7 @@ public class AuthorizationList {
     // Algorithm values.
     public static final int KM_ALGORITHM_RSA = 1;
     public static final int KM_ALGORITHM_EC = 3;
+    public static final int KM_ALGORITHM_ML_DSA = 4;
 
     // EC Curves
     public static final int KM_EC_CURVE_P224 = 0;
@@ -66,6 +67,10 @@ public class AuthorizationList {
     public static final int KM_EC_CURVE_P384 = 2;
     public static final int KM_EC_CURVE_P521 = 3;
     public static final int KM_EC_CURVE_25519 = 4;
+
+    // ML-DSA variants.
+    public static final int KM_ML_DSA_65 = 1;
+    public static final int KM_ML_DSA_87 = 2;
 
     // Padding modes.
     public static final int KM_PAD_NONE = 1;
@@ -111,6 +116,7 @@ public class AuthorizationList {
     private static final int KM_TAG_DIGEST = KM_ENUM_REP | 5;
     private static final int KM_TAG_PADDING = KM_ENUM_REP | 6;
     private static final int KM_TAG_EC_CURVE = KM_ENUM | 10;
+    private static final int KM_TAG_ML_DSA_VARIANT = KM_ENUM | 11;
     private static final int KM_TAG_RSA_PUBLIC_EXPONENT = KM_ULONG | 200;
     private static final int KM_TAG_RSA_OAEP_MGF_DIGEST = KM_ENUM | 203;
     private static final int KM_TAG_ROLLBACK_RESISTANCE = KM_BOOL | 303;
@@ -184,6 +190,7 @@ public class AuthorizationList {
     private Set<Integer> digests;
     private Set<Integer> paddingModes;
     private Integer ecCurve;
+    private Integer mlDsaVariant;
     private Long rsaPublicExponent;
     private Set<Integer> mRsaOaepMgfDigests;
     private Date activeDateTime;
@@ -317,6 +324,9 @@ public class AuthorizationList {
                     break;
                 case KM_TAG_EC_CURVE & KEYMASTER_TAG_TYPE_MASK:
                     ecCurve = Asn1Utils.getIntegerFromAsn1(value);
+                    break;
+                case KM_TAG_ML_DSA_VARIANT & KEYMASTER_TAG_TYPE_MASK:
+                    mlDsaVariant = Asn1Utils.getIntegerFromAsn1(value);
                     break;
                 case KM_TAG_USER_AUTH_TYPE & KEYMASTER_TAG_TYPE_MASK:
                     userAuthType = Asn1Utils.getIntegerFromAsn1(value);
@@ -501,6 +511,8 @@ public class AuthorizationList {
                 return "RSA";
             case KM_ALGORITHM_EC:
                 return "ECDSA";
+            case KM_ALGORITHM_ML_DSA:
+                return "ML-DSA";
             default:
                 return "Unknown";
         }
@@ -652,6 +664,25 @@ public class AuthorizationList {
                 return "secp521r1";
             case KM_EC_CURVE_25519:
                 return "CURVE_25519";
+            default:
+                return "unknown";
+        }
+    }
+
+    public Integer getMlDsaVariant() {
+        return mlDsaVariant;
+    }
+
+    public String mlDsaVariantAsString() {
+        if (mlDsaVariant == null) {
+            return "NULL";
+        }
+
+        switch (mlDsaVariant) {
+            case KM_ML_DSA_65:
+                return "ML-DSA-65";
+            case KM_ML_DSA_87:
+                return "ML-DSA-87";
             default:
                 return "unknown";
         }
@@ -836,6 +867,10 @@ public class AuthorizationList {
 
         if (ecCurve != null) {
             s.append("\nEC Curve: ").append(ecCurveAsString());
+        }
+
+        if (mlDsaVariant != null) {
+            s.append("\nML-DSA Variant: ").append(mlDsaVariantAsString());
         }
 
         String label = "\nRSA exponent: ";

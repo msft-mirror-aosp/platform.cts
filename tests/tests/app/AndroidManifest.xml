@@ -53,6 +53,9 @@
         <activity android:name=".ShareIdentityTest$ActivitySetResultSameUidShareIdentityTestActivity"
             android:exported="true" />
 
+        <activity android:name=".ShareIdentityTest$StartForResultTrampolineActivity"
+            android:exported="false" />
+
         <receiver android:name=".ShareIdentityTest$ShareIdentityTestReceiver"
                   android:exported="true">
             <intent-filter>

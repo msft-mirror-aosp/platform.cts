@@ -15,24 +15,31 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getIconSize;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 @CddTest(requirement="3.8.1/C-4-1")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerMiscTest extends ShortcutManagerCtsTestsBase {
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
 
-    }
-
+    @Test
     public void testMiscApis() throws Exception {
         ShortcutManager manager = getTestContext().getSystemService(ShortcutManager.class);
 
@@ -46,6 +53,7 @@ public class ShortcutManagerMiscTest extends ShortcutManagerCtsTestsBase {
         assertEquals(iconDimension, manager.getIconMaxHeight());
     }
 
+    @Test
     public void testExcludedFromFields() throws Exception {
         final ShortcutInfo s1 = makeShortcut("s1");
         final ShortcutInfo s2 = makeShortcutExcludedFromLauncher("s2");

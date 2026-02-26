@@ -58,6 +58,7 @@ java_defaults {
         "art-aconfig-flags-java-lib-host",
         "flag-junit-host",
     ],
+    enable_static_aconfig_pb: false,
 }
 
 java_test_host {

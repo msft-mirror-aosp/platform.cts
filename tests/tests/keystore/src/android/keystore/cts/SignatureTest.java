@@ -391,8 +391,8 @@ public class SignatureTest {
         Set<String> expectedSigAlgsLowerCase = new HashSet<String>(
                 Arrays.asList(TestUtils.toLowerCase(EXPECTED_SIGNATURE_ALGORITHMS)));
 
-        //TODO(b/233037333): Move this value to the EXPECTED_SIGNATURE_ALGORITHMS array, once
-        //we have confirmed key import is working for Ed25519 and have a key to import.
+        // TODO(b/485888511): Move this value to the EXPECTED_SIGNATURE_ALGORITHMS array, once
+        // we have confirmed key import is working for Ed25519 and have a key to import.
         expectedSigAlgsLowerCase.add("ed25519");
 
         if (expectMlDsa) {

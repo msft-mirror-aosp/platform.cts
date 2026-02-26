@@ -15,10 +15,15 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertExpectException;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
@@ -30,19 +35,24 @@ import android.os.Bundle;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.filters.Suppress;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
 @CddTest(requirement="3.8.1/C-2-3")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBase {
     private ComponentName mLaunchedActivity;
     private boolean mOnWatch;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         mLaunchedActivity = new ComponentName(getTestContext(), ShortcutLaunchedActivity.class);
@@ -97,6 +107,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
     /**
      * Start a single activity.
      */
+    @Test
     public void testStartSingle() {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 
@@ -123,6 +134,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
     /**
      * Start multiple activities.
      */
+    @Test
     public void testStartMultiple() {
         if (mOnWatch) {
             return; // b/109678268
@@ -173,6 +185,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
     /**
      * Non default launcher can't start.
      */
+    @Test
     public void testNonDefaultLauncherCantStart() {
 
         testStartSingle();
@@ -190,6 +203,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
 
     // TODO: b/288276271
     @Suppress
+    @Test
     public void testShortcutNoLongerExists() {
         if (mOnWatch) {
             return; // b/109678268
@@ -209,6 +223,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
                 ActivityNotFoundException.class);
     }
 
+    @Test
     public void testShortcutWrongId() {
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .setComponent(mLaunchedActivity)
@@ -228,6 +243,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
                 ActivityNotFoundException.class);
     }
 
+    @Test
     public void testPinnedShortcut_sameLauncher() {
         if (mOnWatch) {
             return; // b/109678268
@@ -253,6 +269,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
         assertShortcutStarts(mLauncherContext1, mPackageContext1, "s1", EXPECTED_ACTIONS_SINGLE);
     }
 
+    @Test
     public void testPinnedShortcut_differentLauncher() {
         if (mOnWatch) {
             return; // b/109678268
@@ -292,6 +309,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
         assertShortcutStarts(mLauncherContext1, mPackageContext1, "s1", EXPECTED_ACTIONS_SINGLE);
     }
 
+    @Test
     public void testStartSingleWithOptions() {
         testStartSingle();
 
@@ -304,6 +322,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
 
     }
 
+    @Test
     public void testStartMultipleWithOptions() {
         if (mOnWatch) {
             return; // b/109678268
@@ -324,6 +343,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
         assertEquals(null, i.getSourceBounds());
     }
 
+    @Test
     public void testNonExistent() {
         if (mOnWatch) {
             return; // b/109678268
@@ -350,6 +370,7 @@ public class ShortcutManagerStartShortcutTest extends ShortcutManagerCtsTestsBas
     /**
      * Un-exported activities in other packages can't be started.
      */
+    @Test
     public void testUnExported() {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 

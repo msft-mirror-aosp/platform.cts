@@ -254,6 +254,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_READ_SCREEN_CONTEXT] = 175
             APP_OPS[AppOpsManager.OPSTR_READ_RESTRICTED_MESSAGES] = 176
             APP_OPS[AppOpsManager.OPSTR_WRITE_RESTRICTED_MESSAGES] = 177
+            APP_OPS[AppOpsManager.OPSTR_ACCESS_HID] = 178
         }
     }
 }

@@ -743,6 +743,17 @@
                   android:configChanges="@integer/config_changes_assets_paths"
                   android:exported="true"/>
 
+        <activity android:name=".TransparentActivity"
+             android:resizeableActivity="true"
+             android:taskAffinity="nobody.but.TransparentActivity"
+             android:theme="@style/Theme.Transparent"
+             android:exported="true"/>
+        <activity android:name=".MovableTaskTrampolineActivity"
+             android:resizeableActivity="true"
+             android:taskAffinity="nobody.but.MovableTaskTrampolineActivity"
+             android:theme="@style/Theme.Transparent"
+             android:exported="true"/>
+
         <meta-data
             android:name="android.software.car.display_compatibility"
             android:value="false" />

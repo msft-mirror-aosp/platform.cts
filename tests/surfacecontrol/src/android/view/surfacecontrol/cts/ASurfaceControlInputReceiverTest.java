@@ -289,7 +289,7 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    @TestParameters({"{batched: true}", "{batched: false}"})
+    @TestParameters({"batched:true", "batched:false"})
     public void testTransferGestureFromHostToEmbeddedRemote_tap(boolean batched)
             throws InterruptedException, RemoteException {
 
@@ -326,7 +326,7 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    @TestParameters({"{batched: true}", "{batched: false}"})
+    @TestParameters({"batched:true", "batched:false"})
     public void testTransferGestureFromHostToEmbeddedRemote_threeActivePointers(boolean batched)
             throws InterruptedException, RemoteException {
 
@@ -417,7 +417,7 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    @TestParameters({"{batched: true}", "{batched: false}"})
+    @TestParameters({"batched:true", "batched:false"})
     public void testTransferGestureFromHostToEmbeddedRemote_transferAfterPointerDown(
             boolean batched) throws InterruptedException, RemoteException {
         final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
@@ -494,7 +494,7 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    @TestParameters({"{batched: true}", "{batched: false}"})
+    @TestParameters({"batched:true", "batched:false"})
     public void testTransferGestureFromHostToEmbeddedRemote_transferBackAndForthMultiplePointers(
             boolean batched) throws InterruptedException, RemoteException {
         final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();

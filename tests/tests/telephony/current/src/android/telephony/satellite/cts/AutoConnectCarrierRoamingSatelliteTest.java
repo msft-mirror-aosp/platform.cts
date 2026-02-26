@@ -56,6 +56,7 @@ import android.telephony.satellite.SatelliteManager;
 
 import androidx.annotation.RequiresPermission;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.nano.PersistAtomsProto;
 import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
@@ -80,6 +81,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
@@ -522,13 +524,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                                    validThresholds),
                             false));
-            overrideCarrierConfig(subId, null);
 
             int[] boundaryThresholds = new int[] {-140, -100, -60, -44};
             logd(TAG, "Testing boundary values: " + Arrays.toString(boundaryThresholds));
@@ -540,13 +540,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                                    validThresholds),
                             false));
-            overrideCarrierConfig(subId, null);
 
             int[] outOfBoundsLower = new int[] {-141, -110, -100, -90};
             logd(TAG, "Testing out of bounds lower: " + Arrays.toString(outOfBoundsLower));
@@ -558,13 +556,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                                    validThresholds),
                             true));
-            overrideCarrierConfig(subId, null);
 
             int[] outOfBoundsUpper = new int[] {-120, -110, -100, -43};
             logd(TAG, "Testing out of bounds upper: " + Arrays.toString(outOfBoundsUpper));
@@ -576,13 +572,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRP,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
+                                    validThresholds),
                             true));
-            overrideCarrierConfig(subId, null);
         } finally {
             // Final restoration to ensure defaults are set
             overrideCarrierConfig(subId, null);
@@ -625,13 +619,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                                    validThresholds),
                             false));
-            overrideCarrierConfig(subId, null);
 
             int[] boundaryThresholds = new int[] {-23, 0, 20, 40};
             logd(TAG, "Testing boundary values: " + Arrays.toString(boundaryThresholds));
@@ -643,13 +635,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                                    boundaryThresholds),
                             false));
-            overrideCarrierConfig(subId, null);
 
             int[] outOfBoundsLower = new int[] {-24, 0, 15, 35};
             logd(TAG, "Testing out of bounds lower: " + Arrays.toString(outOfBoundsLower));
@@ -661,13 +651,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                                    outOfBoundsLower),
                             true));
-            overrideCarrierConfig(subId, null);
 
             int[] outOfBoundsUpper = new int[] {-20, 0, 15, 41};
             logd(TAG, "Testing out of bounds upper: " + Arrays.toString(outOfBoundsUpper));
@@ -679,13 +667,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSSINR,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSSINR_THRESHOLDS_INT_ARRAY,
+                                    outOfBoundsUpper),
                             true));
-            overrideCarrierConfig(subId, null);
         } finally {
             // Final restoration to ensure defaults are set
             overrideCarrierConfig(subId, null);
@@ -728,13 +714,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                                    validThresholds),
                             false));
-            overrideCarrierConfig(subId, null);
 
             int[] boundaryThresholds = new int[] {-43, -20, 0, 20};
             logd(TAG, "Testing boundary values: " + Arrays.toString(boundaryThresholds));
@@ -746,13 +730,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                                    boundaryThresholds),
                             false));
-            overrideCarrierConfig(subId, null);
 
             int[] outOfBoundsLower = new int[] {-44, -30, -20, -10};
             logd(TAG, "Testing out of bounds lower: " + Arrays.toString(outOfBoundsLower));
@@ -764,13 +746,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                                    outOfBoundsLower),
                             true));
-            overrideCarrierConfig(subId, null);
 
             int[] outOfBoundsUpper = new int[] {-40, -30, -10, 21};
             logd(TAG, "Testing out of bounds upper: " + Arrays.toString(outOfBoundsUpper));
@@ -782,13 +762,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             assertTrue(
                     validateThresholds(
                             SignalThresholdInfo.SIGNAL_MEASUREMENT_TYPE_SSRSRQ,
-                            carrierConfigManager
-                                    .getConfigForSubId(subId)
-                                    .getIntArray(
-                                            CarrierConfigManager
-                                                    .KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY),
+                            pollIntArrayFromCarrierConfig(
+                                    subId,
+                                    CarrierConfigManager.KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY,
+                                    outOfBoundsUpper),
                             true));
-            overrideCarrierConfig(subId, null);
         } finally {
             // Final restoration to ensure defaults are set
             overrideCarrierConfig(subId, null);
@@ -1224,5 +1202,42 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             overrideCarrierConfig(subId, null);
             sMockModemManager.setSatelliteTechnology(SLOT_ID_0, SatelliteTechnology.SAT_TECH_NONE);
         }
+    }
+
+    /**
+     * Retrieves an integer array from Carrier Config, polling until it matches the expected values.
+     */
+    private int[] pollIntArrayFromCarrierConfig(int subId, String key, int[] expected) {
+        CarrierConfigManager carrierConfigManager =
+                getContext().getSystemService(CarrierConfigManager.class);
+        final AtomicReference<int[]> finalVal = new AtomicReference<>();
+        try {
+            // PollingCheck internally loops to check the condition.
+            // It does not register a new listener but simply checks the current state repeatedly.
+            PollingCheck.check(
+                    "CarrierConfig value did not match expected",
+                    TIMEOUT,
+                    () -> {
+                        PersistableBundle config = carrierConfigManager.getConfigForSubId(subId);
+                        if (config != null) {
+                            int[] val = config.getIntArray(key);
+                            if (val != null && Arrays.equals(val, expected)) {
+                                finalVal.set(val);
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+        } catch (AssertionError e) {
+            // Handle timeout to return the last read value.
+            PersistableBundle config = carrierConfigManager.getConfigForSubId(subId);
+            if (config != null) {
+                finalVal.set(config.getIntArray(key));
+            }
+        } catch (Exception e) {
+            // Should not happen, but if it does, log it.
+            logd(TAG, "pollIntArrayFromCarrierConfig: unexpected exception: " + e);
+        }
+        return finalVal.get();
     }
 }

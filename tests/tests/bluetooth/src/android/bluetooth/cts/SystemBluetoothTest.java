@@ -62,13 +62,11 @@ import com.android.compatibility.common.util.CddTest;
 
 import com.google.common.truth.Expect;
 
-import org.hamcrest.core.AllOf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.hamcrest.MockitoHamcrest;

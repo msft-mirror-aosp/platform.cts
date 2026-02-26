@@ -205,8 +205,18 @@ public class VirtualDeviceRule implements TestRule {
      */
     @NonNull
     public VirtualDevice createManagedVirtualDevice(@NonNull VirtualDeviceParams params) {
-        final VirtualDevice virtualDevice = mVirtualDeviceManager.createVirtualDevice(
-                mFakeAssociationRule.getAssociationInfo().getId(), params);
+        return createManagedVirtualDevice(params, mFakeAssociationRule.getAssociationInfo());
+    }
+
+    /**
+     * Creates a virtual device with the given params and association info that will be
+     * automatically closed when the test is torn down.
+     */
+    @NonNull
+    public VirtualDevice createManagedVirtualDevice(
+            @NonNull VirtualDeviceParams params, @NonNull AssociationInfo associationInfo) {
+        final VirtualDevice virtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(associationInfo.getId(), params);
         mTrackerRule.mVirtualDevices.add(virtualDevice);
         return virtualDevice;
     }

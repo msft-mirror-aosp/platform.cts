@@ -21,21 +21,31 @@ import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST;
 import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED;
 import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED_BY_ANY_LAUNCHER;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
+import static org.junit.Assert.assertTrue;
+
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 @CddTest(requirement="3.8.1/C-2-3")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerMultiLauncherTest extends ShortcutManagerCtsTestsBase {
     /**
      * Make sure diffrerent launchers will have different set of pinned shortcuts.
      */
+    @Test
     public void testPinShortcuts() {
         runWithCaller(mPackageContext1, () -> {
             enableManifestActivity("Launcher_manifest_1", true);

@@ -27,13 +27,11 @@ import static org.junit.Assert.assertThrows;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.Insets;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
 import android.view.View;
@@ -417,7 +415,6 @@ public class VirtualDisplayTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_STATUS_BAR_AND_INSETS)
     public void addStatusBarAndInsetsOnDisplayOwnedByVirtualDevice_succeeds() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
                 VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
@@ -440,7 +437,6 @@ public class VirtualDisplayTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_STATUS_BAR_AND_INSETS)
     public void addStatusBarAndInsetsOnDisplayOwnedByVirtualDevice_nonTrustedDisplay_throws() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
                 VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder());

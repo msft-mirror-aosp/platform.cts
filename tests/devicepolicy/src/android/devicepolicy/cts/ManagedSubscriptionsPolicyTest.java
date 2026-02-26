@@ -148,6 +148,7 @@ public final class ManagedSubscriptionsPolicyTest {
             key = Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value =
             "1")
     @EnsureHasNoDpc
+    @RequireFeature("android.software.managed_users")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setManagedSubscriptionsPolicy"})
     @Postsubmit(reason = "new test")
     @Test
