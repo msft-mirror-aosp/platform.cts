@@ -114,9 +114,6 @@ public class MotionCuesTest {
 
         mClientServiceComponent = new ComponentName(mContext, TestMotionCuesService.class);
         TestMotionCuesService.reset();
-
-        // Ensure we're in the primary user.
-        TestApis.users().primary().switchTo();
     }
 
     @After
