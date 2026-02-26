@@ -1154,11 +1154,16 @@ def _watch_live(device_id, file_path):
     watch_process: subprocess.Popen object for the watch live command.
   """
   cmd = f'adb -s {device_id} shell cmd media.camera watch live'.split(' ')
-  with open(file_path, 'w') as f:
+  f = open(file_path, 'w')
+  try:
     logging.debug('Starting watch live')
     watch_process = subprocess.Popen(
         cmd, stdout=f, stdin=subprocess.PIPE
     )
+    watch_process.stdout_file = f
+  except Exception:
+    f.close()
+    raise
   logging.debug('watch live output written to the file_path: %s', file_path)
   return watch_process
 
@@ -1177,6 +1182,23 @@ def start_cameraservice_watch(device_id, file_path, pkg_name):
   _watch_start(device_id, pkg_name)
   watch_process = _watch_live(device_id, file_path)
   watch_process.its_watch_process_device_id = device_id
+
+  # Wait for the watch live command to start outputting data
+  # This ensures that we don't miss initial events when the app starts
+  logging.debug('Waiting for watch live to be ready...')
+  end_time = time.time() + ACTIVITY_WAIT_TIME_SECONDS
+  while time.time() < end_time:
+    if os.path.exists(file_path):
+      with open(file_path, 'r', errors='ignore') as f:
+        content = f.read()
+        if 'Press return to exit' in content:
+          logging.debug('watch live is ready.')
+          time.sleep(2)  # Add buffer to ensure listener is fully hooked up
+          return watch_process
+    time.sleep(0.5)
+
+  logging.warning('Timed out waiting for watch live to be ready after %ds. '
+                  'Initial events might be missed.', ACTIVITY_WAIT_TIME_SECONDS)
   return watch_process
 
 
@@ -1286,6 +1308,8 @@ def get_default_camera_zoom_ratio(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if _CONTROL_ZOOM_RATIO_KEY in line:
+        if re.search(r'ns:\s+\d+', line):
+          continue
         if _RES_STR_PATTERN not in line:
           continue
         logging.debug('zoomRatio line: %s', line)
@@ -1322,6 +1346,8 @@ def get_default_camera_video_stabilization(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if 'videoStabilizationMode' in line:
+        if re.search(r'ns:\s+\d+', line):
+          continue
         logging.debug('videoStabilizationMode line: %s', line)
         values = line.split(':')
         value_str = values[-1]
@@ -1356,6 +1382,8 @@ def get_default_camera_ois_mode(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if 'opticalStabilizationMode' in line:
+        if re.search(r'ns:\s+\d+', line):
+          continue
         if _REQ_STR_PATTERN not in line:
           continue
         logging.debug('opticalStabilizationMode line: %s', line)
@@ -1399,6 +1427,8 @@ def get_default_camera_zoom_method(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if 'zoomMethod' in line:
+        if re.search(r'ns:\s+\d+', line):
+          continue
         logging.debug('zoomMethod line: %s', line)
         values = line.split(':')
         value_str = values[-1].strip()
@@ -1442,6 +1472,8 @@ def get_default_camera_crop_region(file_name):
   with open(file_name, 'r') as file:
     for line in file:
       if 'cropRegion' in line:
+        if re.search(r'ns:\s+\d+', line):
+          continue
         if _RES_STR_PATTERN not in line:
           continue
         logging.debug('cropRegion line: %s', line)
