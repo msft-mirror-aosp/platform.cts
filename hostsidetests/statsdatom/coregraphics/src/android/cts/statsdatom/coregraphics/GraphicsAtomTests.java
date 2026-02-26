@@ -68,7 +68,7 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Override
     public void setBuild(IBuildInfo buildInfo) {

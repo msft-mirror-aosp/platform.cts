@@ -42,6 +42,7 @@ java_defaults {
         ":CtsStatsdAtomApp",
     ],
     per_testcase_directory: true,
+    enable_static_aconfig_pb: true,
 }
 
 java_test_host {

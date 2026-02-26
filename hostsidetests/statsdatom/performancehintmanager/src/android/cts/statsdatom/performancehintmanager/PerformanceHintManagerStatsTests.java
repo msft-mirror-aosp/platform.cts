@@ -96,7 +96,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Before
     public void setUp() throws Exception {

@@ -47,7 +47,7 @@ public class CpuStatsTests extends BaseHostJUnit4Test implements IBuildReceiver 
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Before
     public void setUp() throws Exception {

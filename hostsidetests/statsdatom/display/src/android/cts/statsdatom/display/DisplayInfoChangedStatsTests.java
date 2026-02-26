@@ -69,7 +69,7 @@ public class DisplayInfoChangedStatsTests extends BaseHostJUnit4Test implements 
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private IBuildInfo mCtsBuild;
 
