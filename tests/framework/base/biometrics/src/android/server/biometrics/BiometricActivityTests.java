@@ -34,6 +34,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.WindowConfiguration;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
@@ -486,6 +487,9 @@ public class BiometricActivityTests extends BiometricTestBase {
 
     private void goToSettings() {
         SystemUtil.runShellCommand(
-                "am start -W --user current -a " + Settings.ACTION_SETTINGS);
+                "am start -W --user current --windowingMode "
+                        + WindowConfiguration.WINDOWING_MODE_FULLSCREEN
+                        + " -a "
+                        + Settings.ACTION_SETTINGS);
     }
 }
