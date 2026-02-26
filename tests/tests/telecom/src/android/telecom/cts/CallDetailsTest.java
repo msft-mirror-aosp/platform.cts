@@ -742,14 +742,17 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
 
         assertEquals(TelecomManager.PRIORITY_URGENT, exampleExtras.getInt(
                 TelecomManager.EXTRA_PRIORITY));
-        Location testGetLocation = exampleExtras.getParcelable(TelecomManager.EXTRA_LOCATION);
+        Location testGetLocation = TestUtils.getParcelable(exampleExtras,
+                TelecomManager.EXTRA_LOCATION, Location.class);
         assertEquals(latitude, testGetLocation.getLatitude(), 0);
         assertEquals(longitude, testGetLocation.getLongitude(), 0);
         assertEquals(true, exampleExtras.getBoolean(TelecomManager.EXTRA_HAS_PICTURE));
         assertEquals(testIncomingPictureUrl,
-                exampleExtras.getParcelable(TelecomManager.EXTRA_PICTURE_URI));
+                TestUtils.getParcelable(exampleExtras, TelecomManager.EXTRA_PICTURE_URI,
+                        Uri.class));
         assertEquals(testOutgoingPicture,
-                exampleExtras.getParcelable(TelecomManager.EXTRA_OUTGOING_PICTURE));
+                TestUtils.getParcelable(exampleExtras, TelecomManager.EXTRA_OUTGOING_PICTURE,
+                        ParcelUuid.class));
     }
 
     /**

@@ -95,8 +95,14 @@ filegroup {
     path: "aidl/",
 }
 
-android_test {
-    name: "CtsTelecomTestCases",
+filegroup {
+    name: "cts-telecom-test-manifest",
+    srcs: ["AndroidManifest.xml"],
+    visibility: ["//packages/modules/Telephony:__subpackages__"],
+}
+
+android_library {
+    name: "CtsTelecomTestLib",
     defaults: ["cts_defaults"],
     static_libs: [
         "compatibility-device-util-axt",
@@ -152,7 +158,27 @@ android_test {
         ],
     },
     sdk_version: "test_current",
-    min_sdk_version: "21",
+    manifest: "AndroidManifest.xml",
+    resource_dirs: ["res"],
+    jarjar_rules: "jarjar-rules.txt",
+    visibility: [
+        "//cts/tests/tests/telecom:__subpackages__",
+        "//packages/modules/Telephony:__subpackages__",
+    ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
+    min_sdk_version: "24",
+}
+
+android_test {
+    name: "CtsTelecomTestCases",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "CtsTelecomTestLib",
+    ],
+    sdk_version: "test_current",
+    min_sdk_version: "24",
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
@@ -193,6 +219,15 @@ java_library {
         "androidx.test.core",
         "androidx.test.rules",
     ],
+    visibility: [
+        "//cts/tests/tests/telecom:__subpackages__",
+        "//cts/tests/tests/telecom-apps:__subpackages__",
+        "//cts/tests/tests/telecom-cuj:__subpackages__",
+        "//cts/tests/tests/telecom2",
+        "//cts/tests/tests/telecom3",
+        "//cts/tests/tests/telephony:__subpackages__",
+        "//packages/modules/Telephony:__subpackages__",
+    ],
 }
 
 java_library {
@@ -206,6 +241,15 @@ java_library {
     libs: [
         "androidx.test.core",
         "androidx.test.rules",
+    ],
+    visibility: [
+        "//cts/tests/tests/telecom:__subpackages__",
+        "//cts/tests/tests/telecom-apps:__subpackages__",
+        "//cts/tests/tests/telecom-cuj:__subpackages__",
+        "//cts/tests/tests/telecom2",
+        "//cts/tests/tests/telecom3",
+        "//cts/tests/tests/telephony:__subpackages__",
+        "//packages/modules/Telephony:__subpackages__",
     ],
 }
 

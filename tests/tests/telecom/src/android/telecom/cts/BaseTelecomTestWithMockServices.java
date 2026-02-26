@@ -1362,7 +1362,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         }
         Uri number;
         if (extras.containsKey(TestUtils.EXTRA_PHONE_NUMBER)) {
-            number = extras.getParcelable(TestUtils.EXTRA_PHONE_NUMBER);
+            number = TestUtils.getParcelable(extras, TestUtils.EXTRA_PHONE_NUMBER, Uri.class);
         } else {
             number = createTestNumber();
         }
@@ -1386,8 +1386,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
      * @return Randomized phone number.
      */
     Uri createRandomTestNumber() {
-        return Uri.fromParts("tel", String.format("16%05d", new Random().nextInt(99999))
-                + String.format("%04d", new Random().nextInt(9999)), null);
+        return Uri.fromParts("tel", String.format(java.util.Locale.US, "16%05d", new Random().nextInt(99999))
+                + String.format(java.util.Locale.US, "%04d", new Random().nextInt(9999)), null);
     }
 
     public static Uri getTestNumber() {

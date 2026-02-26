@@ -38,12 +38,12 @@ public class MockPhoneAccountChangedReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (sIntentListener != null) {
             if (TelecomManager.ACTION_PHONE_ACCOUNT_REGISTERED.equals(intent.getAction())) {
-                sIntentListener.onPhoneAccountRegistered(intent.getParcelableExtra(
-                        TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE));
+                sIntentListener.onPhoneAccountRegistered(TestUtils.getParcelableExtra(intent,
+                        TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, PhoneAccountHandle.class));
             } else if (TelecomManager.ACTION_PHONE_ACCOUNT_UNREGISTERED.equals(
                     intent.getAction())) {
-                sIntentListener.onPhoneAccountUnregistered(intent.getParcelableExtra(
-                        TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE));
+                sIntentListener.onPhoneAccountUnregistered(TestUtils.getParcelableExtra(intent,
+                        TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, PhoneAccountHandle.class));
             }
         }
     }

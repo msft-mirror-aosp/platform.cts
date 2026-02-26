@@ -39,13 +39,18 @@ public class CtsPostCallActivity extends Activity {
     private static CountDownLatch sLatch = new CountDownLatch(1);
 
     @Override
+    @android.annotation.SuppressLint("UnsafeParcelApi")
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         final Intent intent = getIntent();
         Log.i(TAG, "onCreate: intent= " + intent);
         final String action = intent != null ? intent.getAction() : null;
         if (ACTION_POST_CALL.equals(action)) {
-            cachedHandle = intent.getParcelableExtra(EXTRA_HANDLE);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                cachedHandle = intent.getParcelableExtra(EXTRA_HANDLE, Uri.class);
+            } else {
+                cachedHandle = intent.getParcelableExtra(EXTRA_HANDLE);
+            }
             cachedDisconnectCause = intent
                     .getIntExtra(EXTRA_DISCONNECT_CAUSE, DEFAULT_DISCONNECT_CAUSE);
             sLatch.countDown();
