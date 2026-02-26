@@ -22,12 +22,15 @@ import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.test.AndroidTestCase;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
 /**
  * General Params tests.
  *
- * In particular, check Params objects' behavior.
+ * <p>In particular, check Params objects' behavior.
  */
 @AppModeFull(reason = "TODO: evaluate and port to instant")
+@FrameworkSpecificTest
 public class ParamsTest extends AndroidTestCase {
     private static final String TAG = "ParamsTest";
     private static final float FLOAT_TOLERANCE = .00001f;
