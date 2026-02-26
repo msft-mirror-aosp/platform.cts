@@ -21,7 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assume.assumeThat;
 
-import com.android.bedstead.harrier.annotations.enterprise.DevicePolicyRelevant;
+import com.android.bedstead.enterprise.annotations.DevicePolicyRelevant;
 import com.android.compatibility.common.util.CddTest;
 import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;

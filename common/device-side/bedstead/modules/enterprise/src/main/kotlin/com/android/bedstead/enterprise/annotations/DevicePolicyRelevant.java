@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations.enterprise;
+package com.android.bedstead.enterprise.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
