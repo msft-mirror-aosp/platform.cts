@@ -40,6 +40,7 @@ java_test_host {
         "modules-utils-build-testing",
     ],
     test_suites: [
+        "cts_root",
         "general-tests",
     ],
     device_common_data: [
