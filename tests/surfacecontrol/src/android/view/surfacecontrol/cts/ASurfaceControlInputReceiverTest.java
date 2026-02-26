@@ -36,6 +36,7 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setVisibility;
 
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withDownTime;
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -309,8 +310,10 @@ public class ASurfaceControlInputReceiverTest {
                 bounds.top + bounds.height() / 2);
         UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(coord);
 
-        hostVerifier.assertReceivedMotion(
-                withMotionAction(MotionEvent.ACTION_DOWN), "Failed to receive DOWN event on host");
+        MotionEvent hostDown =
+                hostVerifier.assertReceivedMotion(
+                        withMotionAction(MotionEvent.ACTION_DOWN),
+                        "Failed to receive DOWN event on host");
 
         mWm.transferTouchGesture(
                 mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
@@ -320,7 +323,87 @@ public class ASurfaceControlInputReceiverTest {
                 "Failed to receive CANCEL event on host");
 
         pointer.lift();
-        assertMotionEventOnWindowCenter(embeddedVerifier, bounds);
+        final Point centerCoordRelativeToWindow =
+                new Point(bounds.width() / 2, bounds.height() / 2);
+        embeddedVerifier.assertReceivedMotion(
+                allOf(
+                        withMotionAction(MotionEvent.ACTION_DOWN),
+                        withCoords(centerCoordRelativeToWindow, InputEventMatchersKt.EPSILON),
+                        withDownTime(hostDown.getDownTime())),
+                "Failed to receive touch");
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_UP), "Failed to receive Up event on embedded");
+    }
+
+    // The test verifies that the down event time remains the same even when the first pointer which
+    // started the touch sequence is lifted.
+    @Test
+    @TestParameters({"{batched: true}", "{batched: false}"})
+    public void testTransferGestureFromHostToEmbeddedRemote_downTimeSameAfterFirstPointerLifted(
+            boolean batched) throws InterruptedException, RemoteException {
+
+        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier embeddedVerifier =
+                new BlockingQueueEventVerifier(embeddedEvents);
+
+        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
+
+        RemoteSurfaceController helper =
+                testTransferGestureFromHostToEmbeddedRemoteSetup(
+                        batched, embeddedEvents, hostEvents);
+        Rect bounds = new Rect();
+        assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
+
+        Point[] startPoints =
+                new Point[] {
+                    new Point(bounds.left + 10, bounds.top + 10),
+                    new Point(bounds.left + 20, bounds.top + 10),
+                    new Point(bounds.left + 30, bounds.top + 10),
+                };
+
+        UinputTouchDevice.Pointer pointer0 = mTouchScreen.touchDown(startPoints[0]);
+        MotionEvent hostDown =
+                hostVerifier.assertReceivedMotion(
+                        withMotionAction(MotionEvent.ACTION_DOWN),
+                        "Failed to receive DOWN event on host");
+
+        UinputTouchDevice.Pointer pointer1 = mTouchScreen.touchDown(startPoints[1]);
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 1),
+                "Failed to receive POINTER_DOWN(1) event on host");
+
+        UinputTouchDevice.Pointer pointer2 = mTouchScreen.touchDown(startPoints[2]);
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 2),
+                "Failed to receive POINTER_DOWN(2) event on host");
+
+        // The pointer that started the sequence is lifted before transfer.
+        pointer0.lift();
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_UP, 0),
+                "Failed to receive POINTER_UP(0) event on host");
+
+        mWm.transferTouchGesture(
+                mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
+                helper.mEmbeddedTransferToken);
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_CANCEL),
+                "Failed to receive CANCEL event on host");
+        embeddedVerifier.assertReceivedMotion(
+                allOf(
+                        withMotionAction(MotionEvent.ACTION_DOWN),
+                        withDownTime(hostDown.getDownTime())),
+                "Failed to receive DOWN event on embedded with correct down time");
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 1),
+                "Failed to receive POINTER_DOWN(1) event on embedded");
+
+        pointer2.lift();
+        pointer1.lift();
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_UP, 1),
+                "Failed to receive POINTER_UP(1) event on embedded");
         embeddedVerifier.assertReceivedMotion(
                 withMotionAction(MotionEvent.ACTION_UP), "Failed to receive Up event on embedded");
     }
@@ -442,8 +525,10 @@ public class ASurfaceControlInputReceiverTest {
                 };
         UinputTouchDevice.Pointer pointer0 =
                 mTouchScreen.touchDown(startPoints[0].x, startPoints[0].y);
-        hostVerifier.assertReceivedMotion(
-                withMotionAction(MotionEvent.ACTION_DOWN), "Failed to receive DOWN event on host");
+        MotionEvent hostDown =
+                hostVerifier.assertReceivedMotion(
+                        withMotionAction(MotionEvent.ACTION_DOWN),
+                        "Failed to receive DOWN event on host");
 
         UinputTouchDevice.Pointer pointer1 =
                 mTouchScreen.touchDown(startPoints[1].x, startPoints[1].y);
@@ -456,8 +541,10 @@ public class ASurfaceControlInputReceiverTest {
                 helper.mEmbeddedTransferToken);
         // Embedded receives two pointers and host receives a cancel.
         embeddedVerifier.assertReceivedMotion(
-                withMotionAction(MotionEvent.ACTION_DOWN),
-                "Failed to receive DOWN event on embedded");
+                allOf(
+                        withMotionAction(MotionEvent.ACTION_DOWN),
+                        withDownTime(hostDown.getDownTime())),
+                "Failed to receive DOWN event on embedded with correct down time");
         embeddedVerifier.assertReceivedMotion(
                 withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 1),
                 "Failed to receive POINTER_DOWN event on embedded");
