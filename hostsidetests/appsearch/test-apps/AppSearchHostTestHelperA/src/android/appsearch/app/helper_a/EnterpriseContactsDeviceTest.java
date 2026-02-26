@@ -38,6 +38,7 @@ import static com.android.server.appsearch.contactsindexer.appsearchtypes.Person
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.appsearch.AppSearchAccount;
 import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.AppSearchManager;
 import android.app.appsearch.AppSearchSchema;
@@ -57,8 +58,11 @@ import android.net.Uri;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.appsearch.flags.Flags;
 import com.android.server.appsearch.contactsindexer.appsearchtypes.ContactPoint;
+import com.android.server.appsearch.contactsindexer.appsearchtypes.ContactRelation;
 import com.android.server.appsearch.contactsindexer.appsearchtypes.Person;
+import com.android.server.appsearch.contactsindexer.appsearchtypes.SignificantDate;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -66,6 +70,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -110,11 +115,23 @@ public class EnterpriseContactsDeviceTest {
                         DATABASE_NAME).build();
         AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
                 searchContext).get();
-        SetSchemaRequest setSchemaRequest = new SetSchemaRequest.Builder()
-                .addSchemas(ContactPoint.SCHEMA,
-                        Person.getSchema())
-                .addRequiredPermissionsForSchemaTypeVisibility(Person.SCHEMA_TYPE, permissions)
-                .setForceOverride(true).build();
+        List<AppSearchSchema> schemas = new ArrayList<>();
+        schemas.add(ContactPoint.getSchema());
+        schemas.add(Person.getSchema());
+        if (Flags.enableContactsIndexerExtendedProperties()) {
+            schemas.add(SignificantDate.SCHEMA);
+            schemas.add(ContactRelation.SCHEMA);
+            if (Flags.enableSchemasWipeoutAccountPropertyPaths()) {
+                schemas.add(AppSearchAccount.SCHEMA);
+            }
+        }
+        SetSchemaRequest setSchemaRequest =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schemas)
+                        .addRequiredPermissionsForSchemaTypeVisibility(
+                                Person.SCHEMA_TYPE, permissions)
+                        .setForceOverride(true)
+                        .build();
         db.setSchemaAsync(setSchemaRequest).get();
         // Index document
         Person person1 = createPersonBuilder("namespace", "123", "Sam1 Curran")
