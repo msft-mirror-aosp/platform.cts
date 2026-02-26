@@ -28,6 +28,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.swcodec.flags.Flags;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -39,6 +40,8 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.Preconditions;
 
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -64,6 +67,16 @@ public class EncoderTestXheAac {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
+    public void before() {
+        int apiLevel = Build.VERSION.SDK_INT;
+        if (Build.VERSION.PREVIEW_SDK_INT > 0) {
+            apiLevel++;
+        }
+        Assume.assumeTrue("Test only runs on Android C or later",
+                apiLevel >= Build.VERSION_CODES.BAKLAVA + 1);
+    }
 
     private MediaCodec createCodec() throws IOException {
         MediaFormat format = new MediaFormat();
