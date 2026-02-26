@@ -765,6 +765,7 @@ public class LauncherAppsTest {
     }
 
     @Test
+    @AppModeFull(reason = "Need special permission")
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresAppLockSupported
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -784,6 +785,7 @@ public class LauncherAppsTest {
     }
 
     @Test
+    @AppModeFull(reason = "Need special permission")
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresAppLockSupported
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -802,6 +804,7 @@ public class LauncherAppsTest {
     }
 
     @Test
+    @AppModeFull(reason = "Need special permission")
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresAppLockSupported
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -822,6 +825,7 @@ public class LauncherAppsTest {
     }
 
     @Test
+    @AppModeFull(reason = "Need special permission")
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresAppLockSupported
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -842,6 +846,7 @@ public class LauncherAppsTest {
     }
 
     @Test
+    @AppModeFull(reason = "Need special permission")
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresAppLockSupported
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -861,6 +866,7 @@ public class LauncherAppsTest {
     }
 
     @Test
+    @AppModeFull(reason = "Need special permission")
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresAppLockSupported
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
