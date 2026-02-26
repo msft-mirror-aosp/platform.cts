@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.SubscriptionPlan;
 import android.telephony.TelephonyManager;
 import android.util.Range;
@@ -29,6 +31,7 @@ import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Clock;
@@ -40,6 +43,9 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 
 public class SubscriptionPlanTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final ZonedDateTime START =
             ZonedDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
