@@ -44,6 +44,9 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceParameterizedRunner.class)
 public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
     private static final String TEST_PACKAGE = "android.appsecurity.cts.tinyapp";
+    private static final String COMPANION_PACKAGE = "android.appsecurity.cts.tinyapp_companion";
+    private static final String COMPANION_PACKAGE2 = "android.appsecurity.cts.tinyapp_companion2";
+    private static final String COMPANION_PACKAGE3 = "android.appsecurity.cts.tinyapp_companion3";
     private static final String DEVICE_TEST_APK = "CtsV32HybridSigningSchemeTest.apk";
     private static final String DEVICE_TEST_PACKAGE = "android.appsecurity.cts.v32hybridtests";
     private static final String DEVICE_TEST_CLASS = DEVICE_TEST_PACKAGE + ".V32HybridTests";
@@ -67,6 +70,9 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
     private void uninstallPackages() throws Exception {
         getDevice().uninstallPackage(TEST_PACKAGE);
         getDevice().uninstallPackage(DEVICE_TEST_PACKAGE);
+        getDevice().uninstallPackage(COMPANION_PACKAGE);
+        getDevice().uninstallPackage(COMPANION_PACKAGE2);
+        getDevice().uninstallPackage(COMPANION_PACKAGE3);
     }
 
     @CddTest(requirement = "4/C-0-2")
@@ -401,6 +407,19 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32InvalidSignature_fails() throws Exception {
+        // During signature verification, if any errors are encountered with the latest signature
+        // version being verified, the verification should immediately fail instead of attempting
+        // to verify an earlier signature scheme. This test verifies that an invalid signature
+        // in the V3.2 block causes verification to immediately fail even though the V3.0 block
+        // has a valid signature.
+        assertInstallOnDeviceFails("v32-mldsa-invalid-sig-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceFails("v32-mldsa-rsa-2048_2-invalid-sig-v3-rsa-2048.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
     public void testV32_v3V32UpdateWithSameHybridConfig_succeeds() throws Exception {
         // This is the standard update case from an APK signed with an original signing key and a
         // v3.2 block updated to an APK signed with the same signing config.
@@ -543,5 +562,458 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
                 DEVICE_TEST_PACKAGE,
                 DEVICE_TEST_CLASS,
                 "testV32_v3OriginalV32RotatedConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32UpdateHybridToSingleToHybrid_succeeds() throws Exception {
+        // Verifies the full transition path where a developer adopts a hybrid signing config,
+        // rotates back to a classical signer, then rotates forward to a new hybrid config.
+        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v31-rsa-2048_3-mldsa-65-rsa-2048_2-in-por-v3-rsa-2048-ver2.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_4-rsa-2048_2_3-mldsa-65-in-por-v3-rsa-2048-ver3.apk",
+                getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_v32UpdateHybridToSingleToHybridConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32UpdateToV31SingleMissingHybridSignerInLineage_fails() throws Exception {
+        // When an APK is signed with a hybrid config and attempts to rotate to a single signer
+        // config, both current hybrid signers must be in the lineage of the update APK to ensure
+        // that the developer was in control of both hybrid keys when the rotation occurred. This
+        // test verifies that if either of the hybrid signers are missing from the lineage when
+        // rotating from a hybrid config to a single classical config, the update is not allowed.
+        assertInstallOnDeviceSucceeds("v32-rsa-2048_2-mldsa-tgt-36-v3-rsa-2048.apk", getDevice());
+
+        assertInstallOnDeviceFails(
+                "v31-rsa-2048_3-mldsa-65-in-por-v3-rsa-2048-ver2.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v31-rsa-2048_3-rsa-2048_2-in-por-v3-rsa-2048-ver2.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SharedUserIdSameV32Config_succeeds() throws Exception {
+        // When two apps share the same current signing config, both should successfully install and
+        // join the sharedUserId.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-shUid.apk", getDevice());
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-shUid.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SharedUserIdDifferentV32Config_fails() throws Exception {
+        // The first app installed that declares the sharedUserId sets its signing identity; if a
+        // subsequent app attempts to join with a completely different hybrid signing identity, the
+        // install should fail.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-shUid.apk", getDevice());
+        assertInstallOnDeviceFails("v32-mldsa-87-rsa-2048_3-shUid.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v3ToV32SharedUserId_onlyMatchingConfigSucceeds() throws Exception {
+        // To join a sharedUserid, the joining app must either be signed with the same key, or a key
+        // in the lineage of the apps within the sharedUserId that has been granted the
+        // SHARED_USER_ID capability. For a hybrid signed app, this requires that either both of
+        // the hybrid keys are the current signer of the app requesting to join, or that the app
+        // requesting to join is signed with a key that is in the lineage of the sharedUserId and
+        // is still granted the SHARED_USER_ID capability.
+        // This APK establishes the sharedUserId with signing identity rsa-2048.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048-shUid.apk", getDevice());
+
+        // This verifies a package signed with a hybrid config that matches the identity of the
+        // sharedUserId can join. The sharedUserId identity is now rsa-2048 -> (rsa-2048_2 +
+        // mldsa-65).
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-shUid.apk", getDevice());
+
+        // A hybrid signed package with only one of the hybrid keys for the sharedUserId should fail
+        // to install and join the sharedUserId.
+        assertInstallOnDeviceFails(
+                "v32-mldsa-87-rsa-2048_2-v3-rsa-2048-companion3-shUid.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v32-mldsa-65-rsa-2048_3-v3-rsa-2048-companion3-shUid.apk", getDevice());
+
+        // An APK signed with a single key from the current hybrid identity should fail to install.
+        assertInstallOnDeviceFails("v31-rsa-2048_2-v3-rsa-2048-companion3-shUid.apk", getDevice());
+
+        // A rotation to a new hybrid signing identity should be able to join the sharedUserId since
+        // the current hybrid signers for the sharedUserId are in the lineage. The sharedUserId
+        // identity is now rsa-2048 -> rsa-2048_2 -> mldsa-65 -> (rsa-2048_3 + mldsa-87).
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-mldsa-65-rsa-2048_2-in-por-v3-rsa-2048-companion2-shUid"
+                        + ".apk",
+                getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SharedUserIdOlderIdentitiesJoiningLater_succeeds() throws Exception {
+        // When a package that is part of a sharedUserId is installed, the signing identity of the
+        // sharedUserid is merged with that of the installed package. If a package is installed that
+        // has the latest signing identity for the sharedUserId, packages signed with older signing
+        // identities that are still in the lineage of the sharedUserId should still be able to
+        // install and join.
+        // This sets the identity of the sharedUserId to rsa-2048 -> rsa-2048_2 -> mldsa-65 ->
+        // rsa-2048_3 -> (rsa-2048_4 + mldsa-87).
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_4-rsa-2048_2_3-mldsa-65-in-por-v3-rsa-2048-companion3"
+                        + "-shUid.apk",
+                getDevice());
+
+        // An APK signed with only the classical key from the hybrid block should fail to install.
+        assertInstallOnDeviceFails("v3-rsa-2048_4-companion-shUid.apk", getDevice());
+
+        // An APK signed with the original signer in the lineage should still install as long as the
+        // original signer been granted the SHARED_USER_ID capability.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048-shUid.apk", getDevice());
+
+        // A hybrid signed APK that is signed with the previous two hybrid keys in the lineage
+        // should install as long as the two signers are still granted the SHARED_USER_ID
+        // capability.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-shUid.apk", getDevice());
+
+        // An APK that has rotated from the hybrid block back to a classical single signer that is
+        // part of the sharedUserId's lineage should install.
+        assertInstallOnDeviceSucceeds(
+                "v31-rsa-2048_3-mldsa-rsa-2048_2-in-por-v3-rsa-2048-companion2-shUid.apk",
+                getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SharedUserIdHybridToSingleToHybrid_succeeds() throws Exception {
+        // The V3.2 hybrid block can be rotated to / from a single signer config at any time. This
+        // test verifies that if an APK is part of a sharedUserId with a hybrid signature, moving
+        // between single and hybrid signed APKs can still join the sharedUserId.
+        // The sharedUserId starts with rsa-2048 -> (rsa-2048_2 + mldsa-65).
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-shUid.apk", getDevice());
+
+        // An APK signed with a key rotated from the hybrid back to the single signer config should
+        // succeed as long as both hybrid keys are in the lineage. The sharedUserId identity is
+        // rsa-2048 -> rsa_2-2048 -> mldsa-65 -> rsa-2048_3
+        assertInstallOnDeviceSucceeds(
+                "v31-rsa-2048_3-mldsa-rsa-2048_2-in-por-v3-rsa-2048-companion2-shUid.apk",
+                getDevice());
+
+        // An APK signed with the current single signer of the sharedUserId should be able to join.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048_3-shUid.apk", getDevice());
+
+        // An APK that rotates back to a hybrid signing config should install successfully as long
+        // as the sharedUserId's identity attests to the rotation to the hybrid block.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_4-rsa-2048_2_3-mldsa-65-in-por-v3-rsa-2048-companion3"
+                        + "-shUid.apk",
+                getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32HybridSharedUserIdCapabilityRevoked_failsToInstall() throws Exception {
+        // If a key is compromised, or if a developer just doesn't want to allow older keys to
+        // continue joining the sharedUserId, the SHARED_USER_ID capability can be revoked from the
+        // key. This test verifies that if this capability is revoked from a previous hybrid signer,
+        // then an APK signed with one of those hybrid keys will not be able to install and join.
+        // This sets the identity of the sharedUserId to rsa-2048 -> rsa-2048_2 (no SHARED_USER_ID)
+        // -> mldsa-65 -> rsa-2048_3 -> (rsa-2048_4 + mldsa-87).
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_4-rsa-2048_3_2-no-shUid-mldsa-65-in-por-v3-rsa-2048"
+                        + "-companion3-shUid.apk",
+                getDevice());
+
+        // An APK signed with a single signer that still has the capability granted should still
+        // install and join the sharedUserId. Note, this also simulates an older package in the
+        // ecosystem that still has the capability granted to the previous signer; the platform
+        // should apply the most restrictive lineage which would keep the capability revoked from
+        // the previous hybrid classical signer.
+        assertInstallOnDeviceSucceeds(
+                "v31-rsa-2048_3-mldsa-rsa-2048_2-in-por-v3-rsa-2048-companion2-shUid.apk",
+                getDevice());
+
+        // The classical hybrid key from this APK has had the SHARED_USER_ID capability revoked, so
+        // even though the hybrid PQC key still has the capability, the install should fail.
+        assertInstallOnDeviceFails(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-shUid.apk", getDevice());
+
+        // A previous signer in the lineage should not be affected by the revoked capability.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048-shUid.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionSameHybridRequesting_granted() throws Exception {
+        // If an APK declaring a permission is signed by the same hybrid signign config as an APK
+        // requesting the permission, the permission should be granted.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageGrantedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionSharedClassicalInV3Requesting_granted() throws Exception {
+        // Permissions are granted to a requesting app if they share a common signer with the
+        // declaring app. This test verifies that a hybrid app with a classical signer in its
+        // lineage with the PERMISSION capability granted can grant a permission to a requesting
+        // app signed by that previous classical key.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds("v3-rsa-2048-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageGrantedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionSharedClassicalFromV32Requesting_denied() throws Exception {
+        // If the app declaring a permission is signed by a hybrid config and the requesting app is
+        // only signed by one of the keys in the hybrid config, the permission request should be
+        // denied.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds("v3-rsa-2048_2-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageDeniedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionSharedPqcInV32Requesting_denied() throws Exception {
+        // If the app declaring a permission is signed by a hybrid config and the requesting app
+        // only has the PQC key in common with the declaring app, then the request should be denied.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-65-rsa-2048_3-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageDeniedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionDifferentV32Requesting_denied() throws Exception {
+        // If an app requesting a permission has a completely different hybrid config from the app
+        // that declared the permission, then the permission request should be denied.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageDeniedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v3PermissionSharedClassicalInV32Requesting_denied() throws Exception {
+        // If a declaring app is signed by a single classical key and a requesting app is signed by
+        // a hybrid config with the declaring app's classical key in the hybrid block, the request
+        // should be denied since a requesting hybrid signed app must have both signers in the
+        // lineage of the declaring app to be considered shared.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048_3-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-65-rsa-2048_3-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageDeniedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v3PermissionSharedClassicalInV32LineageRequesting_granted()
+            throws Exception {
+        // If a declaring app is signed by a single classical key and a requesting app is signed
+        // by a hybrid signign config with the declaring app's single classical key in its lineage,
+        // then the permission should be granted since this is the standard case where the
+        // requesting app has been rotated before the declaring app.
+        assertInstallOnDeviceSucceeds("v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageGrantedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionToRotatedV32WithoutPqcInLineage_denied() throws Exception {
+        // A hybrid signed app should support granting a permission to a requesting app if the
+        // hybrid keys for the declaring app are both in the lineage of the requesting app. The
+        // requesting app for this test only has the classical key in its lineage, so the request
+        // should be denied.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-rsa-2048_2-in-por-v3-rsa-2048-companion-usesperm.apk",
+                getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageDeniedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionToRotatedV32WithoutClassicalInLineage_denied()
+            throws Exception {
+        // A hybrid signed app should support granting a permission to a requesting app if the
+        // hybrid keys for the declaring app are both in the lineage of the requesting app. The
+        // requesting app for this test only has the PQC key in its lineage, so the request should
+        // be denied.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-mldsa-65-in-por-v3-rsa-2048-companion-usesperm.apk",
+                getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageDeniedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionSharedClassicalFromV32RequestingRevoked_denied()
+            throws Exception {
+        // If the declaring app is hybrid signed and has revoked the PERMISSION capability from the
+        // previous signer in the lineage and the requesting app is signed by this signer, then the
+        // request should be denied.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-no-perm-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds("v3-rsa-2048-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageDeniedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32RotatedPermissionSharedV32InLineageRequesting_granted()
+            throws Exception {
+        // If the declaring app has rotated the hybrid config multiple times, and the requesting app
+        // is signed by the first hybrid config that is in the lineage and granted the PERMISSION
+        // capability, then the request should be granted.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-mldsa-65-rsa-2048_2-in-por-v3-rsa-2048-declperm.apk",
+                getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageGrantedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32PermissionRotatedV32WithSharedHybridInLineageRequesting_granted()
+            throws Exception {
+        // If the declaring app is signed with a hybrid config and the requesting app has rotated
+        // its hybrid config with the declaring app's hybrid config in its lineage, then the request
+        // should be granted.
+        assertInstallOnDeviceSucceeds("v32-mldsa-rsa-2048_2-v3-rsa-2048-declperm.apk", getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-mldsa-65-rsa-2048_2-in-por-v3-rsa-2048-companion"
+                        + "-usesperm.apk",
+                getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageGrantedPerm");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32RotatedPermissionV32FromLineageClassicalRevokedRequesting_granted()
+            throws Exception {
+        // This is a unique case where the declaring app has rotated its hybrid key multiple times
+        // and has revoked the PERMISSION capability from the classical signer in its lineage that
+        // is used as the classical signer in the requesting app's hybrid block. Since both of the
+        // hybrid keys from the requesting app are in the declaring app's lineage, and one of them
+        // still has the PERMISSION capability, the permission is granted. While the general
+        // guidance is to either fully revoke or grant a capability to both hybrid signers in the
+        // lineage, if the classical is compromised and a developer only wants to revoke the
+        // capability from that signer, then the permission should still be granted for older apps
+        // still signed with this hybrid pair. This is intended since the hybrid signed requesting
+        // app could be rotated to any new key, and the common PQC signer in the lineage would allow
+        // the requesting app to be granted the permission.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-87-rsa-2048_3-mldsa-65-rsa-2048_2-no-perm-in-por-v3-rsa-2048-declperm"
+                        + ".apk",
+                getDevice());
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-companion-usesperm.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_companionPackageGrantedPerm");
     }
 }
