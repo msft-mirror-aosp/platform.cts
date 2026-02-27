@@ -16,15 +16,15 @@
 
 package android.virtualdevice.cts.computercontrol
 
-import android.app.KeyguardManager
 import android.content.IntentSender
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.server.wm.LockScreenSession
+import android.server.wm.WindowManagerStateHelper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
-import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.extensions.computercontrol.ComputerControlExtensions
 import com.android.extensions.computercontrol.ComputerControlSession
@@ -267,12 +267,8 @@ class ComputerControlExtensionsTest {
 
     @Test
     fun testRequestSession_failWithDeviceLocked() {
-        val keyguardManager = context.getSystemService(KeyguardManager::class.java)
-        try {
-            SystemUtil.runShellCommand("locksettings set-pin 1234")
-            SystemUtil.runShellCommand("put secure lock_screen_lock_after_timeout 0")
-            SystemUtil.runShellCommand("input keyevent SLEEP")
-            PollingCheck.waitFor(DEADLINE_SECONDS * 1000L) { keyguardManager.isDeviceLocked() }
+        LockScreenSession(getInstrumentation(), WindowManagerStateHelper()).use { session ->
+            session.setLockCredential().gotoKeyguard()
             val params =
                 ComputerControlSession.Params.Builder(context)
                     .setName("${testName.methodName}")
@@ -282,11 +278,6 @@ class ComputerControlExtensionsTest {
             extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
             val errorCode = callback.awaitSessionCreationError()
             assertThat(errorCode).isEqualTo(ComputerControlSession.ERROR_DEVICE_LOCKED)
-        } finally {
-            SystemUtil.runShellCommand("input keyevent WAKEUP")
-            SystemUtil.runShellCommand("wm dismiss-keyguard")
-            SystemUtil.runShellCommand("locksettings clear --old 1234")
-            PollingCheck.waitFor(DEADLINE_SECONDS * 1000L) { !keyguardManager.isDeviceLocked() }
         }
     }
 
