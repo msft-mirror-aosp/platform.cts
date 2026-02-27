@@ -137,7 +137,6 @@ public class ImsRegistrationAttributesTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_REGISTRATION_STATE)
     public void testRegistrationTypeToTransportAttrForEmergency() {
         // emergency call with emergency registration
         ImsRegistrationAttributes attr = new ImsRegistrationAttributes.Builder(

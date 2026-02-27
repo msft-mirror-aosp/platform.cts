@@ -1284,7 +1284,6 @@ public class ImsServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_REGISTRATION_STATE)
     public void testMmTelManagerEmergencyRegistrationCallback() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;
