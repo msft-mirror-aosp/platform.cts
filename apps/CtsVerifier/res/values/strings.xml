@@ -8032,6 +8032,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsNfcHceMultiDeviceTestCases</item>
         <item>CtsUwbMultiDeviceFiraRangingTests</item>
         <item>CtsMultiDeviceGenericRangingTests</item>
+        <item>CtsMultiDeviceGenericRangingAccuracyTests</item>
         <item>CtsUwbMultiDeviceUwbManagerTests</item>
         <item>CtsWifiConnectionTests</item>
         <item>CtsWifiAwareTests</item>
