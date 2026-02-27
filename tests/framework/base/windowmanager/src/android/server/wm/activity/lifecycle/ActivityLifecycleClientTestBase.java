@@ -491,12 +491,16 @@ public class ActivityLifecycleClientTestBase extends MultiDisplayTestBase {
             super.onCreate(savedInstanceState);
 
             if (getIntent().getBooleanExtra(EXTRA_LAUNCH_ACTIVITY, false)) {
-                final Intent intent = new Intent(this, CallbackTrackingActivity.class);
+                final Intent intent = new Intent(this, getLaunchActivityClass());
                 if (getIntent().getBooleanExtra(EXTRA_NEW_TASK, false)) {
                     intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK);
                 }
                 startActivity(intent);
             }
+        }
+
+        protected Class<? extends Activity> getLaunchActivityClass() {
+            return CallbackTrackingActivity.class;
         }
     }
 
@@ -517,7 +521,7 @@ public class ActivityLifecycleClientTestBase extends MultiDisplayTestBase {
             super.onCreate(savedInstanceState);
 
             if (getIntent().getBooleanExtra(EXTRA_LAUNCH_ACTIVITY, false)) {
-                final Intent intent = new Intent(this, SingleTopActivity.class);
+                final Intent intent = new Intent(this, getClass());
                 if (getIntent().getBooleanExtra(EXTRA_NEW_TASK, false)) {
                     intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
                 }
