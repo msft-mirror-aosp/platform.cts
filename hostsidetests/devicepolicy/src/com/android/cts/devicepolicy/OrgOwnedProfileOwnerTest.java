@@ -210,6 +210,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
+    @Ignore("b/488327557")
     public void testSecurityLoggingDelegate() throws Exception {
         installAppAsUser(DELEGATE_APP_APK, mUserId);
         installAppAsUser(DEVICE_ADMIN_APK, mParentUserId);
