@@ -18,6 +18,7 @@ package android.keystore.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -29,6 +30,8 @@ import android.keystore.cts.util.TestUtils;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
+import android.security.keystore2.AndroidKeyStoreEdECPrivateKey;
+import android.security.keystore2.AndroidKeyStoreEdECPublicKey;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -38,6 +41,7 @@ import com.android.compatibility.common.util.ApiTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -46,8 +50,14 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PublicKey;
+import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.interfaces.EdECPrivateKey;
 import java.security.interfaces.EdECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
@@ -168,6 +178,9 @@ public class Curve25519Test {
 
         KeyPair kp = kpg.generateKeyPair();
         assertThat(kp.getPublic()).isInstanceOf(EdECPublicKey.class);
+        assertThat(kp.getPublic()).isInstanceOf(AndroidKeyStoreEdECPublicKey.class);
+        assertThat(kp.getPrivate()).isInstanceOf(EdECPrivateKey.class);
+        assertThat(kp.getPrivate()).isInstanceOf(AndroidKeyStoreEdECPrivateKey.class);
 
         byte[] data = "helloxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".getBytes();
         Signature signer = Signature.getInstance("Ed25519");
@@ -176,6 +189,54 @@ public class Curve25519Test {
         byte[] sigBytes = signer.sign();
 
         signer.initVerify(kp.getPublic());
+        signer.update(data);
+        assertTrue(signer.verify(sigBytes));
+    }
+
+    @Test
+    public void ed25519KeyGenerationAndGetEntryAndSigningTest()
+            throws CertificateException,
+                    IOException,
+                    KeyStoreException,
+                    NoSuchAlgorithmException,
+                    NoSuchProviderException,
+                    InvalidAlgorithmParameterException,
+                    InvalidKeyException,
+                    SignatureException,
+                    UnrecoverableEntryException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", "AndroidKeyStore");
+        final String alias = "ed25519-alias";
+        deleteEntry(alias);
+
+        KeyGenParameterSpec keySpec = new KeyGenParameterSpec.Builder(alias,
+                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+                .setAlgorithmParameterSpec(new ECGenParameterSpec("ed25519"))
+                .setDigests(KeyProperties.DIGEST_NONE).build();
+        kpg.initialize(keySpec);
+        kpg.generateKeyPair();  // Ignore the returned key pair since we'll use getEntry below.
+
+        KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+        ks.load(null);
+        KeyStore.Entry entry = ks.getEntry(alias, null);
+        Certificate[] chain = ((KeyStore.PrivateKeyEntry) entry).getCertificateChain();
+        assertThat(chain).isNotEmpty();
+
+        PublicKey publicKey = chain[0].getPublicKey();
+        PrivateKey privateKey = ((KeyStore.PrivateKeyEntry) entry).getPrivateKey();
+        // Unlike in "ed25519KeyGenerationAndSigningTest", the public key is a Conscrypt key since
+        // the call to "KeyStore.getEntry" goes through the Conscrypt provider's CertificateFactory
+        // (which takes the public key certificate from Android Keystore as input).
+        assertThat(publicKey).isNotInstanceOf(AndroidKeyStoreEdECPublicKey.class);
+        assertThat(privateKey).isInstanceOf(EdECPrivateKey.class);
+        assertThat(privateKey).isInstanceOf(AndroidKeyStoreEdECPrivateKey.class);
+
+        byte[] data = "helloxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".getBytes();
+        Signature signer = Signature.getInstance("Ed25519");
+        signer.initSign(privateKey);
+        signer.update(data);
+        byte[] sigBytes = signer.sign();
+
+        signer.initVerify(publicKey);
         signer.update(data);
         assertTrue(signer.verify(sigBytes));
     }
