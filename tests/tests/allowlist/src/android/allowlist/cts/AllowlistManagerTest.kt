@@ -54,6 +54,7 @@ class AllowlistManagerTest {
     private val testPackage1 = SignedPackage("test.package.1", byteArrayOf(0x1))
     private val testPackage2 = SignedPackage("test.package.2", byteArrayOf(0x2))
     private val testTarget1 = SignedPackage("test.target.1", byteArrayOf(0x3))
+    private val testTarget2 = SignedPackage("test.target.2", byteArrayOf(0x4))
     private val emptyListener = Consumer<AllowlistRequest> { }
     private lateinit var allowlistManager: AllowlistManager
     private val context: Context = InstrumentationRegistry.getInstrumentation().context
@@ -66,7 +67,7 @@ class AllowlistManagerTest {
     }
 
     @ApiTest(
-        apis = ["android.allowlist.AllowlistManager#queryAllowlist"]
+        apis = ["android.os.allowlist.AllowlistManager#queryAllowlist"]
     )
     @Test
     fun testQueryAllowlist_withoutPermission_throwsException() {
@@ -84,7 +85,7 @@ class AllowlistManagerTest {
     }
 
     @ApiTest(
-        apis = ["android.allowlist.AllowlistManager#queryAllowlist"]
+        apis = ["android.os.allowlist.AllowlistManager#queryAllowlist"]
     )
     @Test
     fun testQueryAllowlist_filterPackages_success() {
@@ -115,7 +116,7 @@ class AllowlistManagerTest {
     }
 
     @ApiTest(
-        apis = ["android.allowlist.AllowlistManager#queryAllowlist"]
+        apis = ["android.os.allowlist.AllowlistManager#queryAllowlist"]
     )
     @Test
     fun testQueryAllowlist_filterAgentsAndTargets_success() {
@@ -158,7 +159,7 @@ class AllowlistManagerTest {
     }
 
     @ApiTest(
-        apis = ["android.allowlist.AllowlistManager#queryAllowlist"]
+        apis = ["android.os.allowlist.AllowlistManager#queryAllowlist"]
     )
     @Test
     fun testQueryAllowlist_filterInstalledPackages_success() {
@@ -185,7 +186,7 @@ class AllowlistManagerTest {
         }
     }
 
-    @ApiTest(apis = ["android.allowlist.AllowlistManager#addOnAllowlistChangedListener"])
+    @ApiTest(apis = ["android.os.allowlist.AllowlistManager#addOnAllowlistChangedListener"])
     @Test
     fun testAddOnAllowlistChangedListener_withoutPermission_throwsException() {
         val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, Bundle())
@@ -198,7 +199,7 @@ class AllowlistManagerTest {
         }
     }
 
-    @ApiTest(apis = ["android.allowlist.AllowlistManager#removeOnAllowlistChangedListener"])
+    @ApiTest(apis = ["android.os.allowlist.AllowlistManager#removeOnAllowlistChangedListener"])
     @Test
     fun testRemoveOnAllowlistChangedListener_unregisteredListener_noOp() {
         runWithShellPermissionIdentity {
@@ -206,7 +207,7 @@ class AllowlistManagerTest {
         }
     }
 
-    @ApiTest(apis = ["android.allowlist.AllowlistManager#removeOnAllowlistChangedListener"])
+    @ApiTest(apis = ["android.os.allowlist.AllowlistManager#removeOnAllowlistChangedListener"])
     @Test
     fun testRemoveOnAllowlistChangedListener_withoutPermission_throwsException() {
         val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, Bundle().apply {
@@ -230,8 +231,8 @@ class AllowlistManagerTest {
     }
 
     @ApiTest(
-        apis = ["android.allowlist.AllowlistManager#addOnAllowlistChangedListener",
-            "android.allowlist.AllowlistManager#notifyAllowlistChangedListenersInTest"]
+        apis = ["android.os.allowlist.AllowlistManager#addOnAllowlistChangedListener",
+            "android.os.allowlist.AllowlistManager#notifyAllowlistChangedListenersInTest"]
     )
     @Test
     fun testAddListener_notifyListener_listenerInvoked() {
@@ -263,8 +264,8 @@ class AllowlistManagerTest {
     }
 
     @ApiTest(
-        apis = ["android.allowlist.AllowlistManager#removeOnAllowlistChangedListener",
-            "android.allowlist.AllowlistManager#notifyAllowlistChangedListenersInTest"]
+        apis = ["android.os.allowlist.AllowlistManager#removeOnAllowlistChangedListener",
+            "android.os.allowlist.AllowlistManager#notifyAllowlistChangedListenersInTest"]
     )
     @Test
     fun testRemoveListener_notifyListener_listenerNotInvoked() {
@@ -287,6 +288,154 @@ class AllowlistManagerTest {
             allowlistManager.notifyAllowlistChangedListenersForTestProvider(listOf(request))
             assertThat(latch.await(LATCH_TIMEOUT_UNEXPECTED_MS, TimeUnit.MILLISECONDS)).isFalse()
         }
+    }
+
+    @ApiTest(
+        apis = ["android.os.allowlist.AllowlistRequest#equals",
+            "android.os.allowlist.AllowlistRequest#hashCode"]
+    )
+    @Test
+    fun testAllowlistRequest_filterPackagesAndTargets_success() {
+        val data1 = Bundle().apply {
+            putParcelableArrayList(
+                AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
+                arrayListOf(testPackage1, testPackage2)
+            )
+            putParcelableArrayList(
+                AllowlistManager.REQUEST_KEY_FILTER_TARGETS,
+                arrayListOf(testTarget1, testTarget2)
+            )
+        }
+        val request1 = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, data1)
+
+        val data2 = Bundle().apply {
+            putParcelableArrayList(
+                AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
+                arrayListOf(testPackage1, testPackage2)
+            )
+            putParcelableArrayList(
+                AllowlistManager.REQUEST_KEY_FILTER_TARGETS,
+                arrayListOf(testTarget1, testTarget2)
+            )
+        }
+        val request2 = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, data2)
+
+        assertThat(request1).isEqualTo(request2)
+        assertThat(request1.hashCode()).isEqualTo(request2.hashCode())
+    }
+
+    @ApiTest(
+        apis = ["android.os.allowlist.AllowlistRequest#equals",
+            "android.os.allowlist.AllowlistRequest#hashCode"]
+    )
+    @Test
+    fun testAllowlistRequest_filterPackages_failure() {
+        val data1 = Bundle().apply {
+            putParcelableArrayList(
+                AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
+                arrayListOf(testPackage1, testPackage2)
+            )
+        }
+        val request1 = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, data1)
+
+        val data2 = Bundle().apply {
+            putParcelableArrayList(
+                AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
+                arrayListOf(testPackage1)
+            )
+        }
+        val request2 = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, data2)
+
+        assertThat(request1).isNotEqualTo(request2)
+        assertThat(request1.hashCode()).isNotEqualTo(request2.hashCode())
+    }
+
+    @ApiTest(
+        apis = ["android.os.allowlist.AllowlistResponse#equals",
+            "android.os.allowlist.AllowlistResponse#hashCode"]
+    )
+    @Test
+    fun testAllowlistResponse_allowedPackageMultiMap_success() {
+        val data1 = Bundle().apply {
+            putParcelable(
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGE_MULTI_MAP,
+                SignedPackageMultiMap(mapOf(
+                    testPackage1 to listOf(testTarget1, testTarget2),
+                    testPackage2 to listOf(testTarget1)
+                ))
+            )
+        }
+        val response1 = AllowlistResponse(AllowlistManager.RESPONSE_STATUS_SUCCESS, data1)
+
+        val data2 = Bundle().apply {
+            putParcelable(
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGE_MULTI_MAP,
+                SignedPackageMultiMap(mapOf(
+                    testPackage1 to listOf(testTarget1, testTarget2),
+                    testPackage2 to listOf(testTarget1)
+                ))
+            )
+        }
+        val response2 = AllowlistResponse(AllowlistManager.RESPONSE_STATUS_SUCCESS, data2)
+
+        assertThat(response1).isEqualTo(response2)
+        assertThat(response1.hashCode()).isEqualTo(response2.hashCode())
+    }
+
+    @ApiTest(
+        apis = ["android.os.allowlist.AllowlistResponse#equals",
+            "android.os.allowlist.AllowlistResponse#hashCode"]
+    )
+    @Test
+    fun testAllowlistResponse_allowedPackages_success() {
+        val data1 = Bundle().apply {
+            putParcelableArrayList(
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGES,
+                arrayListOf(testPackage1, testPackage2)
+            )
+        }
+        val response1 = AllowlistResponse(AllowlistManager.RESPONSE_STATUS_SUCCESS, data1)
+
+        val data2 = Bundle().apply {
+            putParcelableArrayList(
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGES,
+                arrayListOf(testPackage1, testPackage2)
+            )
+        }
+        val response2 = AllowlistResponse(AllowlistManager.RESPONSE_STATUS_SUCCESS, data2)
+
+        assertThat(response1).isEqualTo(response2)
+        assertThat(response1.hashCode()).isEqualTo(response2.hashCode())
+    }
+
+    @ApiTest(
+        apis = ["android.os.allowlist.AllowlistResponse#equals",
+            "android.os.allowlist.AllowlistResponse#hashCode"]
+    )
+    @Test
+    fun testAllowlistResponse_allowedPackageMultiMap_failure() {
+        val data1 = Bundle().apply {
+            putParcelable(
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGE_MULTI_MAP,
+                SignedPackageMultiMap(mapOf(
+                    testPackage1 to listOf(testTarget1, testPackage2),
+                ))
+            )
+        }
+        val response1 = AllowlistResponse(AllowlistManager.RESPONSE_STATUS_SUCCESS, data1)
+
+        val data2 = Bundle().apply {
+            putParcelable(
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGE_MULTI_MAP,
+                SignedPackageMultiMap(mapOf(
+                    testPackage1 to listOf(testTarget1)
+                ))
+            )
+        }
+        val response2 = AllowlistResponse(AllowlistManager.RESPONSE_STATUS_SUCCESS, data2)
+
+        assertThat(response1).isNotEqualTo(response2)
+        assertThat(response1.hashCode()).isNotEqualTo(response2.hashCode())
     }
 
     companion object {
