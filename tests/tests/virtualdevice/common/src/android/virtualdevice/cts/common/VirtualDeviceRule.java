@@ -173,6 +173,7 @@ public class VirtualDeviceRule implements TestRule {
      */
     public VirtualDevice getDefaultVirtualDevice() {
         if (mDefaultVirtualDevice == null) {
+            acquireNecessaryPermissions();
             mDefaultVirtualDevice = createManagedVirtualDevice();
         }
         return mDefaultVirtualDevice;
