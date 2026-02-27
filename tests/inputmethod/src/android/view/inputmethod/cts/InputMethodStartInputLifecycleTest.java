@@ -17,7 +17,6 @@
 package android.view.inputmethod.cts;
 
 import static android.inputmethodservice.InputMethodService.FINISH_INPUT_NO_FALLBACK_CONNECTION;
-import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.View.SCREEN_STATE_OFF;
 import static android.view.View.SCREEN_STATE_ON;
 import static android.view.View.VISIBLE;
@@ -26,6 +25,8 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFI
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
 
 import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.DEFAULT_TIMEOUT;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.NOT_EXPECT_TIMEOUT;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
@@ -89,7 +90,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -105,9 +105,6 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
     @Rule
     public final RequireImeCompatFlagRule mRequireImeCompatFlagRule = new RequireImeCompatFlagRule(
             FINISH_INPUT_NO_FALLBACK_CONNECTION, true);
-
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10) * HW_TIMEOUT_MULTIPLIER;
-    private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
     @RequireNotVisibleBackgroundUsers(reason =
             "Background visible user devices (primarily Android auto) currently doesn't support "
@@ -160,42 +157,52 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
 
             // Expected onStartInput when TestActivity launched.
             final EditText editText = focusedEditTextRef.get();
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
 
             // Expected text commit will not work when device is put to sleep.
             lockScreenSession.sleepDevice();
-            TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_OFF
-                            && editText.getWindowVisibility() != VISIBLE, TIMEOUT);
+            TestUtils.waitOnMainUntil(
+                    () ->
+                            screenStateCallbackRef.get() == SCREEN_STATE_OFF
+                                    && editText.getWindowVisibility() != VISIBLE,
+                    DEFAULT_TIMEOUT);
 
             if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {
                 // Expected only onFinishInput and the EditText is inactive for input method.
-                expectEvent(stream, onFinishInputMatcher(), TIMEOUT);
-                notExpectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+                expectEvent(stream, onFinishInputMatcher(), DEFAULT_TIMEOUT);
+                notExpectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
                 assertFalse(TestUtils.getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
             } else {
-                expectEvent(stream, onFinishInputMatcher(), TIMEOUT);
+                expectEvent(stream, onFinishInputMatcher(), DEFAULT_TIMEOUT);
             }
 
             final ImeCommand commit = imeSession.callCommitText("Hi!", 1);
-            expectCommand(stream, commit, TIMEOUT);
-            TestUtils.waitOnMainUntil(() -> !TextUtils.equals(editText.getText(), "Hi!"), TIMEOUT,
+            expectCommand(stream, commit, DEFAULT_TIMEOUT);
+            TestUtils.waitOnMainUntil(
+                    () -> !TextUtils.equals(editText.getText(), "Hi!"),
+                    DEFAULT_TIMEOUT,
                     "InputMethodService#commitText should not work after screen off");
 
             // Expected text commit will work when device is unlocked.
             lockScreenSession.unlock();
-            TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_ON
-                            && editText.getWindowVisibility() == VISIBLE, TIMEOUT);
+            TestUtils.waitOnMainUntil(
+                    () ->
+                            screenStateCallbackRef.get() == SCREEN_STATE_ON
+                                    && editText.getWindowVisibility() == VISIBLE,
+                    DEFAULT_TIMEOUT);
             clickOnViewCenter(editText);
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
             if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {
                 // Expected only onStartInput and the EditText is active for input method.
-                notExpectEvent(stream, onFinishInputMatcher(), TIMEOUT);
+                notExpectEvent(stream, onFinishInputMatcher(), DEFAULT_TIMEOUT);
             }
             assertTrue(TestUtils.getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
             final ImeCommand commit1 = imeSession.callCommitText("Hello!", 1);
-            expectCommand(stream, commit1, TIMEOUT);
-            TestUtils.waitOnMainUntil(() -> TextUtils.equals(editText.getText(), "Hello!"), TIMEOUT,
+            expectCommand(stream, commit1, DEFAULT_TIMEOUT);
+            TestUtils.waitOnMainUntil(
+                    () -> TextUtils.equals(editText.getText(), "Hello!"),
+                    DEFAULT_TIMEOUT,
                     "InputMethodService#commitText should work after screen on");
         }
     }
@@ -222,9 +229,9 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
             TestUtils.runOnMainSync(() -> editText.requestFocus());
 
             // Wait until the MockIme gets bound to the TestActivity.
-            expectBindInput(stream, Process.myPid(), TIMEOUT);
+            expectBindInput(stream, Process.myPid(), DEFAULT_TIMEOUT);
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
 
             // Compatibility layer may cause multiple onStartInput events when TestActivity is
             // created. Clear out the stream events to make sure only new events are detected.
@@ -235,15 +242,16 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
                     () -> editText.getApplicationWindowToken());
 
             try (WindowFocusStealer focusStealer =
-                         WindowFocusStealer.connect(instrumentation.getTargetContext(), TIMEOUT)) {
+                    WindowFocusStealer.connect(
+                            instrumentation.getTargetContext(), DEFAULT_TIMEOUT.toMillis())) {
 
-                focusStealer.stealWindowFocus(appWindowToken, TIMEOUT);
+                focusStealer.stealWindowFocus(appWindowToken, DEFAULT_TIMEOUT.toMillis());
 
                 // Wait until the edit text loses window focus.
-                TestUtils.waitOnMainUntil(() -> !editText.hasWindowFocus(), TIMEOUT);
+                TestUtils.waitOnMainUntil(() -> !editText.hasWindowFocus(), DEFAULT_TIMEOUT);
             }
             // Wait until the edit text gains window focus again.
-            TestUtils.waitOnMainUntil(() -> editText.hasWindowFocus(), TIMEOUT);
+            TestUtils.waitOnMainUntil(() -> editText.hasWindowFocus(), DEFAULT_TIMEOUT);
 
             // Not expect the input connection will be started or finished even gaining non-IME
             // focusable window focus.
@@ -271,24 +279,28 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
 
             final String markerHidden = getTestMarker("hidden");
             launchTestActivity(markerHidden, SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-            expectEvent(stream, editorMatcher("onStartInput", markerHidden), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", markerHidden), DEFAULT_TIMEOUT);
 
             // Ensure we don't have a session.
             MockTestActivityUtil.forceStopPackage();
 
             final String markerShown = getTestMarker("shown");
-            MockTestActivityUtil.launchSync(instant, TIMEOUT, Map.of(
-                    MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, markerShown,
-                    MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE,
-                    Integer.toString(SOFT_INPUT_STATE_VISIBLE)));
+            MockTestActivityUtil.launchSync(
+                    instant,
+                    DEFAULT_TIMEOUT.toMillis(),
+                    Map.of(
+                            MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS,
+                            markerShown,
+                            MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE,
+                            Integer.toString(SOFT_INPUT_STATE_VISIBLE)));
 
             // Wait for startInput on the second activity to have happened, but don't consume the
             // events.
-            expectEvent(stream.copy(), editorMatcher("onStartInput", markerShown), TIMEOUT);
+            expectEvent(stream.copy(), editorMatcher("onStartInput", markerShown), DEFAULT_TIMEOUT);
             // Assert that the onStartInputView was dispatched for the second activity, not the
             // first.
             notExpectEvent(stream, editorMatcher("onStartInputView", markerHidden), 0);
-            expectEvent(stream, editorMatcher("onStartInputView", markerShown), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", markerShown), DEFAULT_TIMEOUT);
         }
     }
 
@@ -359,8 +371,11 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
         final boolean instant =
                 instrumentation.getTargetContext().getPackageManager().isInstantApp();
         final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
-        try (AutoCloseable closeable = MockTestActivityUtil.launchSync(instant,
-                TIMEOUT, Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker1))) {
+        try (AutoCloseable closeable =
+                MockTestActivityUtil.launchSync(
+                        instant,
+                        DEFAULT_TIMEOUT.toMillis(),
+                        Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker1))) {
 
             try (MockImeSession imeSession = MockImeSession.create(
                     instrumentation.getContext(),
@@ -368,16 +383,16 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
                     new ImeSettings.Builder())) {
                 final ImeEventStream stream = imeSession.openEventStream();
 
-                expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInput", marker1), DEFAULT_TIMEOUT);
 
-                expectCommand(stream, imeSession.suspendCreateSession(), TIMEOUT);
+                expectCommand(stream, imeSession.suspendCreateSession(), DEFAULT_TIMEOUT);
 
                 final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
                 final EditText editText = launchTestActivity(marker2);
                 TestUtils.runOnMainSync(() -> editText.getContext().getSystemService(
                         InputMethodManager.class).invalidateInput(editText));
 
-                expectCommand(stream, imeSession.resumeCreateSession(), TIMEOUT);
+                expectCommand(stream, imeSession.resumeCreateSession(), DEFAULT_TIMEOUT);
             }
         }
     }
@@ -549,11 +564,11 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
             final MyTestEditor myEditor = myEditorRef.get();
 
             // Wait until the MockIme gets bound to the TestActivity.
-            expectBindInput(stream, Process.myPid(), TIMEOUT);
+            expectBindInput(stream, Process.myPid(), DEFAULT_TIMEOUT);
 
             {
                 final ImeEvent startInputEvent =
-                        expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+                        expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
                 final EditorInfo editorInfo =
                         startInputEvent.getArguments().getParcelable("editorInfo");
                 assertThat(editorInfo).isNotNull();
@@ -580,7 +595,7 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
             // was called.
             {
                 final ImeEvent startInputEvent =
-                        expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+                        expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
                 final boolean restarting = startInputEvent.getArguments().getBoolean("restarting");
                 assertThat(restarting).isTrue();
                 final EditorInfo editorInfo =
