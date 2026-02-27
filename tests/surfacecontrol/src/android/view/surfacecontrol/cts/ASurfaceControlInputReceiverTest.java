@@ -195,12 +195,12 @@ public class ASurfaceControlInputReceiverTest {
 
     @Test
     public void testRemoteASurfaceControlReceivesInput() throws InterruptedException {
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 new RemoteSurfaceController(mActivity, true /* zOrderOnTop */, true /* batched */);
 
         final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier verifier = new BlockingQueueEventVerifier(events);
-        helper.setup(
+        surfaceController.setup(
                 null,
                 new IMotionEventReceiver.Stub() {
                     @Override
@@ -273,9 +273,9 @@ public class ASurfaceControlInputReceiverTest {
             LinkedBlockingQueue<InputEvent> embeddedEvents,
             LinkedBlockingQueue<InputEvent> hostEvents)
             throws InterruptedException, RemoteException {
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 new RemoteSurfaceController(mActivity, false /* zOrderOnTop */, batched);
-        helper.setup(
+        surfaceController.setup(
                 (v, event) -> {
                     hostEvents.add(MotionEvent.obtain(event));
                     return true;
@@ -286,7 +286,7 @@ public class ASurfaceControlInputReceiverTest {
                         embeddedEvents.add(MotionEvent.obtain(motionEvent));
                     }
                 });
-        return helper;
+        return surfaceController;
     }
 
     @Test
@@ -301,7 +301,7 @@ public class ASurfaceControlInputReceiverTest {
         final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
 
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 testTransferGestureFromHostToEmbeddedRemoteSetup(
                         batched, embeddedEvents, hostEvents);
         Rect bounds = new Rect();
@@ -317,7 +317,7 @@ public class ASurfaceControlInputReceiverTest {
 
         mWm.transferTouchGesture(
                 mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                helper.mEmbeddedTransferToken);
+                surfaceController.mEmbeddedTransferToken);
         hostVerifier.assertReceivedMotion(
                 withMotionAction(MotionEvent.ACTION_CANCEL),
                 "Failed to receive CANCEL event on host");
@@ -349,7 +349,7 @@ public class ASurfaceControlInputReceiverTest {
         final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
 
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 testTransferGestureFromHostToEmbeddedRemoteSetup(
                         batched, embeddedEvents, hostEvents);
         Rect bounds = new Rect();
@@ -386,7 +386,7 @@ public class ASurfaceControlInputReceiverTest {
 
         mWm.transferTouchGesture(
                 mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                helper.mEmbeddedTransferToken);
+                surfaceController.mEmbeddedTransferToken);
         hostVerifier.assertReceivedMotion(
                 withMotionAction(MotionEvent.ACTION_CANCEL),
                 "Failed to receive CANCEL event on host");
@@ -420,7 +420,7 @@ public class ASurfaceControlInputReceiverTest {
         final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
 
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 testTransferGestureFromHostToEmbeddedRemoteSetup(
                         batched, embeddedEvents, hostEvents);
         Rect bounds = new Rect();
@@ -445,7 +445,7 @@ public class ASurfaceControlInputReceiverTest {
                 withMotionAction(MotionEvent.ACTION_DOWN), "Failed to receive DOWN event on host");
         mWm.transferTouchGesture(
                 mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                helper.mEmbeddedTransferToken);
+                surfaceController.mEmbeddedTransferToken);
 
         // Embedded receives the DOWN event after transfer and host receives a cancel.
         embeddedVerifier.assertReceivedMotion(
@@ -510,7 +510,7 @@ public class ASurfaceControlInputReceiverTest {
         final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
 
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 testTransferGestureFromHostToEmbeddedRemoteSetup(
                         batched, embeddedEvents, hostEvents);
         Rect bounds = new Rect();
@@ -538,7 +538,7 @@ public class ASurfaceControlInputReceiverTest {
 
         mWm.transferTouchGesture(
                 mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                helper.mEmbeddedTransferToken);
+                surfaceController.mEmbeddedTransferToken);
         // Embedded receives two pointers and host receives a cancel.
         embeddedVerifier.assertReceivedMotion(
                 allOf(
@@ -591,9 +591,9 @@ public class ASurfaceControlInputReceiverTest {
         final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
 
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 new RemoteSurfaceController(mActivity, false /* zOrderOnTop */, batched);
-        helper.setup(
+        surfaceController.setup(
                 (v, event) -> {
                     hostEvents.add(MotionEvent.obtain(event));
                     return true;
@@ -628,7 +628,7 @@ public class ASurfaceControlInputReceiverTest {
         // should get the 2 pointers.
         mWm.transferTouchGesture(
                 mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                helper.mEmbeddedTransferToken);
+                surfaceController.mEmbeddedTransferToken);
 
         embeddedVerifier.assertReceivedMotion(
                 withMotionAction(MotionEvent.ACTION_DOWN),
@@ -648,7 +648,7 @@ public class ASurfaceControlInputReceiverTest {
 
         // Request input back from embedded. Host should receive three pointers and embedded should
         // receive CANCEL.
-        helper.transferInputFromEmbeddedToHost();
+        surfaceController.transferInputFromEmbeddedToHost();
 
         // Has transferred back the sequence immediately.
         embeddedVerifier.assertReceivedMotion(
@@ -738,7 +738,7 @@ public class ASurfaceControlInputReceiverTest {
     @Test
     public void testTransferGestureFromEmbeddedToHostRemote()
             throws InterruptedException, RemoteException {
-        RemoteSurfaceController helper =
+        RemoteSurfaceController surfaceController =
                 new RemoteSurfaceController(mActivity, true /* zOrderOnTop */, true /* batched */);
 
         final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
@@ -746,7 +746,7 @@ public class ASurfaceControlInputReceiverTest {
                 new BlockingQueueEventVerifier(embeddedEvents);
         final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
-        helper.setup(
+        surfaceController.setup(
                 (v, event) -> {
                     hostEvents.add(MotionEvent.obtain(event));
                     return true;
@@ -767,7 +767,7 @@ public class ASurfaceControlInputReceiverTest {
                 withMotionAction(MotionEvent.ACTION_DOWN),
                 "Failed to receive DOWN event on embedded");
 
-        helper.transferInputFromEmbeddedToHost();
+        surfaceController.transferInputFromEmbeddedToHost();
 
         embeddedVerifier.assertReceivedMotion(
                 withMotionAction(MotionEvent.ACTION_CANCEL),

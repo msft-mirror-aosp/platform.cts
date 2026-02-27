@@ -376,12 +376,12 @@ public class SurfaceControlInputReceiverTests {
     @Test
     public void testTransferGestureFromHostToEmbeddedRemote()
             throws InterruptedException, RemoteException {
-        RemoteSurfaceController helper = new RemoteSurfaceController(mActivity);
+        RemoteSurfaceController surfaceController = new RemoteSurfaceController(mActivity);
         try {
             final LinkedBlockingQueue<MotionEvent> embeddedMotionEvents =
                     new LinkedBlockingQueue<>();
             CountDownLatch hostReceivedTouchLatch = new CountDownLatch(1);
-            helper.setup(
+            surfaceController.setup(
                     false /* zOrderOnTop */,
                     (v, event) -> {
                         mWm.transferTouchGesture(
@@ -389,7 +389,7 @@ public class SurfaceControlInputReceiverTests {
                                         .getWindow()
                                         .getRootSurfaceControl()
                                         .getInputTransferToken(),
-                                helper.mEmbeddedTransferToken);
+                                surfaceController.mEmbeddedTransferToken);
                         hostReceivedTouchLatch.countDown();
                         return false;
                     },
@@ -404,19 +404,23 @@ public class SurfaceControlInputReceiverTests {
                         }
                     });
             Rect bounds = new Rect();
-            assertAndDumpWindowState(TAG,
+            assertAndDumpWindowState(
+                    TAG,
                     "Failed to wait for SurfaceControl with Input to be visible",
                     waitForWindowInfos(
                             windowInfos -> {
                                 for (var windowInfo : windowInfos) {
-                                    if (getBoundsIfWindowIsVisible(windowInfo,
+                                    if (getBoundsIfWindowIsVisible(
+                                            windowInfo,
                                             mDisplayId,
-                                            helper.mEmbeddedName, bounds)) {
+                                            surfaceController.mEmbeddedName,
+                                            bounds)) {
                                         return true;
                                     }
                                 }
                                 return false;
-                            }, Duration.ofSeconds(WAIT_TIME_S)));
+                            },
+                            Duration.ofSeconds(WAIT_TIME_S)));
             final Point coord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
             sendTap(InstrumentationRegistry.getInstrumentation(), coord);
@@ -427,7 +431,7 @@ public class SurfaceControlInputReceiverTests {
                     bounds.height() / 2);
             assertMotionEventInWindow(embeddedMotionEvents, coorRelativeToWindow);
         } finally {
-            helper.tearDown();
+            surfaceController.tearDown();
         }
     }
 
@@ -472,12 +476,12 @@ public class SurfaceControlInputReceiverTests {
     @Test
     public void testTransferGestureFromEmbeddedToHostRemote()
             throws InterruptedException, RemoteException {
-        RemoteSurfaceController helper = new RemoteSurfaceController(mActivity);
+        RemoteSurfaceController surfaceController = new RemoteSurfaceController(mActivity);
         try {
             final LinkedBlockingQueue<MotionEvent> hostMotionEvent =
                     new LinkedBlockingQueue<>();
             CountDownLatch embeddedReceivedTouch = new CountDownLatch(1);
-            helper.setup(
+            surfaceController.setup(
                     true /* zOrderOnTop */,
                     (v, event) -> {
                         try {
@@ -495,18 +499,23 @@ public class SurfaceControlInputReceiverTests {
                         }
                     });
             Rect bounds = new Rect();
-            assertAndDumpWindowState(TAG,
+            assertAndDumpWindowState(
+                    TAG,
                     "Failed to wait for SurfaceControl with Input to be visible",
                     waitForWindowInfos(
                             windowInfos -> {
                                 for (var windowInfo : windowInfos) {
-                                    if (getBoundsIfWindowIsVisible(windowInfo, mDisplayId,
-                                            helper.mEmbeddedName, bounds)) {
+                                    if (getBoundsIfWindowIsVisible(
+                                            windowInfo,
+                                            mDisplayId,
+                                            surfaceController.mEmbeddedName,
+                                            bounds)) {
                                         return true;
                                     }
                                 }
                                 return false;
-                            }, Duration.ofSeconds(WAIT_TIME_S)));
+                            },
+                            Duration.ofSeconds(WAIT_TIME_S)));
 
             final Point coord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
@@ -514,12 +523,12 @@ public class SurfaceControlInputReceiverTests {
             assertTrue("Failed to receive touch event on embedded",
                     embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
 
-            helper.transferInputFromEmbeddedToHost();
+            surfaceController.transferInputFromEmbeddedToHost();
 
             final Point expectedCoord = new Point(bounds.width() / 2, bounds.height() / 2);
             assertMotionEventInWindow(hostMotionEvent, expectedCoord);
         } finally {
-            helper.tearDown();
+            surfaceController.tearDown();
         }
     }
 
