@@ -215,6 +215,8 @@ object Components : ComponentsProvider() {
 
     @JvmField val KEEP_CLEAR_RECTS_ACTIVITY2 = component("KeepClearRectsActivity2")
 
+    @JvmField val RELAUNCH_INTENT_EXTRA_ACTIVITY = component("RelaunchIntentExtraActivity")
+
     /** The keys are used for [TestJournalProvider] when testing starting window. */
     object TestStartingWindowKeys {
         const val HANDLE_SPLASH_SCREEN_EXIT = "HandleSplashScreenExitActivity"
@@ -704,6 +706,12 @@ object Components : ComponentsProvider() {
         const val EXTRA_DISPLAY_ID_KEY = "extra_display_id_key"
         const val EXTRA_SYNC_EXCEPTION_KEY = "extra_sync_exception_key"
         const val EXTRA_ACTIVITY_NAME_KEY = "extra_activity_name_key"
+    }
+
+    object RelaunchIntentExtraActivity {
+        @JvmField
+        val RELAUNCH_TARGET_ACTIVITY = RESIZEABLE_ACTIVITY
+        const val EXTRA_IMAGE = "extra_image_bitmap"
     }
 
     @JvmStatic fun getPackageName() = packageName

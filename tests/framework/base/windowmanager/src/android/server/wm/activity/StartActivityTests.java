@@ -33,6 +33,8 @@ import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.app.Components.BROADCAST_RECEIVER_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
 import static android.server.wm.app.Components.NO_RELAUNCH_ACTIVITY;
+import static android.server.wm.app.Components.RELAUNCH_INTENT_EXTRA_ACTIVITY;
+import static android.server.wm.app.Components.RelaunchIntentExtraActivity.EXTRA_IMAGE;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.server.wm.app.Components.TRANSLUCENT_ACTIVITY;
 import static android.server.wm.app.Components.TestActivity.COMMAND_NAVIGATE_UP_TO;
@@ -57,6 +59,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
@@ -66,6 +69,7 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 import android.server.wm.intent.Activities;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -551,6 +555,24 @@ public class StartActivityTests extends ActivityManagerTestBase {
     @Test
     public void testStartActivitiesTaskOverlayWithClearTop() {
         verifyStartActivitiesTaskOverlayWithLaunchFlags(FLAG_ACTIVITY_CLEAR_TOP);
+    }
+
+    /** Test the activity start request won't affect the Bitmap stored in the Intent. */
+    @ApiTest(apis = {"android.content.Context#startActivity", "android.content.Intent#putExtra"})
+    @Test
+    public void testStartActivityPassBitmap_forwardWithoutIssue() {
+        // 100 * 100 * 4 bytes (ARGB_8888) = 40,000 bytes (~39KB)
+        final Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+        // The RELAUNCH_INTENT_EXTRA_ACTIVITY will launch a new Activity with passing the same extra
+        final Intent intent =
+                new Intent()
+                        .setComponent(RELAUNCH_INTENT_EXTRA_ACTIVITY)
+                        .addFlags(FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra(EXTRA_IMAGE, bitmap);
+        mContext.startActivity(intent);
+
+        waitAndAssertResumedActivity(
+                Components.RelaunchIntentExtraActivity.RELAUNCH_TARGET_ACTIVITY);
     }
 
     private void verifyStartActivitiesTaskOverlayWithLaunchFlags(int flags) {
