@@ -23,4 +23,5 @@
 
     <!-- By default ENABLE_MANUAL is false, set it as true for modules that need a manual test as fallback.-->
     <option name="compatibility:module-arg" value="CtsSysuiInteractiveTestCases:instrumentation-arg:ENABLE_MANUAL:=true" />
+    <option name="compatibility:module-arg" value="CtsCarInteractiveTestCases:instrumentation-arg:ENABLE_MANUAL:=true" />
 </configuration>

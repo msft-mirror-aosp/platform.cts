@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration description="Config for Interactive CTS Automotive test cases">
+    <option name="test-suite-tag" value="cts-v-host" />
+    <option name="config-descriptor:metadata" key="subplan" value="cts-v-host-interactive" />
+
+    <!-- Run the test only on automotive devices. -->
+    <object class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController"
+            type="module_controller">
+        <option name="required-feature" value="android.hardware.type.automotive" />
+    </object>
+
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <option name="install-arg" value="-t" />
+        <option name="test-file-name" value="CtsCarInteractiveTestCases.apk" />
+        <option name="test-file-name" value="CtsAutoVoipTestApp.apk"/>
+        <option name="test-file-name" value="CtsAutoMediaTestApp.apk"/>
+        <option name="test-file-name" value="CtsBackPressTestApp.apk"/>
+    </target_preparer>
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+        <option name="package" value="android.car.interactive.cts" />
+        <option name="include-annotation" value="com.android.interactive.annotations.Interactive" />
+    </test>
+</configuration>
