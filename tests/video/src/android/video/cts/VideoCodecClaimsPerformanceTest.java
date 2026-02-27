@@ -60,6 +60,11 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         super(mediaType, width, height, fps, isEncoder, componentClass, allTestParams);
     }
 
+    static final ArrayList<String> requiredMediaTypesListEnc =
+            CodecTestBase.compileRequiredMediaTypeList(true, false, true);
+    static final ArrayList<String> requiredMediaTypesListDec =
+            CodecTestBase.compileRequiredMediaTypeList(false, false, true);
+
     @Rule
     public TestName mTestName = new TestName();
 
@@ -191,6 +196,11 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         int argLength = argsList.get(0).length;
         final List<Object[]> updatedArgsList = new ArrayList<>();
         for (Object[] arg : argsList) {
+            boolean isEncoder = (boolean) arg[argLength - 2];
+            if ((isEncoder && !requiredMediaTypesListEnc.contains((String) arg[0]))
+                    || (!isEncoder && !requiredMediaTypesListDec.contains((String) arg[0]))) {
+                continue;
+            }
             Object[] argUpdate = new Object[argLength + 1];
             System.arraycopy(arg, 0, argUpdate, 0, argLength);
             argUpdate[argLength] = CodecTestBase.paramToString(argUpdate);
