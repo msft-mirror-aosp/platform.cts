@@ -188,6 +188,7 @@ public class NotificationTest {
                     Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
             metadata =
                     new BridgedNotificationMetadata(
+                            BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
                             "test_display_name",
                             "test_package",
                             "test_channel_id",
@@ -353,6 +354,7 @@ public class NotificationTest {
                     Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
             metadata =
                     new BridgedNotificationMetadata(
+                            BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
                             "test_display_name",
                             "test_package",
                             "test_channel_id",
@@ -373,6 +375,9 @@ public class NotificationTest {
         assertEquals(bubble, mNotification.getBubbleMetadata());
         if (Flags.bridgedNotifications()) {
             assertNotNull(mNotification.getBridgedNotificationMetadata());
+            assertEquals(
+                    BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                    mNotification.getBridgedNotificationMetadata().getOriginDeviceType());
             assertEquals(
                     "test_display_name",
                     mNotification.getBridgedNotificationMetadata().getOriginDeviceName());
