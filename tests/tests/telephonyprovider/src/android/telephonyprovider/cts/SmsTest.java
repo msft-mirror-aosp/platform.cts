@@ -110,7 +110,9 @@ import java.util.concurrent.TimeUnit;
 public class SmsTest {
     private static final String TAG = "SmsTest";
     private static final String TEST_SMS_BODY = "TEST_SMS_BODY";
-    private static final String TEST_WEB_OTP_SMS_SUFFIX = "\n\n@test.domain #12345";
+    // Note that this domain does not actually exist, hence cannot be auto-verified.
+    private static final String TEST_DOMAIN = "telephony.cts.test.domain";
+    private static final String TEST_WEB_OTP_SMS_SUFFIX = "\n\n@" + TEST_DOMAIN + " #12345";
     private static final String TEST_OTP_SMS_BODY = "Your one time code is 12345";
     private static final String TEST_NOT_OTP_SMS_BODY = "Your account number is 12345";
     private static final String TEST_ADDRESS = "+19998880001";
@@ -1003,15 +1005,19 @@ public class SmsTest {
         // The TextClassifier should correctly classifies it as a Web OTP message.
         // A standard app is considered not a trusted package by default (unless by exception).
         // Hence a Web OTP message should not be visible to a standard app.
-        final String message = getWebOtpMessage();
-        Uri inserted =
-                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
-                        TEST_ADDRESS,
-                        message,
-                        System.currentTimeMillis(),
-                        CONTAINS_WEB_OTP,
-                        TEST_THREAD_ID_1);
         try {
+            // Deny this package from being a verified domain owner of TEST_DOMAIN.
+            runShellCommand("pm set-app-links --package " + getContext().getPackageName()
+                    + " 3 " + TEST_DOMAIN);
+
+            final String message = getWebOtpMessage();
+            Uri inserted =
+                    mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                            TEST_ADDRESS,
+                            message,
+                            System.currentTimeMillis(),
+                            CONTAINS_WEB_OTP,
+                            TEST_THREAD_ID_1);
             stopBeingDefaultSmsApp();
             // Message should be inaccessible when querying directly, or by conversation ID
             assertSmsPresence(inserted, message, /* canRead */ false);
@@ -1019,6 +1025,40 @@ public class SmsTest {
             assertSmsPresence(threadUri, message, /* canRead */ false);
         } finally {
             ensureDefaultSmsApp();
+            // Reset domain verification status of TEST_DOMAIN for this package.
+            runShellCommand("pm set-app-links --package " + getContext().getPackageName()
+                    + " 0 " + TEST_DOMAIN);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_WEB_OTP_SMS_API,
+            FLAG_REDACT_OTP_APP_COMPAT_API})
+    @EnsureHasNoDeviceOwner
+    public void testWebOtpSms_verifiedDomainOwnerCanRead() {
+        try {
+            // Set this package to be a verified domain owner of TEST_DOMAIN.
+            runShellCommand("pm set-app-links --package " + getContext().getPackageName()
+                    + " 1 " + TEST_DOMAIN);
+
+            final String message = getWebOtpMessage();
+            Uri inserted =
+                    mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                            TEST_ADDRESS,
+                            message,
+                            System.currentTimeMillis(),
+                            CONTAINS_WEB_OTP,
+                            TEST_THREAD_ID_1);
+
+            // A verified domain owner should be able to read the Web OTP message.
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, message, /* canRead */ true);
+        } finally {
+            ensureDefaultSmsApp();
+            // Reset domain verification status of TEST_DOMAIN for this package.
+            runShellCommand("pm set-app-links --package " + getContext().getPackageName()
+                    + " 0 " + TEST_DOMAIN);
         }
     }
 
