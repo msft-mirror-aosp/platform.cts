@@ -297,23 +297,20 @@ public class ParamsTest extends AndroidTestCase {
     public void testPlaybackParamsSpeed() {
         // setting this cannot fail
         PlaybackParams p = new PlaybackParams();
-        for (float f : new float[] { .001f, 30.f, 300.f, -.0001f, -1.f, -300.f }) {
+        for (float f : new float[] { 0.f, .001f, 30.f, 300.f, -.0001f, -1.f, -300.f }) {
             PlaybackParams q = p.setSpeed(f);
             assertSame(p, q);
             try { fail("got " + p.getAudioFallbackMode()); } catch (IllegalStateException e) {}
             try { fail("got " + p.getAudioStretchMode());  } catch (IllegalStateException e) {}
             try { fail("got " + p.getPitch());             } catch (IllegalStateException e) {}
-            if (f > 0) {
-                // only positive speeds are expected to be successfully set
-                assertEquals(f, p.getSpeed(), FLOAT_TOLERANCE);
-            }
+            assertEquals(f, p.getSpeed(), FLOAT_TOLERANCE);
         }
     }
 
     public void testPlaybackParamsSpeedChecks() {
         PlaybackParams p = new PlaybackParams();
-        // speed must be in (0, Inf)
-        p.setSpeed(0.0f);
+        // speed must be in [0, Inf)
+        p.setSpeed(-0.001f);
         try { fail("got " + p.getSpeed());} catch (IllegalStateException e) {}
         p.setSpeed(Float.POSITIVE_INFINITY);
         try { fail("got " + p.getSpeed());} catch (IllegalStateException e) {}
