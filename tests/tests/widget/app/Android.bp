@@ -17,7 +17,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsWidgetApp",
     defaults: ["cts_support_defaults"],
     sdk_version: "test_current",
@@ -28,7 +28,6 @@ android_test {
         "androidx.appcompat_appcompat",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
