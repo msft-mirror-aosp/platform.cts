@@ -22,51 +22,49 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
-      "CDD Section 7.4.3 - Bluetooth"
-      " [C-11-1] MUST report the hardware feature flag"
-      "  android.hardware.bluetooth_le.channel_sounding"
-      " CDD Section 7.4.3 - Bluetooth"
-      " [C-11-2] MUST report the range accurately to within +/- 0.5 m"
-      " at the 90th percentile, as calculated with the "
-      " Cumulative Distribution Function, at the distance of 1 m."
-      " See https://source.android.com/docs/core/connect/presence-requirements"
-      "  for device setup info."
-    required_values {
-      key: "is_ble_cs_supported"
-      value {
-        bool_value: true
-      }
-    }
+      "CDD Section 7.4.3 - Bluetooth [C-11-1] MUST report the hardware feature "
+      "flag android.hardware.bluetooth_le.channel_sounding CDD Section 7.4.3 "
+      "- Bluetooth [C-11-2] MUST report the range accurately to within +/- 0.5 "
+      "m at the 90th percentile, as calculated with the  Cumulative "
+      "Distribution Function, at the distance of 1 m. See "
+      "https://source.android.com/docs/core/connect/presence-requirements for "
+      "device setup info."
     required_values {
       key: "ble_cs_accuracy"
       value {
         float_value: 0.9
       }
     }
-  }
-}
-measurements {
-  key: "is_ble_cs_supported"
-  value {
-    description:
-      "Whether the device supports BLE Channel Sounding feature or not."
-      "Indicated by the hardware feature flag "
-      "android.hardware.bluetooth_le.channel_sounding."
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
+    required_values {
+      key: "is_ble_cs_supported"
+      value {
+        bool_value: true
+      }
+    }
   }
 }
 measurements {
   key: "ble_cs_accuracy"
   value {
     description:
-      "Percentile of BLE Channel Sounding reports that are accurate to within"
-      "+/- 0.5 m, as calculated with the Cumulative Distribution Function,"
-      "at the distance of 1 m."
+      "Percentile of BLE Channel Sounding reports that are accurate to "
+      "within+/- 0.5 m, as calculated with the Cumulative Distribution "
+      "Function,at the distance of 1 m."
     measurement_type: MEASUREMENT_TYPE_FLOAT
     comparison: COMPARISON_GREATER_THAN_OR_EQUAL
     proto_field_number: 4
+  }
+}
+measurements {
+  key: "is_ble_cs_supported"
+  value {
+    description:
+      "Whether the device supports BLE Channel Sounding feature or "
+      "not. Indicated by the hardware feature flag "
+      "android.hardware.bluetooth_le.channel_sounding."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
   }
 }
 test_configs {

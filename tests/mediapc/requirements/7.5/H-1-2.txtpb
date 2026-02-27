@@ -17,16 +17,13 @@
 id: "7.5/H-1-2"
 name: "Primary Front Camera Resolution and Frame Rate"
 description: "Primary front camera resolution and frame rate"
-comment:
-  "The fps requirements are slightly less than the nominal frame rate. "
-  "For example 29.9 fps is used instead of 30 fps."
 specs {
   key: 10
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_10
     specification:
       "IF a front facing camera is present, the primary front facing camera "
-      "MUST have a resolution of at least 2 megapixels supporting video  "
+      "MUST have a resolution of at least 2 megapixels supporting video "
       "capture at 720p@30fps. The primary front-facing camera is the "
       "front-facing camera with the lowest camera ID."
     required_values {
@@ -73,7 +70,7 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_20
     specification:
       "IF a front facing camera is present, the primary front facing camera "
-      "MUST have a resolution of at least 2 megapixels supporting video  "
+      "MUST have a resolution of at least 2 megapixels supporting video "
       "capture at 720p@30fps. The primary front-facing camera is the "
       "front-facing camera with the lowest camera ID."
     required_values {
@@ -374,10 +371,12 @@ test_configs {
     proto_field_number: 98
   }
 }
-variants: {
+comment:
+  "The fps requirements are slightly less than the nominal frame rate. For "
+  "example 29.9 fps is used instead of 30 fps."
+variants {
   key: "no_front_camera"
-  value: {
+  value {
     description: "When the device has no front camera"
   }
 }
-
