@@ -211,7 +211,7 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testV32_onlyHybridBlock_installs() throws Exception {
+    public void testV32_onlyHybridBlock_succeeds() throws Exception {
         // If a signer is targeting the latest release, it can be signed by only the v3.2 hybrid
         // signature block since that would be the first verified by the platform. This test
         // verifies an APK signed only with the v3.2 signature scheme successfully installs on a
@@ -225,7 +225,7 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testV32_v3OriginalV32TargetsMaxInt_installs() throws Exception {
+    public void testV32_v3OriginalV32TargetsMaxInt_succeeds() throws Exception {
         // The v3.2 hybrid block supports SDK targeting similar to the other v3 schemes; if the v3.2
         // block is targeting an SDK range later than that installed on the device, then the install
         // should fall back to one of the previous v3 scheme blocks. This APK uses a v3.2 block that
@@ -260,6 +260,142 @@ public class HybridSignatureVerificationTest extends BaseAppSecurityTest {
         // this from the additional attribute and block the install. This test verifies stripping
         // protection works when written to the v3.1 signature block.
         assertInstallOnDeviceFails("v32-sig-stripped-v31-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32InstallV3ValidMinMaxStripAttr_succeeds() throws Exception {
+        // The minimum and maximum SDK versions being targeted by the hybrid block should be written
+        // to the v3.0 and v3.1 signature block for stripping / tampering protection. While these
+        // attributes should not be verified if the v3.2 block is used for the install, this test
+        // verifies an APK that includes these attributes in the v3.0 block successfully installs.
+        assertInstallOnDeviceSucceeds(
+                "v32-mldsa-rsa-2048_2-v3-rsa-2048-min-max-strip-attr-vaid.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_originalKeyAndV32HybridConfig");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SdkRangeAbovePlatformV3InRange_succeeds() throws Exception {
+        // The v3.2 block is intended to eventually transition away from the hybrid signing back to
+        // a single signer in the v3.0 / v3.1 block. To prevent tampering, the hybrid block uses
+        // both a min and max SDK version stripping protection attribute to ensure neither of the
+        // block's SDK range values are modified. This test verifies when the v3.2 block targets
+        // an SDK range beyond that of the platform, both of the attributes successfully confirm the
+        // values from the v3.2 block, and the APK installs with the original signer.
+        assertInstallOnDeviceSucceeds(
+                "v32-min-max-tgt-above-platform-v3-rsa-2048.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_v3OriginalV32TargetsMaxInt");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SdkRangeAbovePlatformV31InRange_succeeds() throws Exception {
+        // Similar to above, if the v3.2 block targets an SDK range beyond that of the platform, it
+        // should fall back to the previous version that does target the platform. This test
+        // verifies the APK is verified with the v3.1 signature when that targets the device SDK.
+        assertInstallOnDeviceSucceeds(
+                "v32-min-max-tgt-above-platform-v31-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_v3OriginalV31RotatedV32SdkRangeOutsideDeviceSdk");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SdkRangeBelowPlatformV31InRange_succeeds() throws Exception {
+        // Similar to above, if the v3.2 block targets an SDK range below that of the platform, it
+        // should fall back to the previous version that does target the platform. This test is
+        // intended to verify the scenario where the hybrid block was used for the PQC transition
+        // and the package moved to a single signer config in a later release. Since later platform
+        // SDK versions with support are not yet available, this APK targets SDK versions 28-35
+        // for the v3.2 hybrid block to force the v3.1 signer to be used and to verify the stripping
+        // protection attributes.
+        assertInstallOnDeviceSucceeds(
+                "v32-min-max-tgt-below-platform-v31-rsa-2048_2-v3-rsa-2048.apk", getDevice());
+
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TEST_PACKAGE,
+                DEVICE_TEST_CLASS,
+                "testV32_v3OriginalV31RotatedV32SdkRangeOutsideDeviceSdk");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SdkRangeAbovePlatformMinSdkAttrMissing_fails() throws Exception {
+        // Whenever a V3.2 block is present, the stripping protection additional attributes should
+        // be written to the v3.0 and v3.1 signature blocks. While a missing max SDK version
+        // attribute implies that the max SDK version of the v3.2 block is all platform versions,
+        // the platform cannot determine the intended minimum SDK version if that attribute is
+        // missing but the maximum SDK version stripping protection attribute is present; in that
+        // case, the platform should block the install.
+        assertInstallOnDeviceFails(
+                "v32-min-max-tgt-above-platform-v3-min-attr-missing.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v32-min-max-tgt-above-platform-v31-v3-min-attr-missing.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SdkRangeAbovePlatformMinSdkAttrMismatch_fails() throws Exception {
+        // The v3.2 hybrid stripping protection attributes are intended to ensure that if the v3.2
+        // signature is skipped due to it targeting an SDK range outside that of the platform, the
+        // attributes will confirm that the SDK range of the block was not modified. If the minimum
+        // SDK version of the v3.2 block is modified, the stripping protection attribute in the v3.0
+        // or v3.1 signer should catch this and block the install.
+        assertInstallOnDeviceFails(
+                "v32-min-max-tgt-above-platform-v3-min-attr-mismatch.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v32-min-max-tgt-above-platform-v31-v3-min-attr-mismatch.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SdkRangeAbovePlatformMaxSdkAttrMismatch_fails() throws Exception {
+        // The v3.2 hybrid stripping protection attributes are intended to ensure that if the v3.2
+        // signature is skipped due to it targeting an SDK range outside that of the platform, the
+        // attributes will confirm that the SDK range of the block was not modified. If the maximum
+        // SDK version of the v3.2 block is modified, the stripping protection attribute in the v3.0
+        // or v3.1 signer should catch this and block the install.
+        assertInstallOnDeviceFails(
+                "v32-min-max-tgt-above-platform-v3-max-attr-mismatch.apk", getDevice());
+        assertInstallOnDeviceFails(
+                "v32-min-max-tgt-above-platform-v31-v3-max-attr-mismatch.apk", getDevice());
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testV32_v32SdkRangeAbovePlatformMaxSdkMismatch_fails() throws Exception {
+        // The v3.2 signers must target the same minimum and maximum SDK version. If the v3.2
+        // signers target an SDK version beyond that of the device, then the min and max SDK values
+        // targeted by the signers will be stored for verification against the stripping / tampering
+        // protection attributes in the v3.0 and v3.1 signature blocks. This test verifies if the
+        // max SDK versions being targeted by the hybrid signers are not the same, then the install
+        // is blocked.
+        assertInstallOnDeviceFails(
+                "v32-min-max-tgt-above-platform-max-mismatch-v3-rsa-2048.apk", getDevice());
     }
 
     @CddTest(requirement = "4/C-0-2")

@@ -240,6 +240,44 @@ public class V32HybridTests extends AndroidTestCase {
                 packageInfo.signingInfo.getApkContentsSigners(), RSA_2048_SHA256_DIGEST);
     }
 
+    public void testV32_v3OriginalV31RotatedV32SdkRangeOutsideDeviceSdk() throws Exception {
+        // If the APK is signed with a v3.2 block that targets an SDK range outside that of the
+        // device, then the platform should fall back to verifying the APK using one of the previous
+        // v3 signature schemes; for this test, the APK is signed with the original key in the v3.0
+        // block and the rotated key in the v3.1 block targeting the platform SDK version.
+        PackageManager packageManager = getContext().getPackageManager();
+        PackageInfo packageInfo =
+                packageManager.getPackageInfo(
+                        TEST_PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES);
+
+        assertFalse(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(ML_DSA_65_CERT_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertFalse(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_3_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_2_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertExpectedSignaturesDigests(
+                packageInfo.signingInfo.getApkContentsSigners(), RSA_2048_2_SHA256_DIGEST);
+        assertExpectedSignaturesDigests(
+                packageInfo.signingInfo.getSigningCertificateHistory(),
+                RSA_2048_SHA256_DIGEST,
+                RSA_2048_2_SHA256_DIGEST);
+    }
+
     public void testV32_v3OriginalV32HybridV31RotatedConfig() throws Exception {
         // Verifies that an APK signed with the original key in the v3.0 block, both previous hybrid
         // signers in the lineage, and a a rotated key in the v3.1 block reports the new single
