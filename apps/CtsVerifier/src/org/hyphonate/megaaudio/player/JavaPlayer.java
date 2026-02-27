@@ -41,6 +41,9 @@ public class JavaPlayer extends Player {
     /* The AudioTrack for playing the audio stream */
     private AudioTrack mAudioTrack;
 
+    private int mEncoding = AudioFormat.ENCODING_PCM_FLOAT;
+    private byte[] mByteExchangeBuffer;
+
     /*
      * Data buffers
      */
@@ -74,20 +77,22 @@ public class JavaPlayer extends Player {
     public int build(BuilderBase builder) {
         mChannelCount = builder.getChannelCount();
         mChannelMask = builder.getChannelMask();
+        mChannelIndexMask = builder.getChannelIndexMask();
         mSampleRate = builder.getSampleRate();
         mNumExchangeFrames = builder.getNumExchangeFrames();
         mPerformanceMode = builder.getJavaPerformanceMode();
         int routeDeviceId = builder.getRouteDeviceId();
-        int encoding = builder.getEncodingForJava();
+        mEncoding = builder.getEncodingForJava();
         if (LOG) {
             Log.d(TAG, "build()");
             Log.d(TAG, "  chans:" + mChannelCount);
             Log.d(TAG, "  mask:0x" + Integer.toHexString(mChannelMask));
+            Log.d(TAG, "  indexMask:0x" + Integer.toHexString(mChannelIndexMask));
             Log.d(TAG, "  rate: " + mSampleRate);
             Log.d(TAG, "  frames: " + mNumExchangeFrames);
             Log.d(TAG, "  perf mode: " + mPerformanceMode);
             Log.d(TAG, "  route device: " + routeDeviceId);
-            Log.d(TAG, "  encoding: " + encoding);
+            Log.d(TAG, "  encoding: " + mEncoding);
         }
 
         mAudioSource = mSourceProvider.getJavaSource();
@@ -95,12 +100,14 @@ public class JavaPlayer extends Player {
 
         try {
             AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
-            formatBuilder.setEncoding(builder.getEncodingForJava()).setSampleRate(mSampleRate);
+            formatBuilder.setEncoding(mEncoding).setSampleRate(mSampleRate);
             // setChannelIndexMask() won't give us a FAST_PATH
             // .setChannelIndexMask(
             //      StreamBase.channelCountToIndexMask(mChannelCount))
             // .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount));
-            if (mChannelCount != 0) {
+            if (mChannelIndexMask != 0) {
+                formatBuilder.setChannelIndexMask(mChannelIndexMask);
+            } else if (mChannelCount != 0) {
                 formatBuilder.setChannelMask(
                         StreamBase.channelCountToOutPositionMask(mChannelCount));
             } else {
@@ -109,6 +116,13 @@ public class JavaPlayer extends Player {
             AudioTrack.Builder audioTrackBuilder = new AudioTrack.Builder();
             audioTrackBuilder.setAudioFormat(formatBuilder.build())
                     .setPerformanceMode(mPerformanceMode);
+
+            if (mEncoding != AudioFormat.ENCODING_PCM_FLOAT) {
+                int sampleSizeInBytes = StreamBase.sampleSizeInBytes(mEncoding);
+                mByteExchangeBuffer =
+                        new byte[mNumExchangeFrames * calcChannelCount() * sampleSizeInBytes];
+            }
+
             mAudioTrack = audioTrackBuilder.build();
 
             allocBurstBuffer();
@@ -306,10 +320,50 @@ public class JavaPlayer extends Player {
             while (mPlaying) {
                 mAudioSource.pull(mAudioBuffer, mNumExchangeFrames, channelCount);
 
-                onPull();
+                int numSamplesWritten;
+                if (mEncoding == AudioFormat.ENCODING_PCM_FLOAT) {
+                    numSamplesWritten = mAudioTrack.write(
+                            mAudioBuffer, 0, mNumPlaySamples, AudioTrack.WRITE_BLOCKING);
+                } else {
+                    int sampleSizeInBytes = StreamBase.sampleSizeInBytes(mEncoding);
+                    int numBytesToWrite = mNumPlaySamples * sampleSizeInBytes;
+                    if (mByteExchangeBuffer == null
+                            || mByteExchangeBuffer.length < numBytesToWrite) {
+                        mByteExchangeBuffer = new byte[numBytesToWrite];
+                    }
 
-                int numSamplesWritten = mAudioTrack.write(
-                        mAudioBuffer, 0, mNumPlaySamples, AudioTrack.WRITE_BLOCKING);
+                    switch (mEncoding) {
+                        case AudioFormat.ENCODING_PCM_16BIT -> {
+                            for (int i = 0; i < mNumPlaySamples; i++) {
+                                short sample = (short) (mAudioBuffer[i] * 32767.0f);
+                                mByteExchangeBuffer[i * 2] = (byte) (sample & 0xFF);
+                                mByteExchangeBuffer[i * 2 + 1] = (byte) ((sample >> 8) & 0xFF);
+                            }
+                        }
+                        case AudioFormat.ENCODING_PCM_24BIT_PACKED -> {
+                            for (int i = 0; i < mNumPlaySamples; i++) {
+                                int sample = (int) (mAudioBuffer[i] * 8388607.0f);
+                                mByteExchangeBuffer[i * 3] = (byte) (sample & 0xFF);
+                                mByteExchangeBuffer[i * 3 + 1] = (byte) ((sample >> 8) & 0xFF);
+                                mByteExchangeBuffer[i * 3 + 2] = (byte) ((sample >> 16) & 0xFF);
+                            }
+                        }
+                        case AudioFormat.ENCODING_PCM_32BIT -> {
+                            for (int i = 0; i < mNumPlaySamples; i++) {
+                                int sample = (int) (mAudioBuffer[i] * 2.1474836E+9f);
+                                mByteExchangeBuffer[i * 4] = (byte) (sample & 0xFF);
+                                mByteExchangeBuffer[i * 4 + 1] = (byte) ((sample >> 8) & 0xFF);
+                                mByteExchangeBuffer[i * 4 + 2] = (byte) ((sample >> 16) & 0xFF);
+                                mByteExchangeBuffer[i * 4 + 3] = (byte) ((sample >> 24) & 0xFF);
+                            }
+                        }
+                        default -> { }
+                    }
+                    int bytesWritten = mAudioTrack.write(
+                            mByteExchangeBuffer, 0, numBytesToWrite, AudioTrack.WRITE_BLOCKING);
+                    numSamplesWritten = bytesWritten / sampleSizeInBytes;
+                }
+
                 if (numSamplesWritten < 0) {
                     // error
                     Log.e(TAG, "AudioTrack write error - numSamplesWritten: " + numSamplesWritten);
