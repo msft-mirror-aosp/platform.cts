@@ -352,6 +352,8 @@ public class VehiclePropertyVerifier<T> {
     private final boolean mRequireMinMaxValues;
     private final boolean mRequireMinValuesToBeZero;
     private final boolean mRequireZeroToBeContainedInMinMaxRanges;
+    private final Optional<Range<Comparable>> mAllowableMinRange;
+    private final Optional<Range<Comparable>> mAllowableMaxRange;
     private final boolean mPossiblyDependentOnHvacPowerOn;
     private final boolean mVerifyErrorStates;
     // Delay to wait for power state to propagate to dependent properties.
@@ -388,6 +390,8 @@ public class VehiclePropertyVerifier<T> {
             boolean requireMinMaxValues,
             boolean requireMinValuesToBeZero,
             boolean requireZeroToBeContainedInMinMaxRanges,
+            Optional<Range<Comparable>> allowableMinRange,
+            Optional<Range<Comparable>> allowableMaxRange,
             boolean possiblyDependentOnHvacPowerOn,
             boolean verifyErrorStates,
             int powerPropagationDelayMs,
@@ -419,6 +423,8 @@ public class VehiclePropertyVerifier<T> {
         mRequireMinMaxValues = requireMinMaxValues;
         mRequireMinValuesToBeZero = requireMinValuesToBeZero;
         mRequireZeroToBeContainedInMinMaxRanges = requireZeroToBeContainedInMinMaxRanges;
+        mAllowableMinRange = allowableMinRange;
+        mAllowableMaxRange = allowableMaxRange;
         mPossiblyDependentOnHvacPowerOn = possiblyDependentOnHvacPowerOn;
         mVerifyErrorStates = verifyErrorStates;
         mPowerPropagationDelayMs = powerPropagationDelayMs;
@@ -2396,6 +2402,27 @@ public class VehiclePropertyVerifier<T> {
                 }
             }
 
+            if (mAllowableMinRange.isPresent() && areaIdMinValue != null) {
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + " min value must be in allowable range: "
+                                        + mAllowableMinRange.get())
+                        .that(mAllowableMinRange.get().contains((Comparable) areaIdMinValue))
+                        .isTrue();
+            }
+            if (mAllowableMaxRange.isPresent() && areaIdMaxValue != null) {
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + " max value must be in allowable range: "
+                                        + mAllowableMaxRange.get())
+                        .that(mAllowableMaxRange.get().contains((Comparable) areaIdMaxValue))
+                        .isTrue();
+            }
+
             if (mRequireMinValuesToBeZero) {
                 assertWithMessage(
                                 mPropertyName + " - area ID: " + areaId + " min value must be zero")
@@ -3204,6 +3231,19 @@ public class VehiclePropertyVerifier<T> {
                 int areaId);
     }
 
+    private static <V extends Comparable> Range<V> createRange(V min, V max) {
+        if (min == null && max == null) {
+            return Range.all();
+        }
+        if (min == null) {
+            return Range.atMost(max);
+        }
+        if (max == null) {
+            return Range.atLeast(min);
+        }
+        return Range.closed(min, max);
+    }
+
     /** The builder class. */
     public static class Builder<T> {
         private final int mPropertyId;
@@ -3229,6 +3269,8 @@ public class VehiclePropertyVerifier<T> {
         private boolean mRequireMinMaxValues = false;
         private boolean mRequireMinValuesToBeZero = false;
         private boolean mRequireZeroToBeContainedInMinMaxRanges = false;
+        private Optional<Range<Comparable>> mAllowableMinRange = Optional.empty();
+        private Optional<Range<Comparable>> mAllowableMaxRange = Optional.empty();
         private boolean mPossiblyDependentOnHvacPowerOn = false;
         private boolean mVerifyErrorStates = false;
         private int mPowerPropagationDelayMs = 2000;
@@ -3391,6 +3433,18 @@ public class VehiclePropertyVerifier<T> {
             return this;
         }
 
+        /** Sets the allowable range for the property's min value. */
+        public Builder<T> setAllowableMinRange(T min, T max) {
+            mAllowableMinRange = Optional.of(createRange((Comparable) min, (Comparable) max));
+            return this;
+        }
+
+        /** Sets the allowable range for the property's max value. */
+        public Builder<T> setAllowableMaxRange(T min, T max) {
+            mAllowableMaxRange = Optional.of(createRange((Comparable) min, (Comparable) max));
+            return this;
+        }
+
         /** Sets that the property might depend on HVAC_POWER_ON. */
         public Builder<T> setPossiblyDependentOnHvacPowerOn() {
             mPossiblyDependentOnHvacPowerOn = true;
@@ -3496,6 +3550,8 @@ public class VehiclePropertyVerifier<T> {
                     mRequireMinMaxValues,
                     mRequireMinValuesToBeZero,
                     mRequireZeroToBeContainedInMinMaxRanges,
+                    mAllowableMinRange,
+                    mAllowableMaxRange,
                     mPossiblyDependentOnHvacPowerOn,
                     mVerifyErrorStates,
                     mPowerPropagationDelayMs,
