@@ -53,7 +53,7 @@ public abstract class BaseTestCase {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void validateConnectivity() throws Exception {
         assumeTrue("CTS requires a working internet connection", isInternetConnected(mContext));
     }
 }
