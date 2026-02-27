@@ -43,7 +43,8 @@ public class CVE_2025_48605 extends NonRootSecurityTestCase {
             installPackage("CVE-2025-48605-test.apk");
 
             // Set lock and 'PocAdminReceiver' as device-owner.
-            try (AutoCloseable lockAndSetDeviceOwner = lockAndSetDeviceOwner()) {
+            try (AutoCloseable lockDevice = lockDevice();
+                    AutoCloseable setDeviceOwner = setDeviceOwner()) {
                 // Run DeviceTest.
                 runDeviceTests(
                         new DeviceTestRunOptions("android.security.cts.CVE_2025_48605_test"));
@@ -53,7 +54,7 @@ public class CVE_2025_48605 extends NonRootSecurityTestCase {
         }
     }
 
-    private AutoCloseable lockAndSetDeviceOwner() throws Exception {
+    private AutoCloseable lockDevice() throws Exception {
         // Set lock screen pin.
         final ITestDevice device = getDevice();
         runAndCheck(device, "locksettings set-pin 1234");
@@ -64,7 +65,15 @@ public class CVE_2025_48605 extends NonRootSecurityTestCase {
                 .that(output)
                 .contains("Lock credential verified successfully");
 
+        // Return 'AutoCloseable' to remove lock
+        return () -> {
+            runAndCheck(device, "locksettings clear --old 1234");
+        };
+    }
+
+    private AutoCloseable setDeviceOwner() throws Exception {
         // Set the 'PocDeviceAdminReceiver' as device-owner using device policy manager.
+        final ITestDevice device = getDevice();
         final int userId = device.getCurrentUser();
         final String componentName =
                 "android.security.cts.CVE_2025_48605_dpc/.PocDeviceAdminReceiver";
@@ -72,12 +81,8 @@ public class CVE_2025_48605 extends NonRootSecurityTestCase {
                 .that(device.setDeviceOwner(componentName, userId))
                 .isTrue();
 
-        // Return 'AutoCloseable' to remove lock and the 'PocDeviceAdminReceiver' as device-owner.
+        // Return 'AutoCloseable' to remove 'PocDeviceAdminReceiver' as device-owner.
         return () -> {
-            // Unset Lock screen pin.
-            runAndCheck(device, "locksettings clear --old 1234");
-
-            // Remove admin.
             device.removeAdmin(componentName, userId);
         };
     }
