@@ -87,6 +87,7 @@ public abstract class StreamBase {
     protected int mChannelCount;
 
     protected int mChannelMask;
+    protected int mChannelIndexMask;
 
     /**
      * The sample rate for this stream
@@ -348,16 +349,12 @@ public abstract class StreamBase {
      * @return The size in BYTES of samples encoded as specified.
      */
     public static int sampleSizeInBytes(int encoding) {
-        switch (encoding) {
-            case AudioFormat.ENCODING_PCM_16BIT:
-                return 2;
-
-            case AudioFormat.ENCODING_PCM_FLOAT:
-                return 4;
-
-            default:
-                return 0;
-        }
+        return switch (encoding) {
+            case AudioFormat.ENCODING_PCM_16BIT -> 2;
+            case AudioFormat.ENCODING_PCM_FLOAT, AudioFormat.ENCODING_PCM_32BIT -> 4;
+            case AudioFormat.ENCODING_PCM_24BIT_PACKED -> 3;
+            default -> 0;
+        };
     }
 
     //
