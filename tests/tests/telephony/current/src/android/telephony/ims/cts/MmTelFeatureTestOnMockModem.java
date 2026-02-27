@@ -57,9 +57,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -76,13 +73,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -95,9 +90,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class MmTelFeatureTestOnMockModem {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private static final String LOG_TAG = "MmTelFeatureTestOnMockModem";
     private static final boolean VDBG = false;
 
@@ -401,7 +393,6 @@ public class MmTelFeatureTestOnMockModem {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testTriggerEpsFallback() throws Exception {
         if (VDBG) Log.d(LOG_TAG, "testTriggerEpsFallback");
 
@@ -439,7 +430,6 @@ public class MmTelFeatureTestOnMockModem {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testStartAndStopImsTrafficSession() throws Exception {
         if (VDBG) Log.d(LOG_TAG, "testStartAndStopImsTrafficSession");
 
@@ -623,7 +613,6 @@ public class MmTelFeatureTestOnMockModem {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testStartAndStopImsTrafficSessionWhenServiceDisconnected() throws Exception {
         if (VDBG) Log.d(LOG_TAG, "testStartAndStopImsTrafficSessionWhenServiceDisconnected");
 
