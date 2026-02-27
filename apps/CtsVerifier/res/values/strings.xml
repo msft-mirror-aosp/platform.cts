@@ -6002,6 +6002,25 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="audio_datapaths_usb_multichannel_nodevices">There is no peripheral currently available for this test.
         Please connect a USB audio device supporting at least 8 channels.</string>
+    <string name="audio_datapaths_usb_4channel_input_nodevices">There is no peripheral currently available for this test.
+        Please connect a USB audio device supporting at least 4 channels.</string>
+
+    <string name="audio_datapaths_usb_multichannel_input_test">Audio Data Paths USB 4-Channel Input Test</string>
+    <string name="audio_datapaths_usb_multichannel_input_info">This test verifies support for at least 4 input channels for USB audio devices.
+        \nThis verifies CDD 5.6/H-1-11.
+        \nFor more information see:
+        \n • https://source.android.com/docs/compatibility/cts/usb-audio
+        \n • https://source.android.com/docs/core/audio/usb#input-and-output-channels
+        \nTest Setup:
+        \n • Connect a USB audio interface with at least 4 channels.
+        \n • Ensure the physical LOOPBACK switch is set to ON so that playback loops back to the capture inputs.
+        \n • If the device doesn\'t have a loopback switch, manually connect output to input channels to loopback.
+        \nTest Execution:
+        \n • Press the "Start" button. The test will step through each of the 4 input channels.
+        \n • Note: Only the first 4 channels will be tested even if the device supports more channels.
+        \n\nTest Completion:
+        \n • The test will pass automatically if a signal is detected on all 4 required input channels.
+    </string>
 
     <string name="audio_datapaths_noio">"No valid datapaths. PASS."</string>
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
