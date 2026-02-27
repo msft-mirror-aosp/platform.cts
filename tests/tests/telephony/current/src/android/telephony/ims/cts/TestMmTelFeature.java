@@ -291,6 +291,27 @@ public class TestMmTelFeature extends MmTelFeature {
         });
     }
 
+    public void onIncomingCallReceived(Bundle extras, int callType) {
+        Log.d(TAG, "onIncomingCallReceived");
+
+        ImsStreamMediaProfile mediaProfile = new ImsStreamMediaProfile(
+                ImsStreamMediaProfile.AUDIO_QUALITY_AMR,
+                ImsStreamMediaProfile.DIRECTION_SEND_RECEIVE,
+                ImsStreamMediaProfile.VIDEO_QUALITY_NONE,
+                ImsStreamMediaProfile.DIRECTION_INVALID,
+                ImsStreamMediaProfile.RTT_MODE_DISABLED);
+
+        ImsCallProfile callProfile = new ImsCallProfile(ImsCallProfile.SERVICE_TYPE_NORMAL,
+                callType, new Bundle(), mediaProfile);
+
+        TestImsCallSessionImpl incomingSession = new TestImsCallSessionImpl(callProfile);
+        mCallSession = incomingSession;
+
+        Executor executor = incomingSession.getExecutor();
+        executor.execute(() -> {
+            notifyIncomingCall(incomingSession, extras);
+        });
+    }
 
     public ImsCallSessionListener onIncomingCallReceivedReturnListener(Bundle extras) {
         Log.d(TAG, "onIncomingCallReceivedReturnListener");

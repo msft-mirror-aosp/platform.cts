@@ -64,7 +64,7 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private IBuildInfo mCtsBuild;
     private ExtensionRegistry mExtensionRegistry;

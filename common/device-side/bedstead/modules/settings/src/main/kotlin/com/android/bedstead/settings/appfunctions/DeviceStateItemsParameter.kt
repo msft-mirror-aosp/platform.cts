@@ -19,6 +19,7 @@ import android.app.appfunctions.AppFunctionService
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator
 import com.android.bedstead.settings.SETTINGS_PACKAGE_NAME
+import com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenerator
 
 /**
  * Mark a [DeviceStateItem] parameter as being parameterised with all available preferences.
@@ -28,7 +29,7 @@ import com.android.bedstead.settings.SETTINGS_PACKAGE_NAME
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @UsesParameterizedTestWithArgumentGenerator(
-    UsesParameterizedTestWithArgumentGenerator.Companion.SETTINGS
+    SettingsParameterizedTestWithArgumentGenerator::class
 )
 annotation class DeviceStateItemsParameter(
     /**

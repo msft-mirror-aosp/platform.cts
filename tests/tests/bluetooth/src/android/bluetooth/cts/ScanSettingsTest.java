@@ -22,7 +22,6 @@ import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.ScanSettings;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -30,7 +29,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
@@ -175,7 +173,6 @@ public class ScanSettingsTest {
         assertThat(settings.getScanMode()).isEqualTo(ScanSettings.SCAN_MODE_LOW_LATENCY);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_RSSI_SCAN_FILTER)
     @Test
     public void rssiThreshold() {
         int rssiThreshold = -50;
@@ -185,7 +182,6 @@ public class ScanSettingsTest {
         assertThat(settingsRssi.getRssiThreshold()).isEqualTo(rssiThreshold);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_PASSIVE_SCANNING)
     @Test
     public void scanType_isActiveByDefault() {
         ScanSettings settings = new ScanSettings.Builder().build();
@@ -193,7 +189,6 @@ public class ScanSettingsTest {
         assertThat(settings.getScanType()).isEqualTo(ScanSettings.SCAN_TYPE_ACTIVE);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_PASSIVE_SCANNING)
     @Test
     public void scanType() {
         ScanSettings settings =

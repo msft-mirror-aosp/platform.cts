@@ -16,19 +16,22 @@
 
 package com.android.bedstead.harrier.annotations;
 
+import com.android.bedstead.harrier.MainParameterizedTestWithArgumentGenerator;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark a {@link String} parameter as being parameterised with the given values.
+ * Mark a parameter as being parameterised with the given values.
  *
  * <p>You must be using the {@code BedsteadJUnit4} test runner to use this annotation.
  */
 @Target({ElementType.ANNOTATION_TYPE, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesParameterizedTestWithArgumentGenerator(UsesParameterizedTestWithArgumentGenerator.MAIN)
-public @interface StringTestParameter {
-    String[] value();
+@UsesParameterizedTestWithArgumentGenerator(MainParameterizedTestWithArgumentGenerator.class)
+public @interface EnumTestParameter {
+    /** The type of the enum. */
+    Class<? extends Enum<?>> value();
 }

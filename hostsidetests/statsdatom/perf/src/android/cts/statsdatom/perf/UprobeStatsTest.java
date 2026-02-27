@@ -75,7 +75,7 @@ public class UprobeStatsTest extends BaseHostJUnit4Test implements IBuildReceive
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Before
     public void setUp() throws Exception {

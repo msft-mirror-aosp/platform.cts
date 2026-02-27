@@ -32,7 +32,6 @@ import org.junit.runners.model.FrameworkMethod
 /**
  * [ParameterizedTestWithArgumentGenerator] for bedstead-settings
  */
-@Suppress("unused")
 class SettingsParameterizedTestWithArgumentGenerator(
     locator: BedsteadServiceLocator
 ) : ParameterizedTestWithArgumentGenerator {

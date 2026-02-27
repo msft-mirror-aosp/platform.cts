@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
-
+<issues
+    format="6"
+    by="lint 8.4.0-alpha08"
+    type="baseline"
+    client=""
+    dependencies="true"
+    name=""
+    variant="all"
+    version="8.4.0-alpha08">
     <issue
         id="NewApi"
         message="Call requires API level 35 (current min is 34): `android.hardware.camera2.CameraManager#isCameraDeviceSetupSupported`"
@@ -32,6 +39,39 @@
             file="cts/tests/camera/src/android/hardware/camera2/cts/RecordingTest.java"
             line="622"
             column="50"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level CUR_DEVELOPMENT/10000 (current min is 34): `android.hardware.camera2.CameraCaptureSession#updateOutputConfigurations`"
+        errorLine1="                    session.updateOutputConfigurations(outConfigurations);"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/camera/src/android/hardware/camera2/cts/RecordingTest.java"
+            line="814"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level CUR_DEVELOPMENT/10000 (current min is 34): `android.hardware.camera2.params.OutputConfiguration#makeDeferredAndRemoveSurfaces`"
+        errorLine1="                    recordConfig.makeDeferredAndRemoveSurfaces();"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/camera/src/android/hardware/camera2/cts/RecordingTest.java"
+            line="835"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level CUR_DEVELOPMENT/10000 (current min is 34): `android.hardware.camera2.CameraCaptureSession#updateOutputConfigurations`"
+        errorLine1="                    session.updateOutputConfigurations(outConfigurations);"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/camera/src/android/hardware/camera2/cts/RecordingTest.java"
+            line="836"
+            column="29"/>
     </issue>
 
 </issues>

@@ -116,7 +116,6 @@ public class BluetoothLeAudioCodecTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_ADD_OPUS_HI_RES_CODEC_TYPE_API)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getExtendedCodecNameAndType() {

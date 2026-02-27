@@ -242,6 +242,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
                 .forceStopPackage();
         android.server.wm.propertycameracompatenablerefreshviapauseoptout.Components
                 .forceStopPackage();
+        android.server.wm.displaycompat.Components.forceStopPackage();
     }
 
     @Test

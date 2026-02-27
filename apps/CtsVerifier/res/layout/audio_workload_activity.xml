@@ -73,6 +73,43 @@
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:minHeight="100dp" />
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/max_voices_reached_view"
+                style="@style/InstructionsSmallFont"
+                android:fontFamily="monospace"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:text="@string/audio_workload_max_voices_reached" />
+            <TextView
+                android:id="@+id/max_voices_reached_value_view"
+                style="@style/InstructionsSmallFont"
+                android:fontFamily="monospace"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:text="N/A" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal">
+            <TextView android:id="@+id/min_voices_required_view"
+                style="@style/InstructionsSmallFont"
+                android:fontFamily="monospace"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:text="@string/audio_workload_min_voices_required" />
+            <TextView
+                android:id="@+id/min_voices_required_value_view"
+                style="@style/InstructionsSmallFont"
+                android:fontFamily="monospace"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:text="N/A" />
+        </LinearLayout>
         <TextView
             android:id="@+id/info_message"
             style="@style/InstructionsSmallFont"

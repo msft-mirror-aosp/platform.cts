@@ -53,6 +53,7 @@ import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CallState;
 import android.telephony.CarrierConfigManager;
+import android.telephony.DisconnectCause;
 import android.telephony.PreciseCallState;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
@@ -148,11 +149,13 @@ public class ImsCallingTest extends ImsCallingBase {
         sMockModemManager = new MockModemManager();
         // SLOT 0
         sTestPreconditionsSet =
-                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT);
+                sMockModemManager.connectMockModemService();
         if (!sTestPreconditionsSet) {
             Log.w(LOG_TAG, "beforeAllTests: couldn't connect mock modem");
             return;
         }
+
+        sMockModemManager.insertSimCard(sTestSlot, MOCK_SIM_PROFILE_ID_TWN_CHT);
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -197,6 +200,7 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
+            sMockModemManager.removeSimCard(sTestSlot);
             boolean success = sMockModemManager.disconnectMockModemService();
             if (!success) {
                 Log.w(LOG_TAG, "afterAllTests: couldn't disconnect mock modem");
@@ -2556,6 +2560,53 @@ public class ImsCallingTest extends ImsCallingBase {
             // Cleanup
             overrideCarrierConfig(null);
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_VT_CALL_LOW_BATTERY_CONFIG)
+    @Test
+    public void testIncomingVideoCallInLowBattery() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_ALLOW_VIDEO_CALL_IN_LOW_BATTERY_BOOL,
+                false);
+
+        overrideCarrierConfig(bundle);
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        Bundle extras = new Bundle();
+        extras.putBoolean(ImsCallProfile.EXTRA_LOW_BATTERY, true);
+
+        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(
+                extras, ImsCallProfile.CALL_TYPE_VT);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+
+        Call call = getCall(mCurrentCallId);
+        if (call.getDetails().getState() == Call.STATE_RINGING) {
+            // Wait for the call to be rejected
+            waitUntilConditionIsTrueOrTimeout(
+                    new Condition() {
+                        @Override
+                        public Object expected() {
+                            return true;
+                        }
+
+                        @Override
+                        public Object actual() {
+                            return call.getDetails().getState() == Call.STATE_DISCONNECTED;
+                        }
+                    }, WAIT_FOR_CONDITION, "Call is not disconnected");
+        }
+
+        // Verify that the call was rejected due to low battery
+        assertEquals(DisconnectCause.INCOMING_AUTO_REJECTED,
+                call.getDetails().getDisconnectCause().getTelephonyDisconnectCause());
     }
 
     @Test

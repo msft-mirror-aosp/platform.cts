@@ -452,9 +452,9 @@ public class SurfaceControlInputReceiverTests {
             });
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(helper.mEmbeddedSc);
             Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken, mDisplayId);
-            Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
-                    bounds.height() / 2);
-            UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(centerCoordRelativeToWindow);
+            Point centerCoord =
+                    new Point(bounds.left + bounds.width() / 2, bounds.top + bounds.height() / 2);
+            UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(centerCoord);
             assertTrue(
                     "Failed to receive touch event on embedded",
                     embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
@@ -462,6 +462,7 @@ public class SurfaceControlInputReceiverTests {
                     helper.mEmbeddedTransferToken,
                     mActivity.getWindow().getRootSurfaceControl().getInputTransferToken());
             pointer.lift();
+            Point centerCoordRelativeToWindow = new Point(bounds.width() / 2, bounds.height() / 2);
             assertMotionEventInWindow(hostMotionEvent, centerCoordRelativeToWindow);
         } finally {
             helper.tearDown();

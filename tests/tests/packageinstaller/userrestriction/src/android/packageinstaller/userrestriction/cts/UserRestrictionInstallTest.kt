@@ -37,6 +37,7 @@ import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
+import com.android.bedstead.enterprise.annotations.DevicePolicyRelevant
 import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
@@ -45,7 +46,6 @@ import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.enterprise.DevicePolicyRelevant
 import com.android.bedstead.harrier.components.registerBroadcastReceiverForUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException

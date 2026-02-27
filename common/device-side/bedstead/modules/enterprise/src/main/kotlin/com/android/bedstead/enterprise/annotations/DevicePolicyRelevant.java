@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.enterprise.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,14 +22,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark a parameter as being parameterised with the given values.
- *
- * <p>You must be using the {@code BedsteadJUnit4} test runner to use this annotation.
+ * Mark that a test is relevant to enforcing device policy.
  */
-@Target({ElementType.ANNOTATION_TYPE, ElementType.PARAMETER})
+@Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesParameterizedTestWithArgumentGenerator(UsesParameterizedTestWithArgumentGenerator.MAIN)
-public @interface EnumTestParameter {
-    /** The type of the enum. */
-    Class<? extends Enum<?>> value();
+public @interface DevicePolicyRelevant {
+    String reason() default "";
 }

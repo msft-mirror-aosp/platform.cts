@@ -19,6 +19,7 @@ package android.telephony2.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.ContentResolver;
@@ -31,6 +32,7 @@ import android.net.Uri;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,6 +41,15 @@ public class TelephonyProviderPermissionTest {
     private static final String CARRIER_PROVIDER_AUTHORITY = "carrier_information";
     private static final String HBPCD_LOOKUP_PROVIDER_AUTHORITY = "hbpcd_lookup";
     private static final String EXPECTED_READ_PERMISSION = Manifest.permission.READ_PHONE_STATE;
+
+    @Before
+    public void setUp() throws Exception {
+        PackageManager pm =
+                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
+        assumeTrue(
+                "Skipping test: Telephony feature is not supported on this device",
+                pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+    }
 
     @Test
     public void testCarrierProviderReadPermission() {

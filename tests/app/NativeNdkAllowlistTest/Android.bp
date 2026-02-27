@@ -48,6 +48,7 @@ android_test {
     name: "CtsNativeNdkAllowlistTest",
     defaults: ["cts_defaults"],
     team: "trendy_team_system_performance",
+    compile_multilib: "both",
     dex_preopt: {
         enabled: false,
     },

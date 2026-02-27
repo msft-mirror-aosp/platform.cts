@@ -17,24 +17,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_library_host {
-    name: "bedstead-core-annotations",
-    srcs: [
-        "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.kt",
-        "common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/enterprise/DevicePolicyRelevant.java",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/FailureMode.java",
-    ],
-
-    libs: [
-        "androidx.annotation_annotation",
-    ],
-
-    plugins: ["auto_annotation_plugin"],
-}
-
 android_library {
     name: "HarrierInternal",
     sdk_version: "system_current",
@@ -42,9 +24,6 @@ android_library {
     srcs: [
         "src/main/java/**/*.java",
         "src/main/java/**/*.kt",
-        "common/src/main/java/**/*.java",
-        "common/src/main/java/**/*.kt",
-        //todo(b/483861925) move the files from common
         ":bedstead-multiuser-common-srcs",
     ],
 
@@ -105,10 +84,10 @@ android_test {
 filegroup {
     name: "harrier-host-srcs",
     srcs: [
-        "common/src/main/java/com/android/bedstead/harrier/annotations/TestOrder.kt",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/meta/RequiresBedsteadJUnit4.java",
-        "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationCostRunPrecedence.java",
-        "common/src/main/java/com/android/bedstead/harrier/DynamicParameterizedAnnotation.java",
+        "src/main/java/com/android/bedstead/harrier/annotations/TestOrder.kt",
+        "src/main/java/com/android/bedstead/harrier/annotations/meta/RequiresBedsteadJUnit4.java",
+        "src/main/java/com/android/bedstead/harrier/annotations/AnnotationCostRunPrecedence.java",
+        "src/main/java/com/android/bedstead/harrier/DynamicParameterizedAnnotation.java",
         "src/main/java/com/android/bedstead/harrier/FrameworkMethodSorter.java",
         "src/main/java/com/android/bedstead/harrier/BedsteadServiceLocator.kt",
         "src/main/java/com/android/bedstead/harrier/AnnotationSorter.kt",

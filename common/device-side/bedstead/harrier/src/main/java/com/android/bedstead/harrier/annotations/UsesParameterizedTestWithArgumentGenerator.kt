@@ -16,6 +16,7 @@
 package com.android.bedstead.harrier.annotations
 
 import com.android.bedstead.harrier.ParameterizedTestWithArgumentGenerator
+import kotlin.reflect.KClass
 
 /**
  * Annotation to apply to an argument annotation to indicate it should be processed with a
@@ -26,17 +27,8 @@ import com.android.bedstead.harrier.ParameterizedTestWithArgumentGenerator
 annotation class UsesParameterizedTestWithArgumentGenerator(
 
     /**
-     * The fully qualified name of the [ParameterizedTestWithArgumentGenerator] to use when parsing
-     * this annotation.
-     *
-     * This works even for cases where the annotation needs to be defined in a separate target
-     * to the executor, for example where the annotation cannot be defined in an Android target.
+     * The class implementing [ParameterizedTestWithArgumentGenerator] to use when parsing
+     * the annotation.
      */
-    val value: String
-) {
-    companion object {
-        const val SETTINGS = "com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenerator"
-        const val ENTERPRISE = "com.android.bedstead.enterprise.EnterpriseParameterizedTestWithArgumentGenerator"
-        const val MAIN = "com.android.bedstead.harrier.MainParameterizedTestWithArgumentGenerator"
-    }
-}
+    val value: KClass<out ParameterizedTestWithArgumentGenerator>
+)

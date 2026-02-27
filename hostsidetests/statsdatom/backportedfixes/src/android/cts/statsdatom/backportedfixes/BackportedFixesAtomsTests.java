@@ -68,7 +68,7 @@ public class BackportedFixesAtomsTests extends BaseHostJUnit4Test implements IBu
 
     @Rule(order = 2)
     public final CheckFlagsRule checkFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private IBuildInfo mCtsBuild;
     private static final String TEST_PKG = "com.android.server.cts.device.statsdatom";

@@ -176,7 +176,8 @@ public class MmTelFeatureTestOnMockModem {
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
         assertTrue("Failed to connect to mock modem service",
-                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+                sMockModemManager.connectMockModemService());
+        sMockModemManager.insertSimCard(sTestSlot, MOCK_SIM_PROFILE_ID_TWN_CHT);
 
         TimeUnit.MILLISECONDS.sleep(WAIT_SIM_STATE_TIMEOUT_MS);
 
@@ -242,6 +243,7 @@ public class MmTelFeatureTestOnMockModem {
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
             //assertNotNull(sMockModemManager);
+            sMockModemManager.removeSimCard(sTestSlot);
             assertTrue("Failed to disconnect from mock modem service",
                     sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;

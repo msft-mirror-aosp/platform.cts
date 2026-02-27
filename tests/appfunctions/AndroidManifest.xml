@@ -59,6 +59,7 @@
                 <action android:name="android.app.appfunctions.AppFunctionCallbackService"/>
             </intent-filter>
         </service>
+        <service android:name=".LocalAppFunctionRegistrationService" android:exported="false"/>
         <activity
             android:name="android.app.appfunctions.testutils.DynamicRegistrationActivity"
             android:launchMode="standard"

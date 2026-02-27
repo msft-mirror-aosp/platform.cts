@@ -29,6 +29,7 @@ import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaH
 import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.CtsTestUtil.freezeProcess
@@ -325,6 +326,51 @@ class AppFunctionActivityScopedRegistrationTest {
                     manager,
                     isEnabled = true,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun register_twoRegistrations_finishOneOfActivity_unregistersOnce() = doBlocking {
+        ActivityScenario.launch<DynamicRegistrationActivity>(
+            internalLaunchIntent
+        ).use { scenario ->
+            scenario.moveToState(Lifecycle.State.STARTED)
+            scenario.onActivity { activity ->
+                activity.manager.registerAppFunction(
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                        activity.mainExecutor,
+                        ConcatStrings()
+                    )
+             }
+            val activityIdFinished = awaitRegisteredActivityIds(
+                CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1
+            ).first()
+
+            ActivityScenario.launch<DynamicRegistrationActivity>(
+                internalLaunchIntent
+            ).use { scenario2 ->
+                scenario2.moveToState(Lifecycle.State.STARTED)
+                scenario2.onActivity { activity ->
+                    activity.registerAppFunction(
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+                }
+
+                val activityIdsBoth = awaitRegisteredActivityIds(
+                    CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                    numRegistrations = 2
+                )
+
+                scenario.onActivity { activity -> activity.finish() }
+
+                val activityIdSecond = awaitRegisteredActivityIds(
+                    CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                    numRegistrations = 1
+                ).first()
+
+                assertThat(activityIdSecond).isNotEqualTo(activityIdFinished)
+                assertThat(activityIdsBoth).containsExactly(activityIdFinished, activityIdSecond)
             }
         }
     }

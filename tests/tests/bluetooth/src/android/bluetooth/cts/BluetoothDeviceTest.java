@@ -989,7 +989,6 @@ public class BluetoothDeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
     @Test
     public void testSetOnHeadDetectionEnabled_permissionsAndEdgeCases() {
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
@@ -1005,7 +1004,6 @@ public class BluetoothDeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
     @Test
     public void testSetOnHead_permissionsAndEdgeCases() {
         assumeTrue(mHasBluetooth && mHasCompanionDevice);

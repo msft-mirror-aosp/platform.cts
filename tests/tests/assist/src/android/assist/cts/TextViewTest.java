@@ -16,8 +16,11 @@
 
 package android.assist.cts;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -42,6 +45,9 @@ public class TextViewTest extends AssistTestBase {
             Log.d(TAG, "Not running assist tests on low-RAM device.");
             return;
         }
+        assumeFalse(
+                "TextViewTest is not supported on Automotive",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
 
         start3pApp(TEST_CASE_TYPE);
         scrollTestApp(0, 0, true, false);

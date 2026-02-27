@@ -54,6 +54,7 @@ java_defaults {
     static_libs: [
         "android.media.codec-aconfig-java",
         "android.media.extractor.flags-aconfig-java",
+        "android.media.swcodec.flags-aconfig-java",
         "cts-media-common",
         "ctsmediav2common",
         "ctstestrunner-axt",

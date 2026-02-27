@@ -18,14 +18,10 @@ package com.android.bedstead.harrier;
 
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
@@ -37,8 +33,6 @@ import com.android.bedstead.nene.types.OptionalBoolean;
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -95,16 +89,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static EnsureHasSecondaryUser ensureHasSecondaryUser() {
         return new AutoAnnotation_BedsteadJUnit4_ensureHasSecondaryUser();
     }
-
-    // These are annotations which are not included indirectly
-    private static final ImmutableSet<String> sIgnoredAnnotationPackages =
-            ImmutableSet.of(
-                    "java.lang.annotation",
-                    "com.android.bedstead.harrier.annotations.meta",
-                    "org.junit");
-
-    private static final ImmutableList<String> sIgnoredAnnotationPrefixes =
-            ImmutableList.of("kotlin", "com.android.networkstack.kotlin");
 
     /**
      * Resolves annotations recursively.
@@ -216,7 +200,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         for (Annotation indirectAnnotation :
                 BedsteadAnnotationGenerator.INSTANCE.getIndirectAnnotations(annotation)) {
-            if (shouldSkipAnnotation(indirectAnnotation)) {
+            if (BedsteadAnnotationGenerator.INSTANCE.shouldSkipAnnotation(indirectAnnotation)) {
                 continue;
             }
 
@@ -231,30 +215,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
 
         return replacementAnnotations;
-    }
-
-    private static boolean shouldSkipAnnotation(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return false;
-        }
-
-        if (annotation.annotationType().equals(IncludeNone.class)) {
-            return true;
-        }
-
-        String annotationPackage = annotation.annotationType().getPackage().getName();
-
-        if (sIgnoredAnnotationPackages.contains(annotationPackage)) {
-            return true;
-        }
-
-        for (String ignoredPrefix : sIgnoredAnnotationPrefixes) {
-            if (annotationPackage.startsWith(ignoredPrefix)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public BedsteadJUnit4(Class<?> testClass) throws InitializationError {
@@ -309,7 +269,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         for (Annotation annotation : parameterizedAnnotations) {
             if (BedsteadAnnotationGenerator.INSTANCE.isAnnotationClassParameterizedAnnotation(
                             annotation)
-                    && !shouldSkipAnnotation(annotation)) {
+                    && !BedsteadAnnotationGenerator.INSTANCE.shouldSkipAnnotation(annotation)) {
                 ParameterizedAnnotation parameterizedAnnotation =
                         annotation.annotationType().getAnnotation(ParameterizedAnnotation.class);
                 annotationsPerScope.putIfAbsent(
@@ -374,7 +334,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         for (FrameworkMethod m : basicTests) {
             Set<Annotation> parameterizedAnnotations =
-                    getParameterizedAnnotations(m.getAnnotations(), getRuntimeClassAnnotations());
+                    BedsteadAnnotationGenerator.INSTANCE.getParameterizedAnnotations(
+                            m.getAnnotations(), getRuntimeClassAnnotations());
 
             if (parameterizedAnnotations.isEmpty()) {
                 // Unparameterized, just add the original
@@ -385,7 +346,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             // Create [BedsteadFrameworkMethod] for parameterized annotation of instance {@Code
             // DynamicParameterizedAnnotation}.
             for (Annotation annotation : parameterizedAnnotations) {
-                if (shouldSkipAnnotation(annotation)
+                if (BedsteadAnnotationGenerator.INSTANCE.shouldSkipAnnotation(annotation)
                         || BedsteadAnnotationGenerator.INSTANCE
                                 .isAnnotationClassParameterizedAnnotation(annotation)) {
                     // Special case - does not generate a run
@@ -481,55 +442,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
 
         return expandedMethods;
-    }
-
-    /**
-     * Filters array of annotations and returns only annotations of type {@link
-     * ParameterizedAnnotation} and {@link DynamicParameterizedAnnotation}.
-     *
-     * @param methodAnnotations the array of annotations of test method
-     * @param classAnnotations the array of annotations of test class. These should not be filtered
-     *     or expanded, but they can be used to resolve references in the test method annotations.
-     */
-    @CanIgnoreReturnValue
-    public static Set<Annotation> getParameterizedAnnotations(
-            Annotation[] methodAnnotations, List<Annotation> classAnnotations) {
-        Set<Annotation> parameterizedAnnotations = new HashSet<>();
-        List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
-
-        for (Annotation annotation : annotations) {
-            var replacements = generateReplacementAnnotations(annotation, classAnnotations);
-            if (replacements != null) {
-                parameterizedAnnotations.addAll(replacements);
-            }
-
-            if (BedsteadAnnotationGenerator.INSTANCE.isParameterizedAnnotation(annotation)) {
-                parameterizedAnnotations.add(annotation);
-            }
-        }
-
-        return parameterizedAnnotations;
-    }
-
-    /**
-     * Parse annotation using @ParametrizedTestGenerator
-     *
-     * <p>To be used before general annotation processing.
-     */
-    @Nullable
-    static List<Annotation> generateReplacementAnnotations(
-            Annotation annotation, List<Annotation> classAnnotations) {
-        Class<? extends Annotation> annotationType = annotation.annotationType();
-        UsesParameterizedTestGenerator usesParameterizedTestGenerator =
-                annotationType.getAnnotation(UsesParameterizedTestGenerator.class);
-        if (usesParameterizedTestGenerator != null) {
-            ParameterizedTestGenerator generator =
-                    mLocator.get(usesParameterizedTestGenerator.value());
-            var replacementAnnotations =
-                    generator.generateReplacementAnnotations(annotation, classAnnotations);
-            return AnnotationSorterKt.sortedByPriority(replacementAnnotations);
-        }
-        return null;
     }
 
     /**

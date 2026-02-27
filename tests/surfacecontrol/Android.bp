@@ -71,7 +71,6 @@ android_test {
     // Adding the test SurfaceFlingerTest to CTS downstreaming to be run in GTS
     test_suites: [
         "cts",
-        "gts",
         "general-tests",
     ],
 
