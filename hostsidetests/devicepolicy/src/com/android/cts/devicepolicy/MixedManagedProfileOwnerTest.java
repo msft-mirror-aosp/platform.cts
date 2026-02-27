@@ -79,6 +79,11 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
             // Install and enable assistant in personal side.
             installAppAsUser(ASSIST_APP_APK, mParentUserId);
             waitForBroadcastIdle();
+
+            // Ensure the test voice interaction service is not restricted.
+            executeShellCommand(
+                    "am compat enable BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION %s", ASSIST_APP_PKG);
+
             setVoiceInteractionService(ASSIST_INTERACTION_SERVICE);
 
             // Start an activity in parent user.
