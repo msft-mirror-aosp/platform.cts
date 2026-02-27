@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.car.compat;
+package android.car.common;
 
 import com.android.interactive.annotations.NotFullyAutomated;
 import com.android.interactive.steps.ActAndWaitStep;
@@ -21,6 +21,6 @@ import com.android.interactive.steps.ActAndWaitStep;
 @NotFullyAutomated(reason = "Needs to change drive state")
 public class SetToParkStep extends ActAndWaitStep {
     public SetToParkStep() {
-        super("Set the gear to Park.", CarAlternativeControlsTest::isParkedState);
+        super("Set the gear to Park.", BaseDrivingTest::isParkedState);
     }
 }

@@ -13,6 +13,7 @@
         <option name="cleanup-apks" value="true" />
         <option name="install-arg" value="-t" />
         <option name="test-file-name" value="CtsCarInteractiveTestCases.apk" />
+        <option name="test-file-name" value="CtsCalMediaInteractiveTestApp.apk"/>
         <option name="test-file-name" value="CtsAutoVoipTestApp.apk"/>
         <option name="test-file-name" value="CtsAutoMediaTestApp.apk"/>
         <option name="test-file-name" value="CtsBackPressTestApp.apk"/>

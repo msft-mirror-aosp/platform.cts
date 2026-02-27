@@ -70,6 +70,7 @@ android_test {
         ":CtsCarDisplayCompatApp",
         ":CtsCarDeprecatedSdkApp",
         ":CtsCarOverlayWindowTestAppSdk22",
+        ":CtsCalMediaTestApp",
     ],
     java_resources: [
         ":CarSvcProps_JSON",
