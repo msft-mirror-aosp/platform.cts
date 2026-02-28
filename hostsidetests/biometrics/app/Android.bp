@@ -21,7 +21,6 @@ android_test_helper_app {
     name: "CtsBiometricsDeviceApp",
     defaults: ["cts_defaults"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     srcs: ["src/**/*.java"],
