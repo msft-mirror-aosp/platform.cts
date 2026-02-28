@@ -67,12 +67,15 @@ public abstract class BuilderBase {
      */
     protected int mChannelCount = 2;
     protected int mChannelMask = 0;
+    protected int mChannelIndexMask = 0;
 
     protected int mEncoding = 2; // This is the oboe value, which is corresponding to PCM_FLOAT.
 
     // Keep the value the same as AudioFormat in external/oboe/include/oboe/Definitions.h
     public static final int ENCODING_PCM_I16 = 1;
     public static final int ENCODING_PCM_FLOAT = 2;
+    public static final int ENCODING_PCM_24BIT_PACKED = 3;
+    public static final int ENCODING_PCM_32BIT = 4;
 
     // Performance Mode Constants
     public static final int PERFORMANCE_MODE_NONE = 10; // AAUDIO_PERFORMANCE_MODE_NONE
@@ -151,6 +154,7 @@ public abstract class BuilderBase {
     public BuilderBase setChannelCount(int channelCount) {
         mChannelCount = channelCount;
         mChannelMask = 0;
+        mChannelIndexMask = 0;
         return this;
     }
 
@@ -159,7 +163,13 @@ public abstract class BuilderBase {
      * setChannelCount() method. 0 if using positional channel-masks.
      */
     public int getChannelCount() {
-        return mChannelCount;
+        if (mChannelCount != 0) {
+            return mChannelCount;
+        } else if (mChannelIndexMask != 0) {
+            return Integer.bitCount(mChannelIndexMask);
+        } else {
+            return Integer.bitCount(mChannelMask);
+        }
     }
 
     /**
@@ -172,6 +182,7 @@ public abstract class BuilderBase {
     public BuilderBase setChannelMask(int mask) {
         mChannelMask = mask;
         mChannelCount = 0;
+        mChannelIndexMask = 0;
         return this;
     }
 
@@ -180,6 +191,27 @@ public abstract class BuilderBase {
      */
     public int getChannelMask() {
         return mChannelMask;
+    }
+
+    /**
+     * Specifies a channel INDEX mask defining channel placement for audio I/O. Note that this
+     * overrides any previously specified channel COUNT or POSITIONAL mask.
+     *
+     * @param mask The desired AudioFormat channel index mask
+     * @return this BuilderBase (for cascaded calls)
+     */
+    public BuilderBase setChannelIndexMask(int mask) {
+        mChannelIndexMask = mask;
+        mChannelCount = 0;
+        mChannelMask = 0;
+        return this;
+    }
+
+    /**
+     * @return The current index mask for audio I/O. 0 if using a positional mask or channel count.
+     */
+    public int getChannelIndexMask() {
+        return mChannelIndexMask;
     }
 
     /**
@@ -206,6 +238,8 @@ public abstract class BuilderBase {
     public int getEncodingForJava() {
         return switch (mEncoding) {
             case ENCODING_PCM_I16 -> AudioFormat.ENCODING_PCM_16BIT;
+            case ENCODING_PCM_24BIT_PACKED -> AudioFormat.ENCODING_PCM_24BIT_PACKED;
+            case ENCODING_PCM_32BIT -> AudioFormat.ENCODING_PCM_32BIT;
             default -> AudioFormat.ENCODING_PCM_FLOAT;
         };
     }

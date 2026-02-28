@@ -37,6 +37,9 @@ public class JavaRecorder extends Recorder {
     /* The AudioRecord for recording the audio stream */
     private AudioRecord mAudioRecord = null;
 
+    private int mEncoding = AudioFormat.ENCODING_PCM_FLOAT;
+    private byte[] mByteExchangeBuffer;
+
     @Override
     public int getRoutedDeviceId() {
         if (mAudioRecord != null) {
@@ -63,7 +66,7 @@ public class JavaRecorder extends Recorder {
         mSharingMode = builder.getSharingMode();
         mPerformanceMode = builder.getPerformanceMode();
         mInputPreset = ((RecorderBuilder) builder).getInputPreset();
-        int encoding = builder.getEncodingForJava();
+        mEncoding = builder.getEncodingForJava();
 
         if (LOG) {
             Log.i(TAG, "build()");
@@ -73,18 +76,22 @@ public class JavaRecorder extends Recorder {
             Log.i(TAG, "  perf mode: " + mPerformanceMode);
             Log.i(TAG, "  route device: " + builder.getRouteDeviceId());
             Log.i(TAG, "  preset: " + mInputPreset);
-            Log.i(TAG, "  encoding: " + encoding);
+            Log.i(TAG, "  encoding: " + mEncoding);
         }
 
         try {
-            int bufferSizeInBytes = mNumExchangeFrames * mChannelCount
-                    * sampleSizeInBytes(AudioFormat.ENCODING_PCM_FLOAT);
+            int sampleSizeInBytes = StreamBase.sampleSizeInBytes(mEncoding);
+            int bufferSizeInBytes = mNumExchangeFrames * mChannelCount * sampleSizeInBytes;
             Log.i(TAG, "  bufferSizeInBytes:" + bufferSizeInBytes);
-            Log.i(TAG, "  (in frames)" + (bufferSizeInBytes / 4 / mChannelCount));
+            Log.i(TAG, "  (in frames)" + (bufferSizeInBytes / sampleSizeInBytes / mChannelCount));
+
+            if (mEncoding != AudioFormat.ENCODING_PCM_FLOAT) {
+                mByteExchangeBuffer = new byte[bufferSizeInBytes];
+            }
 
             AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
             formatBuilder
-                    .setEncoding(encoding)
+                    .setEncoding(mEncoding)
                     .setSampleRate(mSampleRate)
                     .setChannelIndexMask(StreamBase.channelCountToIndexMask(mChannelCount));
 
@@ -95,7 +102,8 @@ public class JavaRecorder extends Recorder {
                 recordBuilder.setAudioSource(mInputPreset);
             }
             mAudioRecord = recordBuilder.build();
-            mNumExchangeFrames = mAudioRecord.getBufferSizeInFrames();
+            mNumExchangeFrames = mAudioRecord.getBufferSizeInFrames() / sampleSizeInBytes
+                    / mChannelCount;
             if (LOG) {
                 Log.i(TAG, "  mAudioRecord.getBufferSizeInFrames(): "
                         + mAudioRecord.getBufferSizeInFrames());
@@ -238,7 +246,52 @@ public class JavaRecorder extends Recorder {
 
         @Override
         public int read(float[] buffer, int offsetInFloats, int numSamples) {
-            return mAudioRecord.read(buffer, offsetInFloats, numSamples, AudioRecord.READ_BLOCKING);
+            if (mEncoding == AudioFormat.ENCODING_PCM_FLOAT) {
+                return mAudioRecord.read(
+                        buffer, offsetInFloats, numSamples, AudioRecord.READ_BLOCKING);
+            } else {
+                int sampleSizeInBytes = StreamBase.sampleSizeInBytes(mEncoding);
+                int numBytesToRead = numSamples * sampleSizeInBytes;
+                if (mByteExchangeBuffer == null
+                        || mByteExchangeBuffer.length < numBytesToRead) {
+                    mByteExchangeBuffer = new byte[numBytesToRead];
+                }
+                int bytesRead = mAudioRecord.read(
+                        mByteExchangeBuffer, 0, numBytesToRead, AudioRecord.READ_BLOCKING);
+                if (bytesRead <= 0) {
+                    return bytesRead;
+                }
+
+                int numSamplesRead = bytesRead / sampleSizeInBytes;
+                switch (mEncoding) {
+                    case AudioFormat.ENCODING_PCM_16BIT -> {
+                        for (int i = 0; i < numSamplesRead; i++) {
+                            short sample = (short) ((mByteExchangeBuffer[i * 2] & 0xFF)
+                                    | (mByteExchangeBuffer[i * 2 + 1] << 8));
+                            buffer[offsetInFloats + i] = sample / 32768.0f;
+                        }
+                    }
+                    case AudioFormat.ENCODING_PCM_24BIT_PACKED -> {
+                        for (int i = 0; i < numSamplesRead; i++) {
+                            int sample = (mByteExchangeBuffer[i * 3] & 0xFF)
+                                    | ((mByteExchangeBuffer[i * 3 + 1] & 0xFF) << 8)
+                                    | (mByteExchangeBuffer[i * 3 + 2] << 16);
+                            buffer[offsetInFloats + i] = sample / 8388608.0f;
+                        }
+                    }
+                    case AudioFormat.ENCODING_PCM_32BIT -> {
+                        for (int i = 0; i < numSamplesRead; i++) {
+                            int sample = (mByteExchangeBuffer[i * 4] & 0xFF)
+                                    | ((mByteExchangeBuffer[i * 4 + 1] & 0xFF) << 8)
+                                    | ((mByteExchangeBuffer[i * 4 + 2] & 0xFF) << 16)
+                                    | (mByteExchangeBuffer[i * 4 + 3] << 24);
+                            buffer[offsetInFloats + i] = sample / 2.1474836E+9f;
+                        }
+                    }
+                    default -> { }
+                }
+                return numSamplesRead;
+            }
         }
 
         @Override

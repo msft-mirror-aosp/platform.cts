@@ -18,6 +18,7 @@ package com.android.cts.verifier.audio;
 
 import android.app.Activity;
 import android.content.Context;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.view.View;
 import android.widget.Button;
@@ -91,6 +92,11 @@ class AudioLoopbackUtilitiesHandler implements View.OnClickListener {
     private int mInputChannels = 2;
     private int mOutputChannels = 2;
     private int mOutputChannelMask = 0;
+    private int mSampleRate = 48000;
+    private int mEncoding = 2; // ENCODING_PCM_FLOAT
+
+    private AudioDeviceInfo mInputDevice;
+    private AudioDeviceInfo mOutputDevice;
 
     AudioLoopbackUtilitiesHandler(Activity activity) {
         mContext = activity;
@@ -118,6 +124,19 @@ class AudioLoopbackUtilitiesHandler implements View.OnClickListener {
         mOutputChannels = Integer.bitCount(outputChannelMask);
     }
 
+    public void setConfig(int sampleRate, int encoding) {
+        mSampleRate = sampleRate;
+        mEncoding = encoding;
+    }
+
+    public void setInputDevice(AudioDeviceInfo device) {
+        mInputDevice = device;
+    }
+
+    public void setOutputDevice(AudioDeviceInfo device) {
+        mOutputDevice = device;
+    }
+
     //
     // View.OnClickHandler
     //
@@ -130,6 +149,9 @@ class AudioLoopbackUtilitiesHandler implements View.OnClickListener {
             if (mOutputChannelMask != 0) {
                 dialog.setOutputChannelMask(mOutputChannelMask);
             }
+            dialog.setConfig(mSampleRate, mEncoding);
+            dialog.setInputDevice(mInputDevice);
+            dialog.setOutputDevice(mOutputDevice);
             dialog.show();
         } else if (id == R.id.audio_utilities_devices_button) {
             (new AudioDevicesDialog(mContext)).show();

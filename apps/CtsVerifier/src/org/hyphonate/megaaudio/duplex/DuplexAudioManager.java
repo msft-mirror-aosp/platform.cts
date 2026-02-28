@@ -35,9 +35,10 @@ public class DuplexAudioManager {
     private static final boolean LOG = true;
 
     // Player
-    //TODO - explain these constants
+    // TODO - explain these constants
     private int mNumPlayerChannels = 2;
     private int mPlayerChannelMask = 0;
+    private int mPlayerChannelIndexMask = 0;
 
     private int mPlayerSampleRate = 48000;
     private int mNumPlayerBurstFrames;
@@ -51,7 +52,11 @@ public class DuplexAudioManager {
     private AudioDeviceInfo mPlayerSelectedDevice;
 
     // Recorder
+    // Only one of mNumRecorderChannels, mRecorderChannelMask, or mRecorderChannelIndexMask
+    // should be set at any given time.
     private int mNumRecorderChannels = 2;
+    private int mRecorderChannelMask = 0;
+    private int mRecorderChannelIndexMask = 0;
     private int mRecorderSampleRate = 48000;
     private int mNumRecorderBufferFrames;
 
@@ -63,12 +68,15 @@ public class DuplexAudioManager {
     private int mPlayerSharingMode = BuilderBase.SHARING_MODE_SHARED;
     private int mRecorderSharingMode = BuilderBase.SHARING_MODE_SHARED;
 
+    private int mEncoding = BuilderBase.ENCODING_PCM_FLOAT;
+
     public DuplexAudioManager(AudioSourceProvider sourceProvider, AudioSinkProvider sinkProvider) {
         setSources(sourceProvider, sinkProvider);
     }
 
     /**
      * Specify the source providers for the source and sink.
+     *
      * @param sourceProvider The AudioSourceProvider for the output stream
      * @param sinkProvider The AudioSinkProvider for the input stream.
      */
@@ -76,8 +84,12 @@ public class DuplexAudioManager {
         mSourceProvider = sourceProvider;
         mSinkProvider = sinkProvider;
 
-        mPlayerSampleRate =  StreamBase.getSystemSampleRate();
+        mPlayerSampleRate = StreamBase.getSystemSampleRate();
         mRecorderSampleRate = StreamBase.getSystemSampleRate();
+    }
+
+    public void setEncoding(int encoding) {
+        mEncoding = encoding;
     }
 
     //
@@ -86,6 +98,7 @@ public class DuplexAudioManager {
     public Player getPlayer() {
         return mPlayer;
     }
+
     public Recorder getRecorder() {
         return mRecorder;
     }
@@ -94,8 +107,8 @@ public class DuplexAudioManager {
         mPlayerSampleRate = sampleRate;
     }
 
-    public void setRecordererSampleRate(int sampleRate) {
-        mPlayerSampleRate = sampleRate;
+    public void setRecorderSampleRate(int sampleRate) {
+        mRecorderSampleRate = sampleRate;
     }
 
     public void setPlayerRouteDevice(AudioDeviceInfo deviceInfo) {
@@ -108,27 +121,63 @@ public class DuplexAudioManager {
 
     /**
      * Specifies the number of player (index) channels.
+     *
      * @param numChannels The number of index channels for the player.
      */
     public void setNumPlayerChannels(int numChannels) {
         mNumPlayerChannels = numChannels;
         mPlayerChannelMask = 0;
+        mPlayerChannelIndexMask = 0;
     }
 
     /**
      * Specifies the positional-mask for the player.
+     *
      * @param mask - An AudioFormat position mask.
      */
     public void setPlayerChannelMask(int mask) {
         mPlayerChannelMask = mask;
         mNumPlayerChannels = 0;
+        mPlayerChannelIndexMask = 0;
+    }
+
+    /**
+     * Specifies the index-mask for the player.
+     *
+     * @param mask - An AudioFormat index mask.
+     */
+    public void setPlayerChannelIndexMask(int mask) {
+        mPlayerChannelIndexMask = mask;
+        mNumPlayerChannels = 0;
+        mPlayerChannelMask = 0;
     }
 
     public void setNumRecorderChannels(int numChannels) {
         mNumRecorderChannels = numChannels;
+        mRecorderChannelMask = 0;
+        mRecorderChannelIndexMask = 0;
     }
-    public void setRecorderSampleRate(int sampleRate) {
-        mRecorderSampleRate = sampleRate;
+
+    /**
+     * Specifies the positional-mask for the recorder.
+     *
+     * @param mask - An AudioFormat position mask.
+     */
+    public void setRecorderChannelMask(int mask) {
+        mRecorderChannelMask = mask;
+        mNumRecorderChannels = 0;
+        mRecorderChannelIndexMask = 0;
+    }
+
+    /**
+     * Specifies the index-mask for the recorder.
+     *
+     * @param mask - An AudioFormat index mask.
+     */
+    public void setRecorderChannelIndexMask(int mask) {
+        mRecorderChannelIndexMask = mask;
+        mNumRecorderChannels = 0;
+        mRecorderChannelMask = 0;
     }
 
     public void setPlayerSharingMode(int mode) {
@@ -220,9 +269,16 @@ public class DuplexAudioManager {
                         .setSharingMode(mRecorderSharingMode)
                         .setRouteDevice(mRecorderSelectedDevice)
                         .setSampleRate(mRecorderSampleRate)
-                        .setChannelCount(mNumRecorderChannels)
                         .setNumExchangeFrames(mNumRecorderBufferFrames)
+                        .setEncoding(mEncoding)
                         .setPerformanceMode(mRecorderPerformanceMode);
+                if (mNumRecorderChannels != 0) {
+                    builder.setChannelCount(mNumRecorderChannels);
+                } else if (mRecorderChannelIndexMask != 0) {
+                    builder.setChannelIndexMask(mRecorderChannelIndexMask);
+                } else {
+                    builder.setChannelMask(mRecorderChannelMask);
+                }
                 mRecorder = builder.allocStream();
                 if ((buildResult = mRecorder.build(builder)) == StreamBase.OK
                         && (openResult = mRecorder.open()) == StreamBase.OK) {
@@ -258,15 +314,17 @@ public class DuplexAudioManager {
                         .setPlayerType(playerType)
                         .setSourceProvider(mSourceProvider)
                         .setSampleRate(mPlayerSampleRate)
-                        .setChannelCount(mNumPlayerChannels)
                         .setSharingMode(mPlayerSharingMode)
                         .setRouteDevice(mPlayerSelectedDevice)
                         .setNumExchangeFrames(mNumPlayerBurstFrames)
+                        .setEncoding(mEncoding)
                         .setPerformanceMode(mPlayerPerformanceMode);
-                if (mNumPlayerChannels == 0) {
-                    builder.setChannelMask(mPlayerChannelMask);
-                } else {
+                if (mNumPlayerChannels != 0) {
                     builder.setChannelCount(mNumPlayerChannels);
+                } else if (mPlayerChannelIndexMask != 0) {
+                    builder.setChannelIndexMask(mPlayerChannelIndexMask);
+                } else {
+                    builder.setChannelMask(mPlayerChannelMask);
                 }
                 mPlayer = builder.allocStream();
                 if ((buildResult = mPlayer.build(builder)) == StreamBase.OK
