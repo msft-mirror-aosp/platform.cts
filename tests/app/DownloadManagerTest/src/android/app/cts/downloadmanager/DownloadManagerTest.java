@@ -162,9 +162,9 @@ public final class DownloadManagerTest extends DownloadManagerTestBase {
         }
 
         // As a result of testDownloadManagerSupportsHttpsWithExternalWebServer relying on an
-        // external resource https://www.example.com this test uses http://www.example.com to help
+        // external resource https://www.android.com this test uses http://www.android.com to help
         // disambiguate errors from testDownloadManagerSupportsHttpsWithExternalWebServer.
-        String urlString = "http://www.example.com";
+        String urlString = "http://www.android.com";
 
         checkServerConnectivityHttp(urlString);
 
@@ -202,9 +202,9 @@ public final class DownloadManagerTest extends DownloadManagerTestBase {
         // For HTTPS, DownloadManager trusts only SSL server certs issued by CAs trusted by the
         // system. Unfortunately, this means that it cannot trust the mock web server's SSL cert.
         // Until this is resolved (e.g., by making it possible to specify additional CA certs to
-        // trust for a particular download), this test relies on https://www.example.com being
+        // trust for a particular download), this test relies on https://www.android.com being
         // operational and reachable from the Android under test.
-        String urlString = "https://www.example.com";
+        String urlString = "https://www.android.com";
 
         checkServerConnectivityHttps(urlString);
 
