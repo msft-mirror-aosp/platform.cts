@@ -620,13 +620,11 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             } finally {
                 mMmTelManager.unregisterImsRegistrationCallback(rc);
             }
-            if (Flags.emergencyRegistrationState()) {
-                try {
-                    mMmTelManager.registerImsEmergencyRegistrationCallback(r -> r.run(), rc);
-                } catch (ImsException ignored) {
-                } finally {
-                    mMmTelManager.unregisterImsEmergencyRegistrationCallback(rc);
-                }
+            try {
+                mMmTelManager.registerImsEmergencyRegistrationCallback(r -> r.run(), rc);
+            } catch (ImsException ignored) {
+            } finally {
+                mMmTelManager.unregisterImsEmergencyRegistrationCallback(rc);
             }
 
             mMmTelManager.getRegistrationTransportType(r -> r.run(), (i) -> {});

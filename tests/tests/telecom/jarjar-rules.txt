@@ -1,0 +1,2 @@
+rule com.android.server.telecom.flags.** com.android.server.telecom.flags.repackaged.@1
+rule android.telecom.flags.** android.telecom.flags.repackaged.@1

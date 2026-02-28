@@ -113,6 +113,14 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="tel"/>
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="telephony.cts.test.domain" />
+            </intent-filter>
         </activity>
 
         <service android:name="android.telephonyprovider.cts.StubInCallService"

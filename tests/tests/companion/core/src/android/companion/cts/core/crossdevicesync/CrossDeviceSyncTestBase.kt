@@ -23,7 +23,7 @@ import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_DISAPPEARED
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_NEARBY
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_NOT_NEARBY
-import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
+import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.core.CoreTestBase
 import android.util.Log
@@ -33,10 +33,15 @@ import kotlin.time.Duration.Companion.seconds
 open class CrossDeviceSyncTestBase : CoreTestBase() {
     var associationId: Int = -1
     lateinit var testLib: CrossDeviceSyncTestLib
+    var remoteDeviceProfile: String = "null"
 
     override fun setUp() {
         super.setUp()
-        associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+        with(targetApp) {
+            associateSelfManaged(MAC_ADDRESS_A, remoteDeviceProfile)
+            Thread.sleep(500)
+            associationId = cdm.myAssociations[0].id
+        }
         testLib = CrossDeviceSyncTestLib.newInstance(context)
         withShellPermissionIdentity(
             REQUEST_COMPANION_SELF_MANAGED,
@@ -61,8 +66,8 @@ open class CrossDeviceSyncTestBase : CoreTestBase() {
             Log.i(TAG, "setUp: attaching transport")
             cdm.attachSystemDataTransport(
                 associationId,
-                testLib.cdmPipe?.getInputStreamForCdmTransport()!!,
-                testLib.cdmPipe?.getOutputStreamForCdmTransport()!!
+                testLib.cdmPipe.inputStreamForCdmTransport,
+                testLib.cdmPipe.outputStreamForCdmTransport,
             )
         }
     }

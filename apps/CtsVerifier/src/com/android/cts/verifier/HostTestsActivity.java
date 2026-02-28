@@ -71,7 +71,10 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("UWB Tests")
                 .addTest("CtsUwbMultiDeviceFiraRangingTests", "CtsUwbMultiDeviceFiraRangingTests")
                 .addTest("CtsMultiDeviceGenericRangingTests", "CtsMultiDeviceGenericRangingTests")
-                .addTest("CtsUwbMultiDeviceUwbManagerTests", "CtsUwbMultiDeviceUwbManagerTests"),
+                .addTest("CtsUwbMultiDeviceUwbManagerTests", "CtsUwbMultiDeviceUwbManagerTests")
+                .addTest(
+                        "CtsMultiDeviceGenericRangingAccuracyTests",
+                        "CtsMultiDeviceGenericRangingAccuracyTests"),
         new HostTestCategory("Wi-Fi Tests")
                 .addTest("CtsWifiConnectionTests", "CtsWifiConnectionTests")
                 .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
@@ -88,6 +91,8 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("SystemUI Tests")
                 .addTest("CtsSysuiInteractiveTestCases", "CtsSysuiInteractiveTestCases"),
         new HostTestCategory("USB Tests").addTest("CtsUsbTypecTestCases", "CtsUsbTypecTestCases"),
+        new HostTestCategory("Automotive Interactive Tests")
+                .addTest("CtsCarInteractiveTestCases", "CtsCarInteractiveTestCases"),
     };
 
     // List of test categories that will be excluded on Automotive.

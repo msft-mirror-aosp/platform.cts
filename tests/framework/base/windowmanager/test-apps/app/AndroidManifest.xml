@@ -532,6 +532,9 @@
              android:exported="true"
              android:launchMode="singleInstance"/>
 
+        <activity android:name=".RelaunchIntentExtraActivity"
+            android:exported="true" />
+
         <service android:name=".LiveWallpaper"
              android:permission="android.permission.BIND_WALLPAPER"
              android:exported="true">

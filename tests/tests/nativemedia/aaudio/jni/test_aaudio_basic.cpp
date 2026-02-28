@@ -114,14 +114,6 @@ protected:
     static constexpr int kFormat = AAUDIO_FORMAT_PCM_FLOAT;
 };
 
-const char* directionToString(aaudio_sharing_mode_t direction) {
-    switch (direction) {
-        case AAUDIO_DIRECTION_OUTPUT: return "OUTPUT";
-        case AAUDIO_DIRECTION_INPUT: return "INPUT";
-    }
-    return "UNKNOWN";
-}
-
 static std::string getTestName(const ::testing::TestParamInfo<TestAAudioBasicParams>& info) {
     return std::string()
             + performanceModeToString(std::get<PARAM_PERFORMANCE_MODE>(info.param))

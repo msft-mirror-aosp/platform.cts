@@ -33,6 +33,8 @@ import java.util.Set;
  */
 public class V32HybridTests extends AndroidTestCase {
     private static final String TEST_PACKAGE = "android.appsecurity.cts.tinyapp";
+    private static final String COMPANION_PACKAGE = "android.appsecurity.cts.tinyapp_companion";
+    private static final String PERMISSION_NAME = "android.appsecurity.cts.tinyapp.perm";
     private static final char[] HEX_VALUES = "0123456789abcdef".toCharArray();
 
     // ML-DSA certificates are prohibitively large to store as hex, so perform verification based
@@ -47,6 +49,8 @@ public class V32HybridTests extends AndroidTestCase {
             "681b0e56a796350c08647352a4db800cc44b2adc8f4c72fa350bd05d4d50264d";
     private static final String RSA_2048_3_SHA256_DIGEST =
             "bb77a72efc60e66501ab75953af735874f82cfe52a70d035186a01b3482180f3";
+    private static final String RSA_2048_4_SHA256_DIGEST =
+            "fd2e84c802e0fee9f76ce0934f91c83cc0c300264e669ecfbbbd891d2af7b7e6";
 
     public void testV32_originalKeyAndV32HybridConfig() throws Exception {
         // Verifies that the platform recognizes the PQC signer as the current signer and the
@@ -240,6 +244,44 @@ public class V32HybridTests extends AndroidTestCase {
                 packageInfo.signingInfo.getApkContentsSigners(), RSA_2048_SHA256_DIGEST);
     }
 
+    public void testV32_v3OriginalV31RotatedV32SdkRangeOutsideDeviceSdk() throws Exception {
+        // If the APK is signed with a v3.2 block that targets an SDK range outside that of the
+        // device, then the platform should fall back to verifying the APK using one of the previous
+        // v3 signature schemes; for this test, the APK is signed with the original key in the v3.0
+        // block and the rotated key in the v3.1 block targeting the platform SDK version.
+        PackageManager packageManager = getContext().getPackageManager();
+        PackageInfo packageInfo =
+                packageManager.getPackageInfo(
+                        TEST_PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES);
+
+        assertFalse(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(ML_DSA_65_CERT_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertFalse(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_3_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_2_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertExpectedSignaturesDigests(
+                packageInfo.signingInfo.getApkContentsSigners(), RSA_2048_2_SHA256_DIGEST);
+        assertExpectedSignaturesDigests(
+                packageInfo.signingInfo.getSigningCertificateHistory(),
+                RSA_2048_SHA256_DIGEST,
+                RSA_2048_2_SHA256_DIGEST);
+    }
+
     public void testV32_v3OriginalV32HybridV31RotatedConfig() throws Exception {
         // Verifies that an APK signed with the original key in the v3.0 block, both previous hybrid
         // signers in the lineage, and a a rotated key in the v3.1 block reports the new single
@@ -387,6 +429,71 @@ public class V32HybridTests extends AndroidTestCase {
                 ML_DSA_65_CERT_SHA256_DIGEST,
                 RSA_2048_3_SHA256_DIGEST,
                 ML_DSA_87_CERT_SHA256_DIGEST);
+    }
+
+    public void testV32_v32UpdateHybridToSingleToHybridConfig() throws Exception {
+        // This test verifies that all of the expected signatures are in the lineage for a package
+        // that has been updated with a v3 original signer, a v3.2 original signer, a v3.1 rotated
+        // signer, and a v3.2 rotated signer.
+        PackageManager packageManager = getContext().getPackageManager();
+        PackageInfo packageInfo =
+                packageManager.getPackageInfo(
+                        TEST_PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES);
+
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(ML_DSA_87_CERT_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_4_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_3_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(ML_DSA_65_CERT_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_2_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                packageManager.hasSigningCertificate(
+                        TEST_PACKAGE,
+                        hexToBytes(RSA_2048_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertExpectedSignaturesDigests(
+                packageInfo.signingInfo.getApkContentsSigners(), ML_DSA_87_CERT_SHA256_DIGEST);
+        assertExpectedSignaturesDigests(
+                packageInfo.signingInfo.getSigningCertificateHistory(),
+                RSA_2048_SHA256_DIGEST,
+                RSA_2048_2_SHA256_DIGEST,
+                ML_DSA_65_CERT_SHA256_DIGEST,
+                RSA_2048_3_SHA256_DIGEST,
+                RSA_2048_4_SHA256_DIGEST,
+                ML_DSA_87_CERT_SHA256_DIGEST);
+    }
+
+    public void testV32_companionPackageGrantedPerm() throws Exception {
+        PackageManager pm = getContext().getPackageManager();
+        assertTrue(
+                pm.checkPermission(PERMISSION_NAME, COMPANION_PACKAGE)
+                        == PackageManager.PERMISSION_GRANTED);
+    }
+
+    public void testV32_companionPackageDeniedPerm() throws Exception {
+        PackageManager pm = getContext().getPackageManager();
+        assertFalse(
+                pm.checkPermission(PERMISSION_NAME, COMPANION_PACKAGE)
+                        == PackageManager.PERMISSION_GRANTED);
     }
 
     /**

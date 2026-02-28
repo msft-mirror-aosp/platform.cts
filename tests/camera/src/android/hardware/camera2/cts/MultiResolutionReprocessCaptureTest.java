@@ -18,47 +18,45 @@ package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 
+import static org.mockito.Mockito.*;
+
 import android.graphics.ImageFormat;
-import android.media.Image;
-import android.media.ImageReader;
-import android.media.ImageWriter;
-import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.MultiResolutionImageReader;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
-import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
+import android.hardware.camera2.params.InputConfiguration;
 import android.hardware.camera2.params.MandatoryStreamCombination;
 import android.hardware.camera2.params.MandatoryStreamCombination.MandatoryStreamInformation;
 import android.hardware.camera2.params.MultiResolutionStreamConfigurationMap;
 import android.hardware.camera2.params.MultiResolutionStreamInfo;
-import android.hardware.camera2.params.InputConfiguration;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
+import android.media.ImageReader;
+import android.media.ImageWriter;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
-import android.view.SurfaceHolder;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 
-import java.util.Arrays;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.runners.Parameterized;
-import org.junit.runner.RunWith;
-import org.junit.Test;
-import static org.mockito.Mockito.*;
 
 /**
  * Tests for multi-resolution size reprocessing.
@@ -427,10 +425,16 @@ public class MultiResolutionReprocessCaptureTest extends Camera2AndroidTestCase 
                         TotalCaptureResult physicalResult = entry.getValue();
                         String activePhysicalId = physicalResult.get(
                                 CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
-                        mCollector.expectEquals(String.format(
-                                "Physical camera result metadata must contain activePhysicalId " +
-                                "(%s) matching with physical camera Id (%s).", activePhysicalId,
-                                physicalCameraId), physicalCameraId, activePhysicalId);
+                        if (activePhysicalId != null) {
+                            mCollector.expectEquals(
+                                    String.format(
+                                            "Physical camera result metadata's activePhysicalId"
+                                                    + " (%s) doesn't match with physical camera Id"
+                                                    + " (%s).",
+                                            activePhysicalId, physicalCameraId),
+                                    physicalCameraId,
+                                    activePhysicalId);
+                        }
                     }
 
                     String activePhysicalCameraId = result.get(

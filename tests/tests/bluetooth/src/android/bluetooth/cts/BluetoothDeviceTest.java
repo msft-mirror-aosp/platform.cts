@@ -156,10 +156,17 @@ public class BluetoothDeviceTest {
                 SecurityException.class,
                 () -> mFakeDevice.setAlias(testDeviceAlias));
 
-        runShellCommand(
-                String.format(
-                        "cmd companiondevice associate %d %s %s",
-                        userId, packageName, mFakeDeviceAddress));
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice associate %d %s --mac-address %s",
+                            userId, packageName, mFakeDeviceAddress));
+        } else {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice associate %d %s %s",
+                            userId, packageName, mFakeDeviceAddress));
+        }
         String output = runShellCommand("dumpsys companiondevice");
         assertThat(output).contains(packageName);
         assertThat(output.toLowerCase()).contains(mFakeDeviceAddress.toLowerCase());
@@ -177,10 +184,17 @@ public class BluetoothDeviceTest {
          */
         assertThat(mFakeDevice.setAlias(testDeviceAlias))
                 .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
-        runShellCommand(
-                String.format(
-                        "cmd companiondevice disassociate %d %s %s",
-                        userId, packageName, mFakeDeviceAddress));
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice disassociate %d %s --mac-address %s",
+                            userId, packageName, mFakeDeviceAddress));
+        } else {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice disassociate %d %s %s",
+                            userId, packageName, mFakeDeviceAddress));
+        }
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mFakeDevice.getAlias()).isNull();
@@ -368,19 +382,33 @@ public class BluetoothDeviceTest {
     private void removeAssociation() {
         int userId = mContext.getUser().getIdentifier();
         String packageName = mContext.getOpPackageName();
-        runShellCommand(
-                String.format(
-                        "cmd companiondevice disassociate %d %s %s",
-                        userId, packageName, mFakeDeviceAddress));
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice disassociate %d %s --mac-address %s",
+                            userId, packageName, mFakeDeviceAddress));
+        } else {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice disassociate %d %s %s",
+                            userId, packageName, mFakeDeviceAddress));
+        }
     }
 
     private void associateDevice() {
         int userId = mContext.getUser().getIdentifier();
         String packageName = mContext.getOpPackageName();
-        runShellCommand(
-                String.format(
-                        "cmd companiondevice associate %d %s %s",
-                        userId, packageName, mFakeDeviceAddress));
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice associate %d %s --mac-address %s",
+                            userId, packageName, mFakeDeviceAddress));
+        } else {
+            runShellCommand(
+                    String.format(
+                            "cmd companiondevice associate %d %s %s",
+                            userId, packageName, mFakeDeviceAddress));
+        }
         String output = runShellCommand("dumpsys companiondevice");
         assertThat(output).contains(packageName);
     }

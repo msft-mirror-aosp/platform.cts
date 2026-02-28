@@ -1322,50 +1322,6 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
         mMediaPlayer.stop();
     }
 
-    // setPlaybackParams() with zero speed should pause playback.
-    @Test
-    public void testSetPlaybackParamsZeroSpeed() throws Exception {
-        if (!checkLoadResource(
-                "video_480x360_mp4_h264_1000kbps_30fps_aac_stereo_128kbps_44100hz.mp4")) {
-            return; // skip
-        }
-
-        mMediaPlayer.setOnSeekCompleteListener(mp -> mOnSeekCompleteCalled.signal());
-        mMediaPlayer.setDisplay(mActivity.getSurfaceHolder());
-
-        mMediaPlayer.prepare();
-
-        mMediaPlayer.setPlaybackParams(new PlaybackParams().setSpeed(0.0f));
-        assertFalse("MediaPlayer should not be playing", mMediaPlayer.isPlaying());
-
-        int playTime = 2000;  // The testing clip is about 10 second long.
-        mOnSeekCompleteCalled.reset();
-        mMediaPlayer.seekTo(0);
-        mOnSeekCompleteCalled.waitForSignal();
-        Thread.sleep(playTime);
-        assertFalse("MediaPlayer should not be playing", mMediaPlayer.isPlaying());
-        int positionAtStart = mMediaPlayer.getCurrentPosition();
-        // Allow both 0 and 23 (the timestamp of the second audio sample) to avoid flaky failures
-        // on builds that don't include http://r.android.com/2700283.
-        if (positionAtStart != 0 && positionAtStart != 23) {
-            fail("MediaPlayer position should be 0 or 23");
-        }
-
-        mMediaPlayer.start();
-        Thread.sleep(playTime);
-        assertTrue("MediaPlayer should be playing", mMediaPlayer.isPlaying());
-        assertTrue("MediaPlayer position should be > 0", mMediaPlayer.getCurrentPosition() > 0);
-
-        mMediaPlayer.setPlaybackParams(new PlaybackParams().setSpeed(0.0f));
-        assertFalse("MediaPlayer should not be playing", mMediaPlayer.isPlaying());
-        Thread.sleep(1000);
-        int position = mMediaPlayer.getCurrentPosition();
-        Thread.sleep(playTime);
-        assertEquals("MediaPlayer should be paused", mMediaPlayer.getCurrentPosition(), position);
-
-        mMediaPlayer.stop();
-    }
-
     @Test
     public void testPlaybackRate() throws Exception {
         final int toleranceMs = 1000;

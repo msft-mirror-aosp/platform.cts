@@ -295,7 +295,7 @@ class AssociateTest : CoreTestBase() {
             )
         }
 
-        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
+        associate(MAC_ADDRESS_A, permissions = PERMISSION_GROUP_NEARBY)
 
         nearbyPerms.forEach { p ->
             assertEquals(
@@ -332,7 +332,7 @@ class AssociateTest : CoreTestBase() {
 
     @Test
     fun test_disassociate_profileNull_revokesExtraPermission() = with(testApp) {
-        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
+        associate(MAC_ADDRESS_A, permissions = PERMISSION_GROUP_NEARBY)
 
         nearbyPerms.forEach { p ->
             assertEquals(
@@ -341,7 +341,7 @@ class AssociateTest : CoreTestBase() {
             )
         }
 
-        associate(MAC_ADDRESS_B, "null", PERMISSION_GROUP_NEARBY)
+        associate(MAC_ADDRESS_B, permissions = PERMISSION_GROUP_NEARBY)
 
         disassociate(MAC_ADDRESS_A)
 
@@ -365,13 +365,13 @@ class AssociateTest : CoreTestBase() {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_AI_AGENT)
     fun test_associate_support_ai_agent() = with(targetApp) {
-        associate(MAC_ADDRESS_A, "null", null, false)
+        associate(MAC_ADDRESS_A)
         var associations = cdm.myAssociations
         assertFalse(associations[0].isRemoteAiAgentSupported)
 
         disassociate(MAC_ADDRESS_A)
 
-        associate(MAC_ADDRESS_A, "null", null, true)
+        associate(MAC_ADDRESS_A, isRemoteAiAgentSupported = true)
         associations = cdm.myAssociations
         assertTrue(associations[0].isRemoteAiAgentSupported)
     }

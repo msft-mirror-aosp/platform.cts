@@ -44,6 +44,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,6 +110,12 @@ public class DecoderTestIamf {
     @ApiTest(apis = {"android.media.MediaFormat#KEY_CHANNEL_MASK"})
     @RequiresFlagsEnabled(Flags.FLAG_IAMF_SOFTWARE_DECODER)
     public void testIamfChannelMask() throws Exception {
+        int apiLevel = Build.VERSION.SDK_INT;
+        if (Build.VERSION.PREVIEW_SDK_INT > 0) {
+            apiLevel++;
+        }
+        Assume.assumeTrue("Test only runs on Android C or later",
+                apiLevel >= Build.VERSION_CODES.BAKLAVA + 1);
         AudioParameter audioParams = new AudioParameter();
         decodeUpdateFormat(null /* decoderName */, mFilename, audioParams,
                 mChannelMask /* value */,

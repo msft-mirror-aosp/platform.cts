@@ -24,6 +24,7 @@ import android.content.ComponentName;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -1181,5 +1182,29 @@ public class TestUtils {
             String packageName, String component, int userId) {
         return new PhoneAccountHandle(new ComponentName(packageName, component),
                 getRandomUuid(random).toString(), UserHandle.of(userId));
+    }
+
+    public static <T extends android.os.Parcelable> T getParcelableExtra(Intent intent, String name, Class<T> clazz) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return intent.getParcelableExtra(name, clazz);
+        } else {
+            return intent.getParcelableExtra(name);
+        }
+    }
+
+    public static <T extends android.os.Parcelable> T getParcelable(Bundle bundle, String name, Class<T> clazz) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return bundle.getParcelable(name, clazz);
+        } else {
+            return bundle.getParcelable(name);
+        }
+    }
+
+    public static <T extends android.os.Parcelable> List<T> getParcelableArrayList(Bundle bundle, String name, Class<? extends T> clazz) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return bundle.getParcelableArrayList(name, clazz);
+        } else {
+            return (List<T>) bundle.getParcelableArrayList(name);
+        }
     }
 }

@@ -26,7 +26,9 @@ import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.AutofillActivityTestRule;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
+import android.os.LocaleList;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.View;
 import android.view.autofill.AutofillValue;
 import android.widget.EditText;
@@ -284,6 +286,18 @@ public class ViewAttributesTest
 
                     assertThat(doubleNestedView.getLeft()).isEqualTo(19); // nestedView.left
                     assertThat(doubleNestedView.getTop()).isEqualTo(11); // nestedView.top
+                }
+        );
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.autofill.Flags.FLAG_SET_LOCALE_FOR_TEXT_VIEW)
+    public void checkTextViewLocaleListInAssistStructure() throws Exception {
+        onAssistStructure(false, (structure) -> {
+                    AssistStructure.ViewNode textViewUsername = findNodeByResourceId(structure,
+                            "textViewUsername");
+                    assertThat(textViewUsername.getLocaleList()).isNotNull();
+                    assertThat(textViewUsername.getLocaleList()).isEqualTo(LocaleList.getDefault());
                 }
         );
     }

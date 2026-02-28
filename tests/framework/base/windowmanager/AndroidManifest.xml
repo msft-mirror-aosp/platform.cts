@@ -125,6 +125,29 @@
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleLegacySplitScreenTests$ShowImeActivity"/>
 
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateFirstActivity"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateCallbackTrackingActivity"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateSingleTopActivity"
+             android:launchMode="singleTop"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateNoDisplayActivity"
+             android:theme="@android:style/Theme.NoDisplay"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateResultActivity"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateLaunchForResultActivity"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateTranslucentCallbackTrackingActivity"
+             android:theme="@android:style/Theme.Translucent.NoTitleBar"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateTranslucentActivity"
+             android:theme="@android:style/Theme.Translucent.NoTitleBar"
+             android:configChanges="allKnown"/>
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTests$NoRecreateLaunchForwardResultActivity"
+             android:configChanges="allKnown"/>
+
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleTopResumedStateTests$NoRelaunchCallbackTrackingActivity"
             android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen|keyboard|keyboardHidden|navigation"/>

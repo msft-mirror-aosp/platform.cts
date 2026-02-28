@@ -8032,6 +8032,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsNfcHceMultiDeviceTestCases</item>
         <item>CtsUwbMultiDeviceFiraRangingTests</item>
         <item>CtsMultiDeviceGenericRangingTests</item>
+        <item>CtsMultiDeviceGenericRangingAccuracyTests</item>
         <item>CtsUwbMultiDeviceUwbManagerTests</item>
         <item>CtsWifiConnectionTests</item>
         <item>CtsWifiAwareTests</item>
@@ -8043,6 +8044,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsNotificationSizeVerifierHostTest</item>
         <item>CtsSysuiInteractiveTestCases</item>
         <item>CtsUsbTypecTestCases</item>
+        <item>CtsCarInteractiveTestCases</item>
     </string-array>
 
     <!-- Strings for Audio Workload Test. -->

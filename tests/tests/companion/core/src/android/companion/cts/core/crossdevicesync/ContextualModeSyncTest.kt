@@ -81,7 +81,7 @@ class ContextualModeSyncTest : CrossDeviceSyncTestBase() {
 
     override fun tearDown() {
         // Restore mode sync enabled setting.
-        if (::contextualModeManager.isInitialized) {
+        if (::dndModeId.isInitialized) {
             withShellPermissionIdentity(MANAGE_CONTEXTUAL_MODES, WRITE_SECURE_SETTINGS) {
                 modeListener?.let { contextualModeManager.unregisterModeListener(it) }
                 // Restore mode sync

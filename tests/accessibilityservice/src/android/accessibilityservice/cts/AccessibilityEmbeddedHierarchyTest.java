@@ -245,8 +245,19 @@ public class AccessibilityEmbeddedHierarchyTest {
     public void testEmbeddedViews_nodesAndEventsUseHostWindowId() throws TimeoutException {
         final AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
         final AccessibilityNodeInfo hostWindowNode = findHostAccessibilityNodeInfo(root);
+        final View hostView = mActivity.mInputFocusableView;
         final int hostWindowId = hostWindowNode.getWindowId();
 
+        // Start a11y focus on any other UI element. The rest of the test expects to focus on
+        // unfocused nodes in order to receive TYPE_VIEW_ACCESSIBILITY_FOCUSED events when
+        // focus changes.
+        sInstrumentation.runOnMainSync(() -> {
+            assertThat(hostView.performAccessibilityAction(
+                    AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)).isTrue();
+        });
+
+        // Move a11y focus to embedded nodes and expect that both the node and the focus event use
+        // the host window id.
         final AccessibilityNodeInfo embeddedNode =
                 findEmbeddedAccessibilityNodeInfo(root, EMBEDDED_CONTAINER_RESOURCE_NAME);
         assertNodeAndEventsUseWindowId(embeddedNode, hostWindowId);

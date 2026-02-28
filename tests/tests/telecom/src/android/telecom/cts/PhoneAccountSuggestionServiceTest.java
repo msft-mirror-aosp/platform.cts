@@ -101,8 +101,8 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
         Call phoneAcctSelectCall = inCallService.getLastCall();
         assertEquals(Call.STATE_SELECT_PHONE_ACCOUNT, phoneAcctSelectCall.getState());
         List<PhoneAccountSuggestion> receivedSuggestions =
-                phoneAcctSelectCall.getDetails().getIntentExtras()
-                        .getParcelableArrayList(Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS);
+                TestUtils.getParcelableArrayList(phoneAcctSelectCall.getDetails().getIntentExtras(),
+                        Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS, PhoneAccountSuggestion.class);
         assertTrue(CtsPhoneAccountSuggestionService.sSuggestionsToProvide.size()
                 <= receivedSuggestions.size());
         assertTrue(receivedSuggestions.containsAll(
@@ -142,12 +142,12 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
         Call phoneAcctSelectCall = inCallService.getLastCall();
         assertEquals(Call.STATE_SELECT_PHONE_ACCOUNT, phoneAcctSelectCall.getState());
         List<PhoneAccountSuggestion> receivedSuggestions =
-                phoneAcctSelectCall.getDetails().getIntentExtras()
-                        .getParcelableArrayList(Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS);
+                TestUtils.getParcelableArrayList(phoneAcctSelectCall.getDetails().getIntentExtras(),
+                        Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS, PhoneAccountSuggestion.class);
 
         List<PhoneAccountHandle> receivedAccounts =
-                phoneAcctSelectCall.getDetails().getIntentExtras()
-                        .getParcelableArrayList(Call.AVAILABLE_PHONE_ACCOUNTS);
+                TestUtils.getParcelableArrayList(phoneAcctSelectCall.getDetails().getIntentExtras(),
+                        Call.AVAILABLE_PHONE_ACCOUNTS, PhoneAccountHandle.class);
         // We don't need to assert anything about the contents, just make sure that we get
         // some default suggestions that match up with the available accounts.
         assertEquals(receivedAccounts.size(), receivedSuggestions.size());
@@ -177,11 +177,11 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
         Call phoneAcctSelectCall = inCallService.getLastCall();
         assertEquals(Call.STATE_SELECT_PHONE_ACCOUNT, phoneAcctSelectCall.getState());
         List<PhoneAccountSuggestion> receivedSuggestions =
-                phoneAcctSelectCall.getDetails().getIntentExtras()
-                        .getParcelableArrayList(Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS);
+                TestUtils.getParcelableArrayList(phoneAcctSelectCall.getDetails().getIntentExtras(),
+                        Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS, PhoneAccountSuggestion.class);
         List<PhoneAccountHandle> receivedAccounts =
-                phoneAcctSelectCall.getDetails().getIntentExtras()
-                        .getParcelableArrayList(Call.AVAILABLE_PHONE_ACCOUNTS);
+                TestUtils.getParcelableArrayList(phoneAcctSelectCall.getDetails().getIntentExtras(),
+                        Call.AVAILABLE_PHONE_ACCOUNTS, PhoneAccountHandle.class);
         assertEquals(receivedAccounts.size(), receivedSuggestions.size());
         assertTrue(receivedAccounts.containsAll(getHandlesFromSuggestions(receivedSuggestions)));
     }
@@ -212,11 +212,11 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
         Call phoneAcctSelectCall = inCallService.getLastCall();
         assertEquals(Call.STATE_SELECT_PHONE_ACCOUNT, phoneAcctSelectCall.getState());
         List<PhoneAccountSuggestion> receivedSuggestions =
-                phoneAcctSelectCall.getDetails().getIntentExtras()
-                        .getParcelableArrayList(Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS);
+                TestUtils.getParcelableArrayList(phoneAcctSelectCall.getDetails().getIntentExtras(),
+                        Call.EXTRA_SUGGESTED_PHONE_ACCOUNTS, PhoneAccountSuggestion.class);
         List<PhoneAccountHandle> receivedAccounts =
-                phoneAcctSelectCall.getDetails().getIntentExtras()
-                        .getParcelableArrayList(Call.AVAILABLE_PHONE_ACCOUNTS);
+                TestUtils.getParcelableArrayList(phoneAcctSelectCall.getDetails().getIntentExtras(),
+                        Call.AVAILABLE_PHONE_ACCOUNTS, PhoneAccountHandle.class);
         assertEquals(receivedAccounts.size(), receivedSuggestions.size());
         // Make sure the received list contains the one that we provided.
         assertTrue(receivedSuggestions
