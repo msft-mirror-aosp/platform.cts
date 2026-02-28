@@ -66,7 +66,7 @@ android_test {
         "android.test.base.stubs.system",
         "android.test.runner.stubs.system",
     ],
-    jni_libs: ["submerge_java_shared"],
+    jni_libs: ["submerge_java_static_jni"],
 
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
