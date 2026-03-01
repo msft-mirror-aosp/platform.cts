@@ -22,6 +22,8 @@
       <uses-library android:name="android.test.runner"/>
       <uses-library android:name="org.apache.http.legacy" />
   </application>
+
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.INTERNET" />
 
   <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
