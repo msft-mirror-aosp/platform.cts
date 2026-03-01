@@ -16,7 +16,7 @@
 # proto-message: Requirement
 id: "7.1.1.3/H-2-1"
 name: "Screen Density"
-description: "- Screen density"
+description: "Screen density"
 specs {
   key: 1
   value {

@@ -16,7 +16,7 @@
 # proto-message: Requirement
 id: "5.3/H-1-1"
 name: "Frame drop"
-description: "- Decoder frame drops"
+description: "Decoder frame drops"
 specs {
   key: 10
   value {
