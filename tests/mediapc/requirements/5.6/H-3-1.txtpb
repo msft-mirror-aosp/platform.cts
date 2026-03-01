@@ -25,26 +25,17 @@ specs {
       "MUST be able to handle switching from playing 1 sine wave to 50 sine "
       "waves with no underrun of audio buffers."
     required_values {
-      key: "underrun_count"
-      value {
-        int_value: 0
-      }
-    }
-    required_values {
       key: "alternate_num_voices"
       value {
         int_value: 50
       }
     }
-  }
-}
-measurements {
-  key: "underrun_count"
-  value {
-    description: "The count of audio underruns."
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_LESS_THAN_OR_EQUAL
-    proto_field_number: 3
+    required_values {
+      key: "underrun_count"
+      value {
+        int_value: 0
+      }
+    }
   }
 }
 measurements {
@@ -54,6 +45,15 @@ measurements {
     measurement_type: MEASUREMENT_TYPE_INT
     comparison: COMPARISON_GREATER_THAN_OR_EQUAL
     proto_field_number: 4
+  }
+}
+measurements {
+  key: "underrun_count"
+  value {
+    description: "The count of audio underruns."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
   }
 }
 is_non_cts_test: true

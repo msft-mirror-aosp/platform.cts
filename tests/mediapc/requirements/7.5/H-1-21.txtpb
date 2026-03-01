@@ -44,6 +44,15 @@ specs {
   }
 }
 measurements {
+  key: "front_and_rear_camera_count"
+  value {
+    description: "Count of both front and rear cameras."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 5
+  }
+}
+measurements {
   key: "front_camera_count"
   value {
     description: "Count of front cameras."
@@ -61,16 +70,6 @@ measurements {
     proto_field_number: 4
   }
 }
-measurements {
-  key: "front_and_rear_camera_count"
-  value {
-    description: "Count of both front and rear cameras."
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 5
-  }
-}
-
 test_configs {
   key: ""
   value {

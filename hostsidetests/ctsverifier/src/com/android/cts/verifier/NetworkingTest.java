@@ -26,17 +26,6 @@ import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class NetworkingTest extends CtsVerifierTest {
-
-    @Interactive
-    @Test
-    // SingleDisplayMode
-    @CddTest(requirements = "7.4.3/C-7-1")
-    public void PresenceTest() throws Exception {
-        requireFeatures("android.hardware.bluetooth_le");
-
-        runTest(".presence.PresenceTestActivity");
-    }
-
     @Interactive
     @Test
     @SupportMultiDisplayMode

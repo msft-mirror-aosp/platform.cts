@@ -23,12 +23,8 @@ import static android.view.WindowInsets.Type.displayCutout;
 import static android.view.WindowInsets.Type.systemBars;
 import static android.view.WindowInsets.Type.systemGestures;
 
-import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 
 import android.app.Activity;
 import android.app.ActivityTaskManager;
@@ -68,7 +64,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public final class TestUtils {
-    private static final long TIME_SLICE = 100;  // msec
+    private static final Duration TIME_SLICE = Duration.ofMillis(100);
 
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
@@ -140,11 +136,28 @@ public final class TestUtils {
     public static void waitOnMainUntil(
             @NonNull BooleanSupplier condition, long timeout, String message)
             throws TimeoutException {
+        waitOnMainUntil(condition, Duration.ofMillis(timeout), message);
+    }
+
+    /**
+     * Does polling loop on the UI thread to wait until the given condition is met.
+     *
+     * @param condition Condition to be satisfied, this is guaranteed to run on the UI thread
+     * @param timeout timeout duration
+     * @param message message to display when timeout occurs.
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    public static void waitOnMainUntil(
+            @NonNull BooleanSupplier condition, @NonNull Duration timeout, String message)
+            throws TimeoutException {
         final AtomicBoolean result = new AtomicBoolean();
+
+        Duration remaining = timeout;
 
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         while (!result.get()) {
-            if (timeout < 0) {
+            if (remaining.isNegative()) {
                 throw new TimeoutException(message);
             }
             instrumentation.runOnMainSync(() -> {
@@ -158,7 +171,7 @@ public final class TestUtils {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
-            timeout -= TIME_SLICE;
+            remaining = remaining.minus(TIME_SLICE);
         }
     }
 
@@ -172,6 +185,19 @@ public final class TestUtils {
      */
     public static void waitOnMainUntil(@NonNull BooleanSupplier condition, long timeout)
             throws TimeoutException {
+        waitOnMainUntil(condition, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Does polling loop on the UI thread to wait until the given condition is met.
+     *
+     * @param condition Condition to be satisfied, this is guaranteed to run on the UI thread
+     * @param timeout timeout duration
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    public static void waitOnMainUntil(
+            @NonNull BooleanSupplier condition, @NonNull Duration timeout) throws TimeoutException {
         waitOnMainUntil(condition, timeout, "");
     }
 

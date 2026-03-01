@@ -251,10 +251,12 @@ public class AccessibilityEmbeddedHierarchyTest {
         // Start a11y focus on any other UI element. The rest of the test expects to focus on
         // unfocused nodes in order to receive TYPE_VIEW_ACCESSIBILITY_FOCUSED events when
         // focus changes.
-        sInstrumentation.runOnMainSync(() -> {
-            assertThat(hostView.performAccessibilityAction(
-                    AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)).isTrue();
-        });
+        if (!hostView.isAccessibilityFocused()) {
+            sInstrumentation.runOnMainSync(() -> {
+                assertThat(hostView.performAccessibilityAction(
+                        AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)).isTrue();
+            });
+        }
 
         // Move a11y focus to embedded nodes and expect that both the node and the focus event use
         // the host window id.

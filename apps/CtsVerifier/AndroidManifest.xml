@@ -3896,186 +3896,6 @@
                        |android.net.wifi.WifiManager#removeSuggestionConnectionStatusListener
                        |android.net.wifi.WifiManager#addSuggestionConnectionStatusListener" />
         </activity>
-
-        <!--            CTS Verifier Presence Test Top Screen -->
-        <activity
-            android:name=".presence.PresenceTestActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            android:exported="true"
-            android:label="@string/presence_test" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_networking" />
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-        </activity>
-
-        <!--
-           CTS Verifier BLE RSSI Precision Test Screen
-               test category : BLE
-               test parent : PresenceTestActivity
-       -->
-        <activity
-            android:name=".presence.BleRssiPrecisionActivity"
-            android:exported="true"
-            android:label="@string/ble_rssi_precision_name">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/ble" />
-            <meta-data
-                android:name="test_parent"
-                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.bluetooth_le" />
-            <meta-data
-                android:name="display_mode"
-                android:value="single_display_mode" />
-            <meta-data
-                android:name="CddTest"
-                android:value="7.4.3/C-7-1" />
-        </activity>
-
-        <!--
-           CTS Verifier BLE Rx/Tx Offset Precision Test Screen
-               test category : BLE
-               test parent : PresenceTestActivity
-        -->
-        <activity
-            android:name=".presence.BleRxTxOffsetPrecisionActivity"
-            android:exported="true"
-            android:label="@string/ble_rx_tx_offset_precision_name">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/ble" />
-            <meta-data
-                android:name="test_parent"
-                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.bluetooth_le" />
-            <meta-data
-                android:name="display_mode"
-                android:value="single_display_mode" />
-            <meta-data
-                android:name="CddTest"
-                android:value="7.4.3/C-10-3,C-10-4" />
-        </activity>
-
-        <!--
-           CTS Verifier NAN Precision Test Screen
-               test category : NAN
-               test parent : PresenceTestActivity
-       -->
-        <activity
-            android:name=".presence.NanAccuracyActivity"
-            android:exported="true"
-            android:label="@string/nan_accuracy_test_name">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/wifi_nan" />
-            <meta-data
-                android:name="test_parent"
-                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.wifi.aware:android.hardware.wifi.rtt" />
-            <meta-data
-                android:name="display_mode"
-                android:value="single_display_mode" />
-            <meta-data
-                android:name="CddTest"
-                android:value="7.4.2.5/H-1-1" />
-        </activity>
-
-        <!--
-           CTS Verifier Channel Sounding Precision Test Screen
-               test category : Channel Sounding
-               test parent : PresenceTestActivity
-       -->
-        <activity
-            android:name=".presence.BleCsAccuracyActivity"
-            android:exported="true"
-            android:label="@string/cs_accuracy_test_name">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/ble_cs" />
-            <meta-data
-                android:name="test_parent"
-                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.bluetooth_le.channel_sounding:android.hardware.bluetooth_le" />
-            <meta-data
-                android:name="display_mode"
-                android:value="single_display_mode" />
-            <meta-data
-                android:name="CddTest"
-                android:value="7.4.3/C-11-2" />
-        </activity>
-
-        <!--
-           CTS Verifier UWB Precision Test Screen
-               test category : UWB
-               test parent : PresenceTestActivity
-       -->
-        <activity
-            android:name=".presence.UwbAccuracyActivity"
-            android:exported="true"
-            android:label="@string/uwb_accuracy_test_name">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/uwb" />
-            <meta-data
-                android:name="test_parent"
-                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.uwb" />
-            <meta-data
-                android:name="display_mode"
-                android:value="single_display_mode" />
-            <meta-data
-                android:name="CddTest"
-                android:value="7.4.9/C-1-6,C-1-7" />
-        </activity>
-
         <activity-alias android:name=".CtsVerifierActivity"
                         android:targetActivity=".TestListActivity"
                         android:exported="true"
@@ -5514,6 +5334,24 @@
                     android.media.AudioTrack#play|
                     android.media.AudioTrack#stop" />
             <meta-data android:name="CddTest" android:value="5.6/H-1-10" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsUSBMultichannelInputActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_usb_multichannel_input_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output:android.software.webview" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+            <meta-data android:name="CddTest" android:value="5.6/H-1-11" />
         </activity>
 
         <activity android:name=".audio.AudioLoopbackLatencyActivity"

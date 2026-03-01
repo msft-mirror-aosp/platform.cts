@@ -57,6 +57,11 @@ protected:
             GTEST_SKIP();
         }
 
+        if ((mPerfMode == AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED) &&
+                !isOffloadSupported(mFormat, mChannelMask, mSampleRate)) {
+            GTEST_SKIP();
+        }
+
         AAudioStreamBuilder* aaudioBuilder = nullptr;
 
         ASSERT_EQ(AAUDIO_OK, AAudio_createStreamBuilder(&aaudioBuilder));
@@ -376,9 +381,6 @@ void OffloadXRunTest::readParameters() {
     mSampleRate = 48000;
     mUseCallback = std::get<0>(GetParam());
     mPerfMode = AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED;
-    if (!isOffloadSupported(mFormat, mChannelMask, mSampleRate)) {
-        GTEST_SKIP();
-    }
 }
 
 TEST_P(OffloadXRunTest, checkOffload) {

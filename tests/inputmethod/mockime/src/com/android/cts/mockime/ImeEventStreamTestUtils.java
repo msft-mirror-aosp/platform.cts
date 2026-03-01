@@ -20,6 +20,7 @@ import android.graphics.Rect;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.text.TextUtils;
 import android.util.Pair;
 import android.view.inputmethod.EditorInfo;
@@ -31,6 +32,7 @@ import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +43,13 @@ import java.util.function.Predicate;
  * A set of utility methods to avoid boilerplate code when writing end-to-end tests.
  */
 public final class ImeEventStreamTestUtils {
-    private static final long TIME_SLICE = 50;  // msec
+    private static final Duration TIME_SLICE = Duration.ofMillis(50);
+
+    private static final int HW_TIMEOUT_MULTIPLIER =
+            SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
+
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 10L);
+    public static final Duration NOT_EXPECT_TIMEOUT = Duration.ofSeconds(2);
 
     /**
      * Cannot be instantiated
@@ -105,6 +113,33 @@ public final class ImeEventStreamTestUtils {
     @NonNull
     public static ImeEvent expectEvent(@NonNull ImeEventStream stream,
             @NonNull Predicate<ImeEvent> condition, long timeout) throws TimeoutException {
+        return expectEvent(stream, condition, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Wait until an event that matches the given {@code condition} is found in the stream.
+     *
+     * <p>When this method succeeds to find an event that matches the given {@code condition}, the
+     * stream position will be set to the next to the found object then the event found is returned.
+     *
+     * <p>For convenience, this method automatically filter out exit events (events that return
+     * {@code false} from {@link ImeEvent#isEnterEvent()}.
+     *
+     * <p>TODO: Consider renaming this to {@code expectEventEnter} or something like that.
+     *
+     * @param stream {@link ImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param timeout timeout duration
+     * @return {@link ImeEvent} found
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    @NonNull
+    public static ImeEvent expectEvent(
+            @NonNull ImeEventStream stream,
+            @NonNull Predicate<ImeEvent> condition,
+            @NonNull Duration timeout)
+            throws TimeoutException {
         return expectEvent(stream, condition, EventFilterMode.CHECK_ENTER_EVENT_ONLY, timeout);
     }
 
@@ -127,10 +162,36 @@ public final class ImeEventStreamTestUtils {
     public static ImeEvent expectEvent(@NonNull ImeEventStream stream,
             @NonNull Predicate<ImeEvent> condition, EventFilterMode filterMode, long timeout)
             throws TimeoutException {
+        return expectEvent(stream, condition, filterMode, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Wait until an event that matches the given {@code condition} is found in the stream.
+     *
+     * <p>When this method succeeds to find an event that matches the given {@code condition}, the
+     * stream position will be set to the next to the found object then the event found is returned.
+     *
+     * @param stream {@link ImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param filterMode controls how events are filtered out
+     * @param timeout timeout duration
+     * @return {@link ImeEvent} found
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    @NonNull
+    public static ImeEvent expectEvent(
+            @NonNull ImeEventStream stream,
+            @NonNull Predicate<ImeEvent> condition,
+            EventFilterMode filterMode,
+            @NonNull Duration timeout)
+            throws TimeoutException {
+
         final var combinedCondition = filterMode.combine(condition);
+        Duration remaining = timeout;
         try {
             while (true) {
-                if (timeout < 0) {
+                if (remaining.isNegative()) {
                     throw new TimeoutException(
                             "event " + combinedCondition + " not found within the timeout: "
                                     + stream.dump());
@@ -141,9 +202,10 @@ public final class ImeEventStreamTestUtils {
                     return result.get();
                 }
                 Thread.sleep(TIME_SLICE);
-                timeout -= TIME_SLICE;
+                remaining = remaining.minus(TIME_SLICE);
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(
                     "expectEvent " + combinedCondition + " interrupted: " + stream.dump(), e);
         }
@@ -207,16 +269,19 @@ public final class ImeEventStreamTestUtils {
      */
     public static DescribedPredicate<ImeEvent> editorMatcherRestarting(
             @NonNull String eventName, @NonNull String marker, boolean restarting) {
-        return withDescription(eventName + "(marker=" + marker + ", restarting=" + restarting +")", event -> {
-            if (!TextUtils.equals(eventName, event.getEventName())) {
-                return false;
-            }
-            final EditorInfo editorInfo = event.getArguments()
-                    .getParcelable("editorInfo", EditorInfo.class);
-            final boolean actualRestarting = event.getArguments().getBoolean("restarting");
-            return editorInfo != null && TextUtils.equals(marker, editorInfo.privateImeOptions)
-                    && restarting == actualRestarting;
-        });
+        return withDescription(
+                eventName + "(marker=" + marker + ", restarting=" + restarting + ")",
+                event -> {
+                    if (!TextUtils.equals(eventName, event.getEventName())) {
+                        return false;
+                    }
+                    final EditorInfo editorInfo =
+                            event.getArguments().getParcelable("editorInfo", EditorInfo.class);
+                    final boolean actualRestarting = event.getArguments().getBoolean("restarting");
+                    return editorInfo != null
+                            && TextUtils.equals(marker, editorInfo.privateImeOptions)
+                            && restarting == actualRestarting;
+                });
     }
 
     /**
@@ -270,18 +335,42 @@ public final class ImeEventStreamTestUtils {
     @NonNull
     public static ImeEvent expectCommand(@NonNull ImeEventStream stream,
             @NonNull ImeCommand command, long timeout) throws TimeoutException {
-        var predicate = withDescription(
-                "onHandleCommand(id=" + command.getId() + ")", event -> {
-                    if (!TextUtils.equals("onHandleCommand", event.getEventName())) {
-                        return false;
-                    }
-                    final var commandBundle = event.getArguments().getBundle("command");
-                    if (commandBundle == null) {
-                        return false;
-                    }
-                    final ImeCommand eventCommand = ImeCommand.fromBundle(commandBundle);
-                    return eventCommand.getId() == command.getId();
-                });
+        return expectCommand(stream, command, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Wait until an event that matches the given command is consumed by the {@link MockIme}.
+     *
+     * <p>For convenience, this method automatically filter out enter events (events that return
+     * {@code true} from {@link ImeEvent#isEnterEvent()}.
+     *
+     * <p>TODO: Consider renaming this to {@code expectCommandConsumed} or something like that.
+     *
+     * @param stream {@link ImeEventStream} to be checked
+     * @param command {@link ImeCommand} to be waited for
+     * @param timeout timeout duration
+     * @return {@link ImeEvent} found
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    @NonNull
+    public static ImeEvent expectCommand(
+            @NonNull ImeEventStream stream, @NonNull ImeCommand command, @NonNull Duration timeout)
+            throws TimeoutException {
+        var predicate =
+                withDescription(
+                        "onHandleCommand(id=" + command.getId() + ")",
+                        event -> {
+                            if (!TextUtils.equals("onHandleCommand", event.getEventName())) {
+                                return false;
+                            }
+                            final var commandBundle = event.getArguments().getBundle("command");
+                            if (commandBundle == null) {
+                                return false;
+                            }
+                            final ImeCommand eventCommand = ImeCommand.fromBundle(commandBundle);
+                            return eventCommand.getId() == command.getId();
+                        });
         return expectEvent(stream, predicate, EventFilterMode.CHECK_EXIT_EVENT_ONLY, timeout);
     }
 
@@ -303,6 +392,29 @@ public final class ImeEventStreamTestUtils {
      */
     public static void notExpectEvent(@NonNull ImeEventStream stream,
             @NonNull Predicate<ImeEvent> condition, long timeout) {
+        notExpectEvent(stream, condition, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Assert that an event that matches the given {@code condition} will no be found in the stream
+     * within the given {@code timeout}.
+     *
+     * <p>When this method succeeds, the stream position will not change.
+     *
+     * <p>For convenience, this method automatically filter out exit events (events that return
+     * {@code false} from {@link ImeEvent#isEnterEvent()}.
+     *
+     * <p>TODO: Consider renaming this to {@code notExpectEventEnter} or something like that.
+     *
+     * @param stream {@link ImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param timeout timeout duration
+     * @throws AssertionError if such an event is found within the given {@code timeout}
+     */
+    public static void notExpectEvent(
+            @NonNull ImeEventStream stream,
+            @NonNull Predicate<ImeEvent> condition,
+            @NonNull Duration timeout) {
         notExpectEvent(stream, condition, EventFilterMode.CHECK_ENTER_EVENT_ONLY, timeout);
     }
 
@@ -320,10 +432,31 @@ public final class ImeEventStreamTestUtils {
      */
     public static void notExpectEvent(@NonNull ImeEventStream stream,
             @NonNull Predicate<ImeEvent> condition, EventFilterMode filterMode, long timeout) {
+        notExpectEvent(stream, condition, filterMode, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Assert that an event that matches the given {@code condition} will no be found in the stream
+     * within the given {@code timeout}.
+     *
+     * <p>When this method succeeds, the stream position will not change.
+     *
+     * @param stream {@link ImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param filterMode controls how events are filtered out
+     * @param timeout timeout duration
+     * @throws AssertionError if such an event is found within the given {@code timeout}
+     */
+    public static void notExpectEvent(
+            @NonNull ImeEventStream stream,
+            @NonNull Predicate<ImeEvent> condition,
+            EventFilterMode filterMode,
+            @NonNull Duration timeout) {
         final var combinedCondition = filterMode.combine(condition);
+        Duration remaining = timeout;
         try {
             while (true) {
-                if (timeout < 0) {
+                if (remaining.isNegative()) {
                     return;
                 }
                 if (stream.findFirst(combinedCondition).isPresent()) {
@@ -331,9 +464,10 @@ public final class ImeEventStreamTestUtils {
                             "notExpectEvent " + combinedCondition + " failed: " + stream.dump());
                 }
                 Thread.sleep(TIME_SLICE);
-                timeout -= TIME_SLICE;
+                remaining = remaining.minus(TIME_SLICE);
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(
                     "notExpectEvent " + combinedCondition + " failed: " + stream.dump(), e);
         }
@@ -350,29 +484,77 @@ public final class ImeEventStreamTestUtils {
      */
     public static void expectBindInput(@NonNull ImeEventStream stream, int targetProcessPid,
             long timeout) throws TimeoutException {
-        expectEvent(stream, withDescription("bindInput(pid=" + targetProcessPid + ")",
-                event -> {
-                    if (!TextUtils.equals("bindInput", event.getEventName())) {
-                        return false;
-                    }
-                    final InputBinding binding = event.getArguments()
-                            .getParcelable("binding", InputBinding.class);
-                    return binding != null && binding.getPid() == targetProcessPid;
-                }), EventFilterMode.CHECK_EXIT_EVENT_ONLY, timeout);
+        expectBindInput(stream, targetProcessPid, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * A specialized version of {@link #expectEvent(ImeEventStream, Predicate, long)} to wait for
+     * {@link android.view.inputmethod.InputMethod#bindInput(InputBinding)}.
+     *
+     * @param stream {@link ImeEventStream} to be checked
+     * @param targetProcessPid PID to be matched to {@link InputBinding#getPid()}
+     * @param timeout timeout duration
+     * @throws TimeoutException when "bindInput" is not called within {@code timeout} msec
+     */
+    public static void expectBindInput(
+            @NonNull ImeEventStream stream, int targetProcessPid, @NonNull Duration timeout)
+            throws TimeoutException {
+        expectEvent(
+                stream,
+                withDescription(
+                        "bindInput(pid=" + targetProcessPid + ")",
+                        event -> {
+                            if (!TextUtils.equals("bindInput", event.getEventName())) {
+                                return false;
+                            }
+                            final InputBinding binding =
+                                    event.getArguments()
+                                            .getParcelable("binding", InputBinding.class);
+                            return binding != null && binding.getPid() == targetProcessPid;
+                        }),
+                EventFilterMode.CHECK_EXIT_EVENT_ONLY,
+                timeout);
     }
 
     /**
      * Checks if {@code eventName} has occurred and given {@param key} has value {@param value}.
-     * @param eventName event name to check.
-     * @param key the key that should be checked.
-     * @param value the expected value for the given {@param key}.
+     *
+     * @param eventName event name to check
+     * @param key the key that should be checked
+     * @param value the expected value for the given {@code key}
+     * @param timeout timeout in milliseconds
      */
-    public static void expectEventWithKeyValue(@NonNull ImeEventStream stream,
-            @NonNull String eventName, @NonNull String key, int value, long timeout)
+    public static void expectEventWithKeyValue(
+            @NonNull ImeEventStream stream,
+            @NonNull String eventName,
+            @NonNull String key,
+            int value,
+            long timeout)
             throws TimeoutException {
-        var condition = withDescription(eventName + "(" + key + "=" + value + ")",
-                event -> TextUtils.equals(eventName, event.getEventName())
-                        && value == event.getArguments().getInt(key));
+        expectEventWithKeyValue(stream, eventName, key, value, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Checks if {@code eventName} has occurred and given {@code key} has value {@code value}.
+     *
+     * @param eventName event name to check
+     * @param key the key that should be checked
+     * @param value the expected value for the given {@code key}
+     * @param timeout timeout duration
+     */
+    public static void expectEventWithKeyValue(
+            @NonNull ImeEventStream stream,
+            @NonNull String eventName,
+            @NonNull String key,
+            int value,
+            @NonNull Duration timeout)
+            throws TimeoutException {
+        var condition =
+                withDescription(
+                        eventName + "(" + key + "=" + value + ")",
+                        event ->
+                                TextUtils.equals(eventName, event.getEventName())
+                                        && value == event.getArguments().getInt(key));
         expectEvent(stream, condition, timeout);
     }
 

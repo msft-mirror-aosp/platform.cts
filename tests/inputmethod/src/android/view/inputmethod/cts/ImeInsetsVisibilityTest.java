@@ -20,7 +20,6 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
-import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
@@ -30,6 +29,8 @@ import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.ex
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.isInputMethodPickerShown;
 
+import static com.android.cts.mockime.ImeEventStreamTestUtils.DEFAULT_TIMEOUT;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.NOT_EXPECT_TIMEOUT;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -89,7 +90,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
@@ -98,8 +98,6 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10) * HW_TIMEOUT_MULTIPLIER;
-    private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     private static final int NEW_KEYBOARD_HEIGHT = 300;
 
     private Instrumentation mInstrumentation;
@@ -126,20 +124,22 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             final EditText editText = editTextTestActivityPair.first;
             final TestActivity activity = editTextTestActivityPair.second;
 
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectImeInvisible(TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
 
             assertTrue("showSoftInput must success if the View has IME focus",
                     getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
-            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
-                    View.VISIBLE, TIMEOUT);
-            PollingCheck.check("Ime insets should be visible", TIMEOUT,
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), DEFAULT_TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            expectEventWithKeyValue(
+                    stream, "onWindowVisibilityChanged", "visible", View.VISIBLE, DEFAULT_TIMEOUT);
+            PollingCheck.check(
+                    "Ime insets should be visible",
+                    DEFAULT_TIMEOUT.toMillis(),
                     () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
-            expectImeVisible(TIMEOUT);
+            expectImeVisible(DEFAULT_TIMEOUT);
 
             try (ChildWindowHolder childWindow = createChildTransparentApplicationWindowOnMain(
                     activity, 200 /* width */, 200 /* height */,
@@ -151,8 +151,9 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                         () -> childWindow.getRootView().setVisibility(View.VISIBLE));
                 TestUtils.waitOnMainUntil(
                         () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()),
-                        TIMEOUT, "Ime insets should be visible");
-                expectImeVisible(TIMEOUT);
+                        DEFAULT_TIMEOUT,
+                        "Ime insets should be visible");
+                expectImeVisible(DEFAULT_TIMEOUT);
             }
         }
     }
@@ -175,17 +176,19 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             final TestActivity activity = editTextTestActivityPair.second;
 
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
-            expectImeInvisible(TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
 
             assertTrue("showSoftInput must success if the View has IME focus",
                     getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
-            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            PollingCheck.check("Ime insets should be visible", TIMEOUT,
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), DEFAULT_TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            PollingCheck.check(
+                    "Ime insets should be visible",
+                    DEFAULT_TIMEOUT.toMillis(),
                     () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
-            expectImeVisible(TIMEOUT);
+            expectImeVisible(DEFAULT_TIMEOUT);
 
             stream.skipAll();
             try (ChildWindowHolder childWindow = createChildBottomPanelWindowOnMain(activity,
@@ -202,8 +205,9 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
                 TestUtils.waitOnMainUntil(
                         () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()),
-                        TIMEOUT, "Ime insets should be visible");
-                expectImeVisible(TIMEOUT);
+                        DEFAULT_TIMEOUT,
+                        "Ime insets should be visible");
+                expectImeVisible(DEFAULT_TIMEOUT);
             }
         }
     }
@@ -225,18 +229,20 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             final EditText editText = editTextTestActivityPair.first;
             final TestActivity activity = editTextTestActivityPair.second;
 
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectImeInvisible(TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
 
             assertTrue("showSoftInput must success if the View has IME focus",
                     getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
-            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            PollingCheck.check("Ime insets should be visible", TIMEOUT,
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), DEFAULT_TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            PollingCheck.check(
+                    "Ime insets should be visible",
+                    DEFAULT_TIMEOUT.toMillis(),
                     () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
-            expectImeVisible(TIMEOUT);
+            expectImeVisible(DEFAULT_TIMEOUT);
 
             stream.skipAll();
             try (ChildWindowHolder childWindow = createChildBottomPanelWindowOnMain(activity,
@@ -253,8 +259,9 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
                 TestUtils.waitOnMainUntil(
                         () -> editText.getRootWindowInsets().isVisible(WindowInsets.Type.ime()),
-                        TIMEOUT, "Ime insets should be visible");
-                expectImeVisible(TIMEOUT);
+                        DEFAULT_TIMEOUT,
+                        "Ime insets should be visible");
+                expectImeVisible(DEFAULT_TIMEOUT);
             }
         }
     }
@@ -283,18 +290,18 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             TestUtils.runOnMainSync(() -> activity.getWindow().getDecorView()
                     .setOnApplyWindowInsetsListener((v, insets) -> insetsFromActivity[0] = insets));
 
-            notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectImeInvisible(TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
 
             assertTrue("showSoftInput must success if the View has IME focus",
                     getOnMainSync(() -> imm.showSoftInput(editText, 0)));
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
-            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
-                    View.VISIBLE, TIMEOUT);
-            expectImeVisible(TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), DEFAULT_TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            expectEventWithKeyValue(
+                    stream, "onWindowVisibilityChanged", "visible", View.VISIBLE, DEFAULT_TIMEOUT);
+            expectImeVisible(DEFAULT_TIMEOUT);
 
             Point lastEditTextPos = new Point(curEditPos);
             curEditPos = getLocationOnScreenForView(editText);
@@ -317,8 +324,10 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
             }
 
             imm.showInputMethodPicker();
-            TestUtils.waitOnMainUntil(() -> isInputMethodPickerShown(imm) && editText.isLaidOut(),
-                    TIMEOUT, "InputMethod picker should be shown");
+            TestUtils.waitOnMainUntil(
+                    () -> isInputMethodPickerShown(imm) && editText.isLaidOut(),
+                    DEFAULT_TIMEOUT,
+                    "InputMethod picker should be shown");
             lastEditTextPos = new Point(curEditPos);
             curEditPos = getLocationOnScreenForView(editText);
 
@@ -329,7 +338,9 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
             mInstrumentation.getContext().sendBroadcast(
                     new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
-            TestUtils.waitOnMainUntil(() -> !isInputMethodPickerShown(imm), TIMEOUT,
+            TestUtils.waitOnMainUntil(
+                    () -> !isInputMethodPickerShown(imm),
+                    DEFAULT_TIMEOUT,
                     "InputMethod picker should be closed");
         }
     }
@@ -429,17 +440,20 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                 return panel;
             });
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
-            expectImeInvisible(TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
             // Show IME by using WindowInsets API.
             testActivity.getWindow().getInsetsController().show(WindowInsets.Type.ime());
-            TestUtils.waitOnMainUntil(() -> isInsetsVisible(panelView.getRootWindowInsets(),
-                    WindowInsets.Type.ime()), TIMEOUT, "The panel should receive IME insets");
+            TestUtils.waitOnMainUntil(
+                    () -> isInsetsVisible(panelView.getRootWindowInsets(), WindowInsets.Type.ime()),
+                    DEFAULT_TIMEOUT,
+                    "The panel should receive IME insets");
             TestUtils.waitOnMainUntil(
                     () -> editText.getVisibility() == View.VISIBLE && editText.hasFocus(),
-                    TIMEOUT, "The editor should be shown and visible");
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectImeVisible(TIMEOUT);
+                    DEFAULT_TIMEOUT,
+                    "The editor should be shown and visible");
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+            expectImeVisible(DEFAULT_TIMEOUT);
         }
     }
 
@@ -523,7 +537,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                                         return layout;
                                     },
                                     TestActivity.class);
-            expectImeInvisible(TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
 
             // Launch secondary activity in split screen
             final TestActivity secondaryActivity =
@@ -541,8 +555,8 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                                         return layout;
                                     },
                                     TestActivity2.class);
-            TestUtils.waitOnMainUntil(secondaryActivity::hasWindowFocus, TIMEOUT);
-            expectImeInvisible(TIMEOUT);
+            TestUtils.waitOnMainUntil(secondaryActivity::hasWindowFocus, DEFAULT_TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
 
             final boolean isVerticallySplit = isVerticallySplit(primaryActivity, secondaryActivity);
 
@@ -554,12 +568,12 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
                 // Tap the editor on the primary task to focus the window and show the IME.
                 touch.tapOnViewCenter(primaryEditText);
-                TestUtils.waitOnMainUntil(primaryEditText::hasWindowFocus, TIMEOUT);
+                TestUtils.waitOnMainUntil(primaryEditText::hasWindowFocus, DEFAULT_TIMEOUT);
                 // Next tap to show the IME.
                 touch.tapOnViewCenter(primaryEditText);
 
-                expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-                expectImeVisible(TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInputView", marker), DEFAULT_TIMEOUT);
+                expectImeVisible(DEFAULT_TIMEOUT);
 
                 mInstrumentation.waitForIdleSync();
 
@@ -589,11 +603,11 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
                 touch.touchDown(xy[0], xy[1]).lift();
             }
 
-            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
-            expectEvent(stream, eventMatcher("onFinishInputView"), TIMEOUT);
+            expectEvent(stream, hideSoftInputMatcher(), DEFAULT_TIMEOUT);
+            expectEvent(stream, eventMatcher("onFinishInputView"), DEFAULT_TIMEOUT);
             expectEventWithKeyValue(
-                    stream, "onWindowVisibilityChanged", "visible", View.GONE, TIMEOUT);
-            expectImeInvisible(TIMEOUT);
+                    stream, "onWindowVisibilityChanged", "visible", View.GONE, DEFAULT_TIMEOUT);
+            expectImeInvisible(DEFAULT_TIMEOUT);
 
             mInstrumentation.waitForIdleSync();
 

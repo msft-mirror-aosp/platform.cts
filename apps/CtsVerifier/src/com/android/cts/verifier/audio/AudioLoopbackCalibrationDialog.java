@@ -67,12 +67,19 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private int mInputChannels = 2;
     private int mOutputChannels = 2;
     private int mOutputChannelMask = 0;
+    private int mSampleRate = 48000;
+    private int mEncoding = BuilderBase.ENCODING_PCM_FLOAT;
     private int mNumDisplayChannels;
     private WaveScopeView mWaveView = null;
 
     public void setOutputChannelMask(int mask) {
         mOutputChannelMask = mask;
         mOutputChannels = Integer.bitCount(mask);
+    }
+
+    public void setConfig(int sampleRate, int encoding) {
+        mSampleRate = sampleRate;
+        mEncoding = encoding;
     }
 
     Spinner mInputsSpinner;
@@ -83,6 +90,17 @@ class AudioLoopbackCalibrationDialog extends Dialog
 
     AudioDeviceInfo mSelectedInputDevice;
     AudioDeviceInfo mSelectedOutputDevice;
+
+    private AudioDeviceInfo mPreselectedInputDevice;
+    private AudioDeviceInfo mPreselectedOutputDevice;
+
+    public void setInputDevice(AudioDeviceInfo device) {
+        mPreselectedInputDevice = device;
+    }
+
+    public void setOutputDevice(AudioDeviceInfo device) {
+        mPreselectedOutputDevice = device;
+    }
 
     AudioLoopbackCalibrationDialog(Context context) {
         this(context, 2, 2);
@@ -249,6 +267,7 @@ class AudioLoopbackCalibrationDialog extends Dialog
         // Player
         mDuplexAudioManager.setSources(sourceProvider, mAudioSinkProvider);
         mDuplexAudioManager.setPlayerRouteDevice(mSelectedOutputDevice);
+        mDuplexAudioManager.setPlayerSampleRate(mSampleRate);
         if (mOutputChannelMask != 0) {
             mDuplexAudioManager.setPlayerChannelMask(mOutputChannelMask);
         } else {
@@ -257,13 +276,16 @@ class AudioLoopbackCalibrationDialog extends Dialog
 
         // Recorder
         mDuplexAudioManager.setRecorderRouteDevice(mSelectedInputDevice);
+        mDuplexAudioManager.setRecorderSampleRate(mSampleRate);
         mNumDisplayChannels = mInputChannels;
-        if (mSelectedInputDevice != null && AudioDeviceUtils.isMicDevice(mSelectedInputDevice)) {
+        if (mSelectedInputDevice != null && AudioDeviceUtils.isMicDevice(mSelectedInputDevice)
+                && mInputChannels <= 2) {
             mNumDisplayChannels = 1;
         }
         Log.d(TAG, "mNumDisplayChannels:" + mNumDisplayChannels);
         mWaveView.setNumChannels(mNumDisplayChannels);
         mDuplexAudioManager.setNumRecorderChannels(mNumDisplayChannels);
+        mDuplexAudioManager.setEncoding(mEncoding);
 
         // Open the streams.
         // Note AudioSources and AudioSinks get allocated at this point
@@ -317,14 +339,28 @@ class AudioLoopbackCalibrationDialog extends Dialog
     // AudioDeviceCallback overrides
     //
     private class AudioDeviceConnectionCallback extends AudioDeviceCallback {
+        private void setDeviceSelection(Spinner spinner, AudioDeviceInfo[] devices,
+                                        AudioDeviceInfo preselectedDevice) {
+            if (preselectedDevice != null) {
+                for (int i = 0; i < devices.length; i++) {
+                    if (devices[i].getId() == preselectedDevice.getId()) {
+                        spinner.setSelection(i + 1);
+                        break;
+                    }
+                }
+            }
+        }
+
         void stateChangeHandler() {
             stopAudio();
 
             mInputDevices = mAudioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
             mInputsSpinner.setAdapter(fillAdapter(mInputDevices));
+            setDeviceSelection(mInputsSpinner, mInputDevices, mPreselectedInputDevice);
 
             mOutputDevices = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
             mOutputsSpinner.setAdapter(fillAdapter(mOutputDevices));
+            setDeviceSelection(mOutputsSpinner, mOutputDevices, mPreselectedOutputDevice);
         }
 
         @Override

@@ -330,12 +330,15 @@ public abstract class AudioDataPathsBaseActivity
         int mOutPerformanceMode;
         //TODO - Add usage and content types to output stream
 
-        // Device for capturing the (played) signal
+        // captured signal
         final int mInDeviceType;  // TYPE_BUILTIN_MIC for example
         final int mInSampleRate;
         final int mInChannelCount;
+        int mInChannelIndexMask = 0;
         int mInPerformanceMode;
 
+        int mOutChannelIndexMask = 0;
+        int mEncoding = BuilderBase.ENCODING_PCM_FLOAT;
         int mAnalysisChannel = 0;
         int mInputPreset;
         int mModuleIndex;
@@ -591,6 +594,18 @@ public abstract class AudioDataPathsBaseActivity
             mOutChannelCount = Integer.bitCount(channelMask);
         }
 
+        void setOutChannelIndexMask(int mask) {
+            mOutChannelIndexMask = mask;
+        }
+
+        void setInChannelIndexMask(int mask) {
+            mInChannelIndexMask = mask;
+        }
+
+        void setEncoding(int encoding) {
+            mEncoding = encoding;
+        }
+
         void setSources(AudioSourceProvider sourceProvider, AudioSinkProvider sinkProvider) {
             mSourceProvider = sourceProvider;
             mSinkProvider = sinkProvider;
@@ -775,7 +790,9 @@ public abstract class AudioDataPathsBaseActivity
                 mDuplexAudioManager.setSources(mSourceProvider, mSinkProvider);
                 mDuplexAudioManager.setPlayerRouteDevice(mOutDeviceInfo);
                 mDuplexAudioManager.setPlayerSampleRate(mOutSampleRate);
-                if (mOutChannelMask != 0) {
+                if (mOutChannelIndexMask != 0) {
+                    mDuplexAudioManager.setPlayerChannelIndexMask(mOutChannelIndexMask);
+                } else if (mOutChannelMask != 0) {
                     mDuplexAudioManager.setPlayerChannelMask(mOutChannelMask);
                 } else {
                     mDuplexAudioManager.setNumPlayerChannels(mOutChannelCount);
@@ -787,8 +804,13 @@ public abstract class AudioDataPathsBaseActivity
                 // Recorder
                 mDuplexAudioManager.setRecorderRouteDevice(mInDeviceInfo);
                 mDuplexAudioManager.setInputPreset(mInputPreset);
+                mDuplexAudioManager.setEncoding(mEncoding);
                 mDuplexAudioManager.setRecorderSampleRate(mInSampleRate);
-                mDuplexAudioManager.setNumRecorderChannels(mInChannelCount);
+                if (mInChannelIndexMask != 0) {
+                    mDuplexAudioManager.setRecorderChannelIndexMask(mInChannelIndexMask);
+                } else {
+                    mDuplexAudioManager.setNumRecorderChannels(mInChannelCount);
+                }
                 mDuplexAudioManager.setRecorderSharingMode(mTransferType == TRANSFER_MMAP_EXCLUSIVE
                         ? BuilderBase.SHARING_MODE_EXCLUSIVE : BuilderBase.SHARING_MODE_SHARED);
                 mDuplexAudioManager.setRecorderPerformanceMode(mInPerformanceMode);
