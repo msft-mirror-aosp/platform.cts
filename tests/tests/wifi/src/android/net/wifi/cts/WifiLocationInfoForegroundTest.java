@@ -30,6 +30,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.platform.test.annotations.AppModeFull;
+import android.os.SystemClock;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
@@ -78,6 +79,7 @@ public class WifiLocationInfoForegroundTest extends WifiJUnit4TestBase {
 
     private static final int DURATION_MS = 10_000;
     private static final int WIFI_CONNECT_TIMEOUT_MILLIS = 30_000;
+    private static final int  MAX_STABILIZATION_MS = 2_000;
 
     @Rule
     public final ActivityTestRule<WaitForResultActivity> mActivityRule =
@@ -223,6 +225,7 @@ public class WifiLocationInfoForegroundTest extends WifiJUnit4TestBase {
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
                 WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
+	SystemClock.sleep(MAX_STABILIZATION_MS);
         triggerScanFgActivityAndAssertStatusIs(true);
     }
 
@@ -237,6 +240,7 @@ public class WifiLocationInfoForegroundTest extends WifiJUnit4TestBase {
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
                 WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
+	SystemClock.sleep(MAX_STABILIZATION_MS);
         retrieveScanResultsFgActivityAndAssertStatusIs(true);
     }
 
@@ -251,6 +255,7 @@ public class WifiLocationInfoForegroundTest extends WifiJUnit4TestBase {
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
                 WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
+	SystemClock.sleep(MAX_STABILIZATION_MS);
         retrieveConnectionInfoFgActivityAndAssertStatusIs(true);
     }
 
@@ -267,6 +272,7 @@ public class WifiLocationInfoForegroundTest extends WifiJUnit4TestBase {
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
                 WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
+	SystemClock.sleep(MAX_STABILIZATION_MS);
         retrieveTransportInfoFgActivityAndAssertStatusIs(true);
     }
 }
