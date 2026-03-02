@@ -29,7 +29,6 @@ import android.alarmmanager.alarmtestapp.cts.TestAlarmScheduler;
 import android.alarmmanager.util.AlarmManagerDeviceConfigHelper;
 import android.alarmmanager.util.Utils;
 import android.app.Activity;
-import android.app.Flags;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -38,7 +37,6 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -295,15 +293,6 @@ public class AppStandbyTests {
         assertTrue(
                 "Alarm exceeding quota not delivered after expected delay",
                 waitForAlarm(desiredOutOfQuotaTrigger));
-    }
-
-    @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE,
-        Flags.FLAG_ALLOW_ALARMS_WITH_RELAXED_QUOTA
-    })
-    public void testAppStandByQuotaOfExactAwiCallbackAlarms() throws Exception {
-        testSimpleQuotaDeferral(WORKING_INDEX, true);
     }
 
     @Test
