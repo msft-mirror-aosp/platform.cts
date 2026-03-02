@@ -30,6 +30,8 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.android.compatibility.common.util.CddTest;
+
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
 public class FeatureTest extends AndroidTestCase {
 
@@ -41,6 +43,7 @@ public class FeatureTest extends AndroidTestCase {
     private WindowManager mWindowManager;
     private boolean mSupportsDeviceAdmin;
     private boolean mSupportsManagedProfiles;
+    private boolean mSupportsSecureLockScreen;
     private long mTotalMemory;
 
     @Override
@@ -53,17 +56,18 @@ public class FeatureTest extends AndroidTestCase {
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN);
         mSupportsManagedProfiles =
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_MANAGED_USERS);
+        mSupportsSecureLockScreen =
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN);
         ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
         mActivityManager.getMemoryInfo(memInfo);
         mTotalMemory = memInfo.totalMem;
     }
 
-    /**
-     * Test whether device supports managed profiles as required by CDD
-     */
+    /** Test whether device supports managed profiles as required by CDD */
+    @CddTest(requirements = {"3.9/H-1-2"})
     public void testManagedProfileSupported() throws Exception {
-        // Managed profiles only required if device admin feature is supported
-        if (!mSupportsDeviceAdmin) {
+        // Managed profiles only required if secure lock screen feature is supported
+        if (!mSupportsSecureLockScreen) {
             Log.w(TAG, "Skipping testManagedProfileSupported");
             return;
         }
@@ -92,6 +96,31 @@ public class FeatureTest extends AndroidTestCase {
                 + PackageManager.FEATURE_MANAGED_USERS + " is not enabled");
     }
 
+    /** Test whether device supports device admin as required by CDD */
+    @CddTest(requirements = {"3.9.1.2/C-1-1", "3.9/H-1-1"})
+    public void testDeviceAdminSupported() throws Exception {
+        if (mSupportsDeviceAdmin) {
+            // Device admin supported, nothing to check.
+            return;
+        }
+
+        if (mSupportsManagedProfiles) {
+            fail(
+                    PackageManager.FEATURE_DEVICE_ADMIN
+                            + " must be enabled if "
+                            + PackageManager.FEATURE_MANAGED_USERS
+                            + " is enabled");
+        }
+
+        if (mSupportsSecureLockScreen && isHandheldOrTabletDevice()) {
+            fail(
+                    PackageManager.FEATURE_DEVICE_ADMIN
+                            + " must be enabled if "
+                            + PackageManager.FEATURE_SECURE_LOCK_SCREEN
+                            + " is enabled");
+        }
+    }
+
     /**
      * The CDD defines:
      * - A handheld device as one that has a battery and a screen size between 2.5 and 8 inches.
@@ -101,7 +130,8 @@ public class FeatureTest extends AndroidTestCase {
         if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
                 || mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)) {
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_PC)) {
             return false;
         }
 
