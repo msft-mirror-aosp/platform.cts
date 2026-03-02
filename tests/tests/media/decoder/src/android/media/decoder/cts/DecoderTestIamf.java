@@ -102,6 +102,14 @@ public class DecoderTestIamf {
         assertNotNull(inst);
     }
 
+    private int getApiLevel() {
+        int apiLevel = Build.VERSION.SDK_INT;
+        if (Build.VERSION.PREVIEW_SDK_INT > 0) {
+            apiLevel++;
+        }
+        return apiLevel;
+    }
+
     /**
      * Verify correct decoding of IAMF Opus 7.1.4 channel streams.
      * Also verifies that the decoder handles setting the channel mask.
@@ -110,17 +118,22 @@ public class DecoderTestIamf {
     @ApiTest(apis = {"android.media.MediaFormat#KEY_CHANNEL_MASK"})
     @RequiresFlagsEnabled(Flags.FLAG_IAMF_SOFTWARE_DECODER)
     public void testIamfChannelMask() throws Exception {
-        int apiLevel = Build.VERSION.SDK_INT;
-        if (Build.VERSION.PREVIEW_SDK_INT > 0) {
-            apiLevel++;
-        }
-        Assume.assumeTrue("Test only runs on Android C or later",
-                apiLevel >= Build.VERSION_CODES.BAKLAVA + 1);
+        int apiLevel = getApiLevel();
+        Assume.assumeTrue("Test only runs on Android Baklava or later",
+                apiLevel >= Build.VERSION_CODES.BAKLAVA);
         AudioParameter audioParams = new AudioParameter();
-        decodeUpdateFormat(null /* decoderName */, mFilename, audioParams,
-                mChannelMask /* value */,
-                MediaFormat.KEY_CHANNEL_MASK,
-                mBreakOnFormatChange);
+        if (apiLevel >= Build.VERSION_CODES.BAKLAVA + 1) {
+            decodeUpdateFormat(null /* decoderName */, mFilename, audioParams,
+                    mChannelMask /* value */,
+                    MediaFormat.KEY_CHANNEL_MASK,
+                    mBreakOnFormatChange);
+        } else {
+            // On Baklava, the decoder does not support setting the channel mask.
+            decodeUpdateFormat(null /* decoderName */, mFilename, audioParams,
+                    mExpectedChannelCount /* value */,
+                    MediaFormat.KEY_MAX_OUTPUT_CHANNEL_COUNT,
+                    mBreakOnFormatChange);
+        }
 
         assertEquals("Number of channels differs",
                 mExpectedChannelCount, audioParams.getNumChannels());
