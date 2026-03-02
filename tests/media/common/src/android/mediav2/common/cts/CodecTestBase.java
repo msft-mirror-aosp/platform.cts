@@ -1335,6 +1335,20 @@ public abstract class CodecTestBase {
 
             boolean miss = true;
             for (Object[] arg : exhaustiveArgsList) {
+                // The test param list SupportClass is generated based on cdd requirements indicated
+                // in section 5.2, section 5.3 and section 2.3.2. There are a few exceptions for
+                // watch and automotive devices. For instance, watch devices do not have any
+                // multimedia requirements, automotive devices do not require to support av1 media
+                // type. Amend the param list for these form factors.
+                if (!cddRequiredMediaTypesList.contains(arg[0])) {
+                    for (int i = 0; i < arg.length; i++) {
+                        if (arg[i] instanceof SupportClass) {
+                            if (arg[i] != SupportClass.CODEC_OPTIONAL) {
+                                arg[i] = SupportClass.CODEC_OPTIONAL;
+                            }
+                        }
+                    }
+                }
                 if (mediaType.equals(arg[0])) {
                     for (String codec : listOfCodecs) {
                         Object[] argUpdate = new Object[argLength + 2];
