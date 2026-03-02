@@ -16,14 +16,17 @@
 
 package android.mediav2.cts;
 
+import static android.mediav2.common.cts.CodecDecoderTestBase.getRequestedExtractorType;
 import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_ALL;
 import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
 import static android.mediav2.cts.NativeAMediaCodecInfoTest.SPECIAL_CODEC;
 
 import android.media.MediaCodecInfo;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.EncoderConfigParams;
+import android.mediav2.common.cts.IMediaExtractorInterface;
+import android.mediav2.common.cts.MediaExtractorProvider;
+import android.mediav2.common.cts.MediaExtractorProvider.ExtractorType;
 import android.os.Build;
 import android.util.Log;
 
@@ -149,10 +152,12 @@ public class NativeAMediaCodecStoreTest {
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testGetNextCodecForFormat() throws IOException {
         ArrayList<MediaFormat> formats = new ArrayList<>();
+        ExtractorType type = getRequestedExtractorType();
         try (Stream<Path> paths = Files.walk(Paths.get(MEDIA_DIR))) {
             paths.forEach(path -> {
                 if (Files.isRegularFile(path)) {
-                    MediaExtractor extractor = new MediaExtractor();
+                    IMediaExtractorInterface extractor =
+                            MediaExtractorProvider.createMediaExtractor(type);
                     try {
                         extractor.setDataSource(path.toString());
                         for (int i = 0; i < extractor.getTrackCount(); i++) {
