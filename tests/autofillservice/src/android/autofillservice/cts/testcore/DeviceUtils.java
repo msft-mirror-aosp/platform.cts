@@ -44,19 +44,6 @@ public final class DeviceUtils {
                 }
             };
 
-    public static void unlockScreen() {
-        shell("wm dismiss-keyguard");
-    }
-
-    public static void closeSystemDialogs() {
-        shell("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS");
-    }
-
-    public static void wakeUp() throws Exception {
-        UiDevice sDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        sDevice.wakeUp();
-    }
-
     public static InputStream shell(String command) {
         return executeInstrumentationShellCommand(DeviceUtils.sAutomation, command);
     }
@@ -87,23 +74,6 @@ public final class DeviceUtils {
         public static void excludes(String... message) throws IOException {
             DeviceUtils.sLogcatInspector.assertLogcatDoesNotContainInOrder(
                     DEFAULT_TIMEOUT_SEC, message);
-        }
-    }
-
-    public static class SaveDialog {
-
-        public static void assertShows(String title) throws IOException {
-            DeviceUtils.Logcat.includes("SaveUI:I", "Showing save dialog: " + title);
-        }
-
-        public static void assertShows() throws IOException {
-            assertShows("");
-        }
-
-        // This only happens when SaveUI#hide() is called
-        // Does not work if SaveDialog is not show in the first place
-        public static void assertHidden() throws IOException {
-            DeviceUtils.Logcat.includes("SaveUI:D", "Hiding save dialog.");
         }
     }
 
