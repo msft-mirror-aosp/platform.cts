@@ -16,12 +16,11 @@
 
 package android.os.cts;
 
-import junit.framework.TestCase;
 import android.os.Parcel;
 import android.os.PatternMatcher;
-import android.platform.test.annotations.AppModeSdkSandbox;
 
-@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+import junit.framework.TestCase;
+
 public class PatternMatcherTest extends TestCase {
 
     private PatternMatcher mPatternMatcher;
@@ -133,11 +132,53 @@ public class PatternMatcherTest extends TestCase {
         mPatternMatcher = new PatternMatcher("", PatternMatcher.PATTERN_SIMPLE_GLOB);
         assertTrue(mPatternMatcher.match(""));
 
-        mPatternMatcher = new PatternMatcher("....", PatternMatcher.PATTERN_SIMPLE_GLOB);
-        assertTrue(mPatternMatcher.match("test"));
-
         mPatternMatcher = new PatternMatcher("d*", PatternMatcher.PATTERN_SIMPLE_GLOB);
         assertFalse(mPatternMatcher.match("test"));
     }
 
+    public void testMatch_simpleGlobPattern_dot() {
+        // A period (unless escaped) acts as a wildcard for one instance of any character.
+        mPatternMatcher = new PatternMatcher(".", PatternMatcher.PATTERN_SIMPLE_GLOB);
+        assertFalse(mPatternMatcher.match(""));
+        assertTrue(mPatternMatcher.match("a"));
+        assertTrue(mPatternMatcher.match("."));
+
+        // A period only matches any one character and no more.
+        mPatternMatcher = new PatternMatcher("....", PatternMatcher.PATTERN_SIMPLE_GLOB);
+        assertTrue(mPatternMatcher.match("test"));
+        assertFalse(mPatternMatcher.match("tests"));
+
+        // A period (unless escaped) acts as a wildcard for a single character.
+        mPatternMatcher = new PatternMatcher("te.t", PatternMatcher.PATTERN_SIMPLE_GLOB);
+        assertTrue(mPatternMatcher.match("te.t"));
+        assertTrue(mPatternMatcher.match("test"));
+
+        // An escaped period only matches with a literal period and no other character.
+        mPatternMatcher = new PatternMatcher("te\\.t", PatternMatcher.PATTERN_SIMPLE_GLOB);
+        assertTrue(mPatternMatcher.match("te.t"));
+        assertFalse(mPatternMatcher.match("test"));
+        assertFalse(mPatternMatcher.match("te\\t"));
+
+        // A ".*"  matches 0 or more instances of any character.
+        mPatternMatcher = new PatternMatcher("te.*st", PatternMatcher.PATTERN_SIMPLE_GLOB);
+        assertTrue(mPatternMatcher.match("terandomst"));
+        assertTrue(mPatternMatcher.match("te.*st"));
+        assertTrue(mPatternMatcher.match("test"));
+        assertTrue(mPatternMatcher.match("te...st"));
+        // ".*" matches characters until the next instance of the pattern is found. In this case, it
+        // matches the 'r' and then stops since it's sees an 's' (the next character after ".*") in
+        // the pattern. Therefore, the below string won't match because the "st" does not match
+        // anything.
+        assertFalse(mPatternMatcher.match("terstst"));
+        assertFalse(mPatternMatcher.match("testst"));
+
+        mPatternMatcher = new PatternMatcher("te*.t", PatternMatcher.PATTERN_SIMPLE_GLOB);
+        assertTrue(mPatternMatcher.match("teest"));
+        assertTrue(mPatternMatcher.match("te.t"));
+
+        // An escaped period followed by an asterisk should only match literal period characters.
+        mPatternMatcher = new PatternMatcher("te\\.*st", PatternMatcher.PATTERN_SIMPLE_GLOB);
+        assertFalse(mPatternMatcher.match("terandomst"));
+        assertTrue(mPatternMatcher.match("te...st"));
+    }
 }
