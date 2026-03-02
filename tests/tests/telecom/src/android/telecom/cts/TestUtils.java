@@ -47,7 +47,7 @@ import android.telecom.VideoProfile;
 import android.telephony.SubscriptionManager;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
@@ -82,7 +82,15 @@ public class TestUtils {
 
     // Non-final to allow modification by tests not in this package (e.g. permission-related
     // tests in the Telecom2 test package.
-    public static String PACKAGE = "android.telecom.cts";
+    public static String PACKAGE = getPackageName();
+
+    private static String getPackageName() {
+        try {
+            return InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageName();
+        } catch (Throwable t) {
+            return "android.telecom.cts";
+        }
+    }
     public static String SELF_MANAGED_PACKAGE = "android.telecom.cts.selfmanagedcstestappone";
     // Note: Please add new test packages to the list below:
     public static List<String> TEST_PACKAGES;
@@ -93,7 +101,7 @@ public class TestUtils {
     }
     public static final String TEST_URI_SCHEME = "foobuzz";
     public static final String COMPONENT = "android.telecom.cts.CtsConnectionService";
-    public static final String INCALL_COMPONENT = "android.telecom.cts/.MockInCallService";
+    public static String INCALL_COMPONENT = PACKAGE + "/android.telecom.cts.MockInCallService";
     public static final String SELF_MANAGED_COMPONENT =
             "android.telecom.cts.CtsSelfManagedConnectionService";
     public static final String SELF_MANAGED_COMPONENT_1 =
@@ -278,7 +286,7 @@ public class TestUtils {
             .addSupportedUriScheme(PhoneAccount.SCHEME_VOICEMAIL)
             .build();
     public static final String REMOTE_ACCOUNT_LABEL = "CTSRemoteConnectionService";
-    public static final String SELF_MANAGED_ACCOUNT_LABEL = "android.telecom.cts";
+    public static final String SELF_MANAGED_ACCOUNT_LABEL = PACKAGE;
     public static final PhoneAccount TEST_SELF_MANAGED_PHONE_ACCOUNT_3 = PhoneAccount.builder(
             TEST_SELF_MANAGED_HANDLE_3, SELF_MANAGED_ACCOUNT_LABEL)
             .setAddress(Uri.fromParts(TEST_URI_SCHEME, "test@test.com", null))
@@ -732,7 +740,7 @@ public class TestUtils {
     }
     public static boolean hasBluetoothFeature() {
         try {
-            return InstrumentationRegistry.getContext().getPackageManager()
+            return InstrumentationRegistry.getInstrumentation().getContext().getPackageManager()
                     .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
         } catch (Exception e) {
             return false;
@@ -740,7 +748,7 @@ public class TestUtils {
     }
     public static boolean hasAutomotiveFeature() {
         try {
-            return InstrumentationRegistry.getContext().getPackageManager()
+            return InstrumentationRegistry.getInstrumentation().getContext().getPackageManager()
                     .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         } catch (Exception e) {
             return false;
@@ -749,7 +757,7 @@ public class TestUtils {
 
     public static boolean hasWatchFeature() {
         try {
-            return InstrumentationRegistry.getContext().getPackageManager()
+            return InstrumentationRegistry.getInstrumentation().getContext().getPackageManager()
                     .hasSystemFeature(PackageManager.FEATURE_WATCH);
         } catch (Exception e) {
             return false;

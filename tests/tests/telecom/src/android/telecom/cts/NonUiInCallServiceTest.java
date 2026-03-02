@@ -123,9 +123,9 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             // no non UI ICS that can get bound.
             setComponentEnabledSettingsAndWaitForBroadcasts(
                     new PackageManager.ComponentEnabledSetting(
-                            ComponentName.createRelative(
-                                    MockInCallService.class.getPackage().getName(),
-                                    "." + MockInCallService.class.getSimpleName()),
+                            new ComponentName(
+                                    TestUtils.PACKAGE,
+                                    MockInCallService.class.getName()),
                             PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                             PackageManager.DONT_KILL_APP));
 
@@ -167,9 +167,9 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             // Always ensure the CTS ICS is re-enabled.
             setComponentEnabledSettingsAndWaitForBroadcasts(
                     new PackageManager.ComponentEnabledSetting(
-                            ComponentName.createRelative(
-                                    MockInCallService.class.getPackage().getName(),
-                                    "." + MockInCallService.class.getSimpleName()),
+                            new ComponentName(
+                                    TestUtils.PACKAGE,
+                                    MockInCallService.class.getName()),
                             PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                             PackageManager.DONT_KILL_APP));
             InstrumentationRegistry.getInstrumentation().getUiAutomation()

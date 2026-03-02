@@ -27,7 +27,7 @@ public class InCallServiceFlagChecker extends BaseTelecomTestWithMockServices {
 
     public static final String LOG_TAG = InCallServiceFlagChecker.class.getName();
     public static final String TARGET_SERVICE = ".MockInCallService:system";
-    public static final String DUMPSYS_COMMAND = "dumpsys activity services android.telecom.cts";
+    public static final String DUMPSYS_COMMAND = "dumpsys activity services " + TestUtils.PACKAGE;
     public static final String FLAGS_TEXT_MATCHER = "flags=0x";
     public static final int FLAGS_OFFSET = FLAGS_TEXT_MATCHER.length();
     public static final char SPACE_CHAR = ' ';
