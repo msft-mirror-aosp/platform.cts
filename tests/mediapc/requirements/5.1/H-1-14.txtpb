@@ -18,7 +18,7 @@ id: "5.1/H-1-14"
 name: "AV1 Hardware Decoder"
 description:
   "AV1 hardware decoder\n"
-  "- Film grain effect"
+  "Film grain effect"
 specs {
   key: 33
   value {

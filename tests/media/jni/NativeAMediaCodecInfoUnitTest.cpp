@@ -18,14 +18,15 @@
 #define LOG_TAG "NativeAMediaCodecInfoUnitTest"
 
 #include <jni.h>
+#include <log/log.h>
 #include <media/NdkMediaCodecInfo.h>
 #include <media/NdkMediaCodecStore.h>
 #include <media/NdkMediaExtractor.h>
 #include <sys/stat.h>
 
-#include "NativeMediaCommon.h"
-
 #include <vector>
+
+#include "NativeMediaCommon.h"
 
 template <typename T>
 bool equals(const T& op1, const T& op2) {
@@ -191,6 +192,7 @@ public:
     bool validateEncoderLayeringSchemas(const char** schemas, size_t count);
 
     std::string getErrorMsg() { return mErrorLogs; };
+    void appendErrorMsg(std::string str) { mErrorLogs.append(str); }
 };
 
 NativeAMediaCodecInfoUnitTest::NativeAMediaCodecInfoUnitTest(const char* codecName) {
@@ -1384,11 +1386,7 @@ jboolean nativeTestAMediaCodecInfoGetEncoderCapabilities(
         jint jBitrateModeSupportMap, jobjectArray jLayeringSchemasArray, jobject jRetMsg) {
     const char* codecName = env->GetStringUTFChars(jCodecName, nullptr);
     auto testUtil = new NativeAMediaCodecInfoUnitTest(codecName);
-    jsize schemaCount = 0;
-    if (jLayeringSchemasArray) {
-        schemaCount = env->GetArrayLength(jLayeringSchemasArray);
-    }
-    bool isPass;
+    bool isPass = false;
     CLEANUP_IF_FALSE(
             testUtil->validateEncoderComplexityRange(jComplexityRangeLower, jComplexityRangeUpper))
     CLEANUP_IF_FALSE(testUtil->validateEncoderQualityRange(jQualityRangeLower, jQualityRangeUpper))
@@ -1397,20 +1395,44 @@ jboolean nativeTestAMediaCodecInfoGetEncoderCapabilities(
                 testUtil->validateEncoderIsBitrateModeSupported(i, jBitrateModeSupportMap & 1))
         jBitrateModeSupportMap >>= 1;
     }
-    if (schemaCount > 0) {
-        std::vector<std::string> schemas;
-        for (size_t i = 0; i < schemaCount; i++) {
-            jstring jSchema = (jstring)env->GetObjectArrayElement(jLayeringSchemasArray, i);
-            const char* s = env->GetStringUTFChars(jSchema, nullptr);
-            schemas.push_back(std::string(s));
-            env->ReleaseStringUTFChars(jSchema, s);
+    if (__builtin_available(android 37, *)) {
+        if (jLayeringSchemasArray != nullptr) {
+            jsize schemaCount = env->GetArrayLength(jLayeringSchemasArray);
+            std::vector<std::string> schemas;
+            for (size_t i = 0; i < schemaCount; i++) {
+                jstring jSchema = (jstring)env->GetObjectArrayElement(jLayeringSchemasArray, i);
+                const char* s = env->GetStringUTFChars(jSchema, nullptr);
+                schemas.push_back(std::string(s));
+                env->ReleaseStringUTFChars(jSchema, s);
+            }
+            std::vector<const char*> schemaPointerArray;
+            for (const std::string& s : schemas) {
+                schemaPointerArray.push_back(s.c_str());
+            }
+            CLEANUP_IF_FALSE(testUtil->validateEncoderLayeringSchemas(schemaPointerArray.data(),
+                                                                      schemaCount));
         }
-        std::vector<const char*> schemaPointerArray;
-        for (const std::string& s : schemas) {
-            schemaPointerArray.push_back(s.c_str());
+#if 0
+        else {
+            // the java layer code that invokes this is strictly "sdk>=37"
+            // using an IS_AFTER_B macro.  This is not aligned with
+            // the semantics of builtin_available(37) which is
+            // sdk>=37 OR ro.build.version.codename != "REL"
+            // The builtin_available supports the concept that we
+            // report sdk N while developing sdk N+1 and how it differentiates.
+            //
+            // we expect an array, even if it is 0-length
+            testUtil->appendErrorMsg("missing temporal layering information");
+            isPass = false;
+            goto CleanUp;
         }
-        CLEANUP_IF_FALSE(
-                testUtil->validateEncoderLayeringSchemas(schemaPointerArray.data(), schemaCount));
+#endif
+    } else {
+        if (jLayeringSchemasArray != nullptr) {
+            isPass = false;
+            testUtil->appendErrorMsg("temporal layering data present when not allowed");
+            goto CleanUp;
+        }
     }
 CleanUp:
     std::string msg = isPass ? std::string{} : testUtil->getErrorMsg();

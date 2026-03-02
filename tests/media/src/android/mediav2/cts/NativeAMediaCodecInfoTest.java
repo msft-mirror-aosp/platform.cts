@@ -19,6 +19,7 @@ package android.mediav2.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.*;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR_FD;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ;
+import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_ALL;
 import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
@@ -398,7 +399,7 @@ public class NativeAMediaCodecInfoTest {
                             encCaps.getQualityRange().getLower(),
                             encCaps.getQualityRange().getUpper(),
                             bitrateModeSupportMap,
-                            encCaps.getSupportedLayeringSchemas(),
+                            IS_AFTER_B ? encCaps.getSupportedLayeringSchemas() : null,
                             mTestResults);
             Assert.assertTrue(mTestResults.toString(), isPass);
         }
@@ -654,7 +655,7 @@ public class NativeAMediaCodecInfoTest {
                             encCaps.getQualityRange().getLower(),
                             encCaps.getQualityRange().getUpper(),
                             bitrateModeSupportMap,
-                            encCaps.getSupportedLayeringSchemas(),
+                            IS_AFTER_B ? encCaps.getSupportedLayeringSchemas() : null,
                             mTestResults);
             Assert.assertTrue(mTestResults.toString(), isPass);
         }
