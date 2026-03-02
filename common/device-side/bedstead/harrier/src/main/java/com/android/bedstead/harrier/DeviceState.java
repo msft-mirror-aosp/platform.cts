@@ -50,8 +50,6 @@ import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.eventlib.EventLogs;
 
-import com.google.common.collect.ImmutableList;
-
 import junit.framework.AssertionFailedError;
 
 import org.junit.AssumptionViolatedException;
@@ -376,8 +374,7 @@ public final class DeviceState extends HarrierRule {
 
         checkAnnotations(annotations);
 
-        BedsteadJUnit4.resolveRecursiveAnnotations(
-                annotations, /* parameterizedAnnotations= */ ImmutableList.of());
+        annotations = BedsteadAnnotationGenerator.INSTANCE.resolveRecursiveAnnotations(annotations);
 
         checkAnnotations(annotations);
 

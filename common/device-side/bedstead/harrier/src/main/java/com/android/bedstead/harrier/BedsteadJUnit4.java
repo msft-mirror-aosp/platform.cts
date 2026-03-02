@@ -18,22 +18,12 @@ package com.android.bedstead.harrier;
 
 import android.util.Log;
 
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
-import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
-import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
-import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.types.OptionalBoolean;
 
-import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -50,13 +40,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,129 +58,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
     private List<FrameworkMethod> mComputedTestMethods;
 
-    @AutoAnnotation
-    private static RequireRunOnPrimaryUser requireRunOnPrimaryUser(OptionalBoolean switchedToUser) {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnPrimaryUser(switchedToUser);
-    }
-
-    @AutoAnnotation
-    private static RequireRunOnSecondaryUser requireRunOnSecondaryUser(
-            OptionalBoolean switchedToUser) {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnSecondaryUser(switchedToUser);
-    }
-
-    @AutoAnnotation
-    private static EnsureHasSecondaryUser ensureHasSecondaryUser() {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasSecondaryUser();
-    }
-
-    /**
-     * Resolves annotations recursively.
-     *
-     * @param parameterizedAnnotations The class of the parameterized annotation to expand, if any
-     */
-    public static void resolveRecursiveAnnotations(
-            List<Annotation> annotations, ImmutableList<Annotation> parameterizedAnnotations) {
-        int index = 0;
-        while (index < annotations.size()) {
-            Annotation annotation = annotations.get(index);
-            annotations.remove(index);
-            List<Annotation> replacementAnnotations =
-                    AnnotationSorterKt.sortedByPriority(
-                            getReplacementAnnotations(annotation, parameterizedAnnotations));
-            annotations.addAll(index, replacementAnnotations);
-            index += replacementAnnotations.size();
-        }
-    }
-
     private HarrierRule mHarrierRule;
-
-    private static final ImmutableMap<
-                    Class<? extends Annotation>, Function<Annotation, Stream<Annotation>>>
-            ANNOTATION_REPLACEMENTS =
-                    ImmutableMap.of(
-                            RequireRunOnInitialUser.class,
-                            (a) -> {
-                                RequireRunOnInitialUser requireRunOnInitialUserAnnotation =
-                                        (RequireRunOnInitialUser) a;
-
-                                if (TestApis.users().isHeadlessSystemUserMode()) {
-                                    return Stream.of(
-                                            a,
-                                            ensureHasSecondaryUser(),
-                                            requireRunOnSecondaryUser(
-                                                    requireRunOnInitialUserAnnotation
-                                                            .switchedToUser()));
-                                } else {
-                                    return Stream.of(
-                                            a,
-                                            requireRunOnPrimaryUser(
-                                                    requireRunOnInitialUserAnnotation
-                                                            .switchedToUser()));
-                                }
-                            },
-                            RequireRunOnAdditionalUser.class,
-                            (a) -> {
-                                RequireRunOnAdditionalUser requireRunOnAdditionalUserAnnotation =
-                                        (RequireRunOnAdditionalUser) a;
-                                if (TestApis.users().isHeadlessSystemUserMode()) {
-                                    return Stream.of(ensureHasSecondaryUser(), a);
-                                } else {
-                                    return Stream.of(
-                                            a,
-                                            requireRunOnSecondaryUser(
-                                                    requireRunOnAdditionalUserAnnotation
-                                                            .switchedToUser()));
-                                }
-                            });
-
-    static List<Annotation> getReplacementAnnotations(
-            Annotation annotation, ImmutableList<Annotation> parameterizedAnnotations) {
-        Function<Annotation, Stream<Annotation>> specialReplaceFunction =
-                ANNOTATION_REPLACEMENTS.get(annotation.annotationType());
-
-        if (specialReplaceFunction != null) {
-            List<Annotation> replacement =
-                    specialReplaceFunction.apply(annotation).collect(Collectors.toList());
-            return replacement;
-        }
-
-        List<Annotation> replacementAnnotations = new ArrayList<>();
-
-        if (BedsteadAnnotationGenerator.INSTANCE.isRepeatingAnnotation(annotation)) {
-            try {
-                Annotation[] annotations =
-                        (Annotation[])
-                                annotation.annotationType().getMethod("value").invoke(annotation);
-                Collections.addAll(replacementAnnotations, annotations);
-                return replacementAnnotations;
-            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                throw new NeneException("Error expanding repeated annotations", e);
-            }
-        }
-
-        if (BedsteadAnnotationGenerator.INSTANCE.isParameterizedAnnotation(annotation)
-                && !parameterizedAnnotations.contains(annotation)) {
-            return replacementAnnotations;
-        }
-
-        for (Annotation indirectAnnotation :
-                BedsteadAnnotationGenerator.INSTANCE.getIndirectAnnotations(annotation)) {
-            if (BedsteadAnnotationGenerator.INSTANCE.shouldSkipAnnotation(indirectAnnotation)) {
-                continue;
-            }
-
-            replacementAnnotations.addAll(
-                    getReplacementAnnotations(indirectAnnotation, parameterizedAnnotations));
-        }
-
-        if (!(annotation instanceof DynamicParameterizedAnnotation)) {
-            // We drop the fake annotation once it's replaced
-            replacementAnnotations.add(annotation);
-        }
-
-        return replacementAnnotations;
-    }
 
     public BedsteadJUnit4(Class<?> testClass) throws InitializationError {
         super(testClass);
@@ -391,9 +257,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         for (Parameter parameter : method.getMethod().getParameters()) {
             List<Annotation> annotations =
-                    new ArrayList<>(Arrays.asList(parameter.getAnnotations()));
-            resolveRecursiveAnnotations(
-                    annotations, /* parameterizedAnnotations= */ ImmutableList.of());
+                    BedsteadAnnotationGenerator.INSTANCE.resolveRecursiveAnnotations(
+                            Arrays.asList(parameter.getAnnotations()));
 
             boolean hasParameterised = false;
 
