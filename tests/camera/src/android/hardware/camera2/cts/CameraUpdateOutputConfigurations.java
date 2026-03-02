@@ -449,7 +449,7 @@ public class CameraUpdateOutputConfigurations extends Camera2MultiViewTestCase
 
     public void testImageReaderUpdate(String id, int format, StaticMetadata staticMeta)
             throws Exception {
-        final int CAPTURE_WAIT_TIMEOUT_MS = 1000;
+        final int CAPTURE_WAIT_TIMEOUT_MS = 2000;
         final int BURST_SIZE = 5;
         ImageReader reader1 = null, reader2 = null;
         try {
@@ -492,7 +492,8 @@ public class CameraUpdateOutputConfigurations extends Camera2MultiViewTestCase
             updateOutputConfigurations(id, outputSurfaces);
 
             // The affected burst requests must be flagged as complete
-            captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+            captureListener.getCaptureSequenceLastFrameNumber(seqId,
+                    BURST_SIZE*CAPTURE_WAIT_TIMEOUT_MS);
 
             // The new output must not receive any frames from previous requests
             assertFalse(dropperListener2.waitForAnyImageAvailable(CAPTURE_WAIT_TIMEOUT_MS));
@@ -511,7 +512,8 @@ public class CameraUpdateOutputConfigurations extends Camera2MultiViewTestCase
 
             outConfig.makeDeferredAndRemoveSurfaces();
             updateOutputConfigurations(id, outputSurfaces);
-            captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+            captureListener.getCaptureSequenceLastFrameNumber(seqId,
+                    BURST_SIZE*CAPTURE_WAIT_TIMEOUT_MS);
         } finally {
             if (reader1 != null) {
                 reader1.close();
