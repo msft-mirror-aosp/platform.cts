@@ -40,6 +40,7 @@ const char* AMEDIA_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";
 const char* AMEDIA_MIMETYPE_AUDIO_OPUS = "audio/opus";
 const char* AMEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
 const char* AMEDIA_MIMETYPE_AUDIO_IAMF = "audio/iamf";
+const char* AMEDIA_MIMETYPE_AUDIO_AC4 = "audio/ac4";
 
 /* TODO(b/153592281) */
 const char* TBD_AMEDIACODEC_PARAMETER_KEY_REQUEST_SYNC_FRAME = "request-sync";

@@ -290,7 +290,9 @@ public class CodecDecoderTestBase extends CodecTestBase {
         // may not be parsing descriptor OBUs but sending 0, 0 as sample-rate and channel-count (as
         // per the stream header). So skip comparing channel-count and sample-rate against format
         // used for configure.
-        if (!mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_IAMF)) {
+        // Also, skip channel count verification for object based formats
+        if (!mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_IAMF)
+                && !mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_AC4)) {
             MediaFormat outputFormat =
                     mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
             msg = String.format("Configured input format and received output format are "
