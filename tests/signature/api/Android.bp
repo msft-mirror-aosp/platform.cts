@@ -39,6 +39,22 @@ java_genrule {
 }
 
 java_genrule {
+    name: "cts-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android.txt",
+        ],
+        default: [
+            ":frameworks-base-api-exportable-current.txt",
+        ],
+    }),
+    out: [
+        "current.api.gz",
+    ],
+}
+
+java_genrule {
     name: "cts-system-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
