@@ -70,6 +70,7 @@ android_test {
         ":CVE-358092445-v1",
         ":CVE-358092445-v2",
     ],
+    enable_static_aconfig_pb: true,
 }
 
 java_library_static {
