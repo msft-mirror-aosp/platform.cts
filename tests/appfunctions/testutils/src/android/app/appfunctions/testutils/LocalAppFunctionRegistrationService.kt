@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package android.app.appfunctions.cts
+package android.app.appfunctions.testutils
 
 import android.app.Service
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
-import android.app.appfunctions.testutils.ConcatStrings
-import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
@@ -33,17 +31,12 @@ import java.util.concurrent.Executors
  * test. This service is intended to be used in tests where the test needs to
  * register AppFunctions locally in the same process as the test.
  */
-class LocalAppFunctionRegistrationService : Service() {
+class TestLocalAppFunctionRegistrationService : Service() {
     private val binder = LocalBinder()
     private lateinit var manager: AppFunctionManager
-    private val registrationExecutor = Executors.newSingleThreadExecutor()
 
     inner class LocalBinder : Binder() {
-        fun getService(): LocalAppFunctionRegistrationService = this@LocalAppFunctionRegistrationService
-    }
-
-    companion object {
-        var registration: AppFunctionRegistration? = null
+        fun getAppFunctionManager(): AppFunctionManager = manager!!
     }
 
     override fun onCreate() {
@@ -55,17 +48,7 @@ class LocalAppFunctionRegistrationService : Service() {
         return binder as IBinder
     }
 
-    fun registerAppFunction(functionId: String): Boolean {
-        registration = manager.registerAppFunction(
-            functionId,
-            registrationExecutor,
-            ConcatStrings()
-        )
-        return true
-    }
-
-    override fun onDestroy() {
-        // Deliberately not calling unregister to make this an "unsafe" service for testing.
-        super.onDestroy()
+    companion object {
+        var registrationExecutor = Executors.newSingleThreadExecutor()
     }
 }
