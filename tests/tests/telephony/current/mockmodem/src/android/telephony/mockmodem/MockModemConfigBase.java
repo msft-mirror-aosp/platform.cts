@@ -38,6 +38,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RegistrantList;
+import android.os.SystemProperties;
 import android.telephony.Annotation;
 import android.telephony.mockmodem.MockSimService.SimAppData;
 import android.util.Log;
@@ -46,7 +47,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import android.os.SystemProperties;
 
 public class MockModemConfigBase implements MockModemConfigInterface {
     // ***** Instance Variables
@@ -1465,6 +1465,12 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     }
 
     @Override
+    public void hangupForegroundResumeBackground(int logicalSlotId, String client) {
+        Log.d(mTAG, "hangupForegroundResumeBackground[" + logicalSlotId + "] from: " + client);
+        mVoiceService[logicalSlotId].hangupForegroundResumeBackground();
+    }
+
+    @Override
     public boolean rejectVoiceCall(int logicalSlotId, String client) {
         Log.d(mTAG, "rejectVoiceCall[" + logicalSlotId + "] from: " + client);
         return mVoiceService[logicalSlotId].rejectVoiceCall();
@@ -1672,12 +1678,26 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                         + client);
         if (uusInfo == null) {
             Log.e(mTAG, "ussInfo == null!");
-            return false;
+            uusInfo = new UusInfo[0];
         }
 
         int callType = CALL_TYPE_VOICE;
         return mVoiceService[logicalSlotId].triggerIncomingVoiceCall(
                 address, uusInfo, callType, cdmaSignalInfoRecord, callControlInfo);
+    }
+
+    @Override
+    public boolean triggerHandoverCall(
+            int logicalSlotId, String address, boolean isMultiparty, String client) {
+        Log.d(
+                mTAG,
+                "triggerHandoverCall["
+                        + logicalSlotId
+                        + "]: address = "
+                        + address
+                        + " from: "
+                        + client);
+        return mVoiceService[logicalSlotId].triggerHandoverCall(address, isMultiparty);
     }
 
     @Override

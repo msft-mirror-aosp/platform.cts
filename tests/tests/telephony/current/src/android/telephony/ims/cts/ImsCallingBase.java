@@ -66,6 +66,7 @@ public class ImsCallingBase {
     protected static final String PACKAGE_CTS_DIALER = "android.telephony.cts";
     protected static final String COMMAND_SET_DEFAULT_DIALER = "telecom set-default-dialer ";
     protected static final String COMMAND_GET_DEFAULT_DIALER = "telecom get-default-dialer";
+
     protected static final String TEST_EMERGENCY_NUMBER = "5553637";
     protected static final String TEST_HANGUP_IN_CALL_MMI_CODE = "1";
     protected static final Uri TEST_EMERGENCY_URI =
@@ -384,6 +385,29 @@ public class ImsCallingBase {
                 "Service Unbound");
     }
 
+    /**
+     * Wait for the call to be terminated or throw an exception.
+     *
+     * @param callSession The call session to poll
+     */
+    public void isCallSessionTerminated(TestImsCallSessionImpl callSession) {
+        assertNotNull("Unable to get callSession, its null", callSession);
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return callSession.isInTerminated();
+                    }
+                },
+                WAIT_FOR_CONDITION,
+                "ImsCallSession Terminated");
+    }
+
     public void isCallActive(Call call, TestImsCallSessionImpl callsession) {
         if (call.getDetails().getState() != Call.STATE_ACTIVE) {
             assertTrue("Timed out waiting for call state to be Active",
@@ -400,10 +424,8 @@ public class ImsCallingBase {
 
                     @Override
                     public Object actual() {
-                        return (callsession.isInCall()
-                                        && call.getDetails().getState() == Call.STATE_ACTIVE)
-                                ? true
-                                : false;
+                        return callsession.isInCall()
+                                && call.getDetails().getState() == Call.STATE_ACTIVE;
                     }
                 },
                 WAIT_FOR_CONDITION,
@@ -424,14 +446,16 @@ public class ImsCallingBase {
 
                     @Override
                     public Object actual() {
-                        return (callsession.isInTerminated()
-                                        && call.getDetails().getState() == Call.STATE_DISCONNECTED)
-                                ? true
-                                : false;
+                        return callsession.isInTerminated()
+                                && call.getDetails().getState() == Call.STATE_DISCONNECTED;
                     }
-                }, WAIT_FOR_CONDITION,
-                "session " + callsession.getState() + ", call "
-                        + call.getDetails().getState() + ", Call Disconnected");
+                },
+                WAIT_FOR_CONDITION,
+                "session "
+                        + callsession.getState()
+                        + ", call "
+                        + call.getDetails().getState()
+                        + ", Call Disconnected");
     }
 
     public void isCallHolding(Call call, TestImsCallSessionImpl callsession) {
@@ -447,11 +471,12 @@ public class ImsCallingBase {
 
                     @Override
                     public Object actual() {
-                        return (callsession.isSessionOnHold()
-                                && call.getDetails().getState() == Call.STATE_HOLDING) ? true
-                                : false;
+                        return callsession.isSessionOnHold()
+                                && call.getDetails().getState() == Call.STATE_HOLDING;
                     }
-                }, WAIT_FOR_CONDITION, "Call Holding");
+                },
+                WAIT_FOR_CONDITION,
+                "Call Holding");
     }
 
     protected void setCallID(String callid) {

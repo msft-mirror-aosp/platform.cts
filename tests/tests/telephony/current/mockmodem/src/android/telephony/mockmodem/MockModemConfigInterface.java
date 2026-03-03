@@ -252,6 +252,14 @@ public interface MockModemConfigInterface {
     boolean hangupVoiceCall(int logicalSlotId, int index, String client);
 
     /**
+     * Request to hang up all voice calls in the foreground and resume/answer background calls.
+     *
+     * @param logicalSlotId the Id of logical sim slot.
+     * @param client for tracking calling client
+     */
+    void hangupForegroundResumeBackground(int logicalSlotId, String client);
+
+    /**
      * Request to reject an incoming voice call.
      *
      * @param logicalSlotId the Id of logical sim slot.
@@ -404,18 +412,29 @@ public interface MockModemConfigInterface {
      * @param address the phone number to dial.
      * @param uusInfo user to user signaling information.
      * @param cdmaSignalInfoRecord CDMA Signal Information Record as defined in C.S0005 section
-     * 3.7.5.5, null for GSM case.
+     *     3.7.5.5, null for GSM case.
      * @param callControlInfo call control configuration
      * @param client for tracking calling client
      * @return boolean true if the operation succeeds, otherwise false.
      */
     boolean triggerIncomingVoiceCall(
-            int logicalSlotId,
+            int slotId,
             String address,
             UusInfo[] uusInfo,
             CdmaSignalInfoRecord cdmaSignalInfoRecord,
             MockCallControlInfo callControlInfo,
-            String client);
+            String tag);
+
+    /**
+     * Request to trigger an SRVCC for a call from IMS -> CS
+     *
+     * @param slotId the id of logical sim slot.
+     * @param address the phone number to dial.
+     * @param isMultiparty is the call part of a conference
+     * @param client for tracking calling client
+     * @return boolean true if the operation succeeds, otherwise false.
+     */
+    boolean triggerHandoverCall(int slotId, String address, boolean isMultiparty, String client);
 
     /**
      * Get number of voice calls.

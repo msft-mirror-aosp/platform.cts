@@ -1143,6 +1143,34 @@ public class MockModemManager {
     }
 
     /**
+     * Trigger a handover voice call (simulating SRVCC).
+     *
+     * @param slotId the Id of logical sim slot.
+     * @param address phone number of the handover call
+     * @return boolean true if the operation succeeds, otherwise false.
+     */
+    public boolean triggerHandoverCall(int slotId, String address, boolean isMultiparty)
+            throws Exception {
+        Log.d(
+                TAG,
+                "triggerHandoverCall["
+                        + slotId
+                        + "] address: "
+                        + address
+                        + ", isMultiparty="
+                        + isMultiparty);
+        boolean result;
+
+        result =
+                mMockModemService
+                        .getMockModemConfigInterface()
+                        .triggerHandoverCall(slotId, address, isMultiparty, TAG);
+
+        waitForTelephonyFrameworkDone(1);
+        return result;
+    }
+
+    /**
      * Get number of on going CS calls.
      *
      * @param slotId the Id of logical sim slot.

@@ -25,6 +25,7 @@ import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_HOLDING;
 import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_INCOMING;
 import static android.telephony.PreciseCallState.PRECISE_CALL_STATE_INCOMING_SETUP;
 import static android.telephony.TelephonyManager.SRVCC_STATE_HANDOVER_CANCELED;
+import static android.telephony.TelephonyManager.SRVCC_STATE_HANDOVER_COMPLETED;
 import static android.telephony.TelephonyManager.SRVCC_STATE_HANDOVER_STARTED;
 import static android.telephony.mockmodem.MockImsService.LATCH_WAIT_FOR_SRVCC_CALL_INFO;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
@@ -236,6 +237,19 @@ public class ImsCallingTest extends ImsCallingBase {
         if (!ImsUtils.shouldTestImsCall()) {
             return;
         }
+
+        if (sMockModemManager != null) {
+            sMockModemManager.clearAllCalls(sTestSlot, android.telephony.DisconnectCause.LOCAL);
+        }
+
+        if (mServiceCallBack != null && mServiceCallBack.getService() != null) {
+            for (Call call : mServiceCallBack.getService().getCalls()) {
+                call.disconnect();
+            }
+        }
+        mCalls.clear();
+        TimeUnit.MILLISECONDS.sleep(1000);
+
         resetCallSessionObjects();
 
         if (!mCalls.isEmpty() && (mCurrentCallId != null)) {
@@ -415,11 +429,11 @@ public class ImsCallingTest extends ImsCallingBase {
          assertParticipantDisconnected(mCall3);
 
         // verify all 3 conference participant connections are connected:
-        assertParticiapantAddedToConference(3);
+        assertParticipantAddedToConference(3);
 
         // disconnect and cleanup the conference call
         mConferenceCall.disconnect();
-        assertParticiapantAddedToConference(0);
+        assertParticipantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
         assertTrue(
                 "Call removed latch countdown failed",
@@ -1254,8 +1268,8 @@ public class ImsCallingTest extends ImsCallingBase {
         //Disconnect the conference call.
         mConferenceCall.disconnect();
 
-        //Verify conference participant connections are disconnected.
-        assertParticiapantAddedToConference(0);
+        // Verify conference participant connections are disconnected.
+        assertParticipantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
         assertTrue(
                 "Call removed latch countdown failed",
@@ -1373,11 +1387,11 @@ public class ImsCallingTest extends ImsCallingBase {
         assertParticipantDisconnected(mCall3);
 
         // verify conference participant connections are connected.
-        assertParticiapantAddedToConference(3);
+        assertParticipantAddedToConference(3);
 
         mConferenceCall.disconnect();
 
-        assertParticiapantAddedToConference(0);
+        assertParticipantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
         assertTrue(
                 "Call removed latch countdown failed",
@@ -1430,7 +1444,7 @@ public class ImsCallingTest extends ImsCallingBase {
         assertTrue(
                 "Children changed latch countdown failed",
                 callingTestLatchCountdown(LATCH_IS_ON_CHILDREN_CHANGED, WAIT_FOR_CALL_STATE));
-        assertParticiapantAddedToConference(3);
+        assertParticipantAddedToConference(3);
 
         isCallActive(mConferenceCall, mConfCallSession);
 
@@ -1438,7 +1452,7 @@ public class ImsCallingTest extends ImsCallingBase {
         mConferenceCall.disconnect();
 
         // verify conference participant connections are disconnected.
-        assertParticiapantAddedToConference(0);
+        assertParticipantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
         assertTrue(
                 "Call removed latch countdown failed",
@@ -1487,7 +1501,7 @@ public class ImsCallingTest extends ImsCallingBase {
         mConferenceCall.disconnect();
 
         // verify conference participant connections are disconnected.
-        assertParticiapantAddedToConference(0);
+        assertParticipantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
         assertTrue(
                 "Call removed latch countdown failed",
@@ -1503,6 +1517,69 @@ public class ImsCallingTest extends ImsCallingBase {
         assertTrue(
                 "Call removed latch countdown failed",
                 callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_SAME_URI_CONFERENCE_SRVCC)
+    public void testConferenceCallSameUri() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+        String address = "5551212";
+        makeConferenceCall(
+                Uri.fromParts(PhoneAccount.SCHEME_TEL, address, null),
+                Uri.fromParts(PhoneAccount.SCHEME_TEL, address, null));
+
+        mConferenceCall.disconnect();
+        isCallDisconnected(mConferenceCall, mConfCallSession);
+        waitForUnboundService();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_SAME_URI_CONFERENCE_SRVCC)
+    public void testConferenceSrvccSameUri() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+        String partAddress = "+15555550000";
+
+        makeConferenceCall(
+                Uri.fromParts(PhoneAccount.SCHEME_TEL, partAddress, null),
+                Uri.fromParts(PhoneAccount.SCHEME_TEL, partAddress, null));
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        assertEquals(1, mServiceCallBack.getService().getConferenceCallCount());
+        assertEquals(2, mConferenceCall.getChildren().size());
+
+        // Trigger SRVCC for the conference call, the only call tracked in IMS is the ims conf host.
+        verifySrvccStateChange(SRVCC_STATE_HANDOVER_STARTED);
+        verifySrvccStateChange(SRVCC_STATE_HANDOVER_COMPLETED);
+        // followed by the conf participants
+        assertTrue(
+                sMockModemManager.triggerHandoverCall(
+                        sTestSlot, partAddress, true /*isMultiparty*/));
+        assertTrue(
+                sMockModemManager.triggerHandoverCall(
+                        sTestSlot, partAddress, true /*isMultiparty*/));
+
+        // ImsCallSession should be terminated in favor of GsmConnection.
+        isCallSessionTerminated(mConfCallSession);
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+        // Get the new conference session based on GsmConference
+        mConferenceCall = mServiceCallBack.getService().getLastConferenceCall();
+        assertNotNull("Unable to add conference call, its null", mConferenceCall);
+        assertEquals(1, mServiceCallBack.getService().getConferenceCallCount());
+        assertEquals(2, mConferenceCall.getChildren().size());
+
+        mConferenceCall.disconnect();
+        isCallDisconnected(mConferenceCall, mConfCallSession);
         waitForUnboundService();
     }
 
@@ -3079,7 +3156,18 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     void addConferenceCall(Call call1, Call call2) {
-        InCallServiceStateValidator inCallService = mServiceCallBack.getService();
+        // set the test host number as this device's temporary conference host number.
+        sServiceConnector
+                .getCarrierService()
+                .getImsService()
+                .getRegistrationForSubscription(sTestSlot, sTestSub)
+                .onSubscriberAssociatedUriChanged(
+                        new Uri[] {
+                            Uri.fromParts(
+                                    PhoneAccount.SCHEME_TEL,
+                                    TestImsCallSessionImpl.TEST_CONF_HOST_ADDRESS,
+                                    null)
+                        });
 
         // Verify that the calls have each other on their conferenceable list before proceeding
         List<Call> callConfList = new ArrayList<>();
@@ -3125,19 +3213,21 @@ public class ImsCallingTest extends ImsCallingBase {
                 }, WAIT_FOR_CONDITION, "Call Disconnected");
     }
 
-    private void assertParticiapantAddedToConference(int count) {
+    private void assertParticipantAddedToConference(int count) {
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
                     @Override
                     public Object expected() {
-                        return true;
+                        return count;
                     }
 
                     @Override
                     public Object actual() {
-                        return (mParticipantCount == count) ? true : false;
+                        return mParticipantCount;
                     }
-                }, WAIT_FOR_CONDITION, "Call Added");
+                },
+                WAIT_FOR_CONDITION,
+                "Call Added");
     }
 
     private void addOutgoingCalls() throws Exception {
@@ -3387,11 +3477,11 @@ public class ImsCallingTest extends ImsCallingBase {
         assertParticipantDisconnected(mCall1);
         assertParticipantDisconnected(mCall2);
 
-        // Verify conference participant connections are connected.
+        // Verify conference participant connections are connected as well as host.
         assertTrue(
                 "Children changed latch countdown failed",
                 callingTestLatchCountdown(LATCH_IS_ON_CHILDREN_CHANGED, WAIT_FOR_CALL_STATE));
-        assertParticiapantAddedToConference(2);
+        assertParticipantAddedToConference(2);
 
         // Since the conference call has been made, remove session1&2 from the confHelper session.
         confHelper.removeSession(mCallSession1);
@@ -3463,16 +3553,7 @@ public class ImsCallingTest extends ImsCallingBase {
         mServiceCallBack = new ServiceCallBack();
         InCallServiceStateValidator.setCallbacks(mServiceCallBack);
 
-        SubscriptionManager sm = getContext().getSystemService(SubscriptionManager.class);
-        String deviceNumber = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                sm, (m) -> m.getPhoneNumber(sTestSub));
-
-        if (TextUtils.isEmpty(deviceNumber)) {
-            Log.w(LOG_TAG, "testConferenceHostAsParticipant: device number is empty, skipping");
-            return;
-        }
-
-        makeConferenceCall(null, Uri.fromParts(PhoneAccount.SCHEME_TEL, deviceNumber, null));
+        makeConferenceCall(null, null);
 
         List<Call> children = mConferenceCall.getChildren();
         Call hostParticipantCall = null;
@@ -3480,7 +3561,7 @@ public class ImsCallingTest extends ImsCallingBase {
             Uri handle = child.getDetails().getHandle();
             if (handle != null) {
                 String handleNumber = handle.getSchemeSpecificPart();
-                if (handleNumber.contains(deviceNumber)) {
+                if (handleNumber.contains(TestImsCallSessionImpl.TEST_CONF_HOST_ADDRESS)) {
                     hostParticipantCall = child;
                     break;
                 }
