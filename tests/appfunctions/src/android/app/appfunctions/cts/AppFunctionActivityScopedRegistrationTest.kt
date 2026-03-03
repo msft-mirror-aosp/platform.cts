@@ -21,6 +21,7 @@ import android.app.appfunctions.AppFunctionActivityState
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionName
+import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.AppFunctionState
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
@@ -331,47 +332,89 @@ class AppFunctionActivityScopedRegistrationTest {
     }
 
     @Test
-    fun register_twoRegistrations_finishOneOfActivity_unregistersOnce() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
-            scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity ->
-                activity.manager.registerAppFunction(
-                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
-                        activity.mainExecutor,
-                        ConcatStrings()
-                    )
-             }
-            val activityIdFinished = awaitRegisteredActivityIds(
-                CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
-                numRegistrations = 1
-            ).first()
-
+    fun register_finishActivity_unregistersFunction() = doBlocking {
+        var registration: AppFunctionRegistration? = null
+        try {
             ActivityScenario.launch<DynamicRegistrationActivity>(
                 internalLaunchIntent
-            ).use { scenario2 ->
-                scenario2.moveToState(Lifecycle.State.STARTED)
-                scenario2.onActivity { activity ->
-                    activity.registerAppFunction(
-                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+            ).use { scenario ->
+                scenario.moveToState(Lifecycle.State.STARTED)
+                scenario.onActivity { activity ->
+                    registration = activity.manager.registerAppFunction(
+                            ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                            activity.mainExecutor,
+                            ConcatStrings()
+                        )
                 }
-
-                val activityIdsBoth = awaitRegisteredActivityIds(
-                    CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
-                    numRegistrations = 2
+                assertFunctionEnabledState(
+                    CtsApp.PACKAGE_NAME,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    manager,
+                    isEnabled = true,
                 )
-
                 scenario.onActivity { activity -> activity.finish() }
 
-                val activityIdSecond = awaitRegisteredActivityIds(
+                retryAssert {
+                    assertFunctionEnabledState(
+                        CtsApp.PACKAGE_NAME,
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                        manager,
+                        isEnabled = false,
+                    )
+                }
+            }
+        } finally {
+            registration?.unregister()
+        }
+    }
+
+    @Test
+    fun register_twoRegistrations_finishOneOfActivity_unregistersOnce() = doBlocking {
+        var registration: AppFunctionRegistration? = null
+        try {
+            ActivityScenario.launch<DynamicRegistrationActivity>(
+                internalLaunchIntent
+            ).use { scenario ->
+                scenario.moveToState(Lifecycle.State.STARTED)
+                scenario.onActivity { activity ->
+                    registration = activity.manager.registerAppFunction(
+                            ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                            activity.mainExecutor,
+                            ConcatStrings()
+                        )
+                }
+                val activityIdFinished = awaitRegisteredActivityIds(
                     CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
                     numRegistrations = 1
                 ).first()
 
-                assertThat(activityIdSecond).isNotEqualTo(activityIdFinished)
-                assertThat(activityIdsBoth).containsExactly(activityIdFinished, activityIdSecond)
+                ActivityScenario.launch<DynamicRegistrationActivity>(
+                    internalLaunchIntent
+                ).use { scenario2 ->
+                    scenario2.moveToState(Lifecycle.State.STARTED)
+                    scenario2.onActivity { activity ->
+                        activity.registerAppFunction(
+                            ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+                    }
+
+                    val activityIdsBoth = awaitRegisteredActivityIds(
+                        CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                        numRegistrations = 2
+                    )
+
+                    scenario.onActivity { activity -> activity.finish() }
+
+                    val activityIdSecond = awaitRegisteredActivityIds(
+                        CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                        numRegistrations = 1
+                    ).first()
+
+                    assertThat(activityIdSecond).isNotEqualTo(activityIdFinished)
+                    assertThat(activityIdsBoth).containsExactly(activityIdFinished, activityIdSecond)
+                }
             }
+        } finally {
+            registration?.unregister()
         }
     }
 
