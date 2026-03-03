@@ -23,14 +23,20 @@ private const val APP_QUEUE_SUBMIT_EVENT = "CtsTestQueueSubmit"
 
 data class RenderStageEvent(val timestamp: Long, val value: GpuRenderStageEvent)
 
-data class QueueSubmitEvent(val timestamp: Long, val submissionId: Int, val durationNs: Long)
+data class QueueSubmitEvent(
+    val timestamp: Long,
+    val submissionId: Int,
+    val pid: Int,
+    val durationNs: Long
+)
 
 data class AppQueueSubmitEvent(val timestampBefore: Long, val timestampAfter: Long)
 
 class RenderStagesData(trace: Trace) {
-    val renderStages: List<RenderStageEvent>
-    val queueSubmits: List<QueueSubmitEvent>
+    val renderStagesForApp: List<RenderStageEvent>
+    val queueSubmitsWithAppPid: List<QueueSubmitEvent>
     val appQueueSubmits: List<AppQueueSubmitEvent>
+    var appPid: Int? = null
 
     init {
         val clockSnapshots = ClockSnapshots(trace)
@@ -56,6 +62,7 @@ class RenderStagesData(trace: Trace) {
                     QueueSubmitEvent(
                         packet.getTimestampNs(clockSnapshots),
                         packet.vulkanApiEvent.vkQueueSubmit.submissionId,
+                        packet.vulkanApiEvent.vkQueueSubmit.pid,
                         packet.vulkanApiEvent.vkQueueSubmit.durationNs
                     )
                 )
@@ -74,14 +81,20 @@ class RenderStagesData(trace: Trace) {
                         } else {
                             mutableAppQueueSubmitEnds[appSubmitId] = event.timestamp
                         }
+                        if (appPid == null) {
+                            appPid = ftraceBufItems[1].toInt()
+                        }
                     }
                 }
             }
         }
-        renderStages = mutableRenderStages.filter {
-            it.timestamp > allDataSourcesStartedNs }.sortedBy { it.timestamp }.toList()
-        queueSubmits = mutableQueueSubmits.filter {
-            it.timestamp > allDataSourcesStartedNs }.sortedBy { it.timestamp }.toList()
+        queueSubmitsWithAppPid = mutableQueueSubmits.filter {
+            it.timestamp > allDataSourcesStartedNs && it.pid == appPid}
+            .sortedBy { it.timestamp }.toList()
+        val appSubmissionIds = queueSubmitsWithAppPid.map { it.submissionId }.toSet()
+        renderStagesForApp = mutableRenderStages.filter {
+            it.timestamp > allDataSourcesStartedNs && it.value.submissionId in appSubmissionIds}
+            .sortedBy { it.timestamp }.toList()
         appQueueSubmits = mutableAppQueueSubmitStarts.keys.intersect(mutableAppQueueSubmitEnds.keys)
             .mapNotNull { id ->
                 val start = mutableAppQueueSubmitStarts[id]

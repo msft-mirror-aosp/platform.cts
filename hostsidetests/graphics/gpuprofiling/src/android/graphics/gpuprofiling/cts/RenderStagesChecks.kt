@@ -171,14 +171,14 @@ fun checkRenderStagesMatchQueueSubmits(
 
     val submissionIdToData = mutableMapOf<Int, SubmissionData>()
 
-    for (queueSubmit in renderStagesData.queueSubmits) {
+    for (queueSubmit in renderStagesData.queueSubmitsWithAppPid) {
         submissionIdToData[queueSubmit.submissionId] = SubmissionData(
             queueSubmitTimestamp = queueSubmit.timestamp,
             firstRenderStageTimestamp = null
         )
     }
 
-    for (renderStage in renderStagesData.renderStages) {
+    for (renderStage in renderStagesData.renderStagesForApp) {
         submissionIdToData.compute(renderStage.value.submissionId) { _, existingData ->
             val timestamp = renderStage.timestamp
             if (existingData == null) {
