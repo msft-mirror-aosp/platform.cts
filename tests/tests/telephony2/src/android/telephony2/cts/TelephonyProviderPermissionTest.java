@@ -28,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -52,6 +53,7 @@ public class TelephonyProviderPermissionTest {
     }
 
     @Test
+    @AppModeFull(reason = "Instant apps cannot access TelephonyProvider")
     public void testCarrierProviderReadPermission() {
         verifyReadPermission(CARRIER_PROVIDER_AUTHORITY);
         // Verify that access is denied without permission
@@ -59,6 +61,7 @@ public class TelephonyProviderPermissionTest {
     }
 
     @Test
+    @AppModeFull(reason = "Instant apps cannot access TelephonyProvider")
     public void testHbpcdLookupProviderReadPermission() {
         verifyReadPermission(HBPCD_LOOKUP_PROVIDER_AUTHORITY);
         // Verify that access is denied without permission
