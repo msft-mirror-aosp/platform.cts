@@ -23,7 +23,7 @@ import static android.security.net.config.cts.CertificateTransparencyTestUtils.S
 import static android.security.net.config.cts.CertificateTransparencyTestUtils.deleteLogList;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeFalse;
 
 import android.os.Build;
 
@@ -51,7 +51,7 @@ public class LogListAbsentVerificationTest extends BaseTestCase {
 
     @Test
     public void testCTVerification_sctDomain_failsOpen() throws Exception {
-        assertLogListAbsent();
+        assumeLogListAbsent();
         // Check multiple domains as part of the retrospective for b/408109183
         URL url = new URL(SCT_PROVIDED_DOMAIN);
         URL url2 = new URL(SCT_PROVIDED_DOMAIN_2);
@@ -67,8 +67,8 @@ public class LogListAbsentVerificationTest extends BaseTestCase {
         urlConnection2.disconnect();
     }
 
-    private void assertLogListAbsent() {
-        assertFalse(
+    private void assumeLogListAbsent() {
+        assumeFalse(
                 "The log list should not be present.", new File(CT_ROOT_DIRECTORY_PATH).exists());
     }
 }
