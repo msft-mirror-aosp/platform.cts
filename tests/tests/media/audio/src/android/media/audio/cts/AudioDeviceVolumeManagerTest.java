@@ -680,7 +680,7 @@ public class AudioDeviceVolumeManagerTest {
                 new VolumeInfo.Builder(AudioManager.USE_DEFAULT_STREAM_TYPE)
                         .setMaxVolumeIndex(maxIndex)
                         .setMinVolumeIndex(minIndex)
-                        .setVolumeIndex((maxIndex + minIndex) >> 1)
+                        .setVolumeIndex(maxIndex)
                         .build();
         final VolumeInfo volMedia =
                 new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
@@ -693,9 +693,12 @@ public class AudioDeviceVolumeManagerTest {
                 BT_DEV, volMedia, mContext.getMainExecutor(), listener);
         mADVmgr.notifyAbsoluteVolumeChanged(defaultVol, BT_DEV);
 
+        // check no listener will be triggered and wait for update of internal values
+        assertNull(
+                "No volume device callback expected",
+                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
         VolumeInfo actualVolume = mADVmgr.getDeviceVolume(volMedia, BT_DEV);
-        final int expectedVol =
-                (actualVolume.getMaxVolumeIndex() + actualVolume.getMinVolumeIndex()) >> 1;
+        final int expectedVol = actualVolume.getMaxVolumeIndex();
         assertEquals(expectedVol, actualVolume.getVolumeIndex());
     }
 
@@ -717,7 +720,7 @@ public class AudioDeviceVolumeManagerTest {
                 new VolumeInfo.Builder(AudioManager.USE_DEFAULT_STREAM_TYPE)
                         .setMaxVolumeIndex(maxIndex)
                         .setMinVolumeIndex(minIndex)
-                        .setVolumeIndex((maxIndex + minIndex) >> 1)
+                        .setVolumeIndex(maxIndex)
                         .build();
         final VolumeInfo volVc =
                 new VolumeInfo.Builder(AudioManager.STREAM_VOICE_CALL)
@@ -730,9 +733,12 @@ public class AudioDeviceVolumeManagerTest {
                 BT_SCO_DEV, volVc, mContext.getMainExecutor(), listener);
         mADVmgr.notifyAbsoluteVolumeChanged(defaultVol, BT_SCO_DEV);
 
+        // check no listener will be triggered and wait for update of internal values
+        assertNull(
+                "No volume device callback expected",
+                listener.waitForVolumeChanged(VOLUME_UPDATE_TIME_MAX_MS, TimeUnit.MILLISECONDS));
         VolumeInfo actualVolume = mADVmgr.getDeviceVolume(volVc, BT_SCO_DEV);
-        final int expectedVol =
-                (actualVolume.getMaxVolumeIndex() + actualVolume.getMinVolumeIndex()) >> 1;
+        final int expectedVol = actualVolume.getMaxVolumeIndex();
         assertEquals(expectedVol, actualVolume.getVolumeIndex());
     }
 
