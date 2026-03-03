@@ -485,7 +485,6 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             List<String> expectedTelephonyCarrierPlmnList = new ArrayList<>();
             List<String> expectedConfiguredCarrierPlmnList = new ArrayList<>();
             expectedTelephonyCarrierPlmnList.add(satellitePlmn);
-            expectedConfiguredCarrierPlmnList.add(satellitePlmn);
             waitForCarrierPlmnListConfigured(SLOT_ID_0, expectedConfiguredCarrierPlmnList);
             waitForCarrierPlmnListAvailableInTelephony(subId, expectedTelephonyCarrierPlmnList);
 
@@ -1129,6 +1128,39 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                             configuredDisallowedSatelliteNetworkInfoList));
         } finally {
             overrideCarrierConfig(subId, null);
+        }
+    }
+
+    @Test
+    public void testEntitlementStatusDisabled() throws Exception {
+        logd(TAG, "testEntitlementStatusDisabled");
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        assumeTrue(
+            sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
+                true, true));
+        try {
+            int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+            clearCarrierRoamingEventsInMockServiceManagers();
+
+            // Prepare entitlement response with "EntitlementStatus": "0"
+            prepareValidDisabledEntitlementStatus();
+
+            // Enable entitlement support in carrier config
+            enableSatelliteEntitlementSupport(subId);
+
+            // Telephony should have requested the modem to disable satellite for the carrier.
+            waitForAccessRestrictionReason(subId,
+                SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
+            waitForSatelliteDisabledForCarrier(SLOT_ID_0);
+
+            // Verify that the PLMN list passed to modem is empty
+            waitForCarrierPlmnListConfigured(SLOT_ID_0, new ArrayList<>());
+
+        } finally {
+            sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(false, false);
+            sMockSatelliteServiceManager.overrideSatelliteEntilementStatusResponseForCtsTest(
+                null, false);
         }
     }
 
