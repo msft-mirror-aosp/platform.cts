@@ -30,7 +30,6 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.cts.Camera2ParameterizedTestCase;
 import android.hardware.camera2.cts.CameraTestUtils.HandlerExecutor;
 import android.hardware.camera2.cts.CameraTestUtils.MockStateCallback;
 import android.hardware.camera2.cts.helpers.CameraErrorCollector;
@@ -217,11 +216,14 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
         assertTrue("Missing system feature: FEATURE_CAMERA_ANY",
                ids.length == 0
             || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY));
-        assertTrue("Missing system feature: FEATURE_CAMERA, FEATURE_CAMERA_FRONT or FEATURE_CAMERA_EXTERNAL",
-               ids.length == 0
-            || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
-            || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)
-            || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_EXTERNAL));
+        assertTrue(
+                "Missing system feature: FEATURE_CAMERA, FEATURE_CAMERA_FRONT or"
+                    + " FEATURE_CAMERA_EXTERNAL",
+                ids.length == 0
+                        || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
+                        || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)
+                        || mPackageManager.hasSystemFeature(
+                                PackageManager.FEATURE_CAMERA_EXTERNAL));
 
         testConcurrentCameraFeature(mainFrontId, mainBackId);
     }
@@ -752,7 +754,7 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
                 // Verify that we see the expected 'onCameraOpened' event.
                 CameraTestUtils.verifySingleAvailabilityCbsReceived(onCameraOpenedEventQueue,
                         onCameraClosedEventQueue, id, "onCameraOpened", "onCameraClosed");
-            } else if (Flags.resetListenerAfterAdoptShellPermission()) {
+            } else {
                 // Verify that we don't see the 'onCameraOpened' event.
                 String candidateId = onCameraOpenedEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
                         java.util.concurrent.TimeUnit.MILLISECONDS);
@@ -788,7 +790,7 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
             if (mAdoptShellPerm) {
                 CameraTestUtils.verifySingleAvailabilityCbsReceived(onCameraClosedEventQueue,
                         onCameraOpenedEventQueue, id, "onCameraClosed", "onCameraOpened");
-            } else if (Flags.resetListenerAfterAdoptShellPermission()) {
+            } else {
                 // Verify that we don't see the 'onCameraClosed' event.
                 String candidateId = onCameraClosedEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
                         java.util.concurrent.TimeUnit.MILLISECONDS);
