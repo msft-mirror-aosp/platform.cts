@@ -27,6 +27,7 @@ import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
+import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
@@ -55,7 +56,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,23 +82,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     @AutoAnnotation
-    static RequireRunOnInitialUser requireRunOnInitialUser(OptionalBoolean switchedToUser) {
-        return new AutoAnnotation_BedsteadJUnit4_requireRunOnInitialUser(switchedToUser);
-    }
-
-    @AutoAnnotation
     private static EnsureHasSecondaryUser ensureHasSecondaryUser() {
         return new AutoAnnotation_BedsteadJUnit4_ensureHasSecondaryUser();
-    }
-
-    /**
-     * Resolves annotations recursively.
-     *
-     * @param parameterizedAnnotations The class of the parameterized annotations to expand, if any
-     */
-    public void resolveRecursiveAnnotations(
-            List<Annotation> annotations, ImmutableList<Annotation> parameterizedAnnotations) {
-        resolveRecursiveAnnotations(getHarrierRule(), annotations, parameterizedAnnotations);
     }
 
     /**
@@ -106,17 +92,14 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
      * @param parameterizedAnnotations The class of the parameterized annotation to expand, if any
      */
     public static void resolveRecursiveAnnotations(
-            HarrierRule harrierRule,
-            List<Annotation> annotations,
-            ImmutableList<Annotation> parameterizedAnnotations) {
+            List<Annotation> annotations, ImmutableList<Annotation> parameterizedAnnotations) {
         int index = 0;
         while (index < annotations.size()) {
             Annotation annotation = annotations.get(index);
             annotations.remove(index);
             List<Annotation> replacementAnnotations =
                     AnnotationSorterKt.sortedByPriority(
-                            getReplacementAnnotations(
-                                    harrierRule, annotation, parameterizedAnnotations));
+                            getReplacementAnnotations(annotation, parameterizedAnnotations));
             annotations.addAll(index, replacementAnnotations);
             index += replacementAnnotations.size();
         }
@@ -125,16 +108,15 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private HarrierRule mHarrierRule;
 
     private static final ImmutableMap<
-                    Class<? extends Annotation>,
-                    BiFunction<HarrierRule, Annotation, Stream<Annotation>>>
+                    Class<? extends Annotation>, Function<Annotation, Stream<Annotation>>>
             ANNOTATION_REPLACEMENTS =
                     ImmutableMap.of(
                             RequireRunOnInitialUser.class,
-                            (harrierRule, a) -> {
+                            (a) -> {
                                 RequireRunOnInitialUser requireRunOnInitialUserAnnotation =
                                         (RequireRunOnInitialUser) a;
 
-                                if (harrierRule.isHeadlessSystemUserMode()) {
+                                if (TestApis.users().isHeadlessSystemUserMode()) {
                                     return Stream.of(
                                             a,
                                             ensureHasSecondaryUser(),
@@ -150,10 +132,10 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                                 }
                             },
                             RequireRunOnAdditionalUser.class,
-                            (harrierRule, a) -> {
+                            (a) -> {
                                 RequireRunOnAdditionalUser requireRunOnAdditionalUserAnnotation =
                                         (RequireRunOnAdditionalUser) a;
-                                if (harrierRule.isHeadlessSystemUserMode()) {
+                                if (TestApis.users().isHeadlessSystemUserMode()) {
                                     return Stream.of(ensureHasSecondaryUser(), a);
                                 } else {
                                     return Stream.of(
@@ -165,17 +147,13 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                             });
 
     static List<Annotation> getReplacementAnnotations(
-            HarrierRule harrierRule,
-            Annotation annotation,
-            ImmutableList<Annotation> parameterizedAnnotations) {
-        BiFunction<HarrierRule, Annotation, Stream<Annotation>> specialReplaceFunction =
+            Annotation annotation, ImmutableList<Annotation> parameterizedAnnotations) {
+        Function<Annotation, Stream<Annotation>> specialReplaceFunction =
                 ANNOTATION_REPLACEMENTS.get(annotation.annotationType());
 
         if (specialReplaceFunction != null) {
             List<Annotation> replacement =
-                    specialReplaceFunction
-                            .apply(harrierRule, annotation)
-                            .collect(Collectors.toList());
+                    specialReplaceFunction.apply(annotation).collect(Collectors.toList());
             return replacement;
         }
 
@@ -205,8 +183,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             }
 
             replacementAnnotations.addAll(
-                    getReplacementAnnotations(
-                            harrierRule, indirectAnnotation, parameterizedAnnotations));
+                    getReplacementAnnotations(indirectAnnotation, parameterizedAnnotations));
         }
 
         if (!(annotation instanceof DynamicParameterizedAnnotation)) {
@@ -331,29 +308,35 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         List<FrameworkMethod> basicTests = getBasicTests(getTestClass());
         List<FrameworkMethod> modifiedTests = new ArrayList<>();
         long startTime = System.currentTimeMillis();
+        BedsteadAnnotationGenerator annotationGenerator = BedsteadAnnotationGenerator.INSTANCE;
 
         for (FrameworkMethod m : basicTests) {
             Set<Annotation> parameterizedAnnotations =
-                    BedsteadAnnotationGenerator.INSTANCE.getParameterizedAnnotations(
+                    annotationGenerator.getParameterizedAnnotations(
                             m.getAnnotations(), getRuntimeClassAnnotations());
 
             if (parameterizedAnnotations.isEmpty()) {
                 // Unparameterized, just add the original
-                modifiedTests.add(new BedsteadFrameworkMethod(this, m.getMethod()));
+                modifiedTests.add(
+                        annotationGenerator.constructFrameworkMethod(
+                                m.getMethod(), getRuntimeClassAnnotations()));
                 continue;
             }
 
             // Create [BedsteadFrameworkMethod] for parameterized annotation of instance {@Code
             // DynamicParameterizedAnnotation}.
             for (Annotation annotation : parameterizedAnnotations) {
-                if (BedsteadAnnotationGenerator.INSTANCE.shouldSkipAnnotation(annotation)
-                        || BedsteadAnnotationGenerator.INSTANCE
-                                .isAnnotationClassParameterizedAnnotation(annotation)) {
+                if (annotationGenerator.shouldSkipAnnotation(annotation)
+                        || annotationGenerator.isAnnotationClassParameterizedAnnotation(
+                                annotation)) {
                     // Special case - does not generate a run
                     continue;
                 }
                 modifiedTests.add(
-                        new BedsteadFrameworkMethod(this, m.getMethod(), List.of(annotation)));
+                        annotationGenerator.constructFrameworkMethod(
+                                m.getMethod(),
+                                getRuntimeClassAnnotations(),
+                                ImmutableList.of(annotation)));
             }
 
             List<List<Annotation>> parametrizedAnnotationsGroupedByScope =
@@ -367,8 +350,10 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             // [ParameterizedAnnotation].
             for (List<Annotation> annotationsToApplyTogether : cartesianProductOfAnnotationSets) {
                 modifiedTests.add(
-                        new BedsteadFrameworkMethod(
-                                this, m.getMethod(), annotationsToApplyTogether));
+                        annotationGenerator.constructFrameworkMethod(
+                                m.getMethod(),
+                                getRuntimeClassAnnotations(),
+                                ImmutableList.copyOf(annotationsToApplyTogether)));
             }
         }
 
