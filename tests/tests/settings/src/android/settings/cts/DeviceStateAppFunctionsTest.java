@@ -73,6 +73,9 @@ import java.util.concurrent.TimeoutException;
 
 /** For testing device state related app function capabilities. */
 @RunWith(BedsteadJUnit4.class)
+@RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+@RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+@RequireDoesNotHaveFeature(FEATURE_WATCH)
 public class DeviceStateAppFunctionsTest {
 
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -87,9 +90,6 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
@@ -107,9 +107,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -129,9 +126,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -151,9 +145,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -173,9 +164,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -195,9 +183,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -217,9 +202,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -239,9 +221,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -266,9 +245,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -307,9 +283,6 @@ public class DeviceStateAppFunctionsTest {
         executeAppFunction("getDeviceStateMetadata", SETTINGS_PACKAGE, null);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -336,9 +309,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -378,9 +348,6 @@ public class DeviceStateAppFunctionsTest {
         executeAppFunction("getUncategorizedDeviceState", SETTINGS_PACKAGE, null);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -405,9 +372,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -433,9 +397,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
@@ -448,9 +409,6 @@ public class DeviceStateAppFunctionsTest {
         executeAppFunction("getStorageDeviceState", SETTINGS_PACKAGE, null);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -475,9 +433,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -503,9 +458,6 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Postsubmit(reason = "New test")
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
@@ -518,9 +470,6 @@ public class DeviceStateAppFunctionsTest {
         executeAppFunction("getBatteryDeviceState", SETTINGS_PACKAGE, null);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -552,9 +501,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -591,9 +537,6 @@ public class DeviceStateAppFunctionsTest {
 
     @Postsubmit(reason = "New test")
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -616,9 +559,6 @@ public class DeviceStateAppFunctionsTest {
         executeAppFunction("setDeviceStateItem", SETTINGS_PACKAGE, params);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -655,9 +595,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -695,9 +632,6 @@ public class DeviceStateAppFunctionsTest {
 
     @Postsubmit(reason = "New test")
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -721,9 +655,6 @@ public class DeviceStateAppFunctionsTest {
         executeAppFunction("offsetNumericDeviceStateItemByValue", SETTINGS_PACKAGE, params);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -760,9 +691,6 @@ public class DeviceStateAppFunctionsTest {
         assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -801,9 +729,6 @@ public class DeviceStateAppFunctionsTest {
 
     @Postsubmit(reason = "New test")
     @Test
-    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
-    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
-    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
