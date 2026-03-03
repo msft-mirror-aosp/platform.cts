@@ -148,7 +148,7 @@ public final class HdmiCecConstants {
     // Device property list used in CTS
     public static final String HDMI_DEVICE_TYPE_PROPERTY = "ro.hdmi.device_type";
     public static final String PROPERTY_ARC_SUPPORT = "persist.sys.hdmi.property_arc_support";
-    public static final String PROPERTY_BUILD_FINGERPRINT = "ro.system.build.fingerprint";
+    public static final String PROPERTY_BUILD_FINGERPRINT = "ro.build.fingerprint";
 
     /*
      * The default name of local directory into which the port to device mapping files are stored.
