@@ -19,6 +19,7 @@ package android.media.router.cts;
 import static android.Manifest.permission.NEARBY_WIFI_DEVICES;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
+import static android.media.AudioManager.STREAM_MUSIC;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.RouteListingPreference.ACTION_RESOLVE_MISSING_PERMISSIONS;
 import static android.media.RouteListingPreference.ACTION_TRANSFER_MEDIA;
@@ -29,25 +30,32 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID2;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID4_TO_SELECT_AND_DESELECT;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID9_REMOTE;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_FIXED_VOLUME;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_REQ_INTERNET_PERM;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_REQ_NEARBY_PERM;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_REQ_UNDECLARED_PERM;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_SPECIAL_FEATURE;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_VARIABLE_VOLUME;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME1;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME2;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME4;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME5;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME9;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME_FIXED_VOLUME;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME_SPECIAL_FEATURE;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME_VARIABLE_VOLUME;
+import static android.media.router.cts.StubMediaRoute2ProviderService.VOLUME_ACCESSIBILITY_LABEL;
 import static android.permission.flags.Flags.FLAG_ACCESS_LOCAL_NETWORK_PERMISSION_ENABLED;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -58,6 +66,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
@@ -65,12 +74,15 @@ import android.media.MediaRouter2.RoutingController;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
 import android.media.session.MediaSession;
+import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.BidiFormatter;
 import android.util.ArrayMap;
+import android.util.ArraySet;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 import androidx.test.filters.LargeTest;
@@ -102,6 +114,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -112,6 +125,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -172,6 +188,7 @@ public class OutputSwitcherTest {
     private MediaRouter2 mRouter2;
     private StubMediaRoute2ProviderService mService;
     private MediaRouter2.RouteCallback mEmptyRouteCallback = new MediaRouter2.RouteCallback() {};
+    private AudioManager mAudioManager;
 
     @Before
     public void setUp() throws Exception {
@@ -189,6 +206,7 @@ public class OutputSwitcherTest {
         mService.setProxy(mProviderProxy);
         // We use a spy to make new overloads work as intended (call the overload with fewer args).
         mControllerCallback = spy(MediaRouter2.ControllerCallback.class);
+        mAudioManager = mContext.getSystemService(AudioManager.class);
     }
 
     @After
@@ -862,6 +880,62 @@ public class OutputSwitcherTest {
         assertRoutesInOrderInUi(ROUTE_NAME1, ROUTE_NAME2);
     }
 
+    @Test
+    public void showSystemOutputSwitcher_adjustThisPhoneVolume_updatesSystemStream()
+            throws Exception {
+        registerRouteCallback(List.of(FEATURE_LIVE_AUDIO));
+
+        mRouter2.showSystemOutputSwitcher();
+        int initialVolume = mAudioManager.getStreamVolume(STREAM_MUSIC);
+        int expectedVolume =
+                setVolumeForRoute(
+                        By.textStartsWith(THIS_DEVICE_PREFIX).pkg(SYSTEM_UI_PACKAGE),
+                        initialVolume);
+        waitForStreamMusicVolume(expectedVolume);
+
+        assertThat(getStreamMusicVolume()).isEqualTo(expectedVolume);
+        mAudioManager.setStreamVolume(STREAM_MUSIC, initialVolume, /* flags= */ 0);
+        waitForStreamMusicVolume(initialVolume);
+    }
+
+    @Test
+    public void showSystemOutputSwitcher_onFixedVolumeRoute_doesNotCallOnSetRouteVolume()
+            throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID_FIXED_VOLUME));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        int initialVolume = mService.mRoutes.get(ROUTE_ID_FIXED_VOLUME).getVolume();
+
+        mRouter2.showSystemOutputSwitcher();
+        clickRouteInDialog(ROUTE_NAME_FIXED_VOLUME);
+        setVolumeForRoute(By.text(ROUTE_NAME_FIXED_VOLUME).pkg(SYSTEM_UI_PACKAGE), initialVolume);
+
+        verify(mProviderProxy, never())
+                .onSetRouteVolume(anyLong(), eq(ROUTE_ID_FIXED_VOLUME), anyInt());
+        int currentVolume = mService.mRoutes.get(ROUTE_ID_FIXED_VOLUME).getVolume();
+        assertThat(currentVolume).isEqualTo(initialVolume);
+    }
+
+    @Test
+    public void
+            showSystemOutputSwitcher_onVariableVolumeRoute_callsOnSetRouteVolumeWithExpectedVolume()
+                    throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID_VARIABLE_VOLUME));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        mRouter2.showSystemOutputSwitcher();
+        clickRouteInDialog(ROUTE_NAME_VARIABLE_VOLUME);
+        int targetValue =
+                setVolumeForRoute(
+                        By.text(ROUTE_NAME_VARIABLE_VOLUME).pkg(SYSTEM_UI_PACKAGE),
+                        mService.mRoutes.get(ROUTE_ID_VARIABLE_VOLUME).getVolume());
+
+        ArgumentCaptor<Integer> volumeCaptor = ArgumentCaptor.forClass(Integer.class);
+        verify(mProviderProxy, timeout(TIMEOUT_MS))
+                .onSetRouteVolume(anyLong(), eq(ROUTE_ID_VARIABLE_VOLUME), volumeCaptor.capture());
+        int capturedVolume = volumeCaptor.getValue();
+        assertThat(capturedVolume).isEqualTo(targetValue);
+    }
+
     /**
      * Verifies that the first route appears before the second route in the logical UI tree, which
      * works regardless of whether the UI is a vertical list, horizontal row, or grid.
@@ -899,6 +973,44 @@ public class OutputSwitcherTest {
         assertThat(firstRouteIndex).isNotEqualTo(-1);
         assertThat(secondRouteIndex).isNotEqualTo(-1);
         assertThat(firstRouteIndex).isLessThan(secondRouteIndex);
+    }
+
+    /**
+     * Finds the volume slider using the provided selector, changes its value to ensure it differs
+     * from the initial volume, and returns the newly set target volume.
+     */
+    private int setVolumeForRoute(BySelector routeSelector, int initialVolume) throws Exception {
+        UiObject2 routeNode = UiAutomatorUtils2.waitFindObject(routeSelector, TIMEOUT_MS);
+        AccessibilityNodeInfo volumeSlider =
+                waitForVolumeSliderNode(routeNode.getAccessibilityNodeInfo());
+        AccessibilityNodeInfo.RangeInfo range = volumeSlider.getRangeInfo();
+        float targetValue = range.getMin() + (range.getMax() - range.getMin()) * 0.60f;
+        if (Math.round(targetValue) == initialVolume) {
+            targetValue = range.getMin() + (range.getMax() - range.getMin()) * 0.40f;
+        }
+        Bundle arguments = new Bundle();
+        arguments.putFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE, targetValue);
+        assertThat(
+                        volumeSlider.performAction(
+                                AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS
+                                        .getId(),
+                                arguments))
+                .isTrue();
+        return Math.round(targetValue);
+    }
+
+    private int getStreamMusicVolume() {
+        return mAudioManager.getStreamVolume(STREAM_MUSIC);
+    }
+
+    private void waitForStreamMusicVolume(int expectedVolume) throws Exception {
+        PollingCheck.waitFor(
+                TIMEOUT_MS,
+                () -> {
+                    int currentVolume = getStreamMusicVolume();
+                    return currentVolume == expectedVolume;
+                },
+                "Timed out waiting for STREAM_MUSIC volume to reach " + expectedVolume);
     }
 
     /** Get a route unique ID, which includes the provider ID. */
@@ -1009,6 +1121,78 @@ public class OutputSwitcherTest {
             startNode = startNode.getParent();
         }
         return null;
+    }
+
+    private static AccessibilityNodeInfo findNearestAccessibilityNodeMatching(
+            AccessibilityNodeInfo start, Predicate<AccessibilityNodeInfo> predicate) {
+        Set<AccessibilityNodeInfo> seenNodes = new ArraySet<>();
+        while (start != null) {
+            ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
+            if (seenNodes.add(start)) {
+                queue.add(start);
+            }
+            while (!queue.isEmpty()) {
+                AccessibilityNodeInfo node = queue.remove();
+                if (predicate.test(node)) {
+                    return node;
+                }
+                for (int i = 0; i < node.getChildCount(); i++) {
+                    AccessibilityNodeInfo child = node.getChild(i);
+                    if (child != null && seenNodes.add(child)) {
+                        queue.add(child);
+                    }
+                }
+            }
+            // Keep moving search start point farther up in the tree
+            // as long as we haven't found the target.
+            start = start.getParent();
+        }
+        return null;
+    }
+
+    private AccessibilityNodeInfo waitForVolumeSliderNode(
+            AccessibilityNodeInfo startAcessibilityNode) throws Exception {
+        AtomicReference<AccessibilityNodeInfo> volumeSliderRef = new AtomicReference<>();
+
+        PollingCheck.waitFor(
+                TIMEOUT_MS,
+                () -> {
+                    volumeSliderRef.set(
+                            findNearestAccessibilityNodeMatching(
+                                    startAcessibilityNode,
+                                    (node) -> {
+                                        CharSequence contentDescription =
+                                                node.getContentDescription();
+                                        // We look for a contentDescription that starts with our
+                                        // target string instead of an exact match, because code in
+                                        // the material design BaseSlider class appends a "," to the
+                                        // end of the contentDescription as a hack to introduce a
+                                        // slight pause in the accessibility text to speech output.
+                                        if (contentDescription == null
+                                                || !contentDescription
+                                                        .toString()
+                                                        .startsWith(VOLUME_ACCESSIBILITY_LABEL)) {
+                                            return false;
+                                        }
+                                        if (node.getRangeInfo() == null) {
+                                            return false;
+                                        }
+                                        return node.getActionList()
+                                                .contains(
+                                                        AccessibilityNodeInfo.AccessibilityAction
+                                                                .ACTION_SET_PROGRESS);
+                                    }));
+                    return volumeSliderRef.get() != null;
+                },
+                () -> {
+                    UiAutomatorUtils2.assertWithUiDump(
+                            () -> {
+                                throw new TimeoutException();
+                            });
+                    return "Timed out waiting to find Volume slider";
+                });
+
+        return volumeSliderRef.get();
     }
 
     private static void assertDialogShowsConnectionTo(String routeName) throws Exception {
