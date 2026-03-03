@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.provider.cts.contacts.strictsqlcheck.client">
+
+    <uses-sdk android:targetSdkVersion="37" />
+    <application>
+        <receiver
+            android:name=".QueryReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.cts.contacts.strictsqlcheck.client.ACTION_QUERY" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

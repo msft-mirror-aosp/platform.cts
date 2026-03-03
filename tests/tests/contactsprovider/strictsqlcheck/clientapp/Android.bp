@@ -1,0 +1,18 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_data_aegis",
+}
+
+android_test_helper_app {
+    name: "CtsContactsProviderStrictSqlCheckClient",
+    defaults: ["cts_defaults"],
+    srcs: ["src/**/*.java"],
+    manifest: "AndroidManifest.xml",
+    sdk_version: "current",
+    installable: true,
+    test_suites: [
+        "cts",
+        "general-tests",
+        "sts",
+    ],
+}
