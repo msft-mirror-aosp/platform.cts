@@ -25,6 +25,7 @@ import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_EXTERNAL;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.util.ImageSubject.assertThat;
+import static android.virtualdevice.cts.camera.util.VirtualCameraCaptureHelper.TIMEOUT_MILLIS;
 import static android.virtualdevice.cts.camera.util.VirtualCameraCaptureHelper.createBuilderWithDefaults;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.jpegImageToBitmap;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.loadBitmapFromRaw;
@@ -46,6 +47,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
@@ -54,6 +56,7 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
+import android.media.ImageReader;
 import android.media.ImageWriter;
 import android.os.SystemClock;
 import android.os.Trace;
@@ -88,10 +91,15 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.ObjLongConsumer;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
@@ -656,7 +664,8 @@ public class VirtualCameraCaptureTest {
 
         List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
 
-        List<Long> writtenTimestamps = fixedRateImageWriter.getWrittenTimestamps();
+        List<Long> writtenTimestamps =
+                fixedRateImageWriter.getWrittenTimestamps().stream().limit(imageCount).toList();
         List<Long> receivedTimestamps = captureResults.stream()
                 .map(result -> result.get(CaptureResult.SENSOR_TIMESTAMP))
                 .toList();
@@ -964,6 +973,131 @@ public class VirtualCameraCaptureTest {
         } finally {
             images.stream().filter(Objects::nonNull).forEach(Image::close);
         }
+    }
+
+    @Test
+    public void virtualCamera_abortCapture_interruptWait()
+            throws CameraAccessException, InterruptedException {
+        int streamWidth = 1280;
+        int streamHeight = 720;
+        int requestCountBeforeAbort = 3;
+        int fps = 10;
+        int frameTimeMillis = 1000 / fps;
+        // 3 frames + 20% of extra time to avoid flakiness.
+        int frameTimeout = (int) ((frameTimeMillis * 3.20) + 0.5f);
+        String singleCaptureTag = "single";
+        String repeatingCaptureTag = "repeating";
+        ArrayList<CaptureResult> results = new ArrayList<>();
+        CountDownLatch singleRequestLatch = new CountDownLatch(1);
+        CountDownLatch repeatingCaptureLatch = new CountDownLatch(requestCountBeforeAbort);
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
+        AtomicLong singleRequestResultTimestamp = new AtomicLong();
+
+        VirtualCameraConfig.Builder builder =
+                new VirtualCameraConfig.Builder("virtualCamera")
+                        .addStreamConfig(streamWidth, streamHeight, YUV_420_888, fps)
+                        .setConcurrentStreamConfigSupported(false)
+                        .setLensFacing(LENS_FACING_FRONT);
+
+        mCaptureHelper.createVirtualCamera(
+                builder,
+                new DefaultVirtualCameraCallback() {
+
+                    @Override
+                    public void onProcessCaptureRequest(int streamId, long frameId) {
+                        VirtualCameraUtils.paintSurfaceRed(
+                                mCaptureHelper.getInputSurface(streamId));
+                    }
+                });
+
+        CameraDevice cameraDevice = mCaptureHelper.getOrOpenCameraDevice();
+        CaptureRequest.Builder requestBuilder =
+                cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+
+        ImageReader reader = ImageReader.newInstance(streamWidth, streamHeight, YUV_420_888, 10);
+        android.os.HandlerThread handlerThread = new android.os.HandlerThread("ImageListener");
+        handlerThread.start();
+        reader.setOnImageAvailableListener(
+                imageReader -> {
+                    android.media.Image image = imageReader.acquireNextImage();
+                    if (image != null) {
+                        image.close();
+                    }
+                },
+                new android.os.Handler(handlerThread.getLooper()));
+        CameraCaptureSession cameraSession = mCaptureHelper.createCaptureSession(List.of(reader));
+
+        CameraCaptureSession.CaptureCallback captureCallback =
+                new CameraCaptureSession.CaptureCallback() {
+
+                    @Override
+                    public void onCaptureCompleted(
+                            CameraCaptureSession session,
+                            CaptureRequest request,
+                            TotalCaptureResult result) {
+                        results.add(result);
+
+                        if (repeatingCaptureTag.equals(request.getTag())) {
+                            // Let's count how many repeating request we got and abort after
+                            // "requestCountBeforeAbort" requests.
+                            if (results.size() == requestCountBeforeAbort) {
+                                try {
+                                    session.stopRepeating();
+                                    session.abortCaptures();
+                                } catch (CameraAccessException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                            repeatingCaptureLatch.countDown();
+                        } else {
+                            singleRequestResultTimestamp.set(System.currentTimeMillis());
+                            singleRequestLatch.countDown();
+                        }
+                    }
+                };
+
+        requestBuilder.addTarget(reader.getSurface());
+        // We set a tag to identify the repeating capture vs single capture
+        requestBuilder.setTag(repeatingCaptureTag);
+        CaptureRequest repeatingRequest = requestBuilder.build();
+
+        cameraSession.setSingleRepeatingRequest(
+                repeatingRequest, callbackExecutor, captureCallback);
+
+        // Let's make a few repeating captures before aborting
+        assertThat(
+                        repeatingCaptureLatch.await(
+                                frameTimeout * (1 + requestCountBeforeAbort),
+                                TimeUnit.MILLISECONDS))
+                .isTrue();
+
+        // Prepare and send the single request
+        requestBuilder.setTag(singleCaptureTag);
+        requestBuilder.set(
+                CaptureRequest.CONTROL_CAPTURE_INTENT,
+                CaptureRequest.CONTROL_CAPTURE_INTENT_STILL_CAPTURE);
+        long singleCaptureSentTimestamp = System.currentTimeMillis();
+        cameraSession.captureSingleRequest(
+                requestBuilder.build(), callbackExecutor, captureCallback);
+
+        // Wait until we received the frame
+        assertThat(singleRequestLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
+        // Assert that we don't take more time than 1 frame.
+        assertWithMessage(
+                        "Expected single request took too much time to be executed after call to "
+                                + "abortCaptures()")
+                .that(singleRequestResultTimestamp.get() - singleCaptureSentTimestamp)
+                .isLessThan(frameTimeout);
+
+        List<CaptureResult> stillCaptureResult =
+                results.stream()
+                        .filter(
+                                (result) ->
+                                        result.get(CaptureResult.CONTROL_CAPTURE_INTENT)
+                                                == CaptureRequest
+                                                        .CONTROL_CAPTURE_INTENT_STILL_CAPTURE)
+                        .toList();
+        assertThat(stillCaptureResult).hasSize(1);
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests
