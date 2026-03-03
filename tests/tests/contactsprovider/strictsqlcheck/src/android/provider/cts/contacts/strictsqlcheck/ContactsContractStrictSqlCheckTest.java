@@ -24,8 +24,10 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -107,7 +109,7 @@ public class ContactsContractStrictSqlCheckTest {
     }
 
     @Test
-    public void testDataUriWithId_strictProjection_throwsException() throws Exception {
+    public void testDataUriWithId_strictSelection_throwsException() throws Exception {
         long dataId = createContact("testDataUriWithId");
 
         Uri dataUri =
@@ -125,6 +127,61 @@ public class ContactsContractStrictSqlCheckTest {
 
         assertEquals(
                 "Expected IllegalArgumentException due to strict SQL check on projection",
+                RESULT_ILLEGAL_ARGUMENT_EXCEPTION,
+                result);
+    }
+
+    @Test
+    public void testContactsLookupUri_strictSelection_throwsException() throws Exception {
+        createContact("testContactsLookupUri");
+        long rawContactId = mCreatedRawContactIds.get(mCreatedRawContactIds.size() - 1);
+        long contactId = getContactId(rawContactId);
+
+        // content://com.android.contacts/contacts/lookup/key
+        Uri contactUri =
+                ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId);
+        Uri lookupUri = ContactsContract.Contacts.getLookupUri(mResolver, contactUri);
+
+        // Strip the ID to get a lookup-only URI if needed, but getLookupUri returns lookup/key/id.
+        // For lookup-only (contacts/lookup/key):
+        String lookupKey = lookupUri.getPathSegments().get(2);
+        Uri lookupOnlyUri =
+                ContactsContract.Contacts.CONTENT_LOOKUP_URI
+                        .buildUpon()
+                        .appendPath(lookupKey)
+                        .build();
+
+        mContext.grantUriPermission(
+                CLIENT_APP_PACKAGE, lookupOnlyUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        String selectionWithSubquery = "(SELECT 1) > 0";
+        int result = queryViaClientApp(lookupOnlyUri, selectionWithSubquery);
+        assertEquals(
+                "Expected IllegalArgumentException due to strict SQL check on selection for lookup"
+                        + " URI",
+                RESULT_ILLEGAL_ARGUMENT_EXCEPTION,
+                result);
+    }
+
+    @Test
+    public void testContactsLookupIdUri_strictSelection_throwsException() throws Exception {
+        createContact("testContactsLookupIdUri");
+        long rawContactId = mCreatedRawContactIds.get(mCreatedRawContactIds.size() - 1);
+        long contactId = getContactId(rawContactId);
+
+        // content://com.android.contacts/contacts/lookup/key/id
+        Uri contactUri =
+                ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId);
+        Uri lookupIdUri = ContactsContract.Contacts.getLookupUri(mResolver, contactUri);
+
+        mContext.grantUriPermission(
+                CLIENT_APP_PACKAGE, lookupIdUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        String selectionWithSubquery = "(SELECT 1) > 0";
+        int result = queryViaClientApp(lookupIdUri, selectionWithSubquery);
+        assertEquals(
+                "Expected IllegalArgumentException due to strict SQL check on selection for lookup"
+                        + " ID URI",
                 RESULT_ILLEGAL_ARGUMENT_EXCEPTION,
                 result);
     }
@@ -192,5 +249,20 @@ public class ContactsContractStrictSqlCheckTest {
 
         assertNotNull(results[1].uri);
         return Long.parseLong(results[1].uri.getLastPathSegment());
+    }
+
+    private long getContactId(long rawContactId) {
+        try (Cursor c =
+                mResolver.query(
+                        ContactsContract.RawContacts.CONTENT_URI,
+                        new String[] {ContactsContract.RawContacts.CONTACT_ID},
+                        ContactsContract.RawContacts._ID + "=?",
+                        new String[] {String.valueOf(rawContactId)},
+                        null)) {
+            if (c != null && c.moveToFirst()) {
+                return c.getLong(0);
+            }
+        }
+        return -1;
     }
 }
