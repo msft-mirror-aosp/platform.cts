@@ -74,6 +74,7 @@ android_test {
         ":CtsAppSearchIndexerTestAppAAppLevelFunctionsReg",
     ],
     certificate: ":cts-appsearch-helper-cert-a",
+    enable_static_aconfig_pb: true,
 }
 
 android_test_helper_app {
