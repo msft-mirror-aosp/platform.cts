@@ -51,6 +51,8 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Device-side tests for CtsSeccompHostTestCases
@@ -216,9 +218,37 @@ public class SeccompDeviceTest {
         //
         // When the safesetid UID policy is enabled, there is no longer an
         // app-specific range, and only the global range is enforced.
+
+        // The safesetid policy file will only exist if the kernel was built with
+        // CONFIG_SECURITY_SAFESETID enabled. Currently only 6.18 kernels are
+        // guaranteed to have safesetid enabled.
+        // TODO(b:489238026) Remove this gate
+        if (!kernelIsAtLeast(6, 18)) {
+            Log.w(TAG, "Safesetid not enabled in the kernel. Skipping safesetid checks.");
+            return;
+        }
+
         IsolatedConnection conn = bindService(IsolatedService.class);
         boolean testResult = conn.getTestResult(IsolatedService.MSG_GET_SECCOMP_RESULT_SAFESETID);
         Assert.assertTrue("seccomp tests in application zygote failed; see logs.", testResult);
+    }
+
+    private boolean kernelIsAtLeast(int major, int minor) {
+        String osVersion = System.getProperty("os.version");
+        if (osVersion == null) {
+            return false;
+        }
+        Matcher m = Pattern.compile("^(\\d+)\\.(\\d+)").matcher(osVersion);
+        if (m.find()) {
+            try {
+                int kMajor = Integer.parseInt(m.group(1));
+                int kMinor = Integer.parseInt(m.group(2));
+                return kMajor > major || (kMajor == major && kMinor >= minor);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private static String getCurrentArch() {
