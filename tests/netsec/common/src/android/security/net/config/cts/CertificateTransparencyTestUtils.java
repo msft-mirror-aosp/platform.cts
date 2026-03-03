@@ -39,7 +39,7 @@ final class CertificateTransparencyTestUtils {
     }
 
     static void deleteLogList() {
-        ShellUtils.runShellCommand("rm -r " + CT_ROOT_DIRECTORY_PATH);
+        ShellUtils.runShellCommand("cmd connectivity log-list-update delete");
     }
 
     /** Private constructor to prevent instantiation as this is effectively a static utils class. */

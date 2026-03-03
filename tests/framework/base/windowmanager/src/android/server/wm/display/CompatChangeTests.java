@@ -1064,7 +1064,6 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * Test that a target sdk >= 36 activity on large screen won't be able to set fixed orientation
      * and it will be considered as resizable.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_UNIVERSAL_RESIZABLE_BY_DEFAULT)
     @EnableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @ApiTest(apis = {"android.app.Activity#setRequestedOrientation"})
     @Test

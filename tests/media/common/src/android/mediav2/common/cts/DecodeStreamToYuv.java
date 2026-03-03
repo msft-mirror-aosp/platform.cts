@@ -119,7 +119,7 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
         if (!tmp.exists()) {
             throw new FileNotFoundException("Test Setup Error, missing file: " + file);
         }
-        MediaExtractor extractor = new MediaExtractor();
+        IMediaExtractorInterface extractor = getExtractor();
         extractor.setDataSource(file);
         MediaFormat format = null;
         for (int trackID = 0; trackID < extractor.getTrackCount(); trackID++) {

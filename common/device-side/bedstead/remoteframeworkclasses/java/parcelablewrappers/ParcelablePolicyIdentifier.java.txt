@@ -24,8 +24,6 @@ import com.google.android.enterprise.connectedapps.annotations.CustomParcelableW
 import com.google.android.enterprise.connectedapps.internal.Bundler;
 import com.google.android.enterprise.connectedapps.internal.BundlerType;
 
-import java.lang.reflect.Constructor;
-
 /**
  * Custom Parcelable to transport a {@link PolicyIdentifier}.
  */
@@ -56,16 +54,7 @@ public final class ParcelablePolicyIdentifier<T> implements Parcelable {
 
     // Method to reconstruct the original PolicyIdentifier object
     public PolicyIdentifier<T> get() {
-        try {
-            // The PolicyIdentifier constructor is hidden since it is not part of
-            // the public API, so use reflection to invoke it.
-            Constructor<PolicyIdentifier> constructor =
-                PolicyIdentifier.class.getDeclaredConstructor(String.class);
-            constructor.setAccessible(true);
-            return constructor.newInstance(mIdentifier);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to create PolicyIdentifier from parcel", e);
-        }
+        return new PolicyIdentifier<T>(mIdentifier);
     }
 
     public String getIdentifier() {

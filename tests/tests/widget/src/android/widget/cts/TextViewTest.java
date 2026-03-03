@@ -502,6 +502,19 @@ public class TextViewTest {
     }
 
     @Test
+    public void testFontWeightAdjustment_emptyAxes() throws Throwable {
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mTextView = findTextView(R.id.textview_text);
+                    Configuration cf = new Configuration();
+                    cf.fontWeightAdjustment = 300;
+                    mTextView.dispatchConfigurationChanged(cf);
+                    mTextView.setFontVariationSettings("");
+                });
+        mInstrumentation.waitForIdleSync();
+    }
+
+    @Test
     public void testAccessMovementMethod() throws Throwable {
         final CharSequence LONG_TEXT = "Scrolls the specified widget to the specified "
                 + "coordinates, except constrains the X scrolling position to the horizontal "

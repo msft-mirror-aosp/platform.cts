@@ -17,6 +17,7 @@
 package android.mediav2.common.cts;
 
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
+import static android.mediav2.common.cts.CodecDecoderTestBase.getExtractor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -711,7 +712,7 @@ public class EncoderProfileLevelTestBase extends CodecEncoderTestBase {
             // Explicit signaling of header information such as profile, level etc is not
             // directly available as HLS in H263 header. That information is conveyed through
             // external means of RTP header
-            MediaExtractor extractor = new MediaExtractor();
+            IMediaExtractorInterface extractor = getExtractor();
             extractor.setDataSource(mMuxedOutputFile);
             assertEquals("Should be only 1 track \n" + mTestConfig + mTestEnv, 1,
                     extractor.getTrackCount());

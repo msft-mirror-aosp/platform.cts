@@ -33,6 +33,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.mediav2.common.cts.MediaExtractorProvider.ExtractorType;
 import android.os.PersistableBundle;
 import android.util.Log;
 import android.util.Pair;
@@ -64,7 +65,7 @@ public class CodecDecoderTestBase extends CodecTestBase {
 
     protected final ByteBuffer mFlatBuffer = ByteBuffer.allocate(4 * Integer.BYTES);
 
-    protected MediaExtractor mExtractor;
+    protected IMediaExtractorInterface mExtractor;
 
     public CodecDecoderTestBase(String codecName, String mediaType, String testFile,
             String allTestParams) {
@@ -91,7 +92,7 @@ public class CodecDecoderTestBase extends CodecTestBase {
             throws IOException {
         Preconditions.assertTestFileExists(fileName);
         int maxSampleSize = 0;
-        MediaExtractor extractor = new MediaExtractor();
+        IMediaExtractorInterface extractor = getExtractor();
         extractor.setDataSource(fileName);
         for (int trackID = 0; trackID < extractor.getTrackCount(); trackID++) {
             MediaFormat format = extractor.getTrackFormat(trackID);
@@ -118,7 +119,7 @@ public class CodecDecoderTestBase extends CodecTestBase {
             ByteBuffer buffer, List<MediaCodec.BufferInfo> list, int offset, long ptsOffset)
             throws IOException {
         Preconditions.assertTestFileExists(srcFile);
-        MediaExtractor extractor = new MediaExtractor();
+        IMediaExtractorInterface extractor = getExtractor();
         extractor.setDataSource(srcFile);
         MediaFormat format = null;
         for (int trackID = 0; trackID < extractor.getTrackCount(); trackID++) {
@@ -226,9 +227,27 @@ public class CodecDecoderTestBase extends CodecTestBase {
         return new APBTestInputData(buffer, list, formats);
     }
 
+    public static ExtractorType getRequestedExtractorType() {
+        ExtractorType type = ExtractorType.FRAMEWORK;
+        if (extractorTypeSel != null) {
+            if (extractorTypeSel.equalsIgnoreCase("media3")) {
+                type = ExtractorType.MEDIA3;
+            } else if (extractorTypeSel.equalsIgnoreCase("framework")) {
+                type = ExtractorType.FRAMEWORK;
+            } else {
+                type = ExtractorType.UNDEFINED;
+            }
+        }
+        return type;
+    }
+
+    public static IMediaExtractorInterface getExtractor() {
+        return MediaExtractorProvider.createMediaExtractor(getRequestedExtractorType());
+    }
+
     protected MediaFormat setUpSource(String srcFile) throws IOException {
         Preconditions.assertTestFileExists(srcFile);
-        mExtractor = new MediaExtractor();
+        mExtractor = getExtractor();
         mExtractor.setDataSource(srcFile);
         for (int trackID = 0; trackID < mExtractor.getTrackCount(); trackID++) {
             MediaFormat format = mExtractor.getTrackFormat(trackID);
@@ -290,7 +309,9 @@ public class CodecDecoderTestBase extends CodecTestBase {
         // may not be parsing descriptor OBUs but sending 0, 0 as sample-rate and channel-count (as
         // per the stream header). So skip comparing channel-count and sample-rate against format
         // used for configure.
-        if (!mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_IAMF)) {
+        // Also, skip channel count verification for object based formats
+        if (!mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_IAMF)
+                && !mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_AC4)) {
             MediaFormat outputFormat =
                     mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
             msg = String.format("Configured input format and received output format are "

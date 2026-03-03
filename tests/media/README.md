@@ -92,34 +92,47 @@ atest MctsMediaV2TestCases:VideoEncoderTest -- --module-arg MctsMediaV2TestCases
 atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:codec-filter:="^.*\.encoder$" --module-arg MctsMediaV2TestCases:instrumentation-arg:media-type-prefix:=audio
 ```
 
+### Using media3 vs framework extractor
+
+The test suite supports testing using media3 extractor and platform extractor. To select between the two use `extractor-type-sel`. If this argument is not provided, the test suite defaults to platform extractor.
+
+```
+# Use media3 extractor
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:extractor-type-sel:=media3
+
+# Use platform extractor
+atest MctsMediaV2TestCases -- --module-arg MctsMediaV2TestCases:instrumentation-arg:extractor-type-sel:=framework
+```
+
 ## `media-type-sel` identifiers list
 
 | Identifier | Full Media Type |
-|------------|-----------------|
-| vp8 | video/x-vnd.on2.vp8 |
-| vp9 | video/x-vnd.on2.vp9 |
-| av1 | video/av01 |
-| apv | video/apv |
-| avc | video/avc |
-| hevc | video/hevc |
-| mpeg4 | video/mp4v-es |
-| h263 | video/3gpp |
-| mpeg2 | video/mpeg2 |
-| dolbyvision | video/dolby-vision |
-| vraw | video/raw |
-| vvc | video/vvc |
+|:-------------|:--------------------|
 | amrnb | audio/3gpp |
-| amrwb | audio/amr-wb |
-| mp3 | audio/mpeg |
-| aac | audio/mp4a-latm |
-| vorbis | audio/vorbis |
-| opus | audio/opus |
-| g711alaw | audio/g711-alaw |
-| g711mlaw | audio/g711-mlaw |
-| araw | audio/raw |
-| flac | audio/flac |
-| gsm | audio/gsm |
 | ac3 | audio/ac3 |
 | ac4 | audio/ac4 |
+| amrwb | audio/amr-wb |
 | eac3 | audio/eac3 |
+| flac | audio/flac |
+| g711alaw | audio/g711-alaw |
+| g711mlaw | audio/g711-mlaw |
+| gsm | audio/gsm |
 | iamf | audio/iamf |
+| aac | audio/mp4a-latm |
+| mp3 | audio/mpeg |
+| opus | audio/opus |
+| araw | audio/raw |
+| vorbis | audio/vorbis |
+| h263 | video/3gpp |
+| apv | video/apv |
+| av1 | video/av01 |
+| avc | video/avc |
+| dolbyvision | video/dolby-vision |
+| hevc | video/hevc |
+| mpeg4 | video/mp4v-es |
+| mpeg2 | video/mpeg2 |
+| vraw | video/raw |
+| vvc | video/vvc |
+| vp8 | video/x-vnd.on2.vp8 |
+| vp9 | video/x-vnd.on2.vp9 |
+

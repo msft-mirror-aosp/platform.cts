@@ -20,6 +20,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP210;
+import static android.mediav2.common.cts.CodecDecoderTestBase.getExtractor;
 import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToString;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_BEFORE_U;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
@@ -79,7 +80,7 @@ public class CodecEncoderSurfaceTestBase {
     protected final boolean mUsePersistentSurface;
     protected final String mTestArgs;
 
-    protected MediaExtractor mExtractor;
+    protected IMediaExtractorInterface mExtractor;
     protected MediaCodec mEncoder;
     protected MediaFormat mEncoderFormat;
     protected final CodecAsyncHandler mAsyncHandleEncoder = new CodecAsyncHandler();
@@ -357,7 +358,7 @@ public class CodecEncoderSurfaceTestBase {
     @TargetApi(33)
     protected MediaFormat setUpSource(String srcFile) throws IOException {
         Preconditions.assertTestFileExists(srcFile);
-        mExtractor = new MediaExtractor();
+        mExtractor = getExtractor();
         mExtractor.setDataSource(srcFile);
         for (int trackID = 0; trackID < mExtractor.getTrackCount(); trackID++) {
             MediaFormat format = mExtractor.getTrackFormat(trackID);
@@ -750,7 +751,7 @@ public class CodecEncoderSurfaceTestBase {
             validateToneMappedFormat(decoderOutputFormat, "decoder output format");
             validateToneMappedFormat(encoderOutputFormat, "encoder output format");
             if (outPath != null) {
-                MediaExtractor extractor = new MediaExtractor();
+                IMediaExtractorInterface extractor = getExtractor();
                 extractor.setDataSource(outPath);
                 MediaFormat extractorFormat = extractor.getTrackFormat(0);
                 extractor.release();

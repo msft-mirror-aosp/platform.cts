@@ -159,21 +159,22 @@ public class USBRestrictRecordAActivity extends PassFailButtons.Activity {
         HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();
         Collection<UsbDevice> deviceCollection = deviceList.values();
         Object[] devices = deviceCollection.toArray();
-        if (devices.length > 0) {
-            UsbDevice theDevice = (UsbDevice) devices[0];
-
-            PendingIntent permissionIntent =
+        for (UsbDevice usbDevice : deviceCollection){
+            if (usbDevice.getHasAudioCapture()) {
+                PendingIntent permissionIntent =
                     PendingIntent.getBroadcast(
                             context,
                             0,
                             new Intent(ACTION_USB_PERMISSION).setPackage(context.getPackageName()),
                             PendingIntent.FLAG_MUTABLE);
 
-            IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-            ConnectDeviceBroadcastReceiver usbReceiver = new ConnectDeviceBroadcastReceiver();
-            context.registerReceiver(usbReceiver, filter, Context.RECEIVER_EXPORTED_UNAUDITED);
+                IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+                ConnectDeviceBroadcastReceiver usbReceiver = new ConnectDeviceBroadcastReceiver();
+                context.registerReceiver(usbReceiver, filter, Context.RECEIVER_EXPORTED_UNAUDITED);
 
-            mUsbManager.requestPermission(theDevice, permissionIntent);
+                mUsbManager.requestPermission(usbDevice, permissionIntent);
+                break;
+            }
         }
     }
 }

@@ -31,9 +31,6 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.DisplayMetricsSession;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.LockScreenSession;
@@ -45,10 +42,8 @@ import android.util.Size;
 import android.view.Display;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -60,8 +55,6 @@ import java.util.List;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class DisplayTests extends MultiDisplayTestBase {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     public void setUp() throws Exception {
@@ -177,7 +170,6 @@ public class DisplayTests extends MultiDisplayTestBase {
         getDisplayStateAfterChange(originalDs.size());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_UNIVERSAL_RESIZABLE_BY_DEFAULT)
     @CddTest(requirement = "7.1.3/C-1-2")
     @Test
     public void testLargeScreenEnableIgnoreOrientationRequest() {

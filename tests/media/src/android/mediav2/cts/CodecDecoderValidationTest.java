@@ -965,9 +965,12 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                 assertEquals("Output sample rate is different from configured sample rate \n"
                                 + mTestConfig + mTestEnv, mSampleRate,
                         mOutFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1));
-                assertEquals("Output channel count is different from configured channel count \n"
-                                + mTestConfig + mTestEnv, mChannelCount,
-                        mOutFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1));
+                // skip channel count verification for object based codecs
+                if (!mMediaType.equals(MEDIA_TYPE_AC4)) {
+                    assertEquals("Output channel count is different from configured channel "
+                                    + "count \n" + mTestConfig + mTestEnv, mChannelCount,
+                            mOutFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1));
+                }
                 assertEquals("Output width is different from configured width \n" + mTestConfig
                         + mTestEnv, mWidth, getWidth(mOutFormat));
                 assertEquals("Output height is different from configured height \n" + mTestConfig
