@@ -18,6 +18,7 @@ package android.devicepolicy.cts;
 
 import static android.app.admin.DevicePolicyIdentifiers.getIdentifierForUserRestriction;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
+import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.deviceOwner;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
@@ -49,6 +50,7 @@ import com.android.bedstead.enterprise.policies.DisallowAirplaneMode;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.permissions.CommonPermissions;
@@ -132,6 +134,7 @@ public final class DevicePolicyManagerTest {
     @Test
     @EnsureHasNoDpc
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFeature(FEATURE_MANAGED_USERS)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getPolicyManagedProfiles")
     public void getPolicyManagedProfiles_hasManagedProfileNoProfileOwner_returnsEmptyList() {
         try (UserReference user = TestApis.users().createUser().type(MANAGED_PROFILE_TYPE_NAME)
