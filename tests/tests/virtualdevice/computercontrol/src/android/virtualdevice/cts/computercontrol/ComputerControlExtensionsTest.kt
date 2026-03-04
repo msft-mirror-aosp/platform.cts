@@ -17,8 +17,12 @@
 package android.virtualdevice.cts.computercontrol
 
 import android.app.Activity
+import android.app.Service
 import android.content.ComponentName
+import android.content.Intent
 import android.content.IntentSender
+import android.os.Binder
+import android.os.IBinder
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -310,7 +314,29 @@ class ComputerControlExtensionsTest {
     fun testRequestSession_activityOnVirtualDevice_succeedWithDeviceLocked() {
         VirtualDeviceSession(getInstrumentation(), "testdevice").use { deviceSession ->
             // The agent has an activity running on the virtual device.
-            deviceSession.launchActivity(ComponentName(context, TestActivity::class.java))
+            deviceSession.launchActivity(ComponentName(context, AgentActivity::class.java))
+            val deviceContext = context.createDeviceContext(deviceSession.deviceId)
+            extension = ComputerControlExtensions.getInstance(deviceContext)
+
+            LockScreenSession(getInstrumentation(), WindowManagerStateHelper()).use { lockSession ->
+                lockSession.setLockCredential().gotoKeyguard()
+                val params =
+                    ComputerControlSession.Params.Builder(deviceContext)
+                        .setName("${testName.methodName}")
+                        .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                        .build()
+                val callback = ComputerControlSessionCallbackImpl()
+                extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
+                callback.awaitSessionAndClose()
+            }
+        }
+    }
+
+    @Test
+    fun testRequestSession_bindingFromVirtualDeviceOwner_succeedWithDeviceLocked() {
+        VirtualDeviceSession(getInstrumentation(), "testdevice").use { deviceSession ->
+            // There is a service binding from the virtual device owner to the agent.
+            deviceSession.bindService(ComponentName(context, AgentService::class.java))
             val deviceContext = context.createDeviceContext(deviceSession.deviceId)
             extension = ComputerControlExtensions.getInstance(deviceContext)
 
@@ -346,7 +372,11 @@ class ComputerControlExtensionsTest {
         }
     }
 
-    class TestActivity : Activity()
+    class AgentActivity : Activity()
+
+    class AgentService : Service() {
+        override fun onBind(intent: Intent?): IBinder? = Binder("AgentService")
+    }
 
     companion object {
         private const val TAG = "ComputerControlExtensionsTest"
