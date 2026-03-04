@@ -30,7 +30,7 @@ import android.telecom.TelecomManager;
 
 public class NullBindingTest extends BaseTelecomTestWithMockServices {
     private static final PhoneAccountHandle TEST_NULL_BINDING_HANDLE =
-            new PhoneAccountHandle(new ComponentName("android.telecom.cts",
+            new PhoneAccountHandle(new ComponentName(TestUtils.PACKAGE,
                     "android.telecom.cts.NullBindingConnectionService"),
                     "1");
 
