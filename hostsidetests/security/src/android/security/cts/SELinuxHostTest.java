@@ -1070,6 +1070,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      *
      * @throws Exception
      */
+    @CddTest(requirements = {"9.7"})
     @Test
     public void testCoreDataTypeViolators() throws Exception {
         assertSepolicyTests("TestCoreDataTypeViolations", "/sepolicy_tests", true);
@@ -1082,6 +1083,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      *
      * @throws Exception
      */
+    @CddTest(requirements = {"9.7"})
     @Test
     public void testAppDataTypeViolators() throws Exception {
         assertSepolicyTests("TestAppDataTypeViolations", "/sepolicy_tests", true);
