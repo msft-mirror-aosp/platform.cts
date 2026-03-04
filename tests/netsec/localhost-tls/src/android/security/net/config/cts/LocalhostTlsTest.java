@@ -61,8 +61,12 @@ public class LocalhostTlsTest extends BaseTestCase {
 
     @After
     public void tearDown() throws Exception {
-        mTlsServerSocket.close();
-        mCleartextServerSocket.close();
+        if (mTlsServerSocket != null) {
+            mTlsServerSocket.close();
+        }
+        if (mCleartextServerSocket != null) {
+            mCleartextServerSocket.close();
+        }
     }
 
     @Test
