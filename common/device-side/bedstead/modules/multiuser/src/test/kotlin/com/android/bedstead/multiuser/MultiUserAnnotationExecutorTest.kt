@@ -36,7 +36,7 @@ import com.android.bedstead.multiuser.annotations.RequireGuestUserIsEphemeral
 import com.android.bedstead.multiuser.annotations.RequireGuestUserIsNotEphemeral
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport
+import com.android.bedstead.multiuser.annotations.RequireMaxRunningUsersAtLeast
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
@@ -49,6 +49,7 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnTvProfile
 import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser
+import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport
 import com.android.bedstead.multiuser.annotations.RequireUserSupported
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
@@ -515,6 +516,30 @@ class MultiUserAnnotationExecutorTest {
     @Test
     fun requireRunOnAnnotation_switchedToAny_AnotherAnnotationSwitches_doesNotSwitch() {
         assertThat(users().instrumented()).isNotEqualTo(users().current())
+    }
+
+    @Test
+    @RequireMaxRunningUsersAtLeast(2)
+    fun requireMaxRunningUsersAtLeast2_multiuserMaxRunningUsersIsAtLeast2() {
+        val maxRunningUsers = resources().system().getInteger("config_multiuserMaxRunningUsers")
+
+        assertThat(maxRunningUsers).isAtLeast(2)
+    }
+
+    @Test
+    @RequireMaxRunningUsersAtLeast(3)
+    fun requireMaxRunningUsersAtLeast3_multiuserMaxRunningUsersIsAtLeast3() {
+        val maxRunningUsers = resources().system().getInteger("config_multiuserMaxRunningUsers")
+
+        assertThat(maxRunningUsers).isAtLeast(3)
+    }
+
+    @Test
+    @RequireMaxRunningUsersAtLeast(10)
+    fun requireMaxRunningUsersAtLeast10_multiuserMaxRunningUsersIsAtLeast10() {
+        val maxRunningUsers = resources().system().getInteger("config_multiuserMaxRunningUsers")
+
+        assertThat(maxRunningUsers).isAtLeast(10)
     }
 
     companion object {

@@ -79,6 +79,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireMaxRunningUsersAtLeast;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.CommonPackages;
 import com.android.bedstead.nene.users.UserReference;
@@ -342,6 +343,7 @@ public final class MultiUserMockImeTest {
     @RequireFeature(CommonPackages.FEATURE_MANAGED_USERS)
     @EnsureHasWorkProfile
     @EnsureHasAdditionalUser
+    @RequireMaxRunningUsersAtLeast(3)
     public void testProfileSwitchingThenFullUserSwitching() throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
         final UserReference workUser = workProfile(sDeviceState, currentUser);
