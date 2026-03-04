@@ -1280,9 +1280,9 @@ public class AudioRecordTest {
             // of AudioRecord start and stop.
             final int runningTimestampStart = targetSamples * 1 / 6;
             final int runningTimestampStop = targetSamples * 5 / 6;
-            AudioTimestamp running1Ts = new AudioTimestamp();
+            AudioTimestamp running1TsMonotonic = new AudioTimestamp();
             AudioTimestamp running1TsBoot = new AudioTimestamp();
-            AudioTimestamp running2Ts = new AudioTimestamp();
+            AudioTimestamp running2TsMonotonic = new AudioTimestamp();
             AudioTimestamp running2TsBoot = new AudioTimestamp();
 
             int samplesRead = 0;
@@ -1357,41 +1357,26 @@ public class AudioRecordTest {
                 if (startTs.nanoTime == 0 && ret > 0 &&
                         record.getTimestamp(startTs, AudioTimestamp.TIMEBASE_MONOTONIC)
                                 == AudioRecord.SUCCESS) {
-                    assertWithMessage("expecting valid timestamp with nonzero nanoTime")
-                            .that(startTs.nanoTime)
-                            .isGreaterThan(0);
-                    assertWithMessage("expecting valid timestamp with nonzero nanoTime")
-                            .that(
-                                    record.getTimestamp(
-                                            startTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME))
-                            .isEqualTo(AudioRecord.SUCCESS);
-                    assertWithMessage("expecting valid timestamp with nonzero nanoTime")
-                            .that(startTsBoot.nanoTime)
-                            .isGreaterThan(0);
-                    assertWithMessage(
-                                    "start timestamp monotonic and boottime have same frame"
-                                            + " position")
-                            .that(startTs.framePosition)
-                            .isEqualTo(startTsBoot.framePosition);
+                    fetchAndVerifyTimestampTimeBase(
+                            record, startTs, startTsBoot, "Test timestamp framePosition at start");
                 }
                 if (samplesRead > runningTimestampStart
-                        && running1Ts.nanoTime == 0 && ret > 0) {
-                    record.getTimestamp(running1Ts, AudioTimestamp.TIMEBASE_MONOTONIC);
-                    record.getTimestamp(running1TsBoot, AudioTimestamp.TIMEBASE_BOOTTIME);
-                    assertWithMessage("running1Ts monotonic and boottime have same frame position")
-                            .that(running1Ts.framePosition)
-                            .isEqualTo(running1TsBoot.framePosition);
+                        && running1TsMonotonic.nanoTime == 0
+                        && ret > 0) {
+                    fetchAndVerifyTimestampTimeBase(
+                            record,
+                            running1TsMonotonic,
+                            running1TsBoot,
+                            "Test timestamp framePosition running after start");
                 }
                 if (samplesRead > runningTimestampStop
-                        && running2Ts.nanoTime == 0 && ret > 0) {
-                    record.getTimestamp(running2Ts, AudioTimestamp.TIMEBASE_MONOTONIC);
-                    record.getTimestamp(running2TsBoot, AudioTimestamp.TIMEBASE_BOOTTIME);
-                    assertWithMessage("running2Ts monotonic and boottime have same frame position")
-                            .that(running2Ts.framePosition)
-                            .isEqualTo(running2TsBoot.framePosition);
-                    assertWithMessage("running2Ts monotonic time <= boottime")
-                            .that(running2Ts.nanoTime <= running2TsBoot.nanoTime)
-                            .isTrue();
+                        && running2TsMonotonic.nanoTime == 0
+                        && ret > 0) {
+                    fetchAndVerifyTimestampTimeBase(
+                            record,
+                            running2TsMonotonic,
+                            running2TsBoot,
+                            "Test timestamp framePosition running before stop");
                 }
             }
 
@@ -1453,13 +1438,9 @@ public class AudioRecordTest {
             // get stop timestamp
             // Note: the stop timestamp is collected *after* stop is called.
             AudioTimestamp stopTs = new AudioTimestamp();
-            assertWithMessage("should successfully get timestamp after stop")
-                    .that(record.getTimestamp(stopTs, AudioTimestamp.TIMEBASE_MONOTONIC))
-                    .isEqualTo(AudioRecord.SUCCESS);
             AudioTimestamp stopTsBoot = new AudioTimestamp();
-            assertWithMessage("should successfully get boottime timestamp after stop")
-                    .that(record.getTimestamp(stopTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME))
-                    .isEqualTo(AudioRecord.SUCCESS);
+            fetchAndVerifyTimestampTimeBase(
+                    record, stopTs, stopTsBoot, "Test timestamp framePosition at stop");
 
             // printTimestamp("startTs", startTs);
             // printTimestamp("stopTs", stopTs);
@@ -1471,13 +1452,6 @@ public class AudioRecordTest {
             assertWithMessage("stop timestamp position should be no less than frames read")
                     .that(stopTs.framePosition)
                     .isAtLeast(targetFrames);
-            assertWithMessage("stop timestamp position should be same "
-                    + "between monotonic and boot timestamps")
-                    .that(stopTs.framePosition)
-                    .isEqualTo(stopTsBoot.framePosition);
-            assertWithMessage("stop timestamp nanoTime must be greater than 0")
-                    .that(stopTs.nanoTime)
-                    .isGreaterThan(0);
 
             // timestamps follow a different path than data, so it is conceivable
             // that first data arrives before the first timestamp is ready.
@@ -1492,8 +1466,8 @@ public class AudioRecordTest {
 
             // during the middle 2/3 of the run, we expect stable timestamps.
             verifyContinuousTimestamps(
-                    running1Ts,
-                    running2Ts,
+                    running1TsMonotonic,
+                    running2TsMonotonic,
                     running1TsBoot,
                     running2TsBoot,
                     TEST_SR,
@@ -2181,5 +2155,61 @@ public class AudioRecordTest {
                 false /*auditRecording*/, false /*isChannelIndex*/,
                 true /*isAcn*/, ambisonicsDevice,
                 targetRate, targetMask, targetFormat);
+    }
+
+    private void fetchAndVerifyTimestampTimeBase(
+            AudioRecord record, AudioTimestamp tsMonotonic, AudioTimestamp tsBoot, String message) {
+
+        // Frame position of timestamps should be in order, when sampling:
+        // monotonic, boottime, and then monotonicAfter.  Normally they
+        // are equal when rapidly sampled one after another.
+
+        assertWithMessage(message + ": getTimestamp(MONOTONIC) before")
+                .that(record.getTimestamp(tsMonotonic, AudioTimestamp.TIMEBASE_MONOTONIC))
+                .isEqualTo(AudioRecord.SUCCESS);
+
+        assertWithMessage(message + ": getTimestamp(BOOTTIME)")
+                .that(record.getTimestamp(tsBoot, AudioTimestamp.TIMEBASE_BOOTTIME))
+                .isEqualTo(AudioRecord.SUCCESS);
+
+        final AudioTimestamp tsMonotonicAfter = new AudioTimestamp();
+        assertWithMessage(message + ": getTimestamp(MONOTONIC) after")
+                .that(record.getTimestamp(tsMonotonicAfter, AudioTimestamp.TIMEBASE_MONOTONIC))
+                .isEqualTo(AudioRecord.SUCCESS);
+
+        assertWithMessage(
+                        message
+                                + ": framePosition order "
+                                + "monotonic_before("
+                                + tsMonotonic.framePosition
+                                + ") <= boottime("
+                                + tsBoot.framePosition
+                                + ") <= monotonic_after("
+                                + tsMonotonicAfter.framePosition
+                                + ")")
+                .that(
+                        tsMonotonic.framePosition <= tsBoot.framePosition
+                                && tsBoot.framePosition <= tsMonotonicAfter.framePosition)
+                .isTrue();
+
+        assertWithMessage(message + ": tsMonotonic.nanoTime should be > 0")
+                .that(tsMonotonic.nanoTime)
+                .isGreaterThan(0);
+
+        assertWithMessage(message + ": tsBoot.nanoTime should be > 0")
+                .that(tsBoot.nanoTime)
+                .isGreaterThan(0);
+
+        assertWithMessage(message + ": tsMonotonicAfter.nanoTime should be > 0")
+                .that(tsMonotonicAfter.nanoTime)
+                .isGreaterThan(0);
+
+        assertWithMessage(message + ": monotonic time <= boottime")
+                .that(tsMonotonic.nanoTime)
+                .isAtMost(tsBoot.nanoTime);
+
+        assertWithMessage(message + ": monotonic time <= monotonic_after time")
+                .that(tsMonotonic.nanoTime)
+                .isAtMost(tsMonotonicAfter.nanoTime);
     }
 }

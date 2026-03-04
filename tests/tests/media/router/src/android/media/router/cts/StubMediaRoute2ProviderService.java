@@ -104,6 +104,8 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
     public static final String FEATURE_SAMPLE = "android.media.router.cts.FEATURE_SAMPLE";
     public static final String FEATURE_SPECIAL = "android.media.router.cts.FEATURE_SPECIAL";
 
+    public static final String VOLUME_ACCESSIBILITY_LABEL = "Volume";
+
     public static final List<String> FEATURES_ALL = new ArrayList();
     public static final List<String> FEATURES_SPECIAL = new ArrayList();
     public static final List<String> STATIC_GROUP_SELECTED_ROUTES_IDS = new ArrayList<>();
@@ -273,6 +275,9 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     @Override
     public void onSetRouteVolume(long requestId, String routeId, int volume) {
+        if (mProxy != null && mProxy.onSetRouteVolume(requestId, routeId, volume)) {
+            return;
+        }
         MediaRoute2Info route = mRoutes.get(routeId);
         if (route == null) {
             return;
@@ -452,8 +457,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     @Override
     public void onTransferToRoute(long requestId, String sessionId, String routeId) {
-        Proxy proxy = mProxy;
-        if (proxy != null && proxy.onTransferToRoute(requestId, sessionId, routeId)) {
+        if (mProxy != null && mProxy.onTransferToRoute(requestId, sessionId, routeId)) {
             return;
         }
 
@@ -583,7 +587,12 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
         public boolean onDiscoveryPreferenceChanged(RouteDiscoveryPreference preference) {
             return false;
         }
-        // TODO: Handle onSetRouteVolume() && onSetSessionVolume()
+
+        /** customizes StubMediaRoute2ProviderService#onSetRouteVolume behavior */
+        public boolean onSetRouteVolume(long requestId, String routeId, int volume) {
+            return false;
+        }
+        // TODO: b/475479699 - Handle onSetSessionVolume()
     }
 
     // This class can be used as a JUnit @Rule to initialize and get a reference to a running

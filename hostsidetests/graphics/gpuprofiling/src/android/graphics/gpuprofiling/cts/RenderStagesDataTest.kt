@@ -34,12 +34,14 @@ class RenderStagesDataTest {
         val trace = Trace.newBuilder().apply {
             addPacket(TracePacket.newBuilder().apply {
                 timestamp = 100L
-                setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setEventId(1))
+                setGpuRenderStageEvent(
+                    GpuRenderStageEvent.newBuilder().setEventId(1).setSubmissionId(10)
+                )
             })
             addPacket(TracePacket.newBuilder().apply {
                 timestamp = 200L
                 setVulkanApiEvent(VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                    VkQueueSubmit.newBuilder().setSubmissionId(10).setDurationNs(30)
+                    VkQueueSubmit.newBuilder().setSubmissionId(10).setPid(406).setDurationNs(30)
                 ))
             })
             addPacket(TracePacket.newBuilder().apply {
@@ -62,11 +64,14 @@ class RenderStagesDataTest {
 
         val renderStagesData = RenderStagesData(trace)
 
-        assertThat(renderStagesData.renderStages).containsExactly(
-            RenderStageEvent(100L, GpuRenderStageEvent.newBuilder().setEventId(1).build())
+        assertThat(renderStagesData.renderStagesForApp).containsExactly(
+            RenderStageEvent(
+                100L,
+                GpuRenderStageEvent.newBuilder().setEventId(1).setSubmissionId(10).build()
+            )
         )
-        assertThat(renderStagesData.queueSubmits).containsExactly(
-            QueueSubmitEvent(200L, 10, 30)
+        assertThat(renderStagesData.queueSubmitsWithAppPid).containsExactly(
+            QueueSubmitEvent(200L, 10, 406, 30)
         )
         assertThat(renderStagesData.appQueueSubmits).containsExactly(
             AppQueueSubmitEvent(300L, 400L)

@@ -24,18 +24,23 @@ import android.database.Cursor;
 import android.net.Uri;
 
 public class QueryReceiver extends BroadcastReceiver {
+
+    public static final int RESULT_ILLEGAL_ARGUMENT_EXCEPTION = Activity.RESULT_FIRST_USER + 1;
+
     @Override
     public void onReceive(Context context, Intent intent) {
         Uri targetUri = intent.getParcelableExtra("target_uri");
+        String selection = intent.getStringExtra("selection");
 
         if (targetUri == null) {
             setResultCode(Activity.RESULT_CANCELED);
             return;
         }
 
-        // If the grant is valid, this succeeds. If not, it throws a SecurityException.
+        // If the grant is valid, this succeeds. If not, it throws a SecurityException. If the query
+        // or selection arguments are malformed, IllegalArgumentException is thrown.
         try (Cursor cursor =
-                context.getContentResolver().query(targetUri, null, null, null, null)) {
+                context.getContentResolver().query(targetUri, null, selection, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 setResultCode(Activity.RESULT_OK);
             } else {
@@ -43,6 +48,8 @@ public class QueryReceiver extends BroadcastReceiver {
             }
         } catch (SecurityException e) {
             setResultCode(Activity.RESULT_FIRST_USER);
+        } catch (IllegalArgumentException e) {
+            setResultCode(RESULT_ILLEGAL_ARGUMENT_EXCEPTION);
         }
     }
 }

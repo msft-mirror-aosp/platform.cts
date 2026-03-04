@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.provider.cts.contacts.strictsqlcheck">
+    <uses-sdk android:targetSdkVersion="37" />
+
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+
+    <queries>
+        <!-- Client app which consumes contacts provider sessions -->
+        <package android:name="android.provider.cts.contacts.sessionprovider.client" />
+    </queries>
+
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="android.provider.cts.contacts.strictsqlcheck" />
+</manifest>

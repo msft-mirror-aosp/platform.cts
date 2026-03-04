@@ -89,9 +89,11 @@ public class CecPortDiscoverer extends BaseTargetPreparer {
      * @throws DeviceNotAvailableException
      */
     public static boolean isTvEmulator(ITestDevice device) throws DeviceNotAvailableException {
-        return !device.executeShellCommand("getprop " + HdmiCecConstants.PROPERTY_BUILD_FINGERPRINT
-                        + " | grep \"cf_x86\"")
-                .isEmpty();
+        String fingerprint = device.getProperty(HdmiCecConstants.PROPERTY_BUILD_FINGERPRINT);
+        String hardware = device.getProperty("ro.hardware");
+        boolean isCuttlefish = (fingerprint != null && fingerprint.contains("cf_x86")) ||
+                               (hardware != null && hardware.contains("vsoc"));
+        return isCuttlefish;
     }
 
     /** {@inheritDoc} */

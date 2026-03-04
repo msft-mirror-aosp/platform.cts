@@ -18,7 +18,10 @@ package android.graphics.gpuprofiling.cts
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import perfetto.protos.PerfettoTrace.FtraceEvent
+import perfetto.protos.PerfettoTrace.FtraceEventBundle
 import perfetto.protos.PerfettoTrace.GpuRenderStageEvent
+import perfetto.protos.PerfettoTrace.PrintFtraceEvent
 import perfetto.protos.PerfettoTrace.Trace
 import perfetto.protos.PerfettoTrace.TracePacket
 import perfetto.protos.PerfettoTrace.VulkanApiEvent
@@ -122,9 +125,9 @@ class RenderStagesChecksTest {
     fun checkQueueSubmitsStrictlyMonotonicallyIncreasing_increasing_passes() {
         val fakeCollector = FakeErrorCollector()
         val list = listOf(
-            QueueSubmitEvent(1, 1, 100),
-            QueueSubmitEvent(2, 2, 100),
-            QueueSubmitEvent(3, 3, 100)
+            QueueSubmitEvent(1, 1, 406, 100),
+            QueueSubmitEvent(2, 2, 406, 100),
+            QueueSubmitEvent(3, 3, 406, 100)
         )
 
         checkQueueSubmitsStrictlyMonotonicallyIncreasing(fakeCollector, list)
@@ -136,9 +139,9 @@ class RenderStagesChecksTest {
     fun checkQueueSubmitsStrictlyMonotonicallyIncreasing_duplicates_fails() {
         val fakeCollector = FakeErrorCollector()
         val list = listOf(
-            QueueSubmitEvent(1, 1, 100),
-            QueueSubmitEvent(2, 1, 100), // Duplicate
-            QueueSubmitEvent(3, 2, 100)
+            QueueSubmitEvent(1, 1, 406, 100),
+            QueueSubmitEvent(2, 1, 406, 100), // Duplicate
+            QueueSubmitEvent(3, 2, 406, 100)
         )
 
         checkQueueSubmitsStrictlyMonotonicallyIncreasing(fakeCollector, list)
@@ -162,7 +165,7 @@ class RenderStagesChecksTest {
                     10
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(0)
+                        VkQueueSubmit.newBuilder().setSubmissionId(0).setPid(406)
                     )
                 )
             )
@@ -178,7 +181,7 @@ class RenderStagesChecksTest {
                     100
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(1)
+                        VkQueueSubmit.newBuilder().setSubmissionId(1).setPid(406)
                     )
                 )
             )
@@ -187,6 +190,28 @@ class RenderStagesChecksTest {
                     150
                 ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(1))
             )
+            addPacket(
+                TracePacket.newBuilder().apply {
+                    setFtraceEvents(FtraceEventBundle.newBuilder().apply {
+                        addEvent(FtraceEvent.newBuilder().apply {
+                            timestamp = 100L
+                            setPrint(
+                                PrintFtraceEvent.newBuilder().setBuf(
+                                    "S|406|CtsTestQueueSubmit|58\n"
+                                )
+                            )
+                        })
+                        addEvent(FtraceEvent.newBuilder().apply {
+                            timestamp = 150L
+                            setPrint(
+                                PrintFtraceEvent.newBuilder().setBuf(
+                                    "F|406|CtsTestQueueSubmit|58\n"
+                                )
+                            )
+                       })
+                    })
+            }
+            )
 
             // ID 2
             addPacket(
@@ -194,7 +219,7 @@ class RenderStagesChecksTest {
                     200
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(2)
+                        VkQueueSubmit.newBuilder().setSubmissionId(2).setPid(406)
                     )
                 )
             )
@@ -210,7 +235,7 @@ class RenderStagesChecksTest {
                     300
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(3)
+                        VkQueueSubmit.newBuilder().setSubmissionId(3).setPid(406)
                     )
                 )
             )
@@ -239,7 +264,7 @@ class RenderStagesChecksTest {
                     10
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(0)
+                        VkQueueSubmit.newBuilder().setSubmissionId(0).setPid(406)
                     )
                 )
             )
@@ -255,7 +280,7 @@ class RenderStagesChecksTest {
                     200
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(1)
+                        VkQueueSubmit.newBuilder().setSubmissionId(1).setPid(406)
                     )
                 )
             )
@@ -264,6 +289,28 @@ class RenderStagesChecksTest {
                     100
                 ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(1))
             )
+            addPacket(
+                TracePacket.newBuilder().apply {
+                    setFtraceEvents(FtraceEventBundle.newBuilder().apply {
+                        addEvent(FtraceEvent.newBuilder().apply {
+                            timestamp = 100L
+                            setPrint(
+                                PrintFtraceEvent.newBuilder().setBuf(
+                                    "S|406|CtsTestQueueSubmit|58\n"
+                                )
+                            )
+                        })
+                        addEvent(FtraceEvent.newBuilder().apply {
+                            timestamp = 200L
+                            setPrint(
+                                PrintFtraceEvent.newBuilder().setBuf(
+                                    "F|406|CtsTestQueueSubmit|58\n"
+                                )
+                            )
+                       })
+                    })
+            }
+            )
 
             // Padding end (ID 2)
             addPacket(
@@ -271,7 +318,7 @@ class RenderStagesChecksTest {
                     300
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(2)
+                        VkQueueSubmit.newBuilder().setSubmissionId(2).setPid(406)
                     )
                 )
             )
@@ -296,7 +343,7 @@ class RenderStagesChecksTest {
     }
 
     @Test
-    fun checkRenderStagesMatchQueueSubmits_missingQueueSubmit_fails() {
+    fun checkRenderStagesMatchQueueSubmits_missingRenderStage_fails() {
         val fakeCollector = FakeErrorCollector()
 
         val trace = Trace.newBuilder().apply {
@@ -306,7 +353,7 @@ class RenderStagesChecksTest {
                     10
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(0)
+                        VkQueueSubmit.newBuilder().setSubmissionId(0).setPid(406)
                     )
                 )
             )
@@ -322,7 +369,7 @@ class RenderStagesChecksTest {
                     100
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(1)
+                        VkQueueSubmit.newBuilder().setSubmissionId(1).setPid(406)
                     )
                 )
             )
@@ -331,12 +378,38 @@ class RenderStagesChecksTest {
                     120
                 ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(1))
             )
+            addPacket(
+                TracePacket.newBuilder().apply {
+                    setFtraceEvents(FtraceEventBundle.newBuilder().apply {
+                        addEvent(FtraceEvent.newBuilder().apply {
+                            timestamp = 100L
+                            setPrint(
+                                PrintFtraceEvent.newBuilder().setBuf(
+                                    "S|406|CtsTestQueueSubmit|58\n"
+                                )
+                            )
+                        })
+                        addEvent(FtraceEvent.newBuilder().apply {
+                            timestamp = 120L
+                            setPrint(
+                                PrintFtraceEvent.newBuilder().setBuf(
+                                    "F|406|CtsTestQueueSubmit|58\n"
+                                )
+                            )
+                       })
+                    })
+            }
+            )
 
-            // ID 2 (Missing queue submit)
+            // ID 2 (Missing render stage)
             addPacket(
                 TracePacket.newBuilder().setTimestamp(
                     220
-                ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(2))
+                ).setVulkanApiEvent(
+                    VulkanApiEvent.newBuilder().setVkQueueSubmit(
+                        VkQueueSubmit.newBuilder().setSubmissionId(2).setPid(406)
+                    )
+                )
             )
 
             // ID 3 (Match)
@@ -345,7 +418,7 @@ class RenderStagesChecksTest {
                     300
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(3)
+                        VkQueueSubmit.newBuilder().setSubmissionId(3).setPid(406)
                     )
                 )
             )
@@ -361,7 +434,7 @@ class RenderStagesChecksTest {
                     400
                 ).setVulkanApiEvent(
                     VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                        VkQueueSubmit.newBuilder().setSubmissionId(4)
+                        VkQueueSubmit.newBuilder().setSubmissionId(4).setPid(406)
                     )
                 )
             )
@@ -386,9 +459,9 @@ class RenderStagesChecksTest {
     fun checkQueueSubmitsMatchAppLogs_matches_passes() {
         val fakeCollector = FakeErrorCollector()
         val queueSubmits = listOf(
-            QueueSubmitEvent(100, 1, 10), // should discard
-            QueueSubmitEvent(200, 2, 20),
-            QueueSubmitEvent(300, 3, 30) // should discard
+            QueueSubmitEvent(100, 1, 406, 10), // should discard
+            QueueSubmitEvent(200, 2, 406, 20),
+            QueueSubmitEvent(300, 3, 406, 30) // should discard
         )
         val appQueueSubmits = listOf(AppQueueSubmitEvent(199, 230))
 
@@ -400,7 +473,7 @@ class RenderStagesChecksTest {
     @Test
     fun checkQueueSubmitsMatchAppLogs_durationMismatch_fails() {
         val fakeCollector = FakeErrorCollector()
-        val queueSubmits = listOf(QueueSubmitEvent(200, 2, 20))
+        val queueSubmits = listOf(QueueSubmitEvent(200, 2, 406, 20))
         val appQueueSubmits = listOf(AppQueueSubmitEvent(199, 209))
 
         checkQueueSubmitsMatchAppLogs(fakeCollector, queueSubmits, appQueueSubmits)
@@ -414,7 +487,7 @@ class RenderStagesChecksTest {
     @Test
     fun checkQueueSubmitsMatchAppLogs_timestampMismatch_fails() {
         val fakeCollector = FakeErrorCollector()
-        val queueSubmits = listOf(QueueSubmitEvent(200, 2, 20))
+        val queueSubmits = listOf(QueueSubmitEvent(200, 2, 406, 20))
         val appQueueSubmits = listOf(
             AppQueueSubmitEvent(100, 110),
             AppQueueSubmitEvent(300, 310)

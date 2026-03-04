@@ -336,13 +336,13 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         if (getProperty(GPU_RENDER_STAGES_PROPERTY)) {
             RenderStagesData renderStagesData =
                     new RenderStagesData(traceFrequencyRenderStagesDefaultCounters5Ms);
-            List<RenderStageEvent> renderStages = renderStagesData.getRenderStages();
+            List<RenderStageEvent> renderStages = renderStagesData.getRenderStagesForApp();
 
             checkRenderStagesNotEmpty(errorCollector, renderStages);
             checkRenderStagesValidity(errorCollector, renderStages);
 
             if (getProperty(GPU_RENDER_STAGES_QUEUE_SUBMIT_PROPERTY)) {
-                List<QueueSubmitEvent> queueSubmits = renderStagesData.getQueueSubmits();
+                List<QueueSubmitEvent> queueSubmits = renderStagesData.getQueueSubmitsWithAppPid();
 
                 checkQueueSubmitsNotEmpty(errorCollector, queueSubmits);
                 checkQueueSubmitsStrictlyMonotonicallyIncreasing(errorCollector, queueSubmits);

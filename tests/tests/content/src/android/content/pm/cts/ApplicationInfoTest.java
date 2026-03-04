@@ -613,7 +613,7 @@ public class ApplicationInfoTest {
                 "android.content.pm.PackageManager#getApplicationInfo",
                 "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
             })
-    public void testGetApplicationInfo_getAttributionsFlag_withPermission_doesNotReturnAppLockInfo()
+    public void testGetApplicationInfo_getAttributionsFlag_withPermission_returnsAppLockInfo()
             throws Exception {
         final Context context = getContext();
         final PackageManager packageManager = context.getPackageManager();
@@ -624,21 +624,21 @@ public class ApplicationInfoTest {
                 AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
             assertThat(hasLockAppsPermission(context)).isTrue();
 
-            // Without LOCK_APPS, GET_ATTRIBUTIONS should not return App Lock info
+            // Even with sign extension, if the caller has the permission, return App Lock info
             ApplicationInfo infoWithPermission =
                     packageManager.getApplicationInfo(
                             APP_LOCK_SUPPORTED_PACKAGE_NAME, PackageManager.GET_ATTRIBUTIONS);
-            assertThat(infoWithPermission.isAppLockSupported).isFalse();
+            assertThat(infoWithPermission.isAppLockSupported).isTrue();
             assertThat(infoWithPermission.isAppLockEnabled).isFalse();
 
-            // Without LOCK_APPS, GET_ATTRIBUTIONS with manual long conversion should not return
-            // App Lock info and should not throw a SecurityException
+            // With LOCK_APPS, GET_ATTRIBUTIONS with manual long conversion should return App Lock
+            // info and not throw a SecurityException
             infoWithPermission =
                     packageManager.getApplicationInfo(
                             APP_LOCK_SUPPORTED_PACKAGE_NAME,
                             PackageManager.ApplicationInfoFlags.of(
                                     (long) PackageManager.GET_ATTRIBUTIONS));
-            assertThat(infoWithPermission.isAppLockSupported).isFalse();
+            assertThat(infoWithPermission.isAppLockSupported).isTrue();
             assertThat(infoWithPermission.isAppLockEnabled).isFalse();
         }
     }

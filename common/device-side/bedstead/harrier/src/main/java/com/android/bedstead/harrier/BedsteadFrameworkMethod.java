@@ -16,107 +16,46 @@
 
 package com.android.bedstead.harrier;
 
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
-import com.android.bedstead.nene.types.OptionalBoolean;
-
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import org.junit.runners.model.FrameworkMethod;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /** {@link FrameworkMethod} subclass which allows modifying the test name and annotations. */
 public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
-    private final BedsteadJUnit4 mBedsteadJUnit4;
     private final ImmutableList<Annotation> mParameterizedAnnotations;
-    private final Map<Class<? extends Annotation>, Annotation> mAnnotationsMap = new HashMap<>();
+    private final Annotation[] mAnnotations;
+    private final ImmutableMap<Class<? extends Annotation>, Annotation> mAnnotationsMap;
     private final Equivalence<Iterable<Annotation>> equivalence =
             Equivalence.equals().pairwise(); // For element-wise comparison
 
-    private Annotation[] mAnnotations;
-
-    public BedsteadFrameworkMethod(BedsteadJUnit4 bedsteadJUnit4, Method method) {
-        this(bedsteadJUnit4, method, /* parameterizedAnnotations= */ new ArrayList<>());
+    private static ImmutableMap<Class<? extends Annotation>, Annotation> createAnnotationMap(
+            ImmutableList<Annotation> annotations) {
+        ImmutableMap.Builder<Class<? extends Annotation>, Annotation> mapBuilder =
+                ImmutableMap.builder();
+        annotations.stream()
+                .filter(it -> !(it instanceof DynamicParameterizedAnnotation))
+                .forEach(it -> mapBuilder.put(it.annotationType(), it));
+        return mapBuilder.buildKeepingLast();
     }
 
     public BedsteadFrameworkMethod(
-            BedsteadJUnit4 bedsteadJUnit4,
             Method method,
-            List<Annotation> parameterizedAnnotations) {
+            ImmutableList<Annotation> annotations,
+            ImmutableList<Annotation> parameterizedAnnotations) {
         super(method);
-        mBedsteadJUnit4 = bedsteadJUnit4;
-        mParameterizedAnnotations = ImmutableList.copyOf(parameterizedAnnotations);
-
-        calculateAnnotations();
+        mParameterizedAnnotations = parameterizedAnnotations;
+        mAnnotations = annotations.toArray(new Annotation[0]);
+        mAnnotationsMap = createAnnotationMap(annotations);
     }
 
     public ImmutableList<Annotation> getParameterizedAnnotations() {
         return mParameterizedAnnotations;
-    }
-
-    private void calculateAnnotations() {
-        List<Annotation> annotations =
-                getAnnotationWithReplacements(
-                        getDeclaringClass().getAnnotations(),
-                        mBedsteadJUnit4.getRuntimeClassAnnotations());
-        annotations.addAll(
-                getAnnotationWithReplacements(
-                        getMethod().getAnnotations(),
-                        mBedsteadJUnit4.getRuntimeClassAnnotations()));
-
-        mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
-
-        boolean hasRequireRunOnAnnotation =
-                annotations.stream()
-                        .anyMatch(
-                                it ->
-                                        it.annotationType()
-                                                        .getDeclaredAnnotation(
-                                                                RequireRunOnAnnotation.class)
-                                                != null);
-
-        // If there is no RequireRunOn annotation, we'll add and resolve RequireRunOnInitialUser
-        if (!hasRequireRunOnAnnotation) {
-            annotations.addAll(
-                    BedsteadJUnit4.getReplacementAnnotations(
-                            mBedsteadJUnit4.getHarrierRule(),
-                            BedsteadJUnit4.requireRunOnInitialUser(
-                                    /* switchToUser= */ OptionalBoolean.ANY),
-                            /* parameterizedAnnotations= */ ImmutableList.of()));
-        }
-
-        mAnnotations = annotations.toArray(new Annotation[0]);
-
-        for (Annotation annotation : annotations) {
-            if (annotation instanceof DynamicParameterizedAnnotation) {
-                continue; // don't return this
-            }
-            mAnnotationsMap.put(annotation.annotationType(), annotation);
-        }
-    }
-
-    private static List<Annotation> getAnnotationWithReplacements(
-            Annotation[] sourceAnnotations, List<Annotation> classAnnotations) {
-        var annotations = new ArrayList<Annotation>();
-        for (Annotation annotation : sourceAnnotations) {
-            var replacements =
-                    BedsteadAnnotationGenerator.INSTANCE
-                            .maybeReplaceUsingParameterizedTestGenerator(
-                                    annotation, classAnnotations);
-            if (replacements == null) {
-                annotations.add(annotation);
-            } else {
-                annotations.addAll(replacements);
-            }
-        }
-        return AnnotationSorterKt.sortedByPriority(annotations);
     }
 
     @Override
