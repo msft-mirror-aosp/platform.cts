@@ -229,6 +229,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern SCENE_IP_METRICS_PATTERN =
             Pattern.compile("test_default_jca_ip_.*");
 
+    private static final Pattern JPEG_R_METRICS_PATTERN =
+            Pattern.compile("test_jca_jpegr_ip_.*");
     private static final Pattern PERF_METRICS_PREVIEW_STABILIZATION_FOV_PATTERN =
             Pattern.compile("test_preview_stabilization_fov_.*");
     private static final String PERF_METRICS_KEY_PREFIX_PREVIEW_STABILIZATION_FOV =
@@ -908,6 +910,10 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                     perfMetricsResult);
             boolean sceneIpMetricsMatches = sceneIpMetricsMatcher.matches();
 
+            Matcher jpegRMetricsMatcher = JPEG_R_METRICS_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean jpegRMetricsMatches = jpegRMetricsMatcher.matches();
+
             Matcher previewFrameDropMetricsMatcher =
                     PERF_METRICS_PREVIEW_FRAME_DROP_PATTERN.matcher(perfMetricsResult);
             boolean previewFrameDropMetricsMatches = previewFrameDropMetricsMatcher.matches();
@@ -924,7 +930,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                         && !lowLightBoostMetricsMatches && !nightModeExtensionMetricsMatches
                         && !aeAwbMetricsMatches && !multiCamMetricsMatches
                         && !previewFrameDropMetricsMatches && !previewZoomMetricsMatches
-                        && !previewStabilizationFovMetricsMatches && !sceneIpMetricsMatches) {
+                        && !previewStabilizationFovMetricsMatches && !sceneIpMetricsMatches
+                        && !jpegRMetricsMatches) {
                 return false;
             }
 
@@ -1017,6 +1024,11 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                     addSceneIpPerfMetricsResult(perfMetricsResult, obj);
                 }
 
+                if (jpegRMetricsMatches) {
+                    Log.i(TAG, "JPEG_R metrics matches");
+                    addJpegRPerfMetricsResult(perfMetricsResult, obj);
+                }
+
                 if (previewFrameDropMetricsMatches) {
                     Log.i(TAG, "preview frame drop matches");
                     addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_PREVIEW_FRAME_DROP,
@@ -1054,6 +1066,23 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private void addSceneIpPerfMetricsResult(String perfMetricsResult,
             JSONObject obj) throws org.json.JSONException {
         Log.i(TAG, "Adding Scene IP perf metrics results");
+        String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
+        if (parts.length == 2) {
+            String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
+            String value = parts[1].trim();
+            // TODO: b/442698260: value must be float/double
+            Log.i(TAG, "Key: " + key);
+            Log.i(TAG, "Value: " + value);
+            float valueF = Float.parseFloat(value);
+            obj.put(key, valueF);
+        } else {
+            Log.i(TAG, "Invalid output string");
+        }
+    }
+
+    private void addJpegRPerfMetricsResult(String perfMetricsResult,
+            JSONObject obj) throws org.json.JSONException {
+        Log.i(TAG, "Adding JPEG_R perf metrics results");
         String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
         if (parts.length == 2) {
             String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");

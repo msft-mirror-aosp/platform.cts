@@ -265,7 +265,7 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       )
 
       # Logging for data collection
-      result_str = f'{_NAME}_mean_white_balance_diff: {mean_white_balance_diff}'
+      result_str = f'mean_white_balance_diff: {mean_white_balance_diff}'
       print(f'{_NAME}_{result_str}')
       logging.debug('%s', result_str)
       if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
