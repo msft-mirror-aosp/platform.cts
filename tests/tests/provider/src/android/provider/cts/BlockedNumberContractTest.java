@@ -170,37 +170,45 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
+        // Ensure we don't have the write/read blocked number permissions to avoid any
+        // test isolation issues.
+        try (PermissionContext permissionContext =
+                TestApis.permissions()
+                        .withoutPermission(
+                                Manifest.permission.WRITE_BLOCKED_NUMBERS,
+                                Manifest.permission.READ_BLOCKED_NUMBERS)) {
+            try {
+                mAddedUris.add(
+                        mContentResolver.insert(
+                                BlockedNumbers.CONTENT_URI, getContentValues("1234567890")));
+                fail("Should throw SecurityException");
+            } catch (SecurityException expected) {
+            }
 
-        try {
-            mAddedUris.add(mContentResolver.insert(
-                    BlockedNumbers.CONTENT_URI, getContentValues("1234567890")));
-            fail("Should throw SecurityException");
-        } catch (SecurityException expected) {
-        }
+            try {
+                mContentResolver.query(BlockedNumbers.CONTENT_URI, null, null, null, null);
+                fail("Should throw SecurityException");
+            } catch (SecurityException expected) {
+            }
 
-        try {
-            mContentResolver.query(BlockedNumbers.CONTENT_URI, null, null, null, null);
-            fail("Should throw SecurityException");
-        } catch (SecurityException expected) {
-        }
+            try {
+                mContentResolver.update(
+                        BlockedNumbers.CONTENT_URI, getContentValues("123"), null, null);
+                fail("Should throw SecurityException");
+            } catch (SecurityException expected) {
+            }
 
-        try {
-            mContentResolver.update(
-                    BlockedNumbers.CONTENT_URI, getContentValues("123"), null, null);
-            fail("Should throw SecurityException");
-        } catch (SecurityException expected) {
-        }
+            try {
+                BlockedNumberContract.isBlocked(mContext, "123");
+                fail("Should throw SecurityException");
+            } catch (SecurityException expected) {
+            }
 
-        try {
-            BlockedNumberContract.isBlocked(mContext, "123");
-            fail("Should throw SecurityException");
-        } catch (SecurityException expected) {
-        }
-
-        try {
-            BlockedNumberContract.unblock(mContext, "1234567890");
-            fail("Should throw SecurityException");
-        } catch (SecurityException expected) {
+            try {
+                BlockedNumberContract.unblock(mContext, "1234567890");
+                fail("Should throw SecurityException");
+            } catch (SecurityException expected) {
+            }
         }
 
         assertTrue(BlockedNumberContract.canCurrentUserBlockNumbers(mContext));
