@@ -26,6 +26,8 @@ import android.os.ParcelFileDescriptor;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.UserHelper;
+
 import org.junit.After;
 
 import java.io.FileDescriptor;
@@ -33,6 +35,9 @@ import java.io.FileInputStream;
 import java.util.Scanner;
 
 public class TestBase {
+
+    protected final static UserHelper USER_HELPER =
+            new UserHelper(InstrumentationRegistry.getInstrumentation().getTargetContext());
 
     private Activity mScreenOnActivity;
 
