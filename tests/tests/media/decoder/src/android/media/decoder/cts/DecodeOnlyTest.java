@@ -45,6 +45,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
@@ -211,6 +212,8 @@ public class DecodeOnlyTest extends MediaTestBase {
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
     public void testNonTunneledTrickPlayHevc() throws Exception {
+        Assume.assumeTrue("codec is not supported on this device",
+                MediaUtils.hasCodecsForResource(HEVC_VIDEO));
         testNonTunneledTrickPlay(HEVC_VIDEO);
     }
 
