@@ -78,8 +78,6 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
         DeviceUtils.installTestApp(getDevice(), "CtsAppFunctionTestCases.apk", TEST_PKG, mCtsBuild);
         DeviceUtils.installTestApp(
                 getDevice(), "CtsAppFunctionsTestHelper.apk", TEST_PKG, mCtsBuild);
-        DeviceUtils.installTestApp(
-                getDevice(), "CtsAppFunctionsSidecarTestHelper.apk", TEST_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         mExtensionRegistry = ExtensionRegistry.newInstance();

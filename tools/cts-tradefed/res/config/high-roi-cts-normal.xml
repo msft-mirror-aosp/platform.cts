@@ -304,9 +304,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.ObserveAppFunctionsTest#unfreezerocessWithDynamicAppFunctionRegistered_shouldCallOnAppFunctionsChanged"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.RuntimeMetadataTest#createAppFunctionStaticMetadata[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.RuntimeMetadataTest#installPackageWithAppFunction_runtimeMetadataExist_noFunctionIdProperty[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_cancellationSignalReceived_unbind[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_sidecarManager_platformAppFunctionService_success[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#isAppFunctionEnabled_sidecar[IncludeRunOnPrimaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-private-profile] -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-private-profile] android.app.appfunctions.cts.AppFunctionManagerV2Test#executeAppFunction_runInPrivateProfile_fail"/>
     <!-- CtsAppFunctionTestCases[run-on-secondary-user] -->
@@ -341,13 +338,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.ObserveAppFunctionsTest#packageUpdated_topLevelDocumentsAdded_callsOnPackageChanged[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.ObserveAppFunctionsTest#packageUpdated_topLevelDocumentsRemoved_callsOnPackageChanged[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SearchAppFunctionsTest#searchAppFunctions_searchByScopeWithTwoScopes_seeFilteredResult[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_legacyFunctionId_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_legacyFunctionId_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionNotAllowlisted_platformManager_sidecarAppFunctionService_fail[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionNotAllowlisted_sidecarManager_sidecarAppFunctionService_fail[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_cancellationSignalReceived_unbind[IncludeRunOnSecondaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-work-profile] -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-work-profile] android.app.appfunctions.cts.AppFunctionManagerV2Test#executeAppFunction_deviceOwnerRestricted_fail[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-work-profile] android.app.appfunctions.cts.AppFunctionManagerV2Test#executeAppFunction_runInWorkProfile_fail"/>

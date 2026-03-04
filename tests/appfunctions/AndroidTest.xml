@@ -34,7 +34,6 @@
         <option name="test-file-name" value="CtsAppFunctionsTestHelper.apk" />
         <option name="test-file-name" value="CtsAppFunctionServiceTestHelper.apk" />
         <option name="test-file-name" value="CtsAppFunctionsTestAgentHelper.apk" />
-        <option name="test-file-name" value="CtsAppFunctionsSidecarTestHelper.apk" />
         <option name="test-file-name" value="CtsAppFunctionsTestHelperDynamicSchema.apk" />
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">

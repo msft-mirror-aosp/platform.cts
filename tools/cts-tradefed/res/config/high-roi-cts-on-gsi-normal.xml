@@ -202,13 +202,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.RuntimeMetadataTest#updatePackage_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SearchAppFunctionsTest#searchAppFunctions_searchByScopeWithSingleScope_seeFilteredResult[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SearchAppFunctionsTest#searchAppFunctions_searchByScopeWithTwoScopes_seeFilteredResult[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_legacyFunctionId_success[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_success[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_legacyFunctionId_success[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_success[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionNotAllowlisted_platformManager_sidecarAppFunctionService_fail[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionNotAllowlisted_sidecarManager_sidecarAppFunctionService_fail[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_cancellationSignalReceived_unbind[IncludeRunOnPrimaryUser]"/>
     <!-- CtsAppInteractionTestCases -->
     <option name="compatibility:include-filter" value="CtsAppInteractionTestCases android.app.cts.AppInteractionContractTest#queryAppInteractionHistory_crossUserWithoutPermission_shouldFail[IncludeRunOnPrimaryUser]"/>
     <!-- CtsAppJankTestCases -->
