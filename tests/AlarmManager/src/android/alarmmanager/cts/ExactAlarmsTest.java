@@ -50,7 +50,6 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -411,7 +410,6 @@ public class ExactAlarmsTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE)
-    @RequiresFlagsDisabled(Flags.FLAG_ALLOW_ALARMS_WITH_RELAXED_QUOTA)
     public void setExactAwiCallbackQuota() throws Exception {
         assumeTrue(isDeviceIdleEnabled());
         putDeviceToIdle();
@@ -451,33 +449,6 @@ public class ExactAlarmsTest {
                 AlarmReceiver.waitForAlarm(alarmId, DEFAULT_WAIT_FOR_SUCCESS));
     }
 
-    @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE,
-        Flags.FLAG_ALLOW_ALARMS_WITH_RELAXED_QUOTA
-    })
-    public void setExactAwiCallbackIgnoresDozeQuota() throws Exception {
-        assumeTrue(isDeviceIdleEnabled());
-        putDeviceToIdle();
-
-        // Set more alarms than the COMPAT quota
-        int numAlarms = ALLOW_WHILE_IDLE_COMPAT_QUOTA + 5;
-        int alarmId;
-        for (int i = 0; i < numAlarms; i++) {
-            final long trigger = SystemClock.elapsedRealtime() + 500;
-            alarmId = mIdGenerator.nextInt();
-            mAlarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    trigger,
-                    "test-tag-" + i,
-                    Runnable::run,
-                    AlarmReceiver.createListener(alarmId, true));
-            // All alarms should have fired without being throttled by quota.
-            assertTrue(
-                    "Alarm " + alarmId + " not received",
-                    AlarmReceiver.waitForAlarm(alarmId, DEFAULT_WAIT_FOR_SUCCESS));
-        }
-    }
 
     @Test
     public void setExactAwiWithPermissionAndWhitelist() throws Exception {
