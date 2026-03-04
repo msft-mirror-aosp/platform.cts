@@ -39,7 +39,6 @@ import android.telecom.VideoProfile;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.server.telecom.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -780,9 +779,6 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
     @ApiTest(apis = {"android.telecom.ConnectionService#addConferenceFromConnection"})
     public void testAddConferenceFromConnection() {
         if (!mShouldTestTelecom) {
-            return;
-        }
-        if (!Flags.reuseOriginalConnRemoteConfApi()) {
             return;
         }
 
