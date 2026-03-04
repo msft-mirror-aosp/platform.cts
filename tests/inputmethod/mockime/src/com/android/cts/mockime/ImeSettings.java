@@ -71,6 +71,8 @@ public class ImeSettings {
             "WindowLayoutInfoCallbackEnabled";
     private static final String CONNECTIONLESS_HANDWRITING_ENABLED =
             "ConnectionlessHandwritingEnabled";
+    private static final String ON_KEY_DOWN_BEHAVIOR_MAP = "OnKeyDownBehaviorMap";
+    private static final String ON_KEY_UP_BEHAVIOR_MAP = "OnKeyUpBehaviorMap";
 
     /**
      * Simulate the manifest flag enableOnBackInvokedCallback being true for the IME.
@@ -116,6 +118,30 @@ public class ImeSettings {
          * <p>This can be used to test the default behavior of that public API.</p>
          */
         int OS_DEFAULT = 2;
+    }
+
+    @Retention(SOURCE)
+    @IntDef(
+            value = {
+                OnKeyDownUpBehavior.CONSUME,
+                OnKeyDownUpBehavior.NOT_CONSUME,
+                OnKeyDownUpBehavior.UNDEFINED,
+            })
+    public @interface OnKeyDownUpBehavior {
+        /** Default value, does not specify any behavior. */
+        int UNDEFINED = -1;
+
+        /**
+         * Let {@link MockIme} always return {@code true} from IMS#onKeyDown or IMS#onKeyUp for a
+         * specific key code.
+         */
+        int CONSUME = 0;
+
+        /**
+         * Let {@link MockIme} always return {@code false} from IMS#onKeyDown or IMS#onKeyUp for a
+         * specific key code.
+         */
+        int NOT_CONSUME = 1;
     }
 
     ImeSettings(@NonNull String clientPackageName, @NonNull Bundle bundle) {
@@ -233,6 +259,53 @@ public class ImeSettings {
     /** Whether the IME should provide zero insets when shown. */
     public boolean isZeroInsetsEnabled() {
         return mBundle.getBoolean(ZERO_INSETS, false);
+    }
+
+    /**
+     * Whether IMS#onKeyDown should consume events with a given key code.
+     *
+     * @param keyCode The key code in question.
+     * @return {@code null} if no override has been specified, {@code true} or {@code false}
+     *     otherwise.
+     */
+    public Boolean getOnKeyDownResult(int keyCode) {
+        final PersistableBundle behaviorMap =
+                mBundle.getPersistableBundle(ON_KEY_DOWN_BEHAVIOR_MAP);
+
+        if (behaviorMap == null) {
+            return null;
+        }
+
+        final int behavior =
+                behaviorMap.getInt(Integer.toString(keyCode), OnKeyDownUpBehavior.UNDEFINED);
+        if (behavior == OnKeyDownUpBehavior.UNDEFINED) {
+            return null;
+        }
+
+        return behavior == OnKeyDownUpBehavior.CONSUME;
+    }
+
+    /**
+     * Whether IMS#onKeyUp should consume events with a given key code.
+     *
+     * @param keyCode The key code in question.
+     * @return {@code null} if no override has been specified, {@code true} or {@code false}
+     *     otherwise.
+     */
+    public Boolean getOnKeyUpResult(int keyCode) {
+        final PersistableBundle behaviorMap = mBundle.getPersistableBundle(ON_KEY_UP_BEHAVIOR_MAP);
+
+        if (behaviorMap == null) {
+            return null;
+        }
+
+        final int behavior =
+                behaviorMap.getInt(Integer.toString(keyCode), OnKeyDownUpBehavior.UNDEFINED);
+        if (behavior == OnKeyDownUpBehavior.UNDEFINED) {
+            return null;
+        }
+
+        return behavior == OnKeyDownUpBehavior.CONSUME;
     }
 
     static Bundle serializeToBundle(@NonNull String eventCallbackActionName,
@@ -556,6 +629,34 @@ public class ImeSettings {
          */
         public Builder setZeroInsets(boolean enabled) {
             mBundle.putBoolean(ZERO_INSETS, enabled);
+            return this;
+        }
+
+        /** Sets custom behavior of IMS#onKeyDown for a given key code. */
+        public Builder setOnKeyDownBehavior(int keyCode, @OnKeyDownUpBehavior int behavior) {
+            PersistableBundle behaviorMap = mBundle.getPersistableBundle(ON_KEY_DOWN_BEHAVIOR_MAP);
+            if (behaviorMap == null) {
+                behaviorMap = new PersistableBundle();
+            }
+
+            behaviorMap.putInt(Integer.toString(keyCode), behavior);
+
+            mBundle.putPersistableBundle(ON_KEY_DOWN_BEHAVIOR_MAP, behaviorMap);
+
+            return this;
+        }
+
+        /** Sets custom behavior of IMS#onKeyUp for a given key code. */
+        public Builder setOnKeyUpBehavior(int keyCode, @OnKeyDownUpBehavior int behavior) {
+            PersistableBundle behaviorMap = mBundle.getPersistableBundle(ON_KEY_UP_BEHAVIOR_MAP);
+            if (behaviorMap == null) {
+                behaviorMap = new PersistableBundle();
+            }
+
+            behaviorMap.putInt(Integer.toString(keyCode), behavior);
+
+            mBundle.putPersistableBundle(ON_KEY_UP_BEHAVIOR_MAP, behaviorMap);
+
             return this;
         }
     }
