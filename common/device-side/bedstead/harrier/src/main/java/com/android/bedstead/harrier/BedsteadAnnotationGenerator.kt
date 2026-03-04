@@ -33,6 +33,14 @@ import java.lang.reflect.Method
 /** This class exposes a number of annotation-related helper methods. */
 object BedsteadAnnotationGenerator {
 
+    /**
+     * Special annotations that get handled at a different level and can therefore be skipped during
+     * annotation generation.
+     */
+    // TODO(b/489627134): Move [UsesAnnotationExecutor] into meta folder
+    private val IGNORED_ANNOTATIONS: ImmutableSet<String> =
+        ImmutableSet.of("com.android.bedstead.harrier.annotations.UsesAnnotationExecutor")
+
     /** Standard java annotations that our processing logic ignores. */
     private val IGNORED_ANNOTATION_PACKAGES: ImmutableSet<String> =
         ImmutableSet.of(
@@ -114,8 +122,12 @@ object BedsteadAnnotationGenerator {
         }
 
         val annotationPackage: String = annotation.annotationClass.java.getPackage().name
+        val annotationName: String = annotation.annotationClass.java.name
 
-        if (IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage)) {
+        if (
+            IGNORED_ANNOTATIONS.contains(annotationName) ||
+                IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage)
+        ) {
             return true
         }
 
