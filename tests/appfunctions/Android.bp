@@ -20,9 +20,6 @@ android_test {
     name: "CtsAppFunctionTestCases",
     team: "trendy_team_app_function",
     defaults: ["cts_defaults"],
-    libs: [
-        "com.android.extensions.appfunctions.stubs",
-    ],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.core",
@@ -60,7 +57,6 @@ android_test {
         "general-tests",
     ],
     data: [
-        ":CtsAppFunctionsSidecarTestHelper",
         ":CtsAppFunctionsTestAgentHelper",
         ":CtsAppFunctionsTestHelper",
         ":CtsAppFunctionServiceTestHelper",
@@ -108,27 +104,6 @@ android_test_helper_app {
     ],
     certificate: ":cts-appsearch-helper-cert-a",
     manifest: "helper-agent-app/AndroidManifest.xml",
-}
-
-android_test_helper_app {
-    name: "CtsAppFunctionsSidecarTestHelper",
-    defaults: ["cts_defaults"],
-    libs: [
-        "com.android.extensions.appfunctions.stubs",
-    ],
-    static_libs: [
-        "CtsAppFunctionsTestUtils",
-        "androidx.test.ext.junit",
-        "androidx.test.rules",
-        "compatibility-device-util-axt",
-        "testng",
-    ],
-    test_suites: [
-        "general-tests",
-    ],
-    asset_dirs: ["helper-app/assets"],
-    certificate: ":cts-appsearch-helper-cert-a",
-    manifest: "helper-app/AndroidManifest_sidecar.xml",
 }
 
 android_test_helper_app {

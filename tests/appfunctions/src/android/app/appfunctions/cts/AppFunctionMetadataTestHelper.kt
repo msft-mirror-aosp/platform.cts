@@ -478,12 +478,6 @@ class AppFunctionMetadataTestHelper {
         }
     }
 
-    object SideCarTestHelper {
-        const val PACKAGE_NAME = "android.app.appfunctions.cts.helper.sidecar"
-        const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
-        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
-    }
-
     companion object {
         private const val TEST_SERVICE_NAME =
             "android.app.appfunctions.testutils.TestAppFunctionService"
