@@ -16,15 +16,29 @@
 
 package android.mediapc.cts.common;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
- * Stores constants used by PerformanceClassEvaluator.  Constants relating to requirement number are
- * stored in order as they appear in the Android CDD.  Constants relating to measurements are stored
- * alphabetically.
+ * Stores constants used by PerformanceClassEvaluator.
+ *
+ * Constants relating to requirement number are stored in order as they appear in the Android CDD.
+ * Constants relating to measurements are stored alphabetically.
  */
 public final class AutoConstants {
 
-{{- range $r := .ReqList.GetRequirements }}
+    /** All valid MPC levels as defined in cts/tests/mediapc/requirements/all_mpcs.txtpb. */
+    public static final ImmutableSet<Integer> ALL_MPC_LEVELS = ImmutableSet.of(
+        {{- $first := true }}
+        {{- range $m := .ReqList.AllMpcs}}
+          {{- if not $first}},{{else}}{{$first = false}}{{end}}
+          {{$m}}
+        {{- end}}
+     );
+
+{{range $r := .ReqList.GetRequirements }}
     /** {{ $r.GetId }} */
     public static final String {{SafeReqID $r.GetId | UpperCase }} = "{{SafeReqID $r.GetId }}";
 {{- end }}
+
+  private AutoConstants(){}
 }

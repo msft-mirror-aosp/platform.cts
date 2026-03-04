@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.pm.PackageManager;
+import android.mediapc.cts.common.AutoConstants;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeSdkSandbox;
@@ -412,9 +413,7 @@ public class BuildTest {
                         "Build.VERSION.MEDIA_PERFORMANCE_CLASS must be one of the values defined in"
                                 + " the CDD for Media Performance Class.")
                 .that(Build.VERSION.MEDIA_PERFORMANCE_CLASS)
-                .isAnyOf(
-                        // TODO: b/374814872 autogenerate this list.
-                        1, 10, 20, 30, 31, 33, 34, 35, 37);
+                .isIn(AutoConstants.ALL_MPC_LEVELS);
     }
 
     private void assertNotEmpty(String value) {
