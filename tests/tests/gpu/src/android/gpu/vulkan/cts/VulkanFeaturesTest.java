@@ -635,8 +635,13 @@ public class VulkanFeaturesTest {
 
     @CddTest(requirements = {"7.1.4.2/H-2-1"})
     @Test
-    public void testVulkan1_1RequiredOnHandheld() {
+    public void testVulkan1_1RequiredOnHandheld() throws JSONException {
         assumeTrue("Skipping because not a handheld device", isHandheld());
+
+        if (hasOnlyCpuDevice()) {
+            return;
+        }
+
         assertNotNull(
                 "Vulkan is required on handheld devices, but is not supported.",
                 mVulkanHardwareVersion);
