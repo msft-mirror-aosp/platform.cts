@@ -521,22 +521,18 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
                 new Intent(PermissionLockdownTestActivity.ACTION_CHECK_PERMISSION_LOCKDOWN)));
 
         // Policy Transparency
-        // TODO(b/448569510): uncomment this test after the
-        //  android.app.admin.flags.Flags.fixDisabledByAdminShortMessageNotShown() is rolled out
-
-        //        final Intent policyTransparencyTestIntent = new Intent(this,
-        //                PolicyTransparencyTestListActivity.class);
-        //        policyTransparencyTestIntent.putExtra(
-        //                PolicyTransparencyTestListActivity.EXTRA_MODE,
-        //                PolicyTransparencyTestListActivity.MODE_DEVICE_OWNER);
-        //        // So that PolicyTransparencyTestListActivity knows which test to update with the
-        // result:
-        //        policyTransparencyTestIntent.putExtra(
-        //                PolicyTransparencyTestActivity.EXTRA_TEST_ID,
-        // POLICY_TRANSPARENCY_TEST_ID);
-        //        adapter.add(createTestItem(this, POLICY_TRANSPARENCY_TEST_ID,
-        //                R.string.device_profile_owner_policy_transparency_test,
-        //                policyTransparencyTestIntent));
+        final Intent policyTransparencyTestIntent = new Intent(this,
+                PolicyTransparencyTestListActivity.class);
+        policyTransparencyTestIntent.putExtra(
+                PolicyTransparencyTestListActivity.EXTRA_MODE,
+                PolicyTransparencyTestListActivity.MODE_DEVICE_OWNER);
+        // So that PolicyTransparencyTestListActivity knows which test to update with the result:
+        policyTransparencyTestIntent.putExtra(
+                PolicyTransparencyTestActivity.EXTRA_TEST_ID,
+                POLICY_TRANSPARENCY_TEST_ID);
+        adapter.add(createTestItem(this, POLICY_TRANSPARENCY_TEST_ID,
+                R.string.device_profile_owner_policy_transparency_test,
+                policyTransparencyTestIntent));
 
         // Enterprise Privacy
         final Intent enterprisePolicyTestIntent =
