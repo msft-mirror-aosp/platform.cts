@@ -61,6 +61,7 @@ import org.junit.Assert
 import org.junit.Assert.assertThat
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 
 private const val BROADCAST_TIMEOUT_MS = 60000L
 
@@ -291,12 +292,22 @@ fun openUnusedAppsNotification() {
         val context = InstrumentationRegistry.getTargetContext()
         val userHelper = UserHelper(context)
         val isVisibleBackgroundUser = userHelper.isVisibleBackgroundUser()
+        val displayId = userHelper.getMainDisplayId()
         val permissionPkg: String = context.packageManager.permissionControllerPackageName
+        if (isVisibleBackgroundUser) {
+            // Skip if expand-notification is not supported for visible background user.
+            // We need to do this check here because the Eventually block below cannot handle
+            // AssumptionViolatedException correctly.
+            // TODO(b/488392455) Enhance "cmd statusbar expand-notifications" shell command
+            // to support userId argument, and remove this workaround.
+            assumeTrue("Expand notification not supported for visible background users. Skip.",
+                    expandNotificationSupportedForVisibleBackgroundUser(displayId))
+        }
         eventually({
             // Eventually clause because clicking is sometimes inconsistent if the screen is
             // scrolling
             if (isVisibleBackgroundUser) {
-                expandNotificationsForVisibleBackgroundUser(context, userHelper.getMainDisplayId())
+                expandNotificationsForVisibleBackgroundUser(displayId)
             } else {
                 runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
             }
@@ -344,19 +355,23 @@ private fun expandNotificationsWatch(uiDevice: UiDevice) {
     }
 }
 
-private fun expandNotificationsForVisibleBackgroundUser(context: Context, displayId: Int) {
+private fun expandNotificationSupportedForVisibleBackgroundUser(displayId: Int) : Boolean {
     val uiDevice = UiAutomatorUtils2.getUiDevice()
+    val selector = By.res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE).displayId(displayId)
     val searchCondition = object : Condition<UiDevice, Boolean> {
         override fun apply(device: UiDevice): Boolean {
-            return device.findObjects(
-                By.res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE)
-            ).size > 0
+            return device.findObjects(selector).size > 0
         }
     }
-    uiDevice.wait(searchCondition, JOB_RUN_WAIT_TIME)
-    val navigationBarFrame = uiDevice.findObject(
-                By.pkg(SYSUI_PKG_NAME).res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE)
-                    .displayId(displayId))
+
+    return uiDevice.wait(searchCondition, JOB_RUN_WAIT_TIME)
+}
+
+private fun expandNotificationsForVisibleBackgroundUser(displayId: Int) {
+    val uiDevice = UiAutomatorUtils2.getUiDevice()
+    val selector = By.res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE).displayId(displayId)
+    val navigationBarFrame = uiDevice.findObject(selector)
+
     // swipe up the car bottom bar to expand the notification panel of visible background user
     navigationBarFrame.swipe(Direction.UP, 1.0f)
 }
