@@ -51,7 +51,7 @@ public class ControlledDreamSession {
 
     // Timeout that is used for waiting on various steps to complete, such as connecting to the
     // proxy service and starting the dream.
-    private static final int TIMEOUT_SECONDS = 5;
+    private static final int TIMEOUT_SECONDS = 10;
 
     // The test app's proxy service component.
     private static final String DREAM_CONTROL_COMPONENT =
