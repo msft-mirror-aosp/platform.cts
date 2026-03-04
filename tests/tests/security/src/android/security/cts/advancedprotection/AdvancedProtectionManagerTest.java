@@ -183,7 +183,6 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
             })
     @Test
     @IncludeRunOnPrimaryUser
-    @IncludeRunOnSecondaryUser
     public void testRegisterFeatureCallback() throws InterruptedException {
         // Called once on register, then on set
         CountDownLatch onRegister = new CountDownLatch(1);
@@ -193,7 +192,8 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
                     if (onRegister.getCount() > 0) {
                         assertProvisioningMode(
                                 features,
-                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionManager
+                                        .FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                                 AdvancedProtectionFeature
                                         .PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
                                 /* isEnabled= */ true);
@@ -201,7 +201,8 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
                     } else {
                         assertProvisioningMode(
                                 features,
-                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionManager
+                                        .FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                                 AdvancedProtectionFeature
                                         .PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
                                 /* isEnabled= */ false);
@@ -211,14 +212,15 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
 
         setAdvancedProtectionEnabled(true);
         mManager.updateAdvancedProtectionFeaturesProvisioning(
-                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G}, null);
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES},
+                null);
 
         // Wait for the feature to be provisioned. This happens async, and we can't check the state
         // of the callback directly.
         Thread.sleep(TIMEOUT_S * 1000);
 
         mManager.registerAdvancedProtectionFeatureCallback(
-                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES},
                 Runnable::run,
                 callback);
 
@@ -230,6 +232,37 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
 
         if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on set");
+        }
+
+        // Cleanup
+        mManager.unregisterAdvancedProtectionFeatureCallback(callback);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#registerAdvancedProtectionFeatureCallback"
+            })
+    @Test
+    @IncludeRunOnSecondaryUser
+    public void testRegisterFeatureCallback_secondaryUser() throws InterruptedException {
+        // Called once on register, then on set
+        CountDownLatch onRegister = new CountDownLatch(1);
+        Consumer<List<AdvancedProtectionFeature>> callback =
+                features -> {
+                    if (onRegister.getCount() > 0) {
+                        onRegister.countDown();
+                    }
+                };
+
+        mManager.registerAdvancedProtectionFeatureCallback(
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES},
+                Runnable::run,
+                callback);
+
+        if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on register");
         }
 
         // Cleanup
@@ -262,7 +295,7 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         setAdvancedProtectionEnabled(true);
 
         mManager.registerAdvancedProtectionFeatureCallback(
-                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES},
                 Runnable::run,
                 callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
@@ -303,11 +336,14 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     public void testGetFeatures_withFeatureIds_returnsOnlyRequestedFeatures() {
         List<AdvancedProtectionFeature> features =
                 mManager.getAdvancedProtectionFeatures(
-                        new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G});
+                        new int[] {
+                            AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES
+                        });
 
         assertEquals(1, features.size());
         assertEquals(
-                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G, features.get(0).getId());
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
+                features.get(0).getId());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
@@ -337,18 +373,20 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         mManager.setAdvancedProtectionEnabled(true);
         List<AdvancedProtectionFeature> features =
                 mManager.updateAdvancedProtectionFeaturesProvisioning(
-                        new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                        new int[] {
+                            AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES
+                        },
                         null);
         assertProvisioningMode(
                 features,
-                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                 AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
                 /* isEnabled= */ true);
 
         features = mManager.getAdvancedProtectionFeatures();
         assertProvisioningMode(
                 features,
-                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                 AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
                 /* isEnabled= */ true);
     }
@@ -366,17 +404,19 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         List<AdvancedProtectionFeature> features =
                 mManager.updateAdvancedProtectionFeaturesProvisioning(
                         new int[] {},
-                        new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G});
+                        new int[] {
+                            AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES
+                        });
         assertProvisioningMode(
                 features,
-                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                 AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN,
                 /* isEnabled= */ false);
 
         features = mManager.getAdvancedProtectionFeatures();
         assertProvisioningMode(
                 features,
-                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                 AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN,
                 /* isEnabled= */ false);
     }
@@ -395,13 +435,15 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         CountDownLatch onSet = new CountDownLatch(1);
         mManager.setAdvancedProtectionEnabled(true);
         mManager.updateAdvancedProtectionFeaturesProvisioning(
-                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G}, null);
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES},
+                null);
         Consumer<List<AdvancedProtectionFeature>> callback =
                 features -> {
                     if (onRegister.getCount() > 0) {
                         assertProvisioningMode(
                                 features,
-                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionManager
+                                        .FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                                 AdvancedProtectionFeature
                                         .PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
                                 /* isEnabled= */ true);
@@ -409,7 +451,8 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
                     } else {
                         assertProvisioningMode(
                                 features,
-                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionManager
+                                        .FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                                 AdvancedProtectionFeature
                                         .PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN,
                                 /* isEnabled= */ false);
@@ -422,14 +465,15 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         Thread.sleep(TIMEOUT_S * 1000);
 
         mManager.registerAdvancedProtectionFeatureCallback(
-                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES},
                 Runnable::run,
                 callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
         }
         mManager.updateAdvancedProtectionFeaturesProvisioning(
-                null, new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G});
+                null,
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES});
         if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on set");
         }
@@ -477,14 +521,15 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     public void testUpdateAdvancedProtectionFeaturesProvisioning_doesntUpdateOtherFeatures() {
         mManager.setAdvancedProtectionEnabled(true);
         mManager.updateAdvancedProtectionFeaturesProvisioning(
-                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G}, null);
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES},
+                null);
 
         mManager.updateAdvancedProtectionFeaturesProvisioning(null, null);
 
         List<AdvancedProtectionFeature> features = mManager.getAdvancedProtectionFeatures();
         assertProvisioningMode(
                 features,
-                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                AdvancedProtectionManager.FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES,
                 AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
                 /* isEnabled= */ true);
     }
@@ -566,7 +611,8 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
                 () ->
                         mManager.getAdvancedProtectionFeatures(
                                 new int[] {
-                                    AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G
+                                    AdvancedProtectionManager
+                                            .FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES
                                 }));
     }
 
