@@ -18,7 +18,6 @@ package android.supervision.cts
 
 import android.app.supervision.PackageUsagePolicy
 import android.app.supervision.flags.Flags
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -44,7 +43,6 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(
     Flags.FLAG_ENABLE_APP_SERVICE_CONNECTION_CALLBACKS,
-    Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE,
     Flags.FLAG_ENABLE_SUPERVISION_MANAGER_POLICY_APIS,
 )
 class SupervisionPolicyTest : BaseSupervisionTest() {

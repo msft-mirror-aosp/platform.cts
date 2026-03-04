@@ -16,8 +16,6 @@
 
 package android.supervision.cts
 
-import android.app.supervision.flags.Flags
-import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.EventLogs
@@ -28,7 +26,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE)
 class SupervisionAppServiceTest : BaseSupervisionTest() {
 
     @Before

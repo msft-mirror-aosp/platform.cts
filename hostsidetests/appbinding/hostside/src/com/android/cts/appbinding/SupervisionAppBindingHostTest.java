@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 
 @Ignore("This test needs to be migrated to Bedstead. See b/415023190.")
 @RunWith(DeviceJUnit4ClassRunner.class)
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE)
 public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements IBuildReceiver {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
