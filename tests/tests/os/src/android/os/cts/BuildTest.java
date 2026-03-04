@@ -409,11 +409,12 @@ public class BuildTest {
         }
 
         Truth.assertWithMessage(
-                "Build.VERSION.MEDIA_PERFORMANCE_CLASS must be one of the values defined in the "
-                        + "CDD for Media Performance Class.").that(
-                Build.VERSION.MEDIA_PERFORMANCE_CLASS).isAnyOf(
+                        "Build.VERSION.MEDIA_PERFORMANCE_CLASS must be one of the values defined in"
+                                + " the CDD for Media Performance Class.")
+                .that(Build.VERSION.MEDIA_PERFORMANCE_CLASS)
+                .isAnyOf(
                         // TODO: b/374814872 autogenerate this list.
-                        30, 31, 33, 34, 35);
+                        1, 10, 20, 30, 31, 33, 34, 35, 37);
     }
 
     private void assertNotEmpty(String value) {
