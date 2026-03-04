@@ -85,6 +85,7 @@ import android.telephony.SubscriptionManager.OnSubscriptionsChangedListener;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyRegistryManager;
 import android.telephony.satellite.SatelliteManager;
+import android.util.Log;
 
 import com.android.bedstead.nene.utils.UndoableContext;
 import com.android.bedstead.permissions.Permissions;
@@ -94,14 +95,18 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.TestThread;
 import com.android.internal.telephony.flags.Flags;
 
-import fi.iki.elonen.NanoHTTPD;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -120,6 +125,7 @@ import java.util.stream.Collectors;
 // TODO(b/221323753): replace remain junit asserts with Truth assert
 public class CarrierConfigManagerTest {
 
+    private static final String TAG = "CarrierConfigManagerTest";
     private static final long TIMEOUT_MILLIS = 5000;
 
     private static final int TEST_SLOT_INDEX = 0;
@@ -994,72 +1000,102 @@ public class CarrierConfigManagerTest {
             return;
         }
 
-        final int phoneId = SubscriptionManager.getSlotIndex(subId);
-
-        /* Suppresses the key download request if there is no active default network connection
-         * (e.g. ConnectivityManager.getActiveNetwork() returns null).
-         * This wait ensures the network environment is ready for the test to proceed,
-         * or skip gracefully if the environment remains unready, preventing flaky timeouts
-         * or failure in constrained test environments.
-         */
-
-        final ConnectivityManager cm = getContext().getSystemService(ConnectivityManager.class);
-
-         try {
-
-            PollingCheck.waitFor(500, () -> cm.getActiveNetwork() != null);
-
-        } catch (AssertionError e) {
-            assumeTrue("Skipping test: No active default network connection available within "
-                        + "500 ms. CarrierKeyDownloadManager requires an active network to "
-                        + "initiate download.", false);
-        }
-
+        // 1. Setup ServerSocket on an ephemeral port
+        final ServerSocket serverSocket = new ServerSocket(0);
+        serverSocket.setSoTimeout(15000); // 15s timeout for accept()
+        final int port = serverSocket.getLocalPort();
+        final String uniquePath = "/test_path_" + System.currentTimeMillis();
+        final AtomicReference<String> receivedPath = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<String> requestPath = new AtomicReference<>();
 
-        NanoHTTPD server =
-                new NanoHTTPD(0) {
-                    @Override
-                    public Response serve(IHTTPSession session) {
-                        requestPath.set(session.getUri());
-                        latch.countDown();
-                        return newFixedLengthResponse(Response.Status.OK, "text/plain", "{}");
+        // 2. Start a simple background server thread
+        Thread serverThread = new Thread(() -> {
+            try (Socket socket = serverSocket.accept();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(
+                            socket.getInputStream()));
+                    PrintWriter out = new PrintWriter(socket.getOutputStream())) {
+
+                String requestLine = in.readLine();
+                if (requestLine != null) {
+                    // Extract path from "GET /path HTTP/1.1"
+                    String[] parts = requestLine.split(" ");
+                    if (parts.length > 1) {
+                        receivedPath.set(parts[1]);
                     }
-                };
-        server.start();
+                    // Consume all remaining headers until an empty line is reached (\r\n\r\n)
+                    String headerLine;
+                    while ((headerLine = in.readLine()) != null && !headerLine.isEmpty()) {
+                        // Ignore the header
+                    }
+                }
 
-        String url = "http://localhost:" + server.getListeningPort() + "/some_path";
-
-        PersistableBundle config = new PersistableBundle();
-        // Enable WLAN key type
-        config.putInt(
-                CarrierConfigManager.IMSI_KEY_AVAILABILITY_INT,
-                1 << (TelephonyManager.KEY_TYPE_WLAN - 1));
-        config.putString(CarrierConfigManager.IMSI_KEY_DOWNLOAD_URL_STRING, url);
-        // Allow download over metered network to not depend on WiFi being present.
-        config.putBoolean(
-                CarrierConfigManager.KEY_ALLOW_METERED_NETWORK_FOR_CERT_DOWNLOAD_BOOL, true);
-
-        try (UndoableContext p = Permissions.ignoringPermissions()) {
-            mConfigManager.overrideConfig(subId, config);
-
-            try {
-                Intent intent = new Intent("android.telephony.action.CARRIER_CERTIFICATE_DOWNLOAD");
-                intent.putExtra("phone", phoneId);
-                getContext().sendBroadcast(intent);
-
-                // Wait for the server to receive the request.
-                assertTrue(
-                        "Request not received by local server within 10 seconds",
-                        latch.await(10, TimeUnit.SECONDS));
-                assertEquals("/some_path", requestPath.get());
-
+                // Minimal HTTP 200 OK response
+                out.print("HTTP/1.1 200 OK\r\n");
+                out.print("Content-Type: application/json\r\n");
+                out.print("Content-Length: 2\r\n");
+                out.print("Connection: close\r\n");
+                out.print("\r\n");
+                out.print("{}");
+                out.flush();
+                latch.countDown();
+            } catch (SocketException e) {
+                // Expected exception when the server socket is intentionally closed during
+                // teardown.
+                Log.d(TAG, "Server socket closed: " + e.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Server error: " + e.getMessage());
             } finally {
-                server.stop();
-                // Restore config (must be done while permissions are still ignored)
-                mConfigManager.overrideConfig(subId, null);
+                try {
+                    serverSocket.close();
+                } catch (Exception ignored) { /* ignored */ }
             }
+        });
+        serverThread.start();
+
+        try {
+            // 3. Configure URL with 127.0.0.1 and unique path
+            String url = "http://127.0.0.1:" + port + uniquePath;
+
+            PersistableBundle config = new PersistableBundle();
+            // Enable WLAN key type
+            config.putInt(
+                    CarrierConfigManager.IMSI_KEY_AVAILABILITY_INT,
+                    1 << (TelephonyManager.KEY_TYPE_WLAN - 1));
+            config.putString(CarrierConfigManager.IMSI_KEY_DOWNLOAD_URL_STRING, url);
+            // Allow download over metered network to not depend on WiFi being present.
+            config.putBoolean(
+                    CarrierConfigManager.KEY_ALLOW_METERED_NETWORK_FOR_CERT_DOWNLOAD_BOOL, true);
+
+            try (UndoableContext p = Permissions.ignoringPermissions()) {
+                ConnectivityManager connectivityManager =
+                        getContext().getSystemService(ConnectivityManager.class);
+                try {
+                    PollingCheck.waitFor(500, () ->
+                            connectivityManager.getActiveNetwork() != null);
+                } catch (AssertionError e) {
+                    assumeTrue("Skipping test: No active default network connection available"
+                            + " within 500 ms. CarrierKeyDownloadManager requires an active network"
+                            + " to initiate download.", false);
+                }
+
+                mConfigManager.overrideConfig(subId, config);
+
+                try {
+                    // 4. Trigger download via public API
+                    mTelephonyManager.resetCarrierKeysForImsiEncryption();
+
+                    // 5. Wait for the server thread to process the request
+                    assertTrue("Request not received within 10s",
+                            latch.await(10, TimeUnit.SECONDS));
+                    assertEquals(uniquePath, receivedPath.get());
+                } finally {
+                    // Restore config (must be done while permissions are still ignored)
+                    mConfigManager.overrideConfig(subId, null);
+                }
+            }
+        } finally {
+            if (!serverSocket.isClosed()) serverSocket.close();
+            serverThread.join(1000);
         }
     }
 

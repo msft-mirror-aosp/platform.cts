@@ -53,7 +53,6 @@ android_test {
     //sdk_version: "test_current",
     static_libs: [
         "android.companion.flags-aconfig-java",
-        "libnanohttpd",
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
         "hamcrest-library",
