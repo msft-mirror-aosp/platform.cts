@@ -50,6 +50,8 @@ public final class ImeEventStreamTestUtils {
 
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 10L);
     public static final Duration NOT_EXPECT_TIMEOUT = Duration.ofSeconds(2);
+    public static final Duration SYSTEM_OPERATION_TIMEOUT =
+            Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 30L);
 
     /**
      * Cannot be instantiated

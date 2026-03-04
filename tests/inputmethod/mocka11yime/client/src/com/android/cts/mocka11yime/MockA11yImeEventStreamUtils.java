@@ -22,6 +22,7 @@ import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -30,7 +31,7 @@ import java.util.function.Predicate;
  * Provides a set of utility methods to avoid boilerplate code when writing end-to-end tests.
  */
 public final class MockA11yImeEventStreamUtils {
-    private static final long TIME_SLICE = 50;  // msec
+    private static final Duration TIME_SLICE = Duration.ofMillis(50);
 
     /**
      * Not intended to be instantiated.
@@ -64,21 +65,48 @@ public final class MockA11yImeEventStreamUtils {
      *
      * <p>When this method succeeds to find an event that matches the given {@code condition}, the
      * stream position will be set to the next to the found object then the event found is returned.
-     * </p>
      *
      * <p>For convenience, this method automatically filter out exit events (events that return
-     * {@code false} from {@link MockA11yImeEvent#isEnterEvent()}.</p>
+     * {@code false} from {@link MockA11yImeEvent#isEnterEvent()}.
      *
-     * @param stream {@link MockA11yImeEventStream} to be checked.
+     * @param stream {@link MockA11yImeEventStream} to be checked
      * @param condition the event condition to be matched
      * @param timeout timeout in millisecond
      * @return {@link MockA11yImeEvent} found
-     * @throws TimeoutException when the no event is matched to the given condition within
-     *                          {@code timeout}
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
      */
     @NonNull
-    public static MockA11yImeEvent expectA11yImeEvent(@NonNull MockA11yImeEventStream stream,
-            @NonNull Predicate<MockA11yImeEvent> condition, long timeout) throws TimeoutException {
+    public static MockA11yImeEvent expectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
+            @NonNull Predicate<MockA11yImeEvent> condition,
+            long timeout)
+            throws TimeoutException {
+        return expectA11yImeEvent(stream, condition, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Wait until an event that matches the given {@code condition} is found in the stream.
+     *
+     * <p>When this method succeeds to find an event that matches the given {@code condition}, the
+     * stream position will be set to the next to the found object then the event found is returned.
+     *
+     * <p>For convenience, this method automatically filter out exit events (events that return
+     * {@code false} from {@link MockA11yImeEvent#isEnterEvent()}.
+     *
+     * @param stream {@link MockA11yImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param timeout timeout duration
+     * @return {@link MockA11yImeEvent} found
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    @NonNull
+    public static MockA11yImeEvent expectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
+            @NonNull Predicate<MockA11yImeEvent> condition,
+            @NonNull Duration timeout)
+            throws TimeoutException {
         return expectA11yImeEvent(stream, condition,
                 MockA11yImeEventStreamUtils.EventFilterMode.CHECK_ENTER_EVENT_ONLY, timeout);
     }
@@ -88,23 +116,49 @@ public final class MockA11yImeEventStreamUtils {
      *
      * <p>When this method succeeds to find an event that matches the given {@code condition}, the
      * stream position will be set to the next to the found object then the event found is returned.
-     * </p>
      *
-     * @param stream {@link MockA11yImeEventStream} to be checked.
+     * @param stream {@link MockA11yImeEventStream} to be checked
      * @param condition the event condition to be matched
      * @param filterMode controls how events are filtered out
      * @param timeout timeout in millisecond
      * @return {@link MockA11yImeEvent} found
-     * @throws TimeoutException when the no event is matched to the given condition within
-     *                          {@code timeout}
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
      */
     @NonNull
-    public static MockA11yImeEvent expectA11yImeEvent(@NonNull MockA11yImeEventStream stream,
+    public static MockA11yImeEvent expectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
             @NonNull Predicate<MockA11yImeEvent> condition,
-            MockA11yImeEventStreamUtils.EventFilterMode filterMode, long timeout)
+            MockA11yImeEventStreamUtils.EventFilterMode filterMode,
+            long timeout)
             throws TimeoutException {
+        return expectA11yImeEvent(stream, condition, filterMode, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Wait until an event that matches the given {@code condition} is found in the stream.
+     *
+     * <p>When this method succeeds to find an event that matches the given {@code condition}, the
+     * stream position will be set to the next to the found object then the event found is returned.
+     *
+     * @param stream {@link MockA11yImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param filterMode controls how events are filtered out
+     * @param timeout timeout duration
+     * @return {@link MockA11yImeEvent} found
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    @NonNull
+    public static MockA11yImeEvent expectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
+            @NonNull Predicate<MockA11yImeEvent> condition,
+            MockA11yImeEventStreamUtils.EventFilterMode filterMode,
+            @NonNull Duration timeout)
+            throws TimeoutException {
+        Duration remainingTime = timeout;
         while (true) {
-            if (timeout < 0) {
+            if (remainingTime.isNegative()) {
                 throw new TimeoutException(
                         "event not found within the timeout: " + stream.dump());
             }
@@ -127,8 +181,8 @@ public final class MockA11yImeEventStreamUtils {
                 stream.skip(1);
                 return result.get();
             }
-            SystemClock.sleep(TIME_SLICE);
-            timeout -= TIME_SLICE;
+            SystemClock.sleep(TIME_SLICE.toMillis());
+            remainingTime = remainingTime.minus(TIME_SLICE);
         }
     }
 
@@ -151,7 +205,6 @@ public final class MockA11yImeEventStreamUtils {
         };
     }
 
-
     /**
      * Wait until an event that matches the given command is consumed by the MockA11yIme.
      *
@@ -168,6 +221,28 @@ public final class MockA11yImeEventStreamUtils {
     @NonNull
     public static MockA11yImeEvent expectA11yImeCommand(@NonNull MockA11yImeEventStream stream,
             @NonNull MockA11yImeCommand command, long timeout) throws TimeoutException {
+        return expectA11yImeCommand(stream, command, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Wait until an event that matches the given command is consumed by the MockA11yIme.
+     *
+     * <p>For convenience, this method automatically filter out enter events (events that return
+     * {@code true} from {@link MockA11yImeEvent#isEnterEvent()}.
+     *
+     * @param stream {@link MockA11yImeEventStream} to be checked
+     * @param command {@link MockA11yImeCommand} to be waited for
+     * @param timeout timeout duration
+     * @return {@link MockA11yImeEvent} found
+     * @throws TimeoutException when the no event is matched to the given condition within {@code
+     *     timeout}
+     */
+    @NonNull
+    public static MockA11yImeEvent expectA11yImeCommand(
+            @NonNull MockA11yImeEventStream stream,
+            @NonNull MockA11yImeCommand command,
+            @NonNull Duration timeout)
+            throws TimeoutException {
         final Predicate<MockA11yImeEvent> predicate = event -> {
             if (!TextUtils.equals("onHandleCommand", event.getEventName())) {
                 return false;
@@ -184,18 +259,41 @@ public final class MockA11yImeEventStreamUtils {
      * Assert that an event that matches the given {@code condition} will no be found in the stream
      * within the given {@code timeout}.
      *
-     * <p>When this method succeeds, the stream position will not change.</p>
+     * <p>When this method succeeds, the stream position will not change.
      *
      * <p>For convenience, this method automatically filter out exit events (events that return
-     * {@code false} from {@link MockA11yImeEvent#isEnterEvent()}.</p>
+     * {@code false} from {@link MockA11yImeEvent#isEnterEvent()}.
      *
-     * @param stream {@link MockA11yImeEventStream} to be checked.
+     * @param stream {@link MockA11yImeEventStream} to be checked
      * @param condition the event condition to be matched
      * @param timeout timeout in millisecond
      * @throws AssertionError if such an event is found within the given {@code timeout}
      */
-    public static void notExpectA11yImeEvent(@NonNull MockA11yImeEventStream stream,
-            @NonNull Predicate<MockA11yImeEvent> condition, long timeout) {
+    public static void notExpectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
+            @NonNull Predicate<MockA11yImeEvent> condition,
+            long timeout) {
+        notExpectA11yImeEvent(stream, condition, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Assert that an event that matches the given {@code condition} will no be found in the stream
+     * within the given {@code timeout}.
+     *
+     * <p>When this method succeeds, the stream position will not change.
+     *
+     * <p>For convenience, this method automatically filter out exit events (events that return
+     * {@code false} from {@link MockA11yImeEvent#isEnterEvent()}.
+     *
+     * @param stream {@link MockA11yImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param timeout timeout duration
+     * @throws AssertionError if such an event is found within the given {@code timeout}
+     */
+    public static void notExpectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
+            @NonNull Predicate<MockA11yImeEvent> condition,
+            @NonNull Duration timeout) {
         notExpectA11yImeEvent(stream, condition,
                 MockA11yImeEventStreamUtils.EventFilterMode.CHECK_ENTER_EVENT_ONLY, timeout);
     }
@@ -204,18 +302,41 @@ public final class MockA11yImeEventStreamUtils {
      * Assert that an event that matches the given {@code condition} will no be found in the stream
      * within the given {@code timeout}.
      *
-     * <p>When this method succeeds, the stream position will not change.</p>
+     * <p>When this method succeeds, the stream position will not change.
      *
-     * @param stream {@link MockA11yImeEventStream} to be checked.
+     * @param stream {@link MockA11yImeEventStream} to be checked
      * @param condition the event condition to be matched
      * @param filterMode controls how events are filtered out
      * @param timeout timeout in millisecond
      * @throws AssertionError if such an event is found within the given {@code timeout}
      */
-    public static void notExpectA11yImeEvent(@NonNull MockA11yImeEventStream stream,
+    public static void notExpectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
             @NonNull Predicate<MockA11yImeEvent> condition,
-            MockA11yImeEventStreamUtils.EventFilterMode filterMode, long timeout) {
+            MockA11yImeEventStreamUtils.EventFilterMode filterMode,
+            long timeout) {
+        notExpectA11yImeEvent(stream, condition, filterMode, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Assert that an event that matches the given {@code condition} will no be found in the stream
+     * within the given {@code timeout}.
+     *
+     * <p>When this method succeeds, the stream position will not change.
+     *
+     * @param stream {@link MockA11yImeEventStream} to be checked
+     * @param condition the event condition to be matched
+     * @param filterMode controls how events are filtered out
+     * @param timeout timeout duration
+     * @throws AssertionError if such an event is found within the given {@code timeout}
+     */
+    public static void notExpectA11yImeEvent(
+            @NonNull MockA11yImeEventStream stream,
+            @NonNull Predicate<MockA11yImeEvent> condition,
+            MockA11yImeEventStreamUtils.EventFilterMode filterMode,
+            @NonNull Duration timeout) {
         final Predicate<MockA11yImeEvent> combinedCondition;
+        Duration remainingTime = timeout;
         switch (filterMode) {
             case CHECK_ALL:
                 combinedCondition = condition;
@@ -230,14 +351,14 @@ public final class MockA11yImeEventStreamUtils {
                 throw new IllegalArgumentException("Unknown filterMode " + filterMode);
         }
         while (true) {
-            if (timeout < 0) {
+            if (remainingTime.isNegative()) {
                 return;
             }
             if (stream.findFirst(combinedCondition).isPresent()) {
                 throw new AssertionError("notExpectEvent failed: " + stream.dump());
             }
-            SystemClock.sleep(TIME_SLICE);
-            timeout -= TIME_SLICE;
+            SystemClock.sleep(TIME_SLICE.toMillis());
+            remainingTime = remainingTime.minus(TIME_SLICE);
         }
     }
 }
