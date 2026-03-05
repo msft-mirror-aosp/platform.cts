@@ -19,6 +19,9 @@
     package="android.app.appfunctions.cts.helper" >
 
     <application android:debuggable="true">
+        <property
+            android:name="android.app.appfunctions"
+            android:value="dynamic_appfunctions.xml" />
         <uses-library
             android:name="com.android.extensions.appfunctions"
             android:required="false" />

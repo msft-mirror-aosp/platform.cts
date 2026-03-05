@@ -378,17 +378,12 @@ class RuntimeMetadataTest {
 
         val searchResults: SearchResultsShim =
             globalSearchSession.search(
-                String.format(
-                    "%s:\"%s\"  %s:\"%s\"",
-                    PROPERTY_PACKAGE_NAME,
-                    packageName,
-                    PROPERTY_FUNCTION_ID,
-                    functionId,
-                ),
+                "",
                 SearchSpec.Builder()
                     .addFilterNamespaces(
                         AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
                     )
+                    .addFilterDocumentIds(packageName + "/" + functionId)
                     .addFilterSchemas(AppFunctionStaticMetadataHelper.STATIC_SCHEMA_TYPE)
                     .setVerbatimSearchEnabled(true)
                     .build(),
@@ -415,10 +410,7 @@ class RuntimeMetadataTest {
 
     private fun queryStaticAppFunctionNames(packageName: String): List<AppFunctionName> {
         return queryAppFunctionStaticMetadata(packageName).map {
-            AppFunctionName(
-                it.getPropertyString(PROPERTY_PACKAGE_NAME)!!,
-                it.getPropertyString(PROPERTY_FUNCTION_ID)!!,
-            )
+            AppFunctionName.fromQualifiedId(it.getId())
         }
     }
 

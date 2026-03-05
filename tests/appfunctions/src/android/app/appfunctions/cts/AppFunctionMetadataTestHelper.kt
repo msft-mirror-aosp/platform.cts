@@ -51,6 +51,8 @@ class AppFunctionMetadataTestHelper {
             val ADD_ASYNC = AppFunctionName(PACKAGE_NAME, "addAsync")
             val THROW_EXCEPTION = AppFunctionName(PACKAGE_NAME, "throwException")
             val LONG_RUNNING_FUNCTION = AppFunctionName(PACKAGE_NAME, "longRunningFunction")
+            val CONTEXT_CONCAT_STRINGS_FUNCTION =
+                AppFunctionName(PACKAGE_NAME, "contextConcatStrings")
 
             val ALL_FUNCTIONS =
                 setOf(
@@ -68,6 +70,7 @@ class AppFunctionMetadataTestHelper {
                     ADD_ASYNC,
                     THROW_EXCEPTION,
                     LONG_RUNNING_FUNCTION,
+                    CONTEXT_CONCAT_STRINGS_FUNCTION,
                 )
         }
 
@@ -89,7 +92,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "utils")
                             .setPropertyString(
                                 PROPERTY_SCHEMA_NAME,
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.helper",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
                             .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
                             .setPropertyLong("displayNameStringRes", 10)
@@ -118,7 +121,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "utils")
                             .setPropertyString(
                                 PROPERTY_SCHEMA_NAME,
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.helper",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
                             .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
                             .setPropertyLong("displayNameStringRes", 10)
@@ -203,7 +206,7 @@ class AppFunctionMetadataTestHelper {
                     ACTIVITY_SCOPE,
                     DYNAMIC_ACTIVITY_CONCAT_STRINGS,
                     DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT,
-                    DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID
+                    DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID,
                 )
 
             val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPED_FUNCTIONS
@@ -225,25 +228,25 @@ class AppFunctionMetadataTestHelper {
                 GenericDocument.Builder<GenericDocument.Builder<*>>(
                         "app_functions",
                         "$PACKAGE_NAME/testTopLevelComponentId",
-                        "CustomTopLevelComponent1-android.app.appfunctions.cts.dynamic.schema",
+                        "CustomTopLevelComponent1-$PACKAGE_NAME",
                     )
-                    .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
+                    .setPropertyString("packageName", PACKAGE_NAME)
                     .setPropertyString("customStringProperty", "testValue")
                     .build()
             val TOP_LEVEL_COMPONENT_2 =
                 GenericDocument.Builder<GenericDocument.Builder<*>>(
                         "app_functions",
                         "$PACKAGE_NAME/testTopLevelComponentId2",
-                        "CustomTopLevelComponent2-android.app.appfunctions.cts.dynamic.schema",
+                        "CustomTopLevelComponent2-$PACKAGE_NAME",
                     )
-                    .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
+                    .setPropertyString("packageName", PACKAGE_NAME)
                     .setPropertyDocument(
                         "nestedDocumentProperty",
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/" +
                                     "testTopLevelComponentId2/nestedDocumentProperty",
-                                "NestedDocument-android.app.appfunctions.cts.dynamic.schema",
+                                "NestedDocument-$PACKAGE_NAME",
                             )
                             .setPropertyLong("nestedIntProperty", 333L)
                             .setPropertyString("nestedRepeatedString", "value 1", "value 2")
@@ -258,9 +261,9 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/appFunctionEnabledByDefault",
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
-                                    ".dynamic.schema",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
+                            .setPropertyString("functionId", "appFunctionEnabledByDefault")
                             .setPropertyString("packageName", PACKAGE_NAME)
                             .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
                             .setPropertyBoolean(
@@ -275,11 +278,10 @@ class AppFunctionMetadataTestHelper {
                                 "nestedDocumentProperty",
                                 GenericDocument.Builder<GenericDocument.Builder<*>>(
                                         "app_functions",
-                                        "android.app.appfunctions.cts.dynamic.schema/" +
+                                        "$PACKAGE_NAME/" +
                                             "appFunctionEnabledByDefault/" +
                                             "nestedDocumentProperty",
-                                        "NestedDocument-android.app.appfunctions.cts" +
-                                            ".dynamic.schema",
+                                        "NestedDocument-$PACKAGE_NAME",
                                     )
                                     .setPropertyString("nestedRepeatedString", "value 1", "value 2")
                                     .build(),
@@ -296,21 +298,18 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/" + "appFunctionDisabledByDefault_noSchema",
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
-                                    ".dynamic.schema",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
+                            )
+                            .setPropertyString(
+                                "functionId",
+                                "appFunctionDisabledByDefault_noSchema",
                             )
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
                                 false,
                             )
-                            .setPropertyString(
-                                "packageName",
-                                PACKAGE_NAME,
-                            )
-                            .setPropertyLong(
-                                "packageNameHash",
-                                PACKAGE_NAME.hashCode().toLong(),
-                            )
+                            .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
                             .setPropertyString("scope", "global")
                             .build(),
@@ -323,17 +322,11 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/appFunctionWithHighSchemaVersion",
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
-                                    ".dynamic.schema",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
-                            .setPropertyString(
-                                "packageName",
-                                PACKAGE_NAME,
-                            )
-                            .setPropertyLong(
-                                "packageNameHash",
-                                PACKAGE_NAME.hashCode().toLong()
-                            )
+                            .setPropertyString("functionId", "appFunctionWithHighSchemaVersion")
+                            .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
                                 true,
@@ -416,7 +409,7 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/add",
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
                             .setPropertyString("packageName", PACKAGE_NAME)
                             .setPropertyLong("packageNameHash", PACKAGE_NAME.hashCode().toLong())
@@ -424,10 +417,11 @@ class AppFunctionMetadataTestHelper {
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
                                 true,
                             )
+                            .setPropertyString("functionId", "add")
                             .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "utils")
                             .setPropertyString(
                                 PROPERTY_SCHEMA_NAME,
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
                             )
                             .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
                             .setPropertyLong("displayNameStringRes", 10)
