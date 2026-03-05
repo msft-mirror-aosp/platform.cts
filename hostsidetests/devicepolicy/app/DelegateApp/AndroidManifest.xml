@@ -22,7 +22,8 @@
     <!--  TODO(b/176993670): remove if DpmWrapper goes away -->
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
 
-    <application android:usesCleartextTraffic="true">
+    <application android:usesCleartextTraffic="true"
+            android:networkSecurityConfig="@xml/network_security_config">
         <uses-library android:name="android.test.runner"/>
         <receiver android:name=".DelegateTestUtils$DelegatedLogsReceiver"
              android:permission="android.permission.BIND_DEVICE_ADMIN"
