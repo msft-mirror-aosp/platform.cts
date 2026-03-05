@@ -293,7 +293,7 @@ class TestResultsReport {
             currentTestResult.setTestResultHistories(
                     List.of(
                             new TestResultHistory(
-                                    testNameInReport, history.getExecutionRecords())));
+                                    testNameInReport, history.getExecutionRecords(), history.getTestDetails())));
         }
     }
 
