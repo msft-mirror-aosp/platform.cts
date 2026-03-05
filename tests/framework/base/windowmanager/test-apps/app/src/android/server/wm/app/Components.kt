@@ -666,9 +666,6 @@ object Components : ComponentsProvider() {
     }
 
     object TaskMoveTestActivity {
-        const val ACTION_CHECK_IS_TASK_MOVE_ALLOWED = "action_check_is_task_move_allowed"
-        const val ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT =
-                "action_notify_task_move_allowed_result"
         const val ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT =
                 "action_notify_task_move_request_result"
         const val ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT =
@@ -680,7 +677,6 @@ object Components : ComponentsProvider() {
         const val EXTRA_DISPLAY_ID_KEY = "extra_display_id_key"
         const val EXTRA_EXCEPTION_KEY = "extra_exception_key"
         const val EXTRA_SYNC_EXCEPTION_KEY = "extra_sync_exception_key"
-        const val EXTRA_TASK_MOVE_ALLOWED_RESULT = "extra_task_move_allowed_result"
     }
 
     object PinnedWindowingLayerActivity {
