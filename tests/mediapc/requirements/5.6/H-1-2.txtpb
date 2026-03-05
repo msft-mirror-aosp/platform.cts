@@ -67,12 +67,12 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
-      "MUST have a round-trip audio latency of 80 milliseconds or less over at "
+      "MUST have a round-trip audio latency of 65 milliseconds or less over at "
       "least one supported data path."
     required_values {
       key: "round_trip_audio_latency_ms"
       value {
-        double_value: 80.0
+        double_value: 65.0
       }
     }
   }
