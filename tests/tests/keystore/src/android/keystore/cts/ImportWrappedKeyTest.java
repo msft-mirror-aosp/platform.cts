@@ -37,6 +37,7 @@ import static android.security.keymaster.KeymasterDefs.KM_PAD_RSA_OAEP;
 import static android.security.keymaster.KeymasterDefs.KM_PAD_RSA_PKCS1_1_5_ENCRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PAD_RSA_PKCS1_1_5_SIGN;
 import static android.security.keymaster.KeymasterDefs.KM_PAD_RSA_PSS;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
@@ -52,10 +53,12 @@ import static android.security.keymaster.KeymasterDefs.KM_TAG_PURPOSE;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
@@ -101,6 +104,7 @@ import java.security.spec.MGF1ParameterSpec;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
@@ -511,6 +515,109 @@ public class ImportWrappedKeyTest {
         }
     }
 
+    @Test
+    @CddTest(requirements = {"9.11/C-1-2"})
+    public void testKeyStore_ImportWrappedKey_Curve25519() throws Exception {
+        TestUtils.assumeCurve25519HardwareSupport(/* useStrongBox= */ false);
+        testCurve25519WrappedKeyImport("XDH", /* isStrongBox= */ false, /* expectSuccess= */ true);
+        testCurve25519WrappedKeyImport("Ed25519", /* isStrongBox= */ false, /* expectSuccess= */ true);
+    }
+
+    @Test
+    @CddTest(requirements = {"9.11/C-1-2"})
+    public void testKeyStore_ImportWrappedKey_Curve25519_StrongBox() throws Exception {
+        // We intentionally don't call `TestUtils.assumeCurve25519HardwareSupport(true)` here
+        // because we expect StrongBox not to support Curve25519 regardless of which KeyMint version
+        // it's running.
+        testCurve25519WrappedKeyImport("XDH", /* isStrongBox= */ true, /* expectSuccess= */ false);
+        testCurve25519WrappedKeyImport("Ed25519", /* isStrongBox= */ true, /* expectSuccess= */ false);
+    }
+
+    private void testCurve25519WrappedKeyImport(
+            String keyAlgorithm, boolean isStrongBox, boolean expectSuccess) throws Exception {
+        if (isStrongBox) {
+            TestUtils.assumeStrongBox();
+        }
+
+        if (expectSuccess) {
+            PublicKey publicKey = tryImportingWrappedCurve25519Key(keyAlgorithm, isStrongBox);
+            // Load the key.
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null, null);
+            assertTrue("Failed to load key after wrapped import", keyStore.containsAlias(ALIAS));
+
+            Key importedKey = keyStore.getKey(ALIAS, null);
+            assertTrue(importedKey instanceof PrivateKey);
+
+            if (keyAlgorithm.equals("Ed25519")) {
+                // Sign a message with the private key imported into Android Keystore, then verify
+                // with the local public key from Conscrypt.
+                byte[] data = "hello world".getBytes();
+                Signature s = Signature.getInstance(keyAlgorithm);
+                s.initSign((PrivateKey) importedKey);
+                s.update(data);
+                byte[] signature = s.sign();
+                s.initVerify(publicKey);
+                s.update(data);
+                assertTrue(s.verify(signature));
+            } else if (keyAlgorithm.equals("XDH")) {
+                // Generate a second key pair with Conscrypt.
+                KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyAlgorithm);
+                KeyPair kp2 = kpg.generateKeyPair();
+                PublicKey publicKey2 = kp2.getPublic();
+                PrivateKey privateKey2 = kp2.getPrivate();
+
+                // Perform key agreement with the imported private key and the second public key.
+                KeyAgreement ka = KeyAgreement.getInstance(keyAlgorithm);
+                ka.init(importedKey);
+                ka.doPhase(publicKey2, true);
+                byte[] sharedSecret1 = ka.generateSecret();
+
+                // Perform key agreement with the second private key and the first public key.
+                KeyAgreement ka2 = KeyAgreement.getInstance(keyAlgorithm);
+                ka2.init(privateKey2);
+                ka2.doPhase(publicKey, true);
+                byte[] sharedSecret2 = ka2.generateSecret();
+
+                // The shared secrets should be the same.
+                assertArrayEquals(sharedSecret1, sharedSecret2);
+            } else {
+                fail("Unsupported key algorithm: " + keyAlgorithm);
+            }
+        } else {
+            assertThrows(
+                    KeyStoreException.class,
+                    () -> tryImportingWrappedCurve25519Key(keyAlgorithm, isStrongBox));
+        }
+    }
+
+    // Generates a Curve25519 key pair using Conscrypt, then imports the wrapped private key.
+    // Returns the public key if the import succeeds, otherwise throws an exception.
+    private PublicKey tryImportingWrappedCurve25519Key(String keyAlgorithm, boolean isStrongBox)
+            throws Exception {
+        // Generate a Curve25519 key pair using Conscrypt.
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyAlgorithm);
+        KeyPair kp = kpg.generateKeyPair();
+        PublicKey publicKey = kp.getPublic();
+        PrivateKey privateKey = kp.getPrivate();
+        assertEquals(privateKey.getFormat(), "PKCS#8");
+
+        byte[] keyMaterial = privateKey.getEncoded();
+        byte[] mask = new byte[32]; // Zero mask
+
+        // Try to import the wrapped key, but don't catch the exception if it fails.
+        importWrappedKey(
+                wrapKey(
+                        genKeyPair(WRAPPING_KEY_ALIAS, isStrongBox).getPublic(),
+                        keyMaterial,
+                        mask,
+                        KM_KEY_FORMAT_PKCS8,
+                        makeCurve25519AuthList(keyAlgorithm)));
+
+        // If we get here, the import succeeded and we can return the public key.
+        return publicKey;
+    }
+
     // Generates an ML-DSA key pair using Conscrypt, then imports the wrapped private key.
     // Returns the public key if the import succeeds, otherwise throws an exception.
     private PublicKey tryImportingWrappedMlDsaKey(String keyAlgorithm, boolean isStrongBox)
@@ -748,7 +855,8 @@ public class ImportWrappedKeyTest {
         DERTaggedObject noAuthRequired =
                 new DERTaggedObject(true, removeTagType(KM_TAG_NO_AUTH_REQUIRED), DERNull.INSTANCE);
 
-        // Build sequence
+        // Build sequence. Note that KM_TAG_EC_CURVE does not need to be set. This is because the
+        // PKCS#8 format identifies the curve (via the OID in the AlgorithmIdentifier structure).
         ASN1EncodableVector allItems = new ASN1EncodableVector();
         allItems.add(purpose);
         allItems.add(algorithm);
@@ -781,6 +889,44 @@ public class ImportWrappedKeyTest {
                 new DERTaggedObject(true, removeTagType(KM_TAG_NO_AUTH_REQUIRED), DERNull.INSTANCE);
 
         // Build sequence
+        ASN1EncodableVector allItems = new ASN1EncodableVector();
+        allItems.add(purpose);
+        allItems.add(algorithm);
+        allItems.add(digest);
+        allItems.add(noAuthRequired);
+
+        return new DERSequence(allItems);
+    }
+
+    private DERSequence makeCurve25519AuthList(String keyAlgorithm) {
+        ASN1EncodableVector allPurposes = new ASN1EncodableVector();
+        if (keyAlgorithm.equals("XDH")) {
+            allPurposes.add(new ASN1Integer(KM_PURPOSE_AGREE_KEY));
+        } else {
+            allPurposes.add(new ASN1Integer(KM_PURPOSE_SIGN));
+            allPurposes.add(new ASN1Integer(KM_PURPOSE_VERIFY));
+        }
+        DERSet purposeSet = new DERSet(allPurposes);
+        DERTaggedObject purpose =
+                new DERTaggedObject(true, removeTagType(KM_TAG_PURPOSE), purposeSet);
+
+        DERTaggedObject algorithm =
+                new DERTaggedObject(
+                        true,
+                        removeTagType(KM_TAG_ALGORITHM),
+                        new ASN1Integer(KM_ALGORITHM_EC));
+
+        ASN1EncodableVector allDigests = new ASN1EncodableVector();
+        allDigests.add(new ASN1Integer(KM_DIGEST_NONE));
+        DERSet digestSet = new DERSet(allDigests);
+        DERTaggedObject digest =
+                new DERTaggedObject(true, removeTagType(KM_TAG_DIGEST), digestSet);
+
+        DERTaggedObject noAuthRequired =
+                new DERTaggedObject(true, removeTagType(KM_TAG_NO_AUTH_REQUIRED), DERNull.INSTANCE);
+
+        // Build sequence. Note that KM_TAG_EC_CURVE does not need to be set. This is because the
+        // PKCS#8 format identifies the curve (via the OID in the AlgorithmIdentifier structure).
         ASN1EncodableVector allItems = new ASN1EncodableVector();
         allItems.add(purpose);
         allItems.add(algorithm);
