@@ -291,6 +291,18 @@ public class TestUtils {
     }
 
     /**
+     * Skips the test if there is no hardware-backed support for Curve25519. Support is expected for
+     * TEE KeyMint v2+. Support is not expected for any StrongBox KeyMint version. Note that
+     * Keystore provides software emulation support for Curve 25519 if the hardware-backed KeyMint
+     * implementation doesn't support it.
+     */
+    public static void assumeCurve25519HardwareSupport(boolean useStrongBox) {
+        assumeFalse("Only TEE KeyMint supports Curve25519", useStrongBox);
+        assumeTrue("Only test when TEE KeyMint on DUT supports Curve25519",
+                getFeatureVersionKeystore(getContext(), /* strongBox= */ false) >= 200);
+    }
+
+    /**
      * Returns VSR API level.
      */
     public static int getVendorApiLevel() {
