@@ -2397,6 +2397,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
      * System Gallery doesn't have read access to.
      */
     @Test
+    @Ignore("b/415783046")
     public void testSystemGalleryCanRenameImageAndVideoDirs() throws Exception {
         final File dirInDcim = new File(getDcimDir(), TEST_DIRECTORY_NAME);
         final File dirInPictures = new File(getPicturesDir(), TEST_DIRECTORY_NAME);
