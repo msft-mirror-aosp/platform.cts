@@ -36,10 +36,10 @@ public class ManagedConnectionService extends ConnectionService {
     private static final String LOG_TAG = "ManagedConnectionService";
     private static final int INVALID_DISCONNECT_CAUSE = -1;
     public static ManagedConnectionService sConnectionService;
-    public static ManagedConnection sLastConnection = null;
-    public static ConnectionRequest sLastFailedRequest = null;
-    public static CountDownLatch sCreateOutgoingConnectionLatch = new CountDownLatch(1);
-    public static CountDownLatch sCreateIncomingConnectionLatch = new CountDownLatch(1);
+    public static volatile ManagedConnection sLastConnection = null;
+    public static volatile ConnectionRequest sLastFailedRequest = null;
+    public static volatile CountDownLatch sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+    public static volatile CountDownLatch sCreateIncomingConnectionLatch = new CountDownLatch(1);
     public static String FORCE_DISCONNECT_CAUSE_KEY = "FORCE_DISCONNECT_CAUSE_KEY";
     public static int sForceDisconnectCause = INVALID_DISCONNECT_CAUSE;
 
