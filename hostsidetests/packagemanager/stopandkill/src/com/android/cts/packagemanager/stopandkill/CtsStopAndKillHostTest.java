@@ -58,6 +58,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
     private static final String PERSISTABLE_ACTIVITY = "PersistableActivity";
     private static final String PERSISTABLE_TIMEOUT_ACTIVITY = "PersistableTimeoutActivity";
+    private static final String PERSISTABLE_DELAYED_ACTIVITY = "PersistableDelayedActivity";
     private static final String ALIAS_ACTIVITY = "AliasActivity";
 
     private static final int FLAG_ACTIVITY_NEW_TASK = 0x10000000;
@@ -76,6 +77,10 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             new TestApp("com.android.cts.stopandkillapp2", "CtsStopAndKillTestApp2.apk");
     private TestApp mApp3 =
             new TestApp("com.android.cts.stopandkillapp3", "CtsStopAndKillTestApp3.apk");
+    private TestApp mSharedApp1 =
+            new TestApp("com.android.cts.stopandkillsharedapp1", "CtsStopAndKillSharedUidApp1.apk");
+    private TestApp mSharedApp2 =
+            new TestApp("com.android.cts.stopandkillsharedapp2", "CtsStopAndKillSharedUidApp2.apk");
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -99,9 +104,13 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         mApp1.uninstall();
         mApp2.uninstall();
         mApp3.uninstall();
+        mSharedApp1.uninstall();
+        mSharedApp2.uninstall();
         mApp1.deleteStateFile();
         mApp2.deleteStateFile();
         mApp3.deleteStateFile();
+        mSharedApp1.deleteStateFile();
+        mSharedApp2.deleteStateFile();
     }
 
     /**
@@ -364,6 +373,89 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
                 .isTrue();
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
+    public void testUpdate_sharedUid_waitsOnlyThreeSeconds() throws Exception {
+        mSharedApp1.installPackage();
+        mSharedApp2.installPackage();
+
+        String setting = "enable_freeform_support";
+        String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
+        try {
+            getDevice().executeShellCommand("settings put global " + setting + " 1");
+            // Launch both shared UID activities.
+            launchActivityInFreeForm(
+                    mSharedApp1.persistableActivity, mSharedApp2.persistableActivity);
+
+            long startTime = System.currentTimeMillis();
+            // Update shared app 1. This should trigger the shared UID timeout logic.
+            mSharedApp1.installPackage("-r");
+            long installTime = System.currentTimeMillis() - startTime;
+
+            // Assert that the installation was fast (timeout is 3s).
+            // It should be significantly less than the 15s default.
+            assertThat(installTime).isLessThan(8 * 1000);
+        } finally {
+            getDevice()
+                    .executeShellCommand("settings put global " + setting + " " + originalSetting);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
+    public void testUpdate_sharedUid_forceKillsUpdatingPackage() throws Exception {
+        mSharedApp1.installPackage();
+        mSharedApp2.installPackage();
+
+        String setting = "enable_freeform_support";
+        String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
+        try {
+            getDevice().executeShellCommand("settings put global " + setting + " 1");
+            // Launch both shared UID activities. Shared app 1 uses timeout activity.
+            launchActivityInFreeForm(
+                    mSharedApp1.persistableTimeoutActivity, mSharedApp2.persistableActivity);
+
+            mSharedApp1.assertProcessRunning(true);
+            mSharedApp2.assertProcessRunning(true);
+
+            // Update shared app 1.
+            mSharedApp1.installPackage("-r");
+
+            // Assert that shared app 1 was terminated.
+            mSharedApp1.assertProcessRunning(false);
+
+            // Assert that shared app 2 is STILL RUNNING.
+            mSharedApp2.assertProcessRunning(true);
+        } finally {
+            getDevice()
+                    .executeShellCommand("settings put global " + setting + " " + originalSetting);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
+    public void testUpdate_sharedUid_noSiblingRunning_waitsFullTimeout() throws Exception {
+        mSharedApp1.installPackage();
+        mSharedApp2.installPackage();
+
+        // Launch only shared app 1 with a 9s delay (shared app 2 is NOT running).
+        launchActivityAndAssertResumed(mSharedApp1.persistableDelayedActivity);
+
+        mSharedApp1.assertProcessRunning(true);
+        mSharedApp2.assertProcessRunning(false);
+
+        // Activity shouldn't have been stopped before we update
+        mSharedApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+
+        // Update shared app 1. Since no sibling apps are running, it should wait for the full
+        // timeout (15s) instead of the optimized shared-UID timeout (3s).
+        // A 9s delay is enough for the app to save its state if we wait 15s, but NOT if we wait 3s.
+        mSharedApp1.installPackage("-r");
+
+        // Assert that the app was stopped and managed to save its state.
+        mSharedApp1.assertStateFileCreatedOnStop(/* shouldExist= */ true);
+    }
+
     /**
      * Verifies that when launching an activity alias of a persistable activity, the app's instance
      * state is saved during an update and restored in the new version.
@@ -485,6 +577,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         public final String apk;
         public final String persistableActivity;
         public final String persistableTimeoutActivity;
+        public final String persistableDelayedActivity;
         public final String aliasActivity;
 
         TestApp(String pkg, String apk) {
@@ -492,6 +585,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             this.apk = apk;
             this.persistableActivity = getComponentName(pkg, PERSISTABLE_ACTIVITY);
             this.persistableTimeoutActivity = getComponentName(pkg, PERSISTABLE_TIMEOUT_ACTIVITY);
+            this.persistableDelayedActivity = getComponentName(pkg, PERSISTABLE_DELAYED_ACTIVITY);
             this.aliasActivity = getComponentName(pkg, ALIAS_ACTIVITY);
         }
 
@@ -523,6 +617,21 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
         void uninstall() throws Exception {
             getDevice().executeShellCommand("pm uninstall --user " + mUserId + " " + pkg);
+        }
+
+        boolean isProcessRunning() throws Exception {
+            String pid = getDevice().executeShellCommand("pidof " + pkg).trim();
+            return !pid.isEmpty();
+        }
+
+        void assertProcessRunning(boolean shouldBeRunning) throws Exception {
+            assertWithMessage(
+                            "Expected process "
+                                    + pkg
+                                    + " to be "
+                                    + (shouldBeRunning ? "running" : "not running"))
+                    .that(isProcessRunning())
+                    .isEqualTo(shouldBeRunning);
         }
 
         void deleteStateFile() throws Exception {
