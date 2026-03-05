@@ -142,11 +142,16 @@ genrule {
 }
 
 genrule {
-    name: "cts-apache-http-legacy-current-api-gz",
+    name: "cts-apache-http-legacy-current-srcs-or-latest-prebuilt-api-gz",
     defaults: ["signature-cts-api-api-gz"],
-    srcs: [
-        ":apache-http-legacy-current.txt",
-    ],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-apache-http-legacy.txt",
+        ],
+        default: [
+            ":apache-http-legacy-current.txt",
+        ],
+    }),
     out: [
         "apache-http-legacy-current.api.gz",
     ],
