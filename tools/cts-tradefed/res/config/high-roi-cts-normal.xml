@@ -593,7 +593,6 @@
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineLoginMixedCredentialActivityTest#testAutofill_selectCredentialView"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineWebViewActivityTest#testAutofillAndSave"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.OptionalSaveActivityTest#testDontShowSaveUiWhenUserClearedAutofilledFieldThatIsRequired"/>
-    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SaveUiTest#testTapLink_changeOrientationThenTapBack[ROTATE_THEN_TAP_BACK_BUTTON]"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SimpleSaveActivityTest#testAutoFillOneDatasetAndSave_usingUiAutomatorOnly"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SimpleSaveActivityTest#testTapHomeWhileDatasetPickerUiIsShowing"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SimpleSaveActivityTest#testTapLink_tapBack_thenStartOverByTouchOutsideAndManualRequest"/>
@@ -5884,8 +5883,6 @@
     <option name="compatibility:include-filter" value="odsign_e2e_tests com.android.tests.odsign.CompOsSigningHostTest#checkFileCreationTimeAfterVmStartAndBeforeReboot"/>
     <!-- Exclude the failing tests in CtsAppServiceTestCases -->
     <option name="compatibility:exclude-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testBindIsolatedServiceLimit"/>
-    <!-- Exclude the failing tests in CtsAutoFillServiceTestCases -->
-    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SaveUiTest#testTapLink_changeOrientationThenTapBack[ROTATE_THEN_TAP_BACK_BUTTON]"/>
     <!-- Exclude the failing tests in CtsMediaAudioTestCases -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioDeviceVolumeManagerTest#testNotifyAbsoluteVolumeChanged_defaultStreamA2dp"/>
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioDeviceVolumeManagerTest#testStreamAssistant_mirrorsScoToA2dp"/>
