@@ -23,9 +23,9 @@ android_test {
     defaults: ["signature-api-check-defaults"],
     java_resources: [
         ":CtsSystemApiSignatureTestCases_system-all.api",
-        ":cts-current-api-gz",
-        ":cts-system-current-api-gz",
-        ":cts-system-removed-api-gz",
+        ":cts-current-srcs-or-latest-prebuilt-api-gz",
+        ":cts-system-current-srcs-or-latest-prebuilt-api-gz",
+        ":cts-system-removed-srcs-or-latest-prebuilt-api-gz",
     ],
     test_suites: [
         "cts",

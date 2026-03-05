@@ -66,11 +66,43 @@ java_genrule {
 }
 
 java_genrule {
+    name: "cts-system-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-system-android.txt",
+        ],
+        default: [
+            ":frameworks-base-api-exportable-system-current.txt",
+        ],
+    }),
+    out: [
+        "system-current.api.gz",
+    ],
+}
+
+java_genrule {
     name: "cts-system-removed-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
         ":frameworks-base-api-exportable-system-removed.txt",
     ],
+    out: [
+        "system-removed.api.gz",
+    ],
+}
+
+java_genrule {
+    name: "cts-system-removed-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-system-android-removed.txt",
+        ],
+        default: [
+            ":frameworks-base-api-exportable-system-removed.txt",
+        ],
+    }),
     out: [
         "system-removed.api.gz",
     ],
