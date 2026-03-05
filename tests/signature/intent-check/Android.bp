@@ -23,9 +23,9 @@ android_test {
 
     srcs: ["src/**/*.java"],
     java_resources: [
-        ":cts-current-api-gz",
-        ":cts-system-current-api-gz",
-        ":cts-system-removed-api-gz",
+        ":cts-current-srcs-or-latest-prebuilt-api-gz",
+        ":cts-system-current-srcs-or-latest-prebuilt-api-gz",
+        ":cts-system-removed-srcs-or-latest-prebuilt-api-gz",
     ],
 
     // Tag this module as a cts test artifact
