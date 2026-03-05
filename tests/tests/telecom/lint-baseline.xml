@@ -740,17 +740,6 @@
 
     <issue
         id="FlaggedApi"
-        message="Method `addConferenceFromConnection()` is a flagged API and should be inside an `if (Flags.reuseOriginalConnRemoteConfApi())` check (or annotate the surrounding method `addConferenceFromConnectionToTelecom` with `@FlaggedApi(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_API) to transfer requirement to caller`)"
-        errorLine1="            telecomConn.addConferenceFromConnection(conference, connection);"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="cts/tests/tests/telecom/src/android/telecom/cts/CtsConnectionService.java"
-            line="233"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="FlaggedApi"
         message="Method `onConnectionAdded()` is a flagged API and should be inside an `if (Flags.telecomMainlineApi())` check (or annotate the surrounding method `onConnectionAdded` with `@FlaggedApi(Flags.FLAG_TELECOM_MAINLINE_API) to transfer requirement to caller`)"
         errorLine1="            testImpl.onConnectionAdded(connection);"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
