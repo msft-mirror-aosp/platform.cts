@@ -52,7 +52,7 @@ public class NullBindingCallScreeningServiceTest extends BaseTelecomTestWithMock
         setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
         // Ensure NullBindingCallScreeningService pkg holds the call screening role.
         addRoleHolder(ROLE_CALL_SCREENING,
-                NullBindingCallScreeningService.class.getPackage().getName());
+                TestUtils.PACKAGE);
         NullBindingCallScreeningService.resetBindLatches();
     }
 
@@ -61,7 +61,7 @@ public class NullBindingCallScreeningServiceTest extends BaseTelecomTestWithMock
         if (mShouldTestTelecom) {
             // Remove the app from the screening role.
             removeRoleHolder(ROLE_CALL_SCREENING,
-                    NullBindingCallScreeningService.class.getPackage().getName());
+                    TestUtils.PACKAGE);
             NullBindingCallScreeningService.disableNullBindingCallScreeningService(mContext);
         }
         super.tearDown();

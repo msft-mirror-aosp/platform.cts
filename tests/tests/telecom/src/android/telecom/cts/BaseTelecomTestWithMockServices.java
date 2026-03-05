@@ -111,7 +111,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
 
     public static final String TEST_EMERGENCY_NUMBER = "5553637";
     public static final Uri TEST_EMERGENCY_URI = Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
-    public static final String PKG_NAME = "android.telecom.cts";
+    public static final String PKG_NAME = TestUtils.PACKAGE;
     public static final String PERMISSION_PROCESS_OUTGOING_CALLS =
             "android.permission.PROCESS_OUTGOING_CALLS";
     public static final String PERMISSION_PACKAGE_USAGE_STATS =

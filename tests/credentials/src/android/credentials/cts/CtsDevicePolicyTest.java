@@ -33,11 +33,11 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.policies.CredentialManagerPolicy;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
-import com.android.bedstead.enterprise.policies.CredentialManagerPolicy;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.testapp.TestApp;
@@ -376,5 +376,19 @@ public class CtsDevicePolicyTest {
         } finally {
             dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
         }
+    }
+
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
+    @Test
+    @CanSetPolicyTest(policy = CredentialManagerPolicy.class)
+    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setCredentialManagerPolicy")
+    public void setCredentialManagerPolicy_packagePolicyWithLongPackageName_throwsException() {
+        String longPackageName = new String(new char[256]).replace('\0', 'A');
+        PackagePolicy policy =
+                new PackagePolicy(PackagePolicy.PACKAGE_POLICY_ALLOWLIST, Set.of(longPackageName));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(policy));
     }
 }

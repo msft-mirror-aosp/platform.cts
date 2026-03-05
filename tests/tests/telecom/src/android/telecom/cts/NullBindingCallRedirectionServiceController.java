@@ -30,8 +30,8 @@ public class NullBindingCallRedirectionServiceController extends Service {
     public static final String CONTROL_INTERFACE_ACTION =
             "android.telecom.cts.ACTION_CONTROL_CALL_REDIRECTION_SERVICE";
     public static final ComponentName CONTROL_INTERFACE_COMPONENT =
-            ComponentName.unflattenFromString(
-                    "android.telecom.cts/.NullBindingCallRedirectionServiceController");
+            new ComponentName(TestUtils.PACKAGE,
+                    NullBindingCallRedirectionServiceController.class.getName());
 
     public static CountDownLatch sBindLatch = new CountDownLatch(1);
     public static CountDownLatch sUnbindLatch = new CountDownLatch(1);

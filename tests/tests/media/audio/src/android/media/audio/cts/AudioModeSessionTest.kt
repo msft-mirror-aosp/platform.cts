@@ -23,6 +23,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.AudioModeSession
 import android.media.audio.Flags
+import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -38,6 +39,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -45,6 +47,7 @@ import org.junit.runner.RunWith
 
 @FrameworkSpecificTest
 @RunWith(AndroidJUnit4::class)
+@AppModeFull(reason = "Instant app permissions")
 class AudioModeSessionTest {
 
     @get:Rule
@@ -74,6 +77,7 @@ class AudioModeSessionTest {
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT))
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TELECOM))
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_MICROPHONE))
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE))
     }
 
     @org.junit.After

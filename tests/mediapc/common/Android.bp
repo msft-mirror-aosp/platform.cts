@@ -67,6 +67,9 @@ java_library {
     srcs: [
         ":mediapc-auto-constants-gen",
     ],
+    static_libs: [
+        "guava",
+    ],
 }
 
 genrule {

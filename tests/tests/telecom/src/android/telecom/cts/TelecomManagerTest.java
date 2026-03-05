@@ -45,7 +45,7 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
 
     private static final String TEST_EMERGENCY_NUMBER = "5553637";
     private static final Uri TEST_EMERGENCY_URI = Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
-    private static final String CTS_TELECOM_PKG = TelecomManagerTest.class.getPackage().getName();
+    private static final String CTS_TELECOM_PKG = TestUtils.PACKAGE;
     private static final String THIRD_PARTY_HANDLE_CALL_INTENT_ACTION =
             "android.telecom.cts.thirdptycallintent.ACTION_HANDLE_CALL_INTENT";
 

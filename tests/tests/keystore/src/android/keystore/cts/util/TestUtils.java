@@ -41,6 +41,7 @@ import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
 import android.test.MoreAsserts;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -95,6 +96,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class TestUtils {
 
+    private static final String TAG = "TestUtils";
     public static final String EXPECTED_CRYPTO_OP_PROVIDER_NAME = "AndroidKeyStoreBCWorkaround";
     public static final String EXPECTED_PROVIDER_NAME = "AndroidKeyStore";
 
@@ -267,6 +269,25 @@ public class TestUtils {
         assumeFalse("Only TEE KeyMint supports ML-DSA", useStrongBox);
         assumeTrue("Only test when TEE KeyMint on DUT supports ML-DSA",
                 getFeatureVersionKeystore(getContext(), /* strongBox= */ false) >= 500);
+    }
+
+    /** Returns whether TEE KeyMint on DUT supports ML-DSA. */
+    public static boolean teeKeyMintSupportsMlDsa() {
+        boolean mlDsaFlagEnabled = android.security.keystore2.Flags.mldsaSupport();
+        int version = getFeatureVersionKeystore(getContext(), /* strongBox= */ false);
+        boolean mlDsaSupported = version >= 500;
+
+        Log.i(
+                TAG,
+                "ML-DSA flag enabled: "
+                        + mlDsaFlagEnabled
+                        + ", ML-DSA supported: "
+                        + mlDsaSupported
+                        + " (TEE KeyMint version: "
+                        + version
+                        + ")");
+
+        return mlDsaFlagEnabled && mlDsaSupported;
     }
 
     /**

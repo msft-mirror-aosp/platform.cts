@@ -51,6 +51,7 @@ import android.app.appfunctions.testutils.DisabledByDefault.Companion.DISABLED_B
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.GetUris.Companion.GET_URIS_FUNCTION_ID
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
+import android.app.appfunctions.testutils.TestLocalAppFunctionRegistrationService
 import android.app.appfunctions.testutils.LongRunning
 import android.app.appfunctions.testutils.LongRunning.Companion.LONG_RUNNING_FUNCTION_ID
 import android.app.appfunctions.testutils.OutputInvalidArgumentException
@@ -445,15 +446,20 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun register_unbindService_unregistersAppFunction() = doBlocking {
+        val serviceIntent = Intent(context, TestLocalAppFunctionRegistrationService::class.java)
+        val binder = serviceTestRule.bindService(serviceIntent)
+        val serviceAFManager =
+            (binder as TestLocalAppFunctionRegistrationService.LocalBinder).getAppFunctionManager()
+        assertThat(serviceAFManager).isNotNull()
+        val registration =
+            serviceAFManager!!.registerAppFunction(
+            CONCAT_STRINGS_FUNCTION_ID,
+            TestLocalAppFunctionRegistrationService.registrationExecutor,
+            ConcatStrings()
+        )
+        assertThat(registration).isNotNull()
+
         try {
-            val serviceIntent = Intent(
-                context, LocalAppFunctionRegistrationService::class.java
-            )
-
-            val binder = serviceTestRule.bindService(serviceIntent)
-            val service = (binder as LocalAppFunctionRegistrationService.LocalBinder).getService()
-            assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
-
             // Wait for the service to register the function.
             assertFunctionEnabledState(
                 CURRENT_PKG,
@@ -471,8 +477,7 @@ class AppFunctionRegistrationTest {
                 isEnabled = false
             )
         } finally {
-            LocalAppFunctionRegistrationService.registration?.unregister()
-            LocalAppFunctionRegistrationService.registration = null
+            registration.unregister()
         }
     }
 
@@ -481,35 +486,40 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun register_finishActivity_unregistersAppFunction() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            Intent(context, DynamicRegistrationActivity::class.java)
-        ).use { scenario ->
-            scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity ->
-                activity.manager.registerAppFunction(
-                        CONCAT_STRINGS_FUNCTION_ID,
-                        activity.mainExecutor,
-                        ConcatStrings()
-                    )
-             }
-            assertFunctionEnabledState(
-                AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
-                CONCAT_STRINGS_FUNCTION_ID,
-                appContextAppFunctionManager,
-                isEnabled = true
-            )
-            scenario.onActivity { activity -> activity.finish() }
-        }
-        retryAssert {
-            assertFunctionEnabledState(
-                AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
-                CONCAT_STRINGS_FUNCTION_ID,
-                appContextAppFunctionManager,
-                isEnabled = false
-            )
+        var registration: AppFunctionRegistration? = null
+        try {
+            ActivityScenario.launch<DynamicRegistrationActivity>(
+                Intent(context, DynamicRegistrationActivity::class.java)
+            ).use { scenario ->
+                scenario.moveToState(Lifecycle.State.STARTED)
+                scenario.onActivity { activity ->
+                    registration = activity.manager.registerAppFunction(
+                            CONCAT_STRINGS_FUNCTION_ID,
+                            activity.mainExecutor,
+                            ConcatStrings()
+                        )
+                    assertThat(registration).isNotNull()
+                }
+                assertFunctionEnabledState(
+                    AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                    appContextAppFunctionManager,
+                    isEnabled = true
+                )
+                scenario.onActivity { activity -> activity.finish() }
+            }
+            retryAssert {
+                assertFunctionEnabledState(
+                    AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                    appContextAppFunctionManager,
+                    isEnabled = false
+                )
+            }
+        } finally {
+            registration?.unregister()
         }
     }
-
 
     @Test
     @IncludeRunOnPrimaryUser

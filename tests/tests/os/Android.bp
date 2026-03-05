@@ -51,6 +51,7 @@ java_defaults {
         "cts_backported_fixes_support",
         "power_flags_lib",
         "libcore-aconfig-flags-lib",
+        "mediapc-auto-constants",
     ],
     libs: [
         "android.test.runner.stubs.test",

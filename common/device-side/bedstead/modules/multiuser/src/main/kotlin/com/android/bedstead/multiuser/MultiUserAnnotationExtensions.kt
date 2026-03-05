@@ -25,6 +25,7 @@ import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireMaxRunningUsersAtLeast
 import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
@@ -203,4 +204,16 @@ fun EnsureHasNoUserAnnotation.logic(usersComponent: UsersComponent) {
         }
         usersComponent.removeAndRecordUser(secondaryUser)
     }
+}
+
+/**
+ * See [RequireMaxRunningUsersAtLeast]
+ */
+fun RequireMaxRunningUsersAtLeast.logic() {
+    val maxRunningUsers = resources().system().getInteger("config_multiuserMaxRunningUsers")
+    checkFailOrSkip(
+        "config_multiuserMaxRunningUsers is lower than $value",
+        maxRunningUsers >= value,
+        FailureMode.SKIP
+    )
 }

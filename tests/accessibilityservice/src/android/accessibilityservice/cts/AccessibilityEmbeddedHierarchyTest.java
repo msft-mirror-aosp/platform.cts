@@ -58,6 +58,7 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -242,6 +243,7 @@ public class AccessibilityEmbeddedHierarchyTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_EMBEDDED_UI_USES_HOST_WINDOW_ID)
+    @Ignore("Failing due to test ordering issue, see b/484184676")
     public void testEmbeddedViews_nodesAndEventsUseHostWindowId() throws TimeoutException {
         final AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
         final AccessibilityNodeInfo hostWindowNode = findHostAccessibilityNodeInfo(root);

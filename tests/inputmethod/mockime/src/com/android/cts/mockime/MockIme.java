@@ -1235,7 +1235,17 @@ public final class MockIme extends InputMethodService {
         if (!Looper.getMainLooper().isCurrentThread()) {
             throw new IllegalStateException("onKeyDown must be called on the UI thread");
         }
-        return getTracer().onKeyDown(keyCode, event, () -> super.onKeyDown(keyCode, event));
+        return getTracer()
+                .onKeyDown(
+                        keyCode,
+                        event,
+                        () -> {
+                            final Boolean shouldConsume = mSettings.getOnKeyDownResult(keyCode);
+                            if (shouldConsume != null) {
+                                return shouldConsume;
+                            }
+                            return super.onKeyDown(keyCode, event);
+                        });
     }
 
     @Override
@@ -1243,7 +1253,17 @@ public final class MockIme extends InputMethodService {
         if (!Looper.getMainLooper().isCurrentThread()) {
             throw new IllegalStateException("onKeyUp must be called on the UI thread");
         }
-        return getTracer().onKeyUp(keyCode, event, () -> super.onKeyUp(keyCode, event));
+        return getTracer()
+                .onKeyUp(
+                        keyCode,
+                        event,
+                        () -> {
+                            final Boolean shouldConsume = mSettings.getOnKeyUpResult(keyCode);
+                            if (shouldConsume != null) {
+                                return shouldConsume;
+                            }
+                            return super.onKeyUp(keyCode, event);
+                        });
     }
 
     @Override
