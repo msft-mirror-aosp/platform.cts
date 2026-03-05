@@ -3297,6 +3297,7 @@ public class ImageDecoderTest {
                 "dngs/test_b470965296.dng",
                 "dngs/test_b470966318.dng",
                 "dngs/test_b470967228.dng",
+                "dngs/test_b462431872.dng",
             }) String filename) {
         AssetManager assets = getResources().getAssets();
         String[] mimeType = new String[1];
