@@ -142,6 +142,14 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
         mProfileManager.loadProfiles();
     }
 
+    protected boolean checkIfAttachedPeripheralIsSupported() {
+        if (mIsMandatedRequired) {
+            return mSelectedProfile != null;
+        } else {
+            return true;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
