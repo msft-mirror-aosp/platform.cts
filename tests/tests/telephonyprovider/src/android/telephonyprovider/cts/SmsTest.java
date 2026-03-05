@@ -758,7 +758,7 @@ public class SmsTest {
                         TEST_ADDRESS,
                         message,
                         expiredOtpHidingTime,
-                        SmsOtpTestHelper.CONTAINS_SMS_RETRIEVER_OTP,
+                        OTP_TYPE_NONE,
                         -1);
         try {
             stopBeingDefaultSmsApp();
