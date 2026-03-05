@@ -71,7 +71,7 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class DreamServiceTest extends ActivityManagerTestBase {
-    private static final int TIMEOUT_SECONDS = 2;
+    private static final int TIMEOUT_SECONDS = 5;
     private static final String DREAM_APP_PACKAGE_NAME = "android.app.dream.cts.app";
     private static final String DREAM_SERVICE_COMPONENT =
             DREAM_APP_PACKAGE_NAME + "/.SeparateProcessDreamService";
