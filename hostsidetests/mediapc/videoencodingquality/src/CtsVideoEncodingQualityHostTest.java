@@ -95,7 +95,7 @@ import javax.annotation.Nullable;
 @UseParametersRunnerFactory(DeviceJUnit4ClassRunnerWithParameters.RunnerFactory.class)
 @OptionClass(alias = "pc-veq-test")
 public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceiver, IBuildReceiver {
-    private static final String RES_VER = "2.1";
+    private static final String RES_VER = "2.2";
     private static final String RES_URL =
             "https://dl.google.com/android/xts/cts/hostsidetests/mediapc/videoencodingquality/CtsVideoEncodingQualityHostTestCases-"
                     + RES_VER
@@ -302,10 +302,37 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
     public static List<Object[]> input() {
         final List<Object[]> args = new ArrayList<>();
         args.addAll(AVC_VBR_B0_PARAMS);
+        args.addAll(getRescaledParams(AVC_VBR_B0_PARAMS, "_rescaled_360p"));
+        args.addAll(getRescaledParams(AVC_VBR_B0_PARAMS, "_rescaled_540p"));
+        args.addAll(getRescaledParams(AVC_VBR_B0_PARAMS, "_rescaled_720p"));
+
         args.addAll(AVC_VBR_B1_PARAMS);
+        args.addAll(getRescaledParams(AVC_VBR_B1_PARAMS, "_rescaled_360p"));
+        args.addAll(getRescaledParams(AVC_VBR_B1_PARAMS, "_rescaled_540p"));
+        args.addAll(getRescaledParams(AVC_VBR_B1_PARAMS, "_rescaled_720p"));
+
         args.addAll(HEVC_VBR_B0_PARAMS);
+        args.addAll(getRescaledParams(HEVC_VBR_B0_PARAMS, "_rescaled_360p"));
+        args.addAll(getRescaledParams(HEVC_VBR_B0_PARAMS, "_rescaled_540p"));
+        args.addAll(getRescaledParams(HEVC_VBR_B0_PARAMS, "_rescaled_720p"));
+
         args.addAll(HEVC_VBR_B1_PARAMS);
+        args.addAll(getRescaledParams(HEVC_VBR_B1_PARAMS, "_rescaled_360p"));
+        args.addAll(getRescaledParams(HEVC_VBR_B1_PARAMS, "_rescaled_540p"));
+        args.addAll(getRescaledParams(HEVC_VBR_B1_PARAMS, "_rescaled_720p"));
         return args;
+    }
+
+    private static List<Object[]> getRescaledParams(List<Object[]> params, String suffix) {
+        List<Object[]> rescaledParams = new ArrayList<>();
+        for (Object[] param : params) {
+            String jsonName = (String) param[0];
+            String testName = (String) param[1];
+            String rescaledJsonName = jsonName.replace(".json", suffix + ".json");
+            String rescaledTestName = testName + suffix;
+            rescaledParams.add(new Object[] {rescaledJsonName, rescaledTestName});
+        }
+        return rescaledParams;
     }
 
     @Override
@@ -479,6 +506,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
         int frameCount = obj.getInt("FrameCount");
         int clipDuration = frameCount / fps;
         boolean mandatory = obj.optBoolean("Mandatory", true);
+        boolean rescale = obj.optBoolean("Rescale", false);
 
         String refFilePath = sHostWorkDir.getPath() + "/samples/" + refFileName;
         String devRefFilePath = deviceSamplesDir + refFileName;
@@ -520,11 +548,20 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
             JSONArray codecConfigs = obj.getJSONArray("CodecConfigs");
             int th = Runtime.getRuntime().availableProcessors() / 2;
             th = Math.min(Math.max(1, th), 8);
-            String filter =
-                    "[0:v]setpts=PTS-STARTPTS[reference];[1:v]setpts=PTS-STARTPTS[distorted];"
-                            + "[distorted][reference]libvmaf=feature=name=psnr:model=version"
-                            + "=vmaf_v0.6.1:n_threads="
-                            + th;
+            String filter;
+            if (rescale) {
+                filter =
+                        "[0:v]setpts=PTS-STARTPTS[ref_pts];[1:v]setpts=PTS-STARTPTS[dist_pts];"
+                                + "[dist_pts][ref_pts]scale2ref=flags=bicubic[dist_scaled][ref_out];"
+                                + "[dist_scaled][ref_out]libvmaf=feature=name=psnr:model=version=vmaf_v0.6.1:n_threads="
+                                + th;
+            } else {
+                filter =
+                        "[0:v]setpts=PTS-STARTPTS[reference];[1:v]setpts=PTS-STARTPTS[distorted];"
+                                + "[distorted][reference]libvmaf=feature=name=psnr:model=version"
+                                + "=vmaf_v0.6.1:n_threads="
+                                + th;
+            }
 
             // First loop to kick off VMAF calculations in parallel
             List<Process> vmafProcesses = new ArrayList<>();
@@ -631,6 +668,10 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
                 String codec = obj.optString("TestMediaType", "video/avc");
                 int width = obj.optInt("Width", 0);
                 int height = obj.optInt("Height", 0);
+                if (rescale) {
+                    width = obj.optInt("RescaleWidth", width);
+                    height = obj.optInt("RescaleHeight", height);
+                }
 
                 JSONObject firstConfig = codecConfigs.getJSONObject(0);
                 int maxBFrames = firstConfig.optInt("MaxBFrames", 0);
