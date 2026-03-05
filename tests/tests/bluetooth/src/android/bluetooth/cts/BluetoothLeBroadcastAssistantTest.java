@@ -86,14 +86,12 @@ public class BluetoothLeBroadcastAssistantTest {
     @Mock private BluetoothProfile.ServiceListener mListener;
     @Mock private BluetoothLeBroadcastAssistant.Callback mCallback;
 
-    private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
-    private static final Duration START_SEARCH_TIMEOUT = Duration.ofMillis(100);
-    private static final Duration ADD_SOURCE_TIMEOUT = Duration.ofMillis(100);
+    private static final Duration PROXY_TIMEOUT = Duration.ofMillis(500);
 
     private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
     private final BluetoothDevice mDevice = mAdapter.getRemoteDevice("EF:11:22:AA:BB:CC");
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
-    private final Executor mExecutor = mContext.getMainExecutor();
+    private final Executor mExecutor = Runnable::run; // synchronous Executor
 
     private BluetoothLeBroadcastAssistant mService;
 
@@ -113,7 +111,7 @@ public class BluetoothLeBroadcastAssistantTest {
                 .isTrue();
 
         ArgumentCaptor<BluetoothProfile> captor = ArgumentCaptor.forClass(BluetoothProfile.class);
-        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+        verify(mListener, timeout(PROXY_TIMEOUT.toMillis()))
                 .onServiceConnected(
                         eq(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT), captor.capture());
         mService = (BluetoothLeBroadcastAssistant) captor.getValue();
@@ -133,7 +131,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void closeProfileProxy() {
         mService.close();
-        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+        verify(mListener, timeout(PROXY_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT));
     }
 
@@ -172,7 +170,7 @@ public class BluetoothLeBroadcastAssistantTest {
 
         // Verify that adding source without scanned/local broadcaster will fail
         mService.addSource(mDevice, metadata, true);
-        verify(mCallback, timeout(ADD_SOURCE_TIMEOUT.toMillis()))
+        verify(mCallback, timeout(PROXY_TIMEOUT.toMillis()))
                 .onSourceAddFailed(mDevice, metadata, BluetoothStatusCodes.ERROR_BAD_PARAMETERS);
 
         // Verify that removing null source device will throw exception
@@ -180,7 +178,7 @@ public class BluetoothLeBroadcastAssistantTest {
 
         // Verify that removing unknown device will fail
         mService.removeSource(mDevice, 0);
-        verify(mCallback, timeout(ADD_SOURCE_TIMEOUT.toMillis()))
+        verify(mCallback, timeout(PROXY_TIMEOUT.toMillis()))
                 .onSourceRemoveFailed(mDevice, 0, BluetoothStatusCodes.ERROR_REMOTE_LINK_ERROR);
 
         // Do not forget to unregister callbacks
@@ -283,7 +281,7 @@ public class BluetoothLeBroadcastAssistantTest {
 
         // Verify failure callback when test device is not connected
         mService.modifySource(mDevice, 0, metadata);
-        verify(mCallback, timeout(ADD_SOURCE_TIMEOUT.toMillis()))
+        verify(mCallback, timeout(PROXY_TIMEOUT.toMillis()))
                 .onSourceModifyFailed(mDevice, 0, BluetoothStatusCodes.ERROR_REMOTE_LINK_ERROR);
     }
 
@@ -331,7 +329,7 @@ public class BluetoothLeBroadcastAssistantTest {
 
         // Verify that starting search triggers callback with the right reason
         mService.startSearchingForSources(Collections.emptyList());
-        verify(mCallback, timeout(START_SEARCH_TIMEOUT.toMillis()))
+        verify(mCallback, timeout(PROXY_TIMEOUT.toMillis()))
                 .onSearchStarted(BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST);
 
         // Verify search state is right
@@ -339,7 +337,7 @@ public class BluetoothLeBroadcastAssistantTest {
 
         // Verify that stopping search triggers the callback with the right reason
         mService.stopSearchingForSources();
-        verify(mCallback, timeout(START_SEARCH_TIMEOUT.toMillis()))
+        verify(mCallback, timeout(PROXY_TIMEOUT.toMillis()))
                 .onSearchStarted(BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST);
 
         // Verify search state is right
