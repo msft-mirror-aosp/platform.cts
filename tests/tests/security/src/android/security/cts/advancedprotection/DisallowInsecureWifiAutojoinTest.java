@@ -21,7 +21,7 @@ import static android.security.advancedprotection.AdvancedProtectionManager.FEAT
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
 
-@RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_INSECURE_WIFI_AUTOJOIN)
+@RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_INSECURE_WIFI_AUTOJOIN_V2)
 public class DisallowInsecureWifiAutojoinTest extends BaseAdvancedProtectionFeatureTest {
     @Override
     protected int getFeatureId() {
