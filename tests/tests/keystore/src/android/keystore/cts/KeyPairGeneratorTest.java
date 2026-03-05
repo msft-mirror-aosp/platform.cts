@@ -24,6 +24,7 @@ import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -562,9 +563,9 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -609,9 +610,9 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -655,9 +656,9 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -704,9 +705,9 @@ public class KeyPairGeneratorTest {
                         | KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -1104,9 +1105,9 @@ public class KeyPairGeneratorTest {
         assertEquals(
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY, keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getDigests()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
@@ -1145,9 +1146,9 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getDigests()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
