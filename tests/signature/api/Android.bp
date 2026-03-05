@@ -120,6 +120,22 @@ genrule {
 }
 
 genrule {
+    name: "cts-android-test-base-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android-test-base.txt",
+        ],
+        default: [
+            ":android-test-base-current.txt",
+        ],
+    }),
+    out: [
+        "android-test-base-current.api.gz",
+    ],
+}
+
+genrule {
     name: "cts-android-test-mock-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
@@ -131,11 +147,43 @@ genrule {
 }
 
 genrule {
+    name: "cts-android-test-mock-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android-test-mock.txt",
+        ],
+        default: [
+            ":android-test-mock-current.txt",
+        ],
+    }),
+    out: [
+        "android-test-mock-current.api.gz",
+    ],
+}
+
+genrule {
     name: "cts-android-test-runner-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
         ":android-test-runner-current.txt",
     ],
+    out: [
+        "android-test-runner-current.api.gz",
+    ],
+}
+
+genrule {
+    name: "cts-android-test-runner-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android-test-runner.txt",
+        ],
+        default: [
+            ":android-test-runner-current.txt",
+        ],
+    }),
     out: [
         "android-test-runner-current.api.gz",
     ],
