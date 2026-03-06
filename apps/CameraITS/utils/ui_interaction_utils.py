@@ -1126,7 +1126,8 @@ def _watch_start(device_id, pkg_name):
       'start',
       '-m',
       (
-          'android.control.captureIntent,android.jpeg.quality,'
+          'android.control.captureIntent,'
+          'android.jpeg.quality,'
           'android.control.zoomRatio,'
           'android.scaler.cropRegion,'
           'android.control.zoomMethod,'
@@ -1134,7 +1135,20 @@ def _watch_start(device_id, pkg_name):
           'android.shading.mode,'
           'android.sensor.sensitivity,'
           'android.sensor.exposureTime,'
-          '3a'
+          'android.control.aeMode,'
+          'android.control.afMode,'
+          'android.control.awbMode,'
+          'android.control.aeState,'
+          'android.control.afState,'
+          'android.control.awbState,'
+          'android.control.aeLock,'
+          'android.control.awbLock,'
+          'android.control.aeAntibandingMode,'
+          'android.control.aeTargetFpsRange,'
+          'android.control.effectMode,'
+          'android.control.mode,'
+          'android.control.sceneMode,'
+          'android.control.videoStabilizationMode'
       ),
       '-c',
       pkg_name,
