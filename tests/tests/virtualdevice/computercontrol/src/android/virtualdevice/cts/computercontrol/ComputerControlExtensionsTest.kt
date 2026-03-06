@@ -16,12 +16,15 @@
 
 package android.virtualdevice.cts.computercontrol
 
+import android.app.Activity
+import android.content.ComponentName
 import android.content.IntentSender
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.server.wm.LockScreenSession
 import android.server.wm.WindowManagerStateHelper
+import android.virtualdevice.cts.common.VirtualDeviceSession
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
@@ -282,6 +285,50 @@ class ComputerControlExtensionsTest {
     }
 
     @Test
+    fun testRequestSession_pretendingToRunOnVirtualDevice_failWithDeviceLocked() {
+        VirtualDeviceSession(getInstrumentation(), "testdevice").use { deviceSession ->
+            // The agent is claiming to be running on the virtual device but is not.
+            val deviceContext = context.createDeviceContext(deviceSession.deviceId)
+            extension = ComputerControlExtensions.getInstance(deviceContext)
+
+            LockScreenSession(getInstrumentation(), WindowManagerStateHelper()).use { lockSession ->
+                lockSession.setLockCredential().gotoKeyguard()
+                val params =
+                    ComputerControlSession.Params.Builder(deviceContext)
+                        .setName("${testName.methodName}")
+                        .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                        .build()
+                val callback = ComputerControlSessionCallbackImpl()
+                extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
+                val errorCode = callback.awaitSessionCreationError()
+                assertThat(errorCode).isEqualTo(ComputerControlSession.ERROR_DEVICE_LOCKED)
+            }
+        }
+    }
+
+    @Test
+    fun testRequestSession_activityOnVirtualDevice_succeedWithDeviceLocked() {
+        VirtualDeviceSession(getInstrumentation(), "testdevice").use { deviceSession ->
+            // The agent has an activity running on the virtual device.
+            deviceSession.launchActivity(ComponentName(context, TestActivity::class.java))
+            val deviceContext = context.createDeviceContext(deviceSession.deviceId)
+            extension = ComputerControlExtensions.getInstance(deviceContext)
+
+            LockScreenSession(getInstrumentation(), WindowManagerStateHelper()).use { lockSession ->
+                lockSession.setLockCredential().gotoKeyguard()
+                val params =
+                    ComputerControlSession.Params.Builder(deviceContext)
+                        .setName("${testName.methodName}")
+                        .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                        .build()
+                val callback = ComputerControlSessionCallbackImpl()
+                extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
+                callback.awaitSessionAndClose()
+            }
+        }
+    }
+
+    @Test
     fun testRequestSession_failWithPermissionDenied() {
         try {
             SystemUtil.runShellCommand("appops set com.android.shell COMPUTER_CONTROL ignore")
@@ -298,6 +345,8 @@ class ComputerControlExtensionsTest {
             SystemUtil.runShellCommand("appops set com.android.shell COMPUTER_CONTROL allow")
         }
     }
+
+    class TestActivity : Activity()
 
     companion object {
         private const val TAG = "ComputerControlExtensionsTest"

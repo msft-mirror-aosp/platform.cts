@@ -22,11 +22,14 @@
         <package android:name="android.computercontrol.testapp" />
         <package android:name="android.computercontrol.testapp2" />
         <package android:name="android.computercontrol.testapp2withoutlauncher" />
+        <package android:name="android.virtualdevice.cts.virtualdevicesessionapp" />
     </queries>
 
     <application android:testOnly="true">
         <uses-library android:name="android.test.runner" />
         <uses-library android:name="com.android.extensions.computercontrol" android:required="false" />
+
+        <activity android:name=".ComputerControlExtensionsTest$TestActivity" />
     </application>
 
     <instrumentation

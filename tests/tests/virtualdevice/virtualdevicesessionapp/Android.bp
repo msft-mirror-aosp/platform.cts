@@ -1,4 +1,4 @@
-// Copyright (C) 2022 The Android Open Source Project
+// Copyright (C) 2026 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,27 +17,19 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_library {
-    name: "CtsVirtualDeviceCommonLib",
-    sdk_version: "test_current",
-    min_sdk_version: "30",
+android_test_helper_app {
+    name: "CtsVirtualDeviceSessionApp",
     srcs: [
         "src/**/*.java",
-        "src/**/*.aidl",
-    ],
-    aidl: {
-        local_include_dirs: ["src"],
-    },
-    libs: [
-        "androidx.annotation_annotation",
     ],
     static_libs: [
-        "androidx.test.ext.junit",
-        "cts-wm-util",
-        "junit",
-        "flag-junit",
-        "android.companion.virtualdevice.flags-aconfig-java",
-        "android.media.audiopolicy-aconfig-java",
+        "CtsVirtualDeviceCommonLib",
     ],
     manifest: "AndroidManifest.xml",
+    defaults: ["cts_defaults"],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+    ],
+    sdk_version: "test_current",
 }
