@@ -15,5 +15,27 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.1.4/H-1-1"
+# TODO: b/488059407 - add name and measurements.
 group: GROUP_MEDIA
-description: "- Hardware overlays"
+description: "Hardware overlays"
+
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_35
+    specification:
+      "MUST have at least 6 hardware overlays in the Display processing unit "
+      "(DPU), with at least 2 of them capable of displaying 10-bit video "
+      "content."
+  }
+}
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_37
+    specification:
+      "MUST have at least 6 hardware overlays in the Display processing unit "
+      "(DPU), with at least 2 of them capable of displaying 10-bit video "
+      "content."
+  }
+}
