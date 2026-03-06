@@ -36,7 +36,6 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
-import static com.android.internal.telephony.flags.Flags.FLAG_LIMIT_RAW_TABLE_VISIBILITY;
 import static com.android.internal.telephony.flags.Flags.FLAG_MESSAGE_PROMOTION;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
@@ -667,7 +666,6 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_LIMIT_RAW_TABLE_VISIBILITY)
     public void query_rawTable_cantQuery() {
         Uri rawUri = Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, "raw");
         try {
