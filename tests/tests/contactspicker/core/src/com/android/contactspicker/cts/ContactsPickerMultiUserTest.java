@@ -22,6 +22,7 @@ import static android.provider.ContactsPickerSessionContract.EXTRA_PICK_CONTACTS
 import static com.android.contactspicker.cts.common.ContactsPickerTestHelper.verifyUriReturned;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.Context;
@@ -48,7 +49,9 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile;
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.types.OptionalBoolean;
+import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.contactspicker.cts.common.ContactsPickerTestHelper;
 
 import org.junit.After;
@@ -93,11 +96,22 @@ public class ContactsPickerMultiUserTest {
 
     private UserManager mUserManager;
 
+    private String mAppCloningFlagState;
+
     private static final Context sContext =
             InstrumentationRegistry.getInstrumentation().getContext();
 
     @Before
-    public void setUp() {
+    public void setUp() throws AdbException {
+        // Setup for Clone profile
+        if (isCloneProfileContext()) {
+            assumeTrue(
+                    "App cloning building block config is disabled on the device",
+                    isAppCloningBuildingBlockConfigEnabled());
+            mAppCloningFlagState = getAppCloningBuildingBlocksFlag().trim();
+            switchOnAppCloningBuildingBlocksFlag();
+        }
+
         mUserManager = sContext.getSystemService(UserManager.class);
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mUiDevice.pressHome();
@@ -109,7 +123,12 @@ public class ContactsPickerMultiUserTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws AdbException {
+        // Teardown for clone profile
+        if (isCloneProfileContext() && isAppCloningBuildingBlockConfigEnabled()) {
+            resetAppCloningBuildingBlocksFlag(mAppCloningFlagState);
+        }
+
         mUiDevice.pressHome();
 
         // Remove Contacts
@@ -161,26 +180,33 @@ public class ContactsPickerMultiUserTest {
                                 resultData,
                                 ContactsPickerSessionContract.AUTHORITY,
                                 List.of(expectedDataId)));
-
-        ContactsPickerTestHelper.removeTestContacts(
-                sContext, sCreatedRawContactIds, sContext.getUser());
-        sCreatedRawContactIds.clear();
-        sContactDataIdMap.clear();
-        SystemClock.sleep(CP2_IDLE_MS);
     }
 
     private UserHandle getUserForContactWriteOps() {
         UserHandle user = sContext.getUser();
+        if (isCloneProfileContext()) {
+            try (var p =
+                    TestApis.permissions()
+                            .withPermission(Manifest.permission.INTERACT_ACROSS_USERS)) {
+                // For Clone Profile, we need to perform write ops in parent user.
+                return mUserManager.getProfileParent(sContext.getUser());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to query UserManager", e);
+            }
+        }
+        return user;
+    }
+
+    private boolean isCloneProfileContext() {
         try (var p =
                 TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS)) {
-            // For Clone Profile, we need to perform write ops in parent user.
             if (mUserManager.isCloneProfile()) {
-                return mUserManager.getProfileParent(sContext.getUser());
+                return true;
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to query UserManager", e);
         }
-        return user;
+        return false;
     }
 
     private static void createContactWithPhoneNumber(UserHandle user) {
@@ -241,5 +267,60 @@ public class ContactsPickerMultiUserTest {
 
             verifier.verify(activityRef[0].resultCode, activityRef[0].resultData);
         }
+    }
+
+    private boolean isAppCloningBuildingBlockConfigEnabled() {
+        String identifier = "android:bool/config_enableAppCloningBuildingBlocks";
+
+        try {
+            // execute() throws an AdbException if the exit code is non-zero
+            String output =
+                    ShellCommand.builder("cmd overlay lookup android")
+                            .addOperand(identifier)
+                            .execute();
+
+            // Check for custom error tag in stdout
+            if (output.contains("ERROR_MESSAGE_TAG")) {
+                return false;
+            }
+
+            return Boolean.parseBoolean(output.trim());
+        } catch (AdbException e) {
+            return false;
+        }
+    }
+
+    private String getAppCloningBuildingBlocksFlag() throws AdbException {
+        return ShellCommand.builder("device_config get")
+                .addOperand("app_cloning")
+                .addOperand("enable_app_cloning_building_blocks")
+                .execute();
+    }
+
+    private void resetAppCloningBuildingBlocksFlag(String initialState) throws AdbException {
+        if (initialState == null || initialState.isEmpty() || initialState.equals("null")) {
+            removeAppCloningBuildingBlocksFlag();
+        } else {
+            switchAppCloningBuildingBlocksFlag(initialState);
+        }
+    }
+
+    private void removeAppCloningBuildingBlocksFlag() throws AdbException {
+        ShellCommand.builder("device_config delete")
+                .addOperand("app_cloning")
+                .addOperand("enable_app_cloning_building_blocks")
+                .execute();
+    }
+
+    private void switchOnAppCloningBuildingBlocksFlag() throws AdbException {
+        switchAppCloningBuildingBlocksFlag("true");
+    }
+
+    private void switchAppCloningBuildingBlocksFlag(String value) throws AdbException {
+        ShellCommand.builder("device_config put")
+                .addOperand("app_cloning")
+                .addOperand("enable_app_cloning_building_blocks")
+                .addOperand(value)
+                .execute();
     }
 }
