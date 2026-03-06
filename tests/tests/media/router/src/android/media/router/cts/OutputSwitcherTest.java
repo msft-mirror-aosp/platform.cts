@@ -936,6 +936,50 @@ public class OutputSwitcherTest {
         assertThat(capturedVolume).isEqualTo(targetValue);
     }
 
+    @Test
+    public void showSystemOutputSwitcher_showsSystemSubtextForRoute() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        RouteListingPreference.Item lowPowerItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID1))
+                        .setSubText(RouteListingPreference.Item.SUBTEXT_DEVICE_LOW_POWER)
+                        .build();
+        RouteListingPreference.Item adPlayingItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID2))
+                        .setSubText(RouteListingPreference.Item.SUBTEXT_AD_ROUTING_DISALLOWED)
+                        .build();
+        RouteListingPreference routeListingPreference =
+                new RouteListingPreference.Builder()
+                        .setItems(List.of(lowPowerItem, adPlayingItem))
+                        .build();
+        mRouter2.setRouteListingPreference(routeListingPreference);
+        mRouter2.showSystemOutputSwitcher();
+
+        UiObject2 route1NameObject =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiObject2 route1TextContainer = route1NameObject.getParent();
+        List<UiObject2> route1SubtextObjects =
+                route1TextContainer.findObjects(By.text(not(ROUTE_NAME1)));
+        assertThat(route1SubtextObjects).hasSize(1);
+        String route1Subtext = route1SubtextObjects.get(0).getText();
+        UiObject2 route2NameObject =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME2).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiObject2 route2TextContainer = route2NameObject.getParent();
+        List<UiObject2> route2SubtextObjects =
+                route2TextContainer.findObjects(By.text(not(ROUTE_NAME2)));
+        assertThat(route2SubtextObjects).hasSize(1);
+        String route2Subtext = route2SubtextObjects.get(0).getText();
+        assertThat(route1Subtext).isNotEqualTo(route2Subtext);
+    }
+
+    /** Returns a Pattern that matches any non-empty string EXCEPT the exact text provided. */
+    private static Pattern not(String exactText) {
+        return Pattern.compile("^(?!" + Pattern.quote(exactText) + "$).+$");
+    }
+
     /**
      * Verifies that the first route appears before the second route in the logical UI tree, which
      * works regardless of whether the UI is a vertical list, horizontal row, or grid.
