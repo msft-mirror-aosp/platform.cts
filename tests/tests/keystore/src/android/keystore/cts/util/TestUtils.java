@@ -1270,7 +1270,7 @@ public class TestUtils {
         }
     }
 
-    public static KeyProtection getMinimalWorkingImportParametersWithLimitedUsageForSigningingWith(
+    public static KeyProtection getMinimalWorkingImportParametersWithLimitedUsageForSigningWith(
             String signatureAlgorithm, int maxUsageCount) {
         String keyAlgorithm = getSignatureAlgorithmKeyAlgorithm(signatureAlgorithm);
         if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {
