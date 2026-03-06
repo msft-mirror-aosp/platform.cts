@@ -463,8 +463,13 @@ public class AbsListViewTest {
             assertEquals(1, mListView.getSelectedItemPosition());
             final int[] pt = new int[2];
             mListView.getLocationOnScreen(pt);
-            mCtsTouchUtils.emulateDragGesture(mInstrumentation, mActivityRule,
-                    pt[0] + 2, pt[1] + 2, 0, 10);
+            mCtsTouchUtils.emulateDragGesture(
+                    mInstrumentation,
+                    mActivityRule,
+                    pt[0] + mListView.getWidth() / 2,
+                    pt[1] + 2,
+                    0,
+                    10);
             assertEquals(AdapterView.INVALID_POSITION, mListView.getSelectedItemPosition());
             // leave touch-mode
             mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB);
