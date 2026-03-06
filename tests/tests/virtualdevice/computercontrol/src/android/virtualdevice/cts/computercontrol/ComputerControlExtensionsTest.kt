@@ -32,7 +32,6 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.use
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
@@ -95,6 +94,8 @@ class ComputerControlExtensionsTest {
         @Deprecated("Use LifecycleCallback instead") override fun onSessionClosed() {}
     }
 
+    private val TARGET_COMPUTER_CONTROL_VERSION = 1
+
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Rule
@@ -120,7 +121,11 @@ class ComputerControlExtensionsTest {
     @Test
     fun testGetInstance_nullContext() {
         assertThrows(NullPointerException::class.java) {
-            ComputerControlExtensions.getInstance(null)
+            ComputerControlExtensions.getInstance(null!!)
+        }
+
+        assertThrows(NullPointerException::class.java) {
+            ComputerControlExtensions.getInstance(null!!, TARGET_COMPUTER_CONTROL_VERSION)
         }
     }
 
@@ -128,17 +133,35 @@ class ComputerControlExtensionsTest {
     fun testGetInstance_withoutPermission_returnsNonNull() {
         getInstrumentation().uiAutomation.dropShellPermissionIdentity()
         assertThat(ComputerControlExtensions.getInstance(context)).isNotNull()
+        assertThat(
+            ComputerControlExtensions.getInstance(
+                context,
+                TARGET_COMPUTER_CONTROL_VERSION
+            )
+        ).isNotNull()
     }
 
     @Test
     fun isSessionCreationAvailable_returnsTrue() {
         assertThat(ComputerControlExtensions.isSessionCreationAvailable(context)).isTrue()
+        assertThat(
+            ComputerControlExtensions.isSessionCreationAvailable(
+                context,
+                TARGET_COMPUTER_CONTROL_VERSION
+            )
+        ).isTrue()
     }
 
     @Test
     fun isSessionCreationAvailable_withoutPermission_returnsFalse() {
         getInstrumentation().uiAutomation.dropShellPermissionIdentity()
         assertThat(ComputerControlExtensions.isSessionCreationAvailable(context)).isFalse()
+        assertThat(
+            ComputerControlExtensions.isSessionCreationAvailable(
+                context,
+                TARGET_COMPUTER_CONTROL_VERSION
+            )
+        ).isTrue()
     }
 
     @Test
