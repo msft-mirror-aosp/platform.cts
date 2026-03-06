@@ -38,11 +38,21 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-            <Button
-                android:id="@+id/audio_playback_params_button_test"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/audio_playback_params_test"/>
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <Button
+                    android:id="@+id/audio_playback_params_button_test"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/audio_playback_params_test"/>
+                <Button
+                    android:id="@+id/audio_playback_params_button_test_offload"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Test Offload"/>
+            </LinearLayout>
 
             <ProgressBar
                 android:id="@+id/audio_playback_params_progress_bar"
