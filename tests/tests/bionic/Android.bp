@@ -51,6 +51,7 @@ cc_defaults {
 
     static_libs: [
         "libbase",
+        "libelfutils",
         "libmeminfo",
         "libziparchive",
         "libtinyxml2",
