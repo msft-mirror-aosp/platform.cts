@@ -350,7 +350,6 @@ public abstract class BaseNotificationManagerTest {
                     Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
             BridgedNotificationMetadata metadata =
                     new BridgedNotificationMetadata(
-                            BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
                             "test_display_name",
                             "test_bridged_package",
                             "TEST_CHANNEL_ID",

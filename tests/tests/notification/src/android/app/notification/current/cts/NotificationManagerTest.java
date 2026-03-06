@@ -3719,7 +3719,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         Icon icon = Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
         BridgedNotificationMetadata metadata =
                 new BridgedNotificationMetadata(
-                        BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
                         "test_display_name",
                         "test_package",
                         "test_channel_id",
@@ -3746,7 +3745,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         Icon icon = Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
         BridgedNotificationMetadata metadata =
                 new BridgedNotificationMetadata(
-                        BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
                         "test_display_name",
                         "test_package",
                         "test_channel_id",
