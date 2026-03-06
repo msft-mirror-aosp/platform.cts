@@ -22,13 +22,15 @@ import android.hardware.input.VirtualTouchEvent
 import android.hardware.input.VirtualTouchscreen
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
-import android.os.SystemClock
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.view.Choreographer
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.test.filters.SmallTest
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Test
@@ -64,10 +66,9 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
             .setPointerId(1)
             .setMajorAxisSize(inputSize)
             .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-        val eventTimeGapMs = 10L
 
         // Down event
-        mVirtualTouchscreen.sendTouchEvent(
+        sendTouchEventOnNextFrame(
             builder
                 .setAction(VirtualTouchEvent.ACTION_DOWN)
                 .setX(point.x.toFloat())
@@ -75,7 +76,6 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
                 .setPressure(255f)
                 .build()
         )
-        SystemClock.sleep(eventTimeGapMs)
         expectedEvents.add(
             VirtualInputEventCreator.createTouchscreenEvent(
                 MotionEvent.ACTION_DOWN,
@@ -100,8 +100,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
             builder.setX((point.x + i).toFloat())
                 .setY((point.y + i).toFloat())
                 .setPressure(255f)
-            mVirtualTouchscreen.sendTouchEvent(builder.build())
-            SystemClock.sleep(eventTimeGapMs)
+            sendTouchEventOnNextFrame(builder.build())
             expectedEvents.add(
                 VirtualInputEventCreator.createTouchscreenEvent(
                     MotionEvent.ACTION_MOVE,
@@ -114,7 +113,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
             )
         }
 
-        mVirtualTouchscreen.sendTouchEvent(
+        sendTouchEventOnNextFrame(
             builder
                 .setAction(finalAction)
                 .setToolType(
@@ -203,7 +202,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
     }
 
     private fun sendHoverEvent(action: Int, x: Float, y: Float) {
-        mVirtualTouchscreen.sendTouchEvent(
+        sendTouchEventOnNextFrame(
             VirtualTouchEvent.Builder()
                 .setAction(action)
                 .setPointerId(1)
@@ -230,6 +229,29 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
         MotionEvent.ACTION_UP,
         MotionEvent.ACTION_CANCEL,
     )
+
+    /**
+     * Send a VirtualTouchEvent and block until it is dispatched on the next display frame.
+     *
+     * To prevent the batching of input events, we ensure that events are sent only once per frame.
+     * This is done by using Choreographer.postFrameCallback, which hooks into the display's vsync
+     * cycle. The Choreographer inherently guarantees that all callbacks posted from outside a frame
+     * (or during a frame callback but for the next frame phase) will not execute until the *next*
+     * VSync. Thus, blocking on this callback guarantees exactly one event per frame.
+     *
+     * Even though we are sending 1 event per frame, device slowness may still cause events to be
+     * batched (and maybe even resampled) when they are delivered to the app.
+     */
+    private fun sendTouchEventOnNextFrame(event: VirtualTouchEvent) {
+        val latch = CountDownLatch(1)
+        mInstrumentation.runOnMainSync {
+            Choreographer.getInstance().postFrameCallback {
+                mVirtualTouchscreen.sendTouchEvent(event)
+                latch.countDown()
+            }
+        }
+        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue()
+    }
 
     companion object {
         private const val DEVICE_NAME = "CtsVirtualTouchscreenTestDevice"
