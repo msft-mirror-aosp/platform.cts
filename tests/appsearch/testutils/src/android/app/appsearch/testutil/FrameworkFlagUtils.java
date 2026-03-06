@@ -58,7 +58,14 @@ public final class FrameworkFlagUtils {
                 "Skipping test because flag " + flagName + " is enabled.", isFlagEnabled(flagName));
     }
 
-    private static boolean isFlagEnabled(@NonNull String flagName) {
+    /**
+     * Checks if a framework flag is enabled.
+     *
+     * <p>If the flag is not available, returns false.
+     *
+     * @param flagName The name of the flag to check.
+     */
+    public static boolean isFlagEnabled(@NonNull String flagName) {
         try {
             int lastDot = flagName.lastIndexOf('.');
             if (lastDot == -1) {

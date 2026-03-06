@@ -59,6 +59,7 @@ import static android.app.appsearch.testutil.AppsIndexerTestUtils.installPackage
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.retryAssert;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchMobileApplicationWithId;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.uninstallPackage;
+import static android.app.appsearch.testutil.FrameworkFlagUtils.isFlagEnabled;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -75,6 +76,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.appsearch.flags.Flags;
 
+import com.google.common.collect.Iterables;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -105,7 +107,6 @@ public class AppFunctionCtsTest {
                 });
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_packageChanges() throws Throwable {
         {
@@ -125,14 +126,11 @@ public class AppFunctionCtsTest {
             installPackage(mContext, TEST_APP_A_V2_PATH);
             retryAssert(
                     () -> {
-                        List<GenericDocument> appFunctions =
-                                searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
-                        List<String> functionIds = new ArrayList<>();
-                        for (int i = 0; i < appFunctions.size(); i++) {
-                            functionIds.add(
-                                    appFunctions.get(i).getPropertyString(PROPERTY_FUNCTION_ID));
-                        }
-                        assertThat(functionIds).containsExactly("com.example.utils#print1");
+                        GenericDocument appFunction =
+                                Iterables.getOnlyElement(
+                                        searchAppFunctionsWithPackageName(TEST_APP_A_PKG));
+                        assertThat(appFunction.getId())
+                                .isEqualTo(TEST_APP_A_PKG + "/com.example.utils#print1");
                     });
         }
 
@@ -145,12 +143,12 @@ public class AppFunctionCtsTest {
                                 searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
                         List<String> functionIds = new ArrayList<>();
                         for (int i = 0; i < appFunctions.size(); i++) {
-                            functionIds.add(
-                                    appFunctions.get(i).getPropertyString(PROPERTY_FUNCTION_ID));
+                            functionIds.add(appFunctions.get(i).getId());
                         }
                         assertThat(functionIds)
                                 .containsExactly(
-                                        "com.example.utils#print2", "com.example.utils#print3");
+                                        TEST_APP_A_PKG + "/com.example.utils#print2",
+                                        TEST_APP_A_PKG + "/com.example.utils#print3");
                     });
         }
 
@@ -171,7 +169,6 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_fullXml() throws Throwable {
         // The XML in A v2 has the full XML which specifies all the properties. Here we verify
@@ -183,8 +180,6 @@ public class AppFunctionCtsTest {
                             searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
                     assertThat(appFunctions).hasSize(1);
                     GenericDocument appFunction = appFunctions.get(0);
-                    assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
-                            .isEqualTo("com.example.utils#print1");
                     assertThat(appFunction.getPropertyString(PROPERTY_PACKAGE_NAME))
                             .isEqualTo(TEST_APP_A_PKG);
                     assertThat(appFunction.getPropertyBoolean(PROPERTY_ENABLED_BY_DEFAULT))
@@ -200,10 +195,12 @@ public class AppFunctionCtsTest {
                             .isEqualTo(true);
                     assertThat(appFunction.getPropertyLong(PROPERTY_DISPLAY_NAME_STRING_RES))
                             .isEqualTo(10);
+
+                    assertAppFunctionIdInGenericDocument(
+                            appFunction, TEST_APP_A_PKG, "com.example.utils#print1");
                 });
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_defaultValue() throws Throwable {
         // The XML in B V1 only have functionId, schema_name, schema_version and schema_category.
@@ -215,18 +212,13 @@ public class AppFunctionCtsTest {
                             searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                     assertThat(appFunctions).hasSize(1);
                     GenericDocument appFunction = appFunctions.get(0);
-                    assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
-                            .isEqualTo("com.example.utils#print5");
                     assertThat(appFunction.getPropertyBoolean(PROPERTY_ENABLED_BY_DEFAULT))
                             .isEqualTo(true);
-                    assertThat(
-                                    appFunction.getPropertyBoolean(
-                                            PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS))
-                            .isEqualTo(false);
+                    assertAppFunctionIdInGenericDocument(
+                            appFunction, TEST_APP_B_PKG, "com.example.utils#print5");
                 });
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_installAppWithNoAppFunction_retainIndexedFunctions()
             throws Throwable {
@@ -239,8 +231,8 @@ public class AppFunctionCtsTest {
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctions).hasSize(1);
                         GenericDocument appFunction = appFunctions.get(0);
-                        assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
-                                .isEqualTo("com.example.utils#print5");
+                        assertAppFunctionIdInGenericDocument(
+                                appFunction, TEST_APP_B_PKG, "com.example.utils#print5");
                     });
         }
 
@@ -261,13 +253,12 @@ public class AppFunctionCtsTest {
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctions).hasSize(1);
                         GenericDocument appFunction = appFunctions.get(0);
-                        assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
-                                .isEqualTo("com.example.utils#print5");
+                        assertAppFunctionIdInGenericDocument(
+                                appFunction, TEST_APP_B_PKG, "com.example.utils#print5");
                     });
         }
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctionsFromTwoApps() throws Throwable {
         // Install the test app B V1 which has one app function. That function should be indexed.
@@ -279,8 +270,8 @@ public class AppFunctionCtsTest {
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctions).hasSize(1);
                         GenericDocument appFunction = appFunctions.get(0);
-                        assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
-                                .isEqualTo("com.example.utils#print5");
+                        assertAppFunctionIdInGenericDocument(
+                                appFunction, TEST_APP_B_PKG, "com.example.utils#print5");
                     });
         }
 
@@ -294,20 +285,19 @@ public class AppFunctionCtsTest {
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctionsFromB).hasSize(1);
                         GenericDocument appFunctionFromB = appFunctionsFromB.get(0);
-                        assertThat(appFunctionFromB.getPropertyString(PROPERTY_FUNCTION_ID))
-                                .isEqualTo("com.example.utils#print5");
+                        assertAppFunctionIdInGenericDocument(
+                                appFunctionFromB, TEST_APP_B_PKG, "com.example.utils#print5");
 
                         List<GenericDocument> appFunctionsFromA =
                                 searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
                         assertThat(appFunctionsFromA).hasSize(1);
                         GenericDocument appFunctionFromA = appFunctionsFromA.get(0);
-                        assertThat(appFunctionFromA.getPropertyString(PROPERTY_FUNCTION_ID))
-                                .isEqualTo("com.example.utils#print1");
+                        assertAppFunctionIdInGenericDocument(
+                                appFunctionFromA, TEST_APP_A_PKG, "com.example.utils#print1");
                     });
         }
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexMobileApplicationAndAppFunction_withoutLauncherIcon() throws Throwable {
         {
@@ -321,19 +311,15 @@ public class AppFunctionCtsTest {
                                 searchMobileApplicationWithId(TEST_APP_B_PKG);
                         assertThat(mobileApplication).isNotNull();
                         // Its app functions should be indexed.
-                        List<GenericDocument> appFunctions =
-                                searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
-                        List<String> functionIds = new ArrayList<>();
-                        for (int i = 0; i < appFunctions.size(); i++) {
-                            functionIds.add(
-                                    appFunctions.get(i).getPropertyString(PROPERTY_FUNCTION_ID));
-                        }
-                        assertThat(functionIds).containsExactly("com.example.utils#print5");
+                        GenericDocument appFunction =
+                                Iterables.getOnlyElement(
+                                        searchAppFunctionsWithPackageName(TEST_APP_B_PKG));
+                        assertAppFunctionIdInGenericDocument(
+                                appFunction, TEST_APP_B_PKG, "com.example.utils#print5");
                     });
         }
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -408,7 +394,6 @@ public class AppFunctionCtsTest {
                 APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -437,7 +422,6 @@ public class AppFunctionCtsTest {
                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA);
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -471,7 +455,6 @@ public class AppFunctionCtsTest {
                 });
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -501,7 +484,6 @@ public class AppFunctionCtsTest {
                 .isEqualTo(APP_B_PRINT_APP_FUNCTION);
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -545,7 +527,6 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -590,7 +571,6 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -716,7 +696,6 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -798,7 +777,6 @@ public class AppFunctionCtsTest {
         }
     }
 
-
     @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -831,5 +809,16 @@ public class AppFunctionCtsTest {
         }
     }
 
-
+    /**
+     * Asserts that the app function ID is set correctly in the given {@link GenericDocument}.
+     *
+     * @param appFunction The {@link GenericDocument} representing the app function.
+     * @param packageName The package name of the app.
+     * @param functionId The ID of the app function.
+     */
+    private static void assertAppFunctionIdInGenericDocument(
+            GenericDocument appFunction, String packageName, String functionId) {
+        assertThat(appFunction.getId()).isEqualTo(packageName + "/" + functionId);
+        assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID)).isEqualTo(functionId);
+    }
 }

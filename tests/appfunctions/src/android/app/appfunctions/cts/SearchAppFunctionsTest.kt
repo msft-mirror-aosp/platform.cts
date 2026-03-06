@@ -318,6 +318,52 @@ class SearchAppFunctionsTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun searchAppFunctions_appLevelAppFunctionsWithV1Xml_shouldSeeAllPlatformFields() = doBlocking {
+        installPackage(
+            LegacySchemaHelperApp.APK_PATH,
+            LegacySchemaHelperApp.PACKAGE_NAME,
+            context,
+            checkIndexation = true,
+        )
+
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(setOf(LegacySchemaHelperApp.PACKAGE_NAME))
+                .build()
+        val results: List<AppFunctionMetadata> = manager.searchAppFunctions(searchSpec)
+
+        assertThat(results.map { it.name })
+            .containsExactlyElementsIn(LegacySchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
+        assertThat(
+                results
+                    .single {
+                        it.name ==
+                            LegacySchemaHelperApp.FunctionNames.CONTEXT_CONCAT_STRINGS_FUNCTION
+                    }
+                    .getScope()
+            )
+            .isEqualTo(AppFunctionMetadata.SCOPE_ACTIVITY)
+        assertThat(
+                results
+                    .single {
+                        it.name ==
+                            LegacySchemaHelperApp.FunctionNames.CONTEXT_CONCAT_STRINGS_FUNCTION
+                    }
+                    .getMetadataDocument()
+                    .getPropertyBoolean(AppFunctionMetadata.PROPERTY_ENABLED_BY_DEFAULT)
+            )
+            .isEqualTo(true)
+    }
+
+    @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
@@ -429,13 +475,11 @@ class SearchAppFunctionsTest {
 
                 assertThat(functionsGroupByPackage.keys).containsAnyIn(getVisiblePackages())
                 assertThat(
-                        functionsGroupByPackage[LegacySchemaHelperApp.PACKAGE_NAME]!!.map {
-                            it.name
-                        }
+                        functionsGroupByPackage[LegacySchemaHelperApp.PACKAGE_NAME]?.map { it.name }
                     )
                     .containsExactlyElementsIn(LegacySchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
                 assertThat(
-                        functionsGroupByPackage[DynamicSchemaHelperApp.PACKAGE_NAME]!!.map {
+                        functionsGroupByPackage[DynamicSchemaHelperApp.PACKAGE_NAME]?.map {
                             it.name
                         }
                     )
