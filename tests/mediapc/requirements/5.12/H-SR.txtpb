@@ -21,7 +21,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_34
     specification:
-      "Are Strongly Recommended to support support the Feature_HdrEditing "
+      "Are Strongly Recommended to support the Feature_HdrEditing "
       "feature for all hardware AV1 and HEVC encoders present on the device."
   }
 }
@@ -30,7 +30,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
-      "Are Strongly Recommended to support support the `Feature_HdrEditing` "
+      "Are Strongly Recommended to support the `Feature_HdrEditing` "
       "feature for all hardware AV1 and HEVC encoders present on the device."
   }
 }
@@ -39,7 +39,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
-      "Are Strongly Recommended to support support the `Feature_HdrEditing` "
+      "Are Strongly Recommended to support the `Feature_HdrEditing` "
       "feature for all hardware AV1 and HEVC encoders present on the device."
   }
 }
