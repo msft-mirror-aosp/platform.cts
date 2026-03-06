@@ -22,6 +22,9 @@ import static android.view.inputmethod.InputConnection.HANDWRITING_GESTURE_RESUL
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.editorMatcherForA11yIme;
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11yImeCommand;
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11yImeEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.DEFAULT_TIMEOUT;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.NOT_EXPECT_TIMEOUT;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.SYSTEM_OPERATION_TIMEOUT;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
@@ -116,6 +119,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -142,11 +146,8 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-    private static final long TIME_SLICE = TimeUnit.MILLISECONDS.toMillis(125);
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
-    private static final long EXPECTED_NOT_CALLED_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
-    private static final long LONG_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
-    private static final long IMMEDIATE_TIMEOUT_NANO = TimeUnit.MILLISECONDS.toNanos(200);
+    private static final Duration TIME_SLICE = Duration.ofMillis(125);
+    private static final Duration IMMEDIATE_TIMEOUT = Duration.ofMillis(200);
 
     @Rule
     public final ErrorCollector mErrorCollector = new ErrorCollector();
@@ -178,12 +179,14 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
         /**
          * Ensures that the method to be tested is called within {@param timeout}.
          *
-         * @param message Message to be shown when the method is not called despite the expectation.
-         * @param timeout Timeout in milliseconds.
+         * @param message message to be shown when the method is not called despite the expectation
+         * @param timeout timeout duration
          */
-        void expectMethodCalled(@NonNull String message, long timeout) {
+        void expectMethodCalled(@NonNull String message, @NonNull Duration timeout) {
             try {
-                assertTrue(message, mWaitUntilMethodCalled.await(timeout, TimeUnit.MILLISECONDS));
+                assertTrue(
+                        message,
+                        mWaitUntilMethodCalled.await(timeout.toMillis(), TimeUnit.MILLISECONDS));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 fail(message + e);
@@ -240,20 +243,21 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
         /**
          * Ensures that the method to be tested is called within {@param timeout}.
          *
-         * @param argumentsVerifier a {@link Consumer} to verify method arguments.
-         * @param timeout timeout in millisecond
-         * @throws AssertionError when {@link #onMethodCalled(Consumer)} was not called only once.
+         * @param argumentsVerifier a {@link Consumer} to verify method arguments
+         * @param timeout timeout duration
+         * @throws AssertionError when {@link #onMethodCalled(Consumer)} was not called only once
          */
-        void expectCalledOnce(@NonNull Consumer<Bundle> argumentsVerifier, long timeout) {
+        void expectCalledOnce(
+                @NonNull Consumer<Bundle> argumentsVerifier, @NonNull Duration timeout) {
             // Currently using busy-wait because CountDownLatch is not compatible with reset().
             // TODO: Consider using other more efficient operation.
-            long remainingTime = timeout;
+            Duration remainingTime = timeout;
             while (mCallCount.get() == 0) {
-                if (remainingTime < 0) {
+                if (remainingTime.isNegative()) {
                     fail("The method must be called, but was not within" + timeout + " msec.");
                 }
-                SystemClock.sleep(TIME_SLICE);
-                remainingTime -= TIME_SLICE;
+                SystemClock.sleep(TIME_SLICE.toMillis());
+                remainingTime = remainingTime.minus(TIME_SLICE);
             }
             assertEquals(1, mCallCount.get());
             final Bundle bundle = mArgs.get();
@@ -277,22 +281,23 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
         /**
          * Ensures that the method to be tested is not called within {@param timeout}.
          *
-         * @param callCountVerificationMessage A message to be used when the assertion fails.
-         * @param timeout timeout in millisecond
+         * @param callCountVerificationMessage message to be used when the assertion fails
+         * @param timeout timeout duration
          */
-        void expectNotCalled(@Nullable String callCountVerificationMessage, long timeout) {
+        void expectNotCalled(
+                @Nullable String callCountVerificationMessage, @NonNull Duration timeout) {
             // Currently using busy-wait because CountDownLatch is not compatible with reset().
             // TODO: Consider using other more efficient operation.
-            long remainingTime = timeout;
+            Duration remainingTime = timeout;
             while (true) {
                 if (mCallCount.get() != 0) {
                     fail("The method must not be called. params=" + evaluateBundle(mArgs.get()));
                 }
-                if (remainingTime < 0) {
+                if (remainingTime.isNegative()) {
                     break;  // This is indeed an expected scenario, not an error.
                 }
-                SystemClock.sleep(TIME_SLICE);
-                remainingTime -= TIME_SLICE;
+                SystemClock.sleep(TIME_SLICE.toMillis());
+                remainingTime = remainingTime.minus(TIME_SLICE);
             }
             if (callCountVerificationMessage != null) {
                 assertEquals(callCountVerificationMessage, 0, mCallCount.get());
@@ -380,7 +385,7 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     private void triggerUnbindInput() {
         final boolean isInstant = InstrumentationRegistry.getInstrumentation().getTargetContext()
                 .getPackageManager().isInstantApp();
-        MockTestActivityUtil.launchSync(isInstant, TIMEOUT);
+        MockTestActivityUtil.launchSync(isInstant, DEFAULT_TIMEOUT.toMillis());
     }
 
     /**
@@ -544,10 +549,10 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             });
 
             // Wait until the MockIme gets bound to the TestActivity.
-            expectBindInput(stream, Process.myPid(), TIMEOUT);
+            expectBindInput(stream, Process.myPid(), DEFAULT_TIMEOUT);
 
             // Wait until "onStartInput" gets called for the EditText.
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
 
             testProcedure.run(imeSession, stream);
         }
@@ -610,16 +615,21 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             });
 
             // Wait until "onStartInput" gets called for the EditText.
-            expectEvent(imeStream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(imeStream, editorMatcher("onStartInput", marker), DEFAULT_TIMEOUT);
 
-            try (MockA11yImeSession a11yImeSession = MockA11yImeSession.create(
-                    instrumentation.getContext(), uiAutomation, MockA11yImeSettings.DEFAULT,
-                    TIMEOUT)) {
+            try (MockA11yImeSession a11yImeSession =
+                    MockA11yImeSession.create(
+                            instrumentation.getContext(),
+                            uiAutomation,
+                            MockA11yImeSettings.DEFAULT,
+                            DEFAULT_TIMEOUT)) {
                 final MockA11yImeEventStream a11yImeEventStream = a11yImeSession.openEventStream();
 
                 // Wait until "onStartInput" gets called for the EditText.
-                expectA11yImeEvent(a11yImeEventStream,
-                        editorMatcherForA11yIme("onStartInput", marker), TIMEOUT);
+                expectA11yImeEvent(
+                        a11yImeEventStream,
+                        editorMatcherForA11yIme("onStartInput", marker),
+                        DEFAULT_TIMEOUT);
 
                 // Now everything is stable and ready to start testing.
                 testProcedure.run(imeSession, imeStream, a11yImeSession, a11yImeEventStream);
@@ -631,14 +641,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      * Ensures that {@code event}'s elapse time is less than the given threshold.
      *
      * @param event {@link ImeEvent} to be tested.
-     * @param elapseNanoTimeThreshold threshold in nano sec.
+     * @param elapseNanoTimeThreshold threshold duration
      */
-    private static void expectElapseTimeLessThan(@NonNull ImeEvent event,
-            long elapseNanoTimeThreshold) {
-        final long elapseNanoTime = event.getExitTimestamp() - event.getEnterTimestamp();
-        if (elapseNanoTime > elapseNanoTimeThreshold) {
-            fail(event.getEventName() + " took " + elapseNanoTime + " nsec,"
-                    + " which must be less than" + elapseNanoTimeThreshold + " nsec.");
+    private static void expectElapseTimeLessThan(
+            @NonNull ImeEvent event, @NonNull Duration elapseNanoTimeThreshold) {
+        final Duration eventEnterNanoTime = Duration.ofNanos(event.getEnterTimestamp());
+        final Duration eventExitNanoTime = Duration.ofNanos(event.getExitTimestamp());
+        final Duration elapseNanoTime = eventExitNanoTime.minus(eventEnterNanoTime);
+        if (elapseNanoTime.minus(elapseNanoTimeThreshold).isPositive()) {
+            fail(
+                    event.getEventName()
+                            + " took "
+                            + elapseNanoTime.toNanos()
+                            + " nsec,"
+                            + " which must be less than "
+                            + elapseNanoTimeThreshold.toNanos()
+                            + " nsec.");
         }
     }
 
@@ -699,16 +717,21 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetTextAfterCursor(expectedN, expectedFlags);
-            final CharSequence result =
-                    expectCommand(stream, command, TIMEOUT).getReturnCharSequenceValue();
-            assertEqualsForTestCharSequence(expectedResult, result);
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedN, args.get("n"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetTextAfterCursor(expectedN, expectedFlags);
+                    final CharSequence result =
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnCharSequenceValue();
+                    assertEqualsForTestCharSequence(expectedResult, result);
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedN, args.get("n"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                });
     }
 
     /**
@@ -736,15 +759,19 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetTextAfterCursor(-1, 0);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("IC#getTextAfterCursor() returns null for a negative length.",
-                    result.isNullReturnValue());
-            methodCallVerifier.expectNotCalled(
-                    "IC#getTextAfterCursor() will not be triggered with a negative length.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetTextAfterCursor(-1, 0);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "IC#getTextAfterCursor() returns null for a negative length.",
+                            result.isNullReturnValue());
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getTextAfterCursor() will not be triggered with a negative length.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -776,17 +803,25 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetTextAfterCursor(expectedN, expectedFlags);
-            blocker.expectMethodCalled("IC#getTextAfterCursor() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("When timeout happens, IC#getTextAfterCursor() returns null",
-                    result.isNullReturnValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedN, args.get("n"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetTextAfterCursor(expectedN, expectedFlags);
+                    blocker.expectMethodCalled(
+                            "IC#getTextAfterCursor() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "When timeout happens, IC#getTextAfterCursor() returns null",
+                            result.isNullReturnValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedN, args.get("n"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -814,23 +849,32 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream, session.callGetTextAfterCursor(
-                    unexpectedResult.length(), InputConnection.GET_TEXT_WITH_STYLES), TIMEOUT);
-            assertTrue("Once unbindInput() happened, IC#getTextAfterCursor() returns null",
-                    result.isNullReturnValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#getTextAfterCursor() fails fast.");
-        });
+                    // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callGetTextAfterCursor(
+                                            unexpectedResult.length(),
+                                            InputConnection.GET_TEXT_WITH_STYLES),
+                                    DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Once unbindInput() happened, IC#getTextAfterCursor() returns null",
+                            result.isNullReturnValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#getTextAfterCursor() fails fast.");
+                });
     }
 
     /**
@@ -861,16 +905,21 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetTextBeforeCursor(expectedN, expectedFlags);
-            final CharSequence result =
-                    expectCommand(stream, command, TIMEOUT).getReturnCharSequenceValue();
-            assertEqualsForTestCharSequence(expectedResult, result);
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedN, args.get("n"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetTextBeforeCursor(expectedN, expectedFlags);
+                    final CharSequence result =
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnCharSequenceValue();
+                    assertEqualsForTestCharSequence(expectedResult, result);
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedN, args.get("n"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                });
     }
 
     /**
@@ -898,15 +947,20 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetTextBeforeCursor(-1, 0);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("IC#getTextBeforeCursor() returns null for a negative length.",
-                    result.isNullReturnValue());
-            methodCallVerifier.expectNotCalled(
-                    "IC#getTextBeforeCursor() will not be triggered with a negative length.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetTextBeforeCursor(-1, 0);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "IC#getTextBeforeCursor() returns null for a negative length.",
+                            result.isNullReturnValue());
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getTextBeforeCursor() will not be triggered with a negative"
+                                    + " length.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -938,17 +992,25 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetTextBeforeCursor(expectedN, expectedFlags);
-            blocker.expectMethodCalled("IC#getTextBeforeCursor() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("When timeout happens, IC#getTextBeforeCursor() returns null",
-                    result.isNullReturnValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedN, args.get("n"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetTextBeforeCursor(expectedN, expectedFlags);
+                    blocker.expectMethodCalled(
+                            "IC#getTextBeforeCursor() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "When timeout happens, IC#getTextBeforeCursor() returns null",
+                            result.isNullReturnValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedN, args.get("n"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -976,23 +1038,32 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getTextBeforeCursor() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream, session.callGetTextBeforeCursor(
-                    unexpectedResult.length(), InputConnection.GET_TEXT_WITH_STYLES), TIMEOUT);
-            assertTrue("Once unbindInput() happened, IC#getTextBeforeCursor() returns null",
-                    result.isNullReturnValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#getTextBeforeCursor() fails fast.");
-        });
+                    // Now IC#getTextBeforeCursor() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callGetTextBeforeCursor(
+                                            unexpectedResult.length(),
+                                            InputConnection.GET_TEXT_WITH_STYLES),
+                                    DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Once unbindInput() happened, IC#getTextBeforeCursor() returns null",
+                            result.isNullReturnValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#getTextBeforeCursor() fails fast.");
+                });
     }
 
     /**
@@ -1021,15 +1092,19 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetSelectedText(expectedFlags);
-            final CharSequence result =
-                    expectCommand(stream, command, TIMEOUT).getReturnCharSequenceValue();
-            assertEqualsForTestCharSequence(expectedResult, result);
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetSelectedText(expectedFlags);
+                    final CharSequence result =
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnCharSequenceValue();
+                    assertEqualsForTestCharSequence(expectedResult, result);
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                });
     }
 
     /**
@@ -1059,17 +1134,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callGetSelectedText(InputConnection.GET_TEXT_WITH_STYLES);
-            blocker.expectMethodCalled("IC#getSelectedText() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("When timeout happens, IC#getSelectedText() returns null",
-                    result.isNullReturnValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetSelectedText(InputConnection.GET_TEXT_WITH_STYLES);
+                    blocker.expectMethodCalled(
+                            "IC#getSelectedText() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "When timeout happens, IC#getSelectedText() returns null",
+                            result.isNullReturnValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -1095,23 +1177,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getSelectedText() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream, session.callGetSelectedText(
-                    InputConnection.GET_TEXT_WITH_STYLES), TIMEOUT);
-            assertTrue("Once unbindInput() happened, IC#getSelectedText() returns null",
-                    result.isNullReturnValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#getSelectedText() fails fast.");
-        });
+                    // Now IC#getSelectedText() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callGetSelectedText(
+                                            InputConnection.GET_TEXT_WITH_STYLES),
+                                    DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Once unbindInput() happened, IC#getSelectedText() returns null",
+                            result.isNullReturnValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#getSelectedText() fails fast.");
+                });
     }
 
     /**
@@ -1121,12 +1211,15 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testGetSelectedTextFailWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetSelectedText(0);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("Currently getSelectedText() returns null when the target app does not"
-                    + " implement it.", result.isNullReturnValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetSelectedText(0);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Currently getSelectedText() returns null when the target app does not"
+                                    + " implement it.",
+                            result.isNullReturnValue());
+                });
     }
 
     @Test
@@ -1159,39 +1252,50 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final RectF rectF = new RectF(1f, 2f, 3f, 4f);
-            final ImeCommand command = session.callRequestTextBoundsInfo(rectF);
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(rectF, args.getParcelable("rectF", RectF.class));
-            }, TIMEOUT);
-            expectCommand(stream, command, TIMEOUT);
-            var event = expectEvent(stream, onRequestTextBoundsInfoResultMatcher(command.getId()),
-                    TIMEOUT);
-            var actualResultCode = event.getArguments().getInt("resultCode");
-            var actualBoundsInfo = event.getArguments().getParcelable("boundsInfo",
-                    TextBoundsInfo.class);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final RectF rectF = new RectF(1f, 2f, 3f, 4f);
+                    final ImeCommand command = session.callRequestTextBoundsInfo(rectF);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(rectF, args.getParcelable("rectF", RectF.class));
+                            },
+                            DEFAULT_TIMEOUT);
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    var event =
+                            expectEvent(
+                                    stream,
+                                    onRequestTextBoundsInfoResultMatcher(command.getId()),
+                                    DEFAULT_TIMEOUT);
+                    var actualResultCode = event.getArguments().getInt("resultCode");
+                    var actualBoundsInfo =
+                            event.getArguments().getParcelable("boundsInfo", TextBoundsInfo.class);
 
-            assertEquals(TextBoundsInfoResult.CODE_FAILED, actualResultCode);
-            assertNull(actualBoundsInfo);
-        });
+                    assertEquals(TextBoundsInfoResult.CODE_FAILED, actualResultCode);
+                    assertNull(actualBoundsInfo);
+                });
     }
 
     @Test
     public void testRequestTextBoundsInfo_unimplemented() throws Exception {
-        testMinimallyImplementedInputConnection((session, stream) -> {
-            final RectF rectF = new RectF(1f, 2f, 3f, 4f);
-            final ImeCommand command = session.callRequestTextBoundsInfo(rectF);
-            expectCommand(stream, command, TIMEOUT);
-            var event = expectEvent(stream, onRequestTextBoundsInfoResultMatcher(command.getId()),
-                    TIMEOUT);
-            var actualResultCode = event.getArguments().getInt("resultCode");
-            var actualBoundsInfo = event.getArguments().getParcelable("boundsInfo",
-                    TextBoundsInfo.class);
+        testMinimallyImplementedInputConnection(
+                (session, stream) -> {
+                    final RectF rectF = new RectF(1f, 2f, 3f, 4f);
+                    final ImeCommand command = session.callRequestTextBoundsInfo(rectF);
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    var event =
+                            expectEvent(
+                                    stream,
+                                    onRequestTextBoundsInfoResultMatcher(command.getId()),
+                                    DEFAULT_TIMEOUT);
+                    var actualResultCode = event.getArguments().getInt("resultCode");
+                    var actualBoundsInfo =
+                            event.getArguments().getParcelable("boundsInfo", TextBoundsInfo.class);
 
-            assertEquals(TextBoundsInfoResult.CODE_UNSUPPORTED, actualResultCode);
-            assertNull(actualBoundsInfo);
-        });
+                    assertEquals(TextBoundsInfoResult.CODE_UNSUPPORTED, actualResultCode);
+                    assertNull(actualBoundsInfo);
+                });
     }
 
     /**
@@ -1225,26 +1329,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetSurroundingText(expectedBeforeLength,
-                    expectedAfterLength, expectedFlags);
-            final SurroundingText result =
-                    expectCommand(stream, command, TIMEOUT).getReturnParcelableValue();
-            assertEqualsForTestCharSequence(expectedResult.getText(), result.getText());
-            assertEquals(expectedResult.getSelectionStart(), result.getSelectionStart());
-            assertEquals(expectedResult.getSelectionEnd(), result.getSelectionEnd());
-            assertEquals(expectedResult.getOffset(), result.getOffset());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedBeforeLength, args.get("beforeLength"));
-                assertEquals(expectedAfterLength, args.get("afterLength"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetSurroundingText(
+                                    expectedBeforeLength, expectedAfterLength, expectedFlags);
+                    final SurroundingText result =
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnParcelableValue();
+                    assertEqualsForTestCharSequence(expectedResult.getText(), result.getText());
+                    assertEquals(expectedResult.getSelectionStart(), result.getSelectionStart());
+                    assertEquals(expectedResult.getSelectionEnd(), result.getSelectionEnd());
+                    assertEquals(expectedResult.getOffset(), result.getOffset());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedBeforeLength, args.get("beforeLength"));
+                                assertEquals(expectedAfterLength, args.get("afterLength"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                });
     }
 
     /**
-     * Test {@link InputConnection#getSurroundingText(int, int, int)} fails when a nagative
-     * {@code afterLength} is passed.  See Bug 169114026 for background.
+     * Test {@link InputConnection#getSurroundingText(int, int, int)} fails when a negative {@code
+     * afterLength} is passed. See Bug 169114026 for background.
      */
     @Test
     public void testGetSurroundingTextFailWithNegativeAfterLength() throws Exception {
@@ -1269,15 +1378,20 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetSurroundingText(1, -1, 0);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("IC#getSurroundingText() returns null for a negative afterLength.",
-                    result.isNullReturnValue());
-            methodCallVerifier.expectNotCalled(
-                    "IC#getSurroundingText() will not be triggered with a negative afterLength.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetSurroundingText(1, -1, 0);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "IC#getSurroundingText() returns null for a negative afterLength.",
+                            result.isNullReturnValue());
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getSurroundingText() will not be triggered with a negative"
+                                    + " afterLength.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -1307,15 +1421,20 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetSurroundingText(-1, 1, 0);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("IC#getSurroundingText() returns null for a negative beforeLength.",
-                    result.isNullReturnValue());
-            methodCallVerifier.expectNotCalled(
-                    "IC#getSurroundingText() will not be triggered with a negative beforeLength.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetSurroundingText(-1, 1, 0);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "IC#getSurroundingText() returns null for a negative beforeLength.",
+                            result.isNullReturnValue());
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getSurroundingText() will not be triggered with a negative"
+                                    + " beforeLength.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -1351,19 +1470,27 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetSurroundingText(expectedBeforeLength,
-                    expectedAfterLength, expectedFlags);
-            blocker.expectMethodCalled("IC#getSurroundingText() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("When timeout happens, IC#getSurroundingText() returns null",
-                    result.isNullReturnValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedBeforeLength, args.get("beforeLength"));
-                assertEquals(expectedAfterLength, args.get("afterLength"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetSurroundingText(
+                                    expectedBeforeLength, expectedAfterLength, expectedFlags);
+                    blocker.expectMethodCalled(
+                            "IC#getSurroundingText() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "When timeout happens, IC#getSurroundingText() returns null",
+                            result.isNullReturnValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedBeforeLength, args.get("beforeLength"));
+                                assertEquals(expectedAfterLength, args.get("afterLength"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -1396,23 +1523,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getTextBeforeCursor() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream, session.callGetSurroundingText(
-                    beforeLength, afterLength, flags), TIMEOUT);
-            assertTrue("Once unbindInput() happened, IC#getSurroundingText() returns null",
-                    result.isNullReturnValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#getSurroundingText() fails fast.");
-        });
+                    // Now IC#getTextBeforeCursor() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callGetSurroundingText(
+                                            beforeLength, afterLength, flags),
+                                    DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Once unbindInput() happened, IC#getSurroundingText() returns null",
+                            result.isNullReturnValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#getSurroundingText() fails fast.");
+                });
     }
 
     /**
@@ -1422,12 +1557,14 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testGetSurroundingTextDefaultMethod() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetSurroundingText(1, 2, 0);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("Default IC#getSurroundingText() returns null.",
-                    result.isNullReturnValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetSurroundingText(1, 2, 0);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Default IC#getSurroundingText() returns null.",
+                            result.isNullReturnValue());
+                });
     }
 
     /**
@@ -1462,21 +1599,26 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callGetSurroundingText(expectedBeforeLength,
-                    expectedAfterLength, expectedFlags);
-            final var result = expectA11yImeCommand(stream, command, TIMEOUT)
-                    .<SurroundingText>getReturnParcelableValue();
-            assertEqualsForTestCharSequence(expectedResult.getText(), result.getText());
-            assertEquals(expectedResult.getSelectionStart(), result.getSelectionStart());
-            assertEquals(expectedResult.getSelectionEnd(), result.getSelectionEnd());
-            assertEquals(expectedResult.getOffset(), result.getOffset());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedBeforeLength, args.get("beforeLength"));
-                assertEquals(expectedAfterLength, args.get("afterLength"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command =
+                            session.callGetSurroundingText(
+                                    expectedBeforeLength, expectedAfterLength, expectedFlags);
+                    final var result =
+                            expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .<SurroundingText>getReturnParcelableValue();
+                    assertEqualsForTestCharSequence(expectedResult.getText(), result.getText());
+                    assertEquals(expectedResult.getSelectionStart(), result.getSelectionStart());
+                    assertEquals(expectedResult.getSelectionEnd(), result.getSelectionEnd());
+                    assertEquals(expectedResult.getOffset(), result.getOffset());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedBeforeLength, args.get("beforeLength"));
+                                assertEquals(expectedAfterLength, args.get("afterLength"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                });
     }
 
     /**
@@ -1507,15 +1649,19 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callGetSurroundingText(1, -1, 0);
-            final var result = expectA11yImeCommand(stream, command, TIMEOUT);
-            assertTrue("IC#getSurroundingText() returns null for a negative afterLength.",
-                    result.isNullReturnValue());
-            methodCallVerifier.expectNotCalled(
-                    "IC#getSurroundingText() will not be triggered with a negative afterLength.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callGetSurroundingText(1, -1, 0);
+                    final var result = expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#getSurroundingText() returns null for a negative afterLength.",
+                            result.isNullReturnValue());
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getSurroundingText() will not be triggered with a negative"
+                                    + " afterLength.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -1546,15 +1692,19 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callGetSurroundingText(-1, 1, 0);
-            final var result = expectA11yImeCommand(stream, command, TIMEOUT);
-            assertTrue("IC#getSurroundingText() returns null for a negative beforeLength.",
-                    result.isNullReturnValue());
-            methodCallVerifier.expectNotCalled(
-                    "IC#getSurroundingText() will not be triggered with a negative beforeLength.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callGetSurroundingText(-1, 1, 0);
+                    final var result = expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#getSurroundingText() returns null for a negative beforeLength.",
+                            result.isNullReturnValue());
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getSurroundingText() will not be triggered with a negative"
+                                    + " beforeLength.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -1591,19 +1741,26 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callGetSurroundingText(expectedBeforeLength,
-                    expectedAfterLength, expectedFlags);
-            blocker.expectMethodCalled("IC#getSurroundingText() must be called back", TIMEOUT);
-            final var result = expectA11yImeCommand(stream, command, TIMEOUT);
-            assertTrue("When timeout happens, IC#getSurroundingText() returns null",
-                    result.isNullReturnValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedBeforeLength, args.get("beforeLength"));
-                assertEquals(expectedAfterLength, args.get("afterLength"));
-                assertEquals(expectedFlags, args.get("flags"));
-            });
-        }, blocker);
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command =
+                            session.callGetSurroundingText(
+                                    expectedBeforeLength, expectedAfterLength, expectedFlags);
+                    blocker.expectMethodCalled(
+                            "IC#getSurroundingText() must be called back", DEFAULT_TIMEOUT);
+                    final var result = expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "When timeout happens, IC#getSurroundingText() returns null",
+                            result.isNullReturnValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedBeforeLength, args.get("beforeLength"));
+                                assertEquals(expectedAfterLength, args.get("afterLength"));
+                                assertEquals(expectedFlags, args.get("flags"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -1614,12 +1771,14 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testGetSurroundingTextDefaultMethodForA11y() throws Exception {
-        testMinimallyImplementedInputConnectionForA11y((session, stream) -> {
-            final var command = session.callGetSurroundingText(1, 2, 0);
-            final var result = expectA11yImeCommand(stream, command, TIMEOUT);
-            assertTrue("Default IC#getSurroundingText() returns null.",
-                    result.isNullReturnValue());
-        });
+        testMinimallyImplementedInputConnectionForA11y(
+                (session, stream) -> {
+                    final var command = session.callGetSurroundingText(1, 2, 0);
+                    final var result = expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Default IC#getSurroundingText() returns null.",
+                            result.isNullReturnValue());
+                });
     }
 
     /**
@@ -1682,15 +1841,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test
-     * InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)}
-     * works as expected  for {@link InsertGesture}.
+     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)
+     * works as expected for {@link InsertGesture}.
      */
     @Test
-    @ApiTest(apis = {"android.view.inputmethod.InsertGesture.Builder#setInsertionPoint",
-            "android.view.inputmethod.InsertGesture.Builder#setFallbackText",
-            "android.view.inputmethod.InsertGesture.Builder#setTextToInsert",
-            "android.view.inputmethod.InputConnection#performHandwritingGesture"})
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.InsertGesture.Builder#setInsertionPoint",
+                "android.view.inputmethod.InsertGesture.Builder#setFallbackText",
+                "android.view.inputmethod.InsertGesture.Builder#setTextToInsert",
+                "android.view.inputmethod.InputConnection#performHandwritingGesture"
+            })
     public void testPerformHandwritingInsertGesture() throws Exception {
         InsertGesture.Builder builder = new InsertGesture.Builder();
         testPerformHandwritingGesture(builder.setTextToInsert("text")
@@ -1699,15 +1860,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test
-     * InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)}
-     * works as expected  for {@link InsertGesture}.
+     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)
+     * works as expected for {@link InsertGesture}.
      */
     @Test
-    @ApiTest(apis = {"android.view.inputmethod.InsertGesture.Builder#setInsertionPoint",
-            "android.view.inputmethod.InsertGesture.Builder#setFallbackText",
-            "android.view.inputmethod.InsertGesture.Builder#setTextToInsert",
-            "android.view.inputmethod.InputConnection#performHandwritingGesture"})
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.InsertGesture.Builder#setInsertionPoint",
+                "android.view.inputmethod.InsertGesture.Builder#setFallbackText",
+                "android.view.inputmethod.InsertGesture.Builder#setTextToInsert",
+                "android.view.inputmethod.InputConnection#performHandwritingGesture"
+            })
     public void testPerformHandwritingInsertGesture_emptyText() throws Exception {
         InsertGesture.Builder builder = new InsertGesture.Builder();
         testPerformHandwritingGesture(builder.setTextToInsert("")
@@ -1716,15 +1879,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test
-     * InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)}
-     * works as expected  for {@link InsertGesture}.
+     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)
+     * works as expected for {@link InsertGesture}.
      */
     @Test
-    @ApiTest(apis = {"android.view.inputmethod.InsertModeGesture.Builder#setInsertionPoint",
-            "android.view.inputmethod.InsertGesture.Builder#setFallbackText",
-            "android.view.inputmethod.InsertGesture.Builder#setCancellationSignal",
-            "android.view.inputmethod.InputConnection#performHandwritingGesture"})
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.InsertModeGesture.Builder#setInsertionPoint",
+                "android.view.inputmethod.InsertGesture.Builder#setFallbackText",
+                "android.view.inputmethod.InsertGesture.Builder#setCancellationSignal",
+                "android.view.inputmethod.InputConnection#performHandwritingGesture"
+            })
     public void testPerformHandwritingInsertModeGesture() throws Exception {
         InsertModeGesture.Builder builder = new InsertModeGesture.Builder();
         testPerformHandwritingGesture(builder
@@ -1748,15 +1913,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test
-     * InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)}}
+     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)
      * works as expected for {@link DeleteGesture}.
      */
     @Test
-    @ApiTest(apis = {"android.view.inputmethod.DeleteGesture.Builder#setGranularity",
-            "android.view.inputmethod.DeleteGesture.Builder#setSelectionArea",
-            "android.view.inputmethod.DeleteGesture.Builder#setFallbackText",
-            "android.view.inputmethod.InputConnection#performHandwritingGesture"})
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.DeleteGesture.Builder#setGranularity",
+                "android.view.inputmethod.DeleteGesture.Builder#setSelectionArea",
+                "android.view.inputmethod.DeleteGesture.Builder#setFallbackText",
+                "android.view.inputmethod.InputConnection#performHandwritingGesture"
+            })
     public void testPerformHandwritingDeleteGesture() throws Exception {
         DeleteGesture.Builder builder = new DeleteGesture.Builder();
         testPerformHandwritingGesture(
@@ -1767,15 +1934,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test
-     * InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)}}
+     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)
      * works as expected for {@link DeleteRangeGesture}.
      */
     @Test
-    @ApiTest(apis = {"android.view.inputmethod.DeleteRangeGesture.Builder#setGranularity",
-            "android.view.inputmethod.DeleteRangeGesture.Builder#setSelectionArea",
-            "android.view.inputmethod.DeleteRangeGesture.Builder#setFallbackText",
-            "android.view.inputmethod.InputConnection#performHandwritingGesture"})
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.DeleteRangeGesture.Builder#setGranularity",
+                "android.view.inputmethod.DeleteRangeGesture.Builder#setSelectionArea",
+                "android.view.inputmethod.DeleteRangeGesture.Builder#setFallbackText",
+                "android.view.inputmethod.InputConnection#performHandwritingGesture"
+            })
     public void testPerformHandwritingDeleteRangeGesture() throws Exception {
         DeleteRangeGesture.Builder builder = new DeleteRangeGesture.Builder();
         testPerformHandwritingGesture(
@@ -1787,13 +1956,16 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)}}
+     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)
      * works as expected for {@link RemoveSpaceGesture}.
      */
     @Test
-    @ApiTest(apis = {"android.view.inputmethod.RemoveSpaceGesture.Builder#setPoints",
-            "android.view.inputmethod.RemoveSpaceGesture.Builder#setFallbackText",
-            "android.view.inputmethod.InputConnection#performHandwritingGesture"})
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.RemoveSpaceGesture.Builder#setPoints",
+                "android.view.inputmethod.RemoveSpaceGesture.Builder#setFallbackText",
+                "android.view.inputmethod.InputConnection#performHandwritingGesture"
+            })
     public void testPerformHandwritingRemoveSpaceGesture() throws Exception {
         testPerformHandwritingGesture(
                 new RemoveSpaceGesture.Builder()
@@ -1804,13 +1976,16 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)}}
+     * Test InputConnection#performHandwritingGesture(HandwritingGesture, Executor, IntConsumer)
      * works as expected for {@link JoinOrSplitGesture}.
      */
     @Test
-    @ApiTest(apis = {"android.view.inputmethod.JoinOrSplitGesture.Builder#setJoinOrSplitPoint",
-            "android.view.inputmethod.JoinOrSplitGesture.Builder#setFallbackText",
-            "android.view.inputmethod.InputConnection#performHandwritingGesture"})
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.JoinOrSplitGesture.Builder#setJoinOrSplitPoint",
+                "android.view.inputmethod.JoinOrSplitGesture.Builder#setFallbackText",
+                "android.view.inputmethod.InputConnection#performHandwritingGesture"
+            })
     public void testPerformHandwritingJoinOrSplitGesture() throws Exception {
         testPerformHandwritingGesture(
                 new JoinOrSplitGesture.Builder()
@@ -1847,26 +2022,36 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            ImeCommand command = session.callPerformHandwritingGesture(
-                    gesture, false /* useDelayedCancellation */);
-            expectCommand(stream, command, TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    ImeCommand command =
+                            session.callPerformHandwritingGesture(
+                                    gesture, false /* useDelayedCancellation */);
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
 
-            long requestId = command.getId();
-            ImeEvent callbackEvent = expectEvent(
-                    stream, onPerformHandwritingGestureResultMatcher(requestId), TIMEOUT);
-            assertEquals(expectedResult, callbackEvent.getArguments().getInt("result"));
+                    long requestId = command.getId();
+                    ImeEvent callbackEvent =
+                            expectEvent(
+                                    stream,
+                                    onPerformHandwritingGestureResultMatcher(requestId),
+                                    DEFAULT_TIMEOUT);
+                    assertEquals(expectedResult, callbackEvent.getArguments().getInt("result"));
 
-            methodCallVerifier.assertCalledOnce(args -> {
-                byte[] bytes = args.getByteArray("gesture");
-                HandwritingGesture gesture1 = HandwritingGesture.fromByteArray(bytes);
-                assertEquals(gesture, gesture1);
-            });
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                byte[] bytes = args.getByteArray("gesture");
+                                HandwritingGesture gesture1 =
+                                        HandwritingGesture.fromByteArray(bytes);
+                                assertEquals(gesture, gesture1);
+                            });
 
-            // Verify that the second callback was filtered out.
-            notExpectEvent(stream, onPerformHandwritingGestureResultMatcher(requestId),
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Verify that the second callback was filtered out.
+                    notExpectEvent(
+                            stream,
+                            onPerformHandwritingGestureResultMatcher(requestId),
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     private void testInsertModeGestureOngoingCancellation(
@@ -1890,18 +2075,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                 consumer.accept(resultCode);
             }
         }
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            ImeCommand command = session.callPerformHandwritingGesture(
-                    gesture1, true /* useDelayedCancellation */);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    ImeCommand command =
+                            session.callPerformHandwritingGesture(
+                                    gesture1, true /* useDelayedCancellation */);
 
-            expectCommand(stream, command, TIMEOUT);
-            methodCallVerifier.assertCalledOnce(args -> {});
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.assertCalledOnce(args -> {});
 
-            long requestId = command.getId();
-            ImeEvent callbackEvent = expectEvent(
-                    stream, onPerformHandwritingGestureResultMatcher(requestId), TIMEOUT);
-            assertEquals(resultCode, callbackEvent.getArguments().getInt("result"));
-        });
+                    long requestId = command.getId();
+                    ImeEvent callbackEvent =
+                            expectEvent(
+                                    stream,
+                                    onPerformHandwritingGestureResultMatcher(requestId),
+                                    DEFAULT_TIMEOUT);
+                    assertEquals(resultCode, callbackEvent.getArguments().getInt("result"));
+                });
 
         latch.await(3, TimeUnit.SECONDS);
         assertEquals(0, latch.getCount());
@@ -1983,17 +2174,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            ImeCommand command =
-                    session.callPreviewHandwritingGesture(
-                            gesture, false /* useDelayedCancellation */);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    ImeCommand command =
+                            session.callPreviewHandwritingGesture(
+                                    gesture, false /* useDelayedCancellation */);
 
-            expectCommand(stream, command, TIMEOUT);
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-            methodCallVerifier.assertCalledOnce(
-                    args -> assertEquals(gesture,
-                            HandwritingGesture.fromByteArray(args.getByteArray("gesture"))));
-        });
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+                    methodCallVerifier.assertCalledOnce(
+                            args ->
+                                    assertEquals(
+                                            gesture,
+                                            HandwritingGesture.fromByteArray(
+                                                    args.getByteArray("gesture"))));
+                });
     }
 
     private <T extends PreviewableHandwritingGesture> void
@@ -2018,15 +2214,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            ImeCommand command =
-                    session.callPreviewHandwritingGesture(
-                            gesture, true /* useDelayedCancellation */);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    ImeCommand command =
+                            session.callPreviewHandwritingGesture(
+                                    gesture, true /* useDelayedCancellation */);
 
-            expectCommand(stream, command, TIMEOUT);
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-            methodCallVerifier.assertCalledOnce(args -> {});
-        });
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+                    methodCallVerifier.assertCalledOnce(args -> {});
+                });
 
         latch.await(3, TimeUnit.SECONDS);
         assertEquals(0, latch.getCount());
@@ -2057,14 +2255,18 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetCursorCapsMode(expectedReqMode);
-            final int result = expectCommand(stream, command, TIMEOUT).getReturnIntegerValue();
-            assertEquals(expectedResult, result);
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedReqMode, args.getInt("reqModes"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetCursorCapsMode(expectedReqMode);
+                    final int result =
+                            expectCommand(stream, command, DEFAULT_TIMEOUT).getReturnIntegerValue();
+                    assertEquals(expectedResult, result);
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedReqMode, args.getInt("reqModes"));
+                            });
+                });
     }
 
     /**
@@ -2095,16 +2297,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetCursorCapsMode(expectedReqMode);
-            blocker.expectMethodCalled("IC#getCursorCapsMode() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertEquals("When timeout happens, IC#getCursorCapsMode() returns 0",
-                    0, result.getReturnIntegerValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedReqMode, args.getInt("reqModes"));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetCursorCapsMode(expectedReqMode);
+                    blocker.expectMethodCalled(
+                            "IC#getCursorCapsMode() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertEquals(
+                            "When timeout happens, IC#getCursorCapsMode() returns 0",
+                            0,
+                            result.getReturnIntegerValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedReqMode, args.getInt("reqModes"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -2130,23 +2340,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getCursorCapsMode() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream,
-                    session.callGetCursorCapsMode(TextUtils.CAP_MODE_WORDS), TIMEOUT);
-            assertEquals("Once unbindInput() happened, IC#getCursorCapsMode() returns 0",
-                    0, result.getReturnIntegerValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#getCursorCapsMode() fails fast.");
-        });
+                    // Now IC#getCursorCapsMode() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callGetCursorCapsMode(TextUtils.CAP_MODE_WORDS),
+                                    DEFAULT_TIMEOUT);
+                    assertEquals(
+                            "Once unbindInput() happened, IC#getCursorCapsMode() returns 0",
+                            0,
+                            result.getReturnIntegerValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#getCursorCapsMode() fails fast.");
+                });
     }
 
     /**
@@ -2175,15 +2393,19 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callGetCursorCapsMode(expectedReqMode);
-            final int result = expectA11yImeCommand(stream, command, TIMEOUT)
-                    .getReturnIntegerValue();
-            assertEquals(expectedResult, result);
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedReqMode, args.getInt("reqModes"));
-            });
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callGetCursorCapsMode(expectedReqMode);
+                    final int result =
+                            expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnIntegerValue();
+                    assertEquals(expectedResult, result);
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedReqMode, args.getInt("reqModes"));
+                            });
+                });
     }
 
     /**
@@ -2215,16 +2437,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callGetCursorCapsMode(expectedReqMode);
-            blocker.expectMethodCalled("IC#getCursorCapsMode() must be called back", TIMEOUT);
-            final var result = expectA11yImeCommand(stream, command, LONG_TIMEOUT);
-            assertEquals("When timeout happens, IC#getCursorCapsMode() returns 0",
-                    0, result.getReturnIntegerValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedReqMode, args.getInt("reqModes"));
-            });
-        }, blocker);
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callGetCursorCapsMode(expectedReqMode);
+                    blocker.expectMethodCalled(
+                            "IC#getCursorCapsMode() must be called back", DEFAULT_TIMEOUT);
+                    final var result =
+                            expectA11yImeCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertEquals(
+                            "When timeout happens, IC#getCursorCapsMode() returns 0",
+                            0,
+                            result.getReturnIntegerValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedReqMode, args.getInt("reqModes"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -2253,16 +2483,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetExtractedText(expectedRequest, expectedFlags);
-            final ExtractedText result =
-                    expectCommand(stream, command, TIMEOUT).getReturnParcelableValue();
-            ExtractedTextTest.assertTestInstance(result);
-            methodCallVerifier.assertCalledOnce(args -> {
-                ExtractedTextRequestTest.assertTestInstance(args.getParcelable("request"));
-                assertEquals(expectedFlags, args.getInt("flags"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetExtractedText(expectedRequest, expectedFlags);
+                    final ExtractedText result =
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnParcelableValue();
+                    ExtractedTextTest.assertTestInstance(result);
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                ExtractedTextRequestTest.assertTestInstance(
+                                        args.getParcelable("request"));
+                                assertEquals(expectedFlags, args.getInt("flags"));
+                            });
+                });
     }
 
     /**
@@ -2294,17 +2530,26 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetExtractedText(expectedRequest, expectedFlags);
-            blocker.expectMethodCalled("IC#getExtractedText() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertTrue("When timeout happens, IC#getExtractedText() returns null",
-                    result.isNullReturnValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                ExtractedTextRequestTest.assertTestInstance(args.getParcelable("request"));
-                assertEquals(expectedFlags, args.getInt("flags"));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callGetExtractedText(expectedRequest, expectedFlags);
+                    blocker.expectMethodCalled(
+                            "IC#getExtractedText() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertTrue(
+                            "When timeout happens, IC#getExtractedText() returns null",
+                            result.isNullReturnValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                ExtractedTextRequestTest.assertTestInstance(
+                                        args.getParcelable("request"));
+                                assertEquals(expectedFlags, args.getInt("flags"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -2332,24 +2577,32 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getExtractedText() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream, session.callGetExtractedText(
-                    ExtractedTextRequestTest.createForTest(),
-                    InputConnection.GET_EXTRACTED_TEXT_MONITOR), TIMEOUT);
-            assertTrue("Once unbindInput() happened, IC#getExtractedText() returns null",
-                    result.isNullReturnValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#getExtractedText() fails fast.");
-        });
+                    // Now IC#getExtractedText() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callGetExtractedText(
+                                            ExtractedTextRequestTest.createForTest(),
+                                            InputConnection.GET_EXTRACTED_TEXT_MONITOR),
+                                    DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "Once unbindInput() happened, IC#getExtractedText() returns null",
+                            result.isNullReturnValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#getExtractedText() fails fast.");
+                });
     }
 
     /**
@@ -2379,13 +2632,18 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callRequestCursorUpdates(expectedFlags);
-            assertTrue(expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedFlags, args.getInt("cursorUpdateMode"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callRequestCursorUpdates(expectedFlags);
+                    assertTrue(
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedFlags, args.getInt("cursorUpdateMode"));
+                            });
+                });
     }
 
     /**
@@ -2416,15 +2674,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callRequestCursorUpdates(expectedUpdateFlags, expectedFilterFlags);
-            assertTrue(expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedUpdateFlags, args.getInt("cursorUpdateMode"));
-                assertEquals(expectedFilterFlags, args.getInt("cursorUpdateFilter"));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callRequestCursorUpdates(
+                                    expectedUpdateFlags, expectedFilterFlags);
+                    assertTrue(
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedUpdateFlags, args.getInt("cursorUpdateMode"));
+                                assertEquals(
+                                        expectedFilterFlags, args.getInt("cursorUpdateFilter"));
+                            });
+                });
     }
 
     /**
@@ -2455,17 +2720,25 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callRequestCursorUpdates(
-                    InputConnection.CURSOR_UPDATE_IMMEDIATE);
-            blocker.expectMethodCalled("IC#requestCursorUpdates() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertFalse("When timeout happens, IC#requestCursorUpdates() returns false",
-                    result.getReturnBooleanValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                assertEquals(expectedFlags, args.getInt("cursorUpdateMode"));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callRequestCursorUpdates(
+                                    InputConnection.CURSOR_UPDATE_IMMEDIATE);
+                    blocker.expectMethodCalled(
+                            "IC#requestCursorUpdates() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertFalse(
+                            "When timeout happens, IC#requestCursorUpdates() returns false",
+                            result.getReturnBooleanValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                assertEquals(expectedFlags, args.getInt("cursorUpdateMode"));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -2492,23 +2765,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#requestCursorUpdates() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream, session.callRequestCursorUpdates(
-                    InputConnection.CURSOR_UPDATE_IMMEDIATE), TIMEOUT);
-            assertFalse("Once unbindInput() happened, IC#requestCursorUpdates() returns false",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#requestCursorUpdates() fails fast.");
-        });
+                    // Now IC#requestCursorUpdates() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callRequestCursorUpdates(
+                                            InputConnection.CURSOR_UPDATE_IMMEDIATE),
+                                    DEFAULT_TIMEOUT);
+                    assertFalse(
+                            "Once unbindInput() happened, IC#requestCursorUpdates() returns false",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#requestCursorUpdates() fails fast.");
+                });
     }
 
     /**
@@ -2518,13 +2799,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testRequestCursorUpdatesFailWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callRequestCursorUpdates(
-                    InputConnection.CURSOR_UPDATE_IMMEDIATE);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertFalse("IC#requestCursorUpdates() returns false when the target app does not "
-                    + " implement it.", result.getReturnBooleanValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callRequestCursorUpdates(
+                                    InputConnection.CURSOR_UPDATE_IMMEDIATE);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertFalse(
+                            "IC#requestCursorUpdates() returns false when the target app does not "
+                                    + " implement it.",
+                            result.getReturnBooleanValue());
+                });
     }
 
     /**
@@ -2562,21 +2847,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callCommitContent(expectedInputContentInfo, expectedFlags, expectedOpt);
-            assertTrue(expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                final InputContentInfo inputContentInfo = args.getParcelable("inputContentInfo");
-                final Bundle opts = args.getBundle("opts");
-                assertNotNull(inputContentInfo);
-                assertEquals(expectedInputContentInfo.getContentUri(),
-                        inputContentInfo.getContentUri());
-                assertEquals(expectedFlags, args.getInt("flags"));
-                assertNotNull(opts);
-                assertEquals(expectedOpt.getInt(expectedOptKey), opts.getInt(expectedOptKey));
-            });
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callCommitContent(
+                                    expectedInputContentInfo, expectedFlags, expectedOpt);
+                    assertTrue(
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                final InputContentInfo inputContentInfo =
+                                        args.getParcelable("inputContentInfo");
+                                final Bundle opts = args.getBundle("opts");
+                                assertNotNull(inputContentInfo);
+                                assertEquals(
+                                        expectedInputContentInfo.getContentUri(),
+                                        inputContentInfo.getContentUri());
+                                assertEquals(expectedFlags, args.getInt("flags"));
+                                assertNotNull(opts);
+                                assertEquals(
+                                        expectedOpt.getInt(expectedOptKey),
+                                        opts.getInt(expectedOptKey));
+                            });
+                });
     }
 
     /**
@@ -2617,24 +2912,36 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callCommitContent(expectedInputContentInfo, expectedFlags, expectedOpt);
-            blocker.expectMethodCalled("IC#commitContent() must be called back", TIMEOUT);
-            final ImeEvent result = expectCommand(stream, command, LONG_TIMEOUT);
-            assertFalse("When timeout happens, IC#commitContent() returns false",
-                    result.getReturnBooleanValue());
-            methodCallVerifier.assertCalledOnce(args -> {
-                final InputContentInfo inputContentInfo = args.getParcelable("inputContentInfo");
-                final Bundle opts = args.getBundle("opts");
-                assertNotNull(inputContentInfo);
-                assertEquals(expectedInputContentInfo.getContentUri(),
-                        inputContentInfo.getContentUri());
-                assertEquals(expectedFlags, args.getInt("flags"));
-                assertNotNull(opts);
-                assertEquals(expectedOpt.getInt(expectedOptKey), opts.getInt(expectedOptKey));
-            });
-        }, blocker);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callCommitContent(
+                                    expectedInputContentInfo, expectedFlags, expectedOpt);
+                    blocker.expectMethodCalled(
+                            "IC#commitContent() must be called back", DEFAULT_TIMEOUT);
+                    final ImeEvent result =
+                            expectCommand(stream, command, SYSTEM_OPERATION_TIMEOUT);
+                    assertFalse(
+                            "When timeout happens, IC#commitContent() returns false",
+                            result.getReturnBooleanValue());
+                    methodCallVerifier.assertCalledOnce(
+                            args -> {
+                                final InputContentInfo inputContentInfo =
+                                        args.getParcelable("inputContentInfo");
+                                final Bundle opts = args.getBundle("opts");
+                                assertNotNull(inputContentInfo);
+                                assertEquals(
+                                        expectedInputContentInfo.getContentUri(),
+                                        inputContentInfo.getContentUri());
+                                assertEquals(expectedFlags, args.getInt("flags"));
+                                assertNotNull(opts);
+                                assertEquals(
+                                        expectedOpt.getInt(expectedOptKey),
+                                        opts.getInt(expectedOptKey));
+                            });
+                },
+                blocker);
     }
 
     /**
@@ -2664,25 +2971,38 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream, session.callCommitContent(
-                    new InputContentInfo(Uri.parse("content://com.example/path"),
-                            new ClipDescription("sample content", new String[]{"image/png"}),
-                            Uri.parse("https://example.com")), 0, null), TIMEOUT);
-            assertFalse("Once unbindInput() happened, IC#commitContent() returns false",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
-            methodCallVerifier.assertNotCalled(
-                    "Once unbindInput() happened, IC#commitContent() fails fast.");
-        });
+                    // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callCommitContent(
+                                            new InputContentInfo(
+                                                    Uri.parse("content://com.example/path"),
+                                                    new ClipDescription(
+                                                            "sample content",
+                                                            new String[] {"image/png"}),
+                                                    Uri.parse("https://example.com")),
+                                            0,
+                                            null),
+                                    DEFAULT_TIMEOUT);
+                    assertFalse(
+                            "Once unbindInput() happened, IC#commitContent() returns false",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
+                    methodCallVerifier.assertNotCalled(
+                            "Once unbindInput() happened, IC#commitContent() fails fast.");
+                });
     }
 
     /**
@@ -2692,16 +3012,25 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testCommitContentFailWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callCommitContent(
-                    new InputContentInfo(Uri.parse("content://com.example/path"),
-                            new ClipDescription("sample content", new String[]{"image/png"}),
-                            Uri.parse("https://example.com")), 0, null);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertFalse("Currently IC#commitContent() returns false when the target app does not"
-                    + " implement it.", result.getReturnBooleanValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callCommitContent(
+                                    new InputContentInfo(
+                                            Uri.parse("content://com.example/path"),
+                                            new ClipDescription(
+                                                    "sample content", new String[] {"image/png"}),
+                                            Uri.parse("https://example.com")),
+                                    0,
+                                    null);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertFalse(
+                            "Currently IC#commitContent() returns false when the target app does"
+                                    + " not implement it.",
+                            result.getReturnBooleanValue());
+                });
     }
 
     /**
@@ -2731,16 +3060,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callDeleteSurroundingText(expectedBeforeLength, expectedAfterLength);
-            assertTrue("deleteSurroundingText() always returns true unless RemoteException is"
-                    + " thrown", expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedBeforeLength, args.getInt("beforeLength"));
-                assertEquals(expectedAfterLength, args.getInt("afterLength"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callDeleteSurroundingText(
+                                    expectedBeforeLength, expectedAfterLength);
+                    assertTrue(
+                            "deleteSurroundingText() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedBeforeLength, args.getInt("beforeLength"));
+                                assertEquals(expectedAfterLength, args.getInt("afterLength"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -2768,27 +3105,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#deleteSurroundingText() for the memorized IC should fail fast.
-            final ImeCommand command = session.callDeleteSurroundingText(3, 4);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#deleteSurroundingText() still returns true even after"
-                    + " unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now IC#deleteSurroundingText() for the memorized IC should fail fast.
+                    final ImeCommand command = session.callDeleteSurroundingText(3, 4);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#deleteSurroundingText() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#deleteSurroundingText() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#deleteSurroundingText() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -2819,15 +3162,20 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command =
-                    session.callDeleteSurroundingText(expectedBeforeLength, expectedAfterLength);
-            expectA11yImeCommand(stream, command, TIMEOUT);
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedBeforeLength, args.getInt("beforeLength"));
-                assertEquals(expectedAfterLength, args.getInt("afterLength"));
-            }, TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command =
+                            session.callDeleteSurroundingText(
+                                    expectedBeforeLength, expectedAfterLength);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedBeforeLength, args.getInt("beforeLength"));
+                                assertEquals(expectedAfterLength, args.getInt("afterLength"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -2857,16 +3205,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callDeleteSurroundingTextInCodePoints(
-                    expectedBeforeLength, expectedAfterLength);
-            assertTrue("deleteSurroundingText() always returns true unless RemoteException is"
-                    + " thrown", expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedBeforeLength, args.getInt("beforeLength"));
-                assertEquals(expectedAfterLength, args.getInt("afterLength"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callDeleteSurroundingTextInCodePoints(
+                                    expectedBeforeLength, expectedAfterLength);
+                    assertTrue(
+                            "deleteSurroundingText() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedBeforeLength, args.getInt("beforeLength"));
+                                assertEquals(expectedAfterLength, args.getInt("afterLength"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -2894,27 +3250,35 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#deleteSurroundingTextInCodePoints() for the memorized IC should fail fast.
-            final ImeCommand command = session.callDeleteSurroundingTextInCodePoints(3, 4);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#deleteSurroundingTextInCodePoints() still returns true even"
-                    + " after unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now IC#deleteSurroundingTextInCodePoints() for the memorized IC should fail
+                    // fast.
+                    final ImeCommand command = session.callDeleteSurroundingTextInCodePoints(3, 4);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#deleteSurroundingTextInCodePoints() still returns true"
+                                    + " even after unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#deleteSurroundingTextInCodePoints() fails"
-                    + " fast.", EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#deleteSurroundingTextInCodePoints()"
+                                    + " fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -2924,12 +3288,15 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testDeleteSurroundingTextInCodePointsFailWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callDeleteSurroundingTextInCodePoints(1, 2);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("IC#deleteSurroundingTextInCodePoints() returns true even when the target"
-                    + " app does not implement it.", result.getReturnBooleanValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callDeleteSurroundingTextInCodePoints(1, 2);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#deleteSurroundingTextInCodePoints() returns true even when the"
+                                    + " target app does not implement it.",
+                            result.getReturnBooleanValue());
+                });
     }
 
     /**
@@ -2961,16 +3328,25 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callCommitText(expectedText, expectedNewCursorPosition);
-            assertTrue("commitText() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEqualsForTestCharSequence(expectedText, args.getCharSequence("text"));
-                assertEquals(expectedNewCursorPosition, args.getInt("newCursorPosition"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callCommitText(expectedText, expectedNewCursorPosition);
+                    assertTrue(
+                            "commitText() always returns true unless RemoteException is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEqualsForTestCharSequence(
+                                        expectedText, args.getCharSequence("text"));
+                                assertEquals(
+                                        expectedNewCursorPosition,
+                                        args.getInt("newCursorPosition"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -2998,27 +3374,34 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream,
-                    session.callCommitText("text", 1), TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#commitText() still returns true even after unbindInput().",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream, session.callCommitText("text", 1), DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#commitText() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#commitText() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#commitText() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -3056,20 +3439,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callCommitText(
-                    expectedText, expectedNewCursorPosition, expectedTextAttribute);
-            assertTrue("commitText() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEqualsForTestCharSequence(expectedText, args.getCharSequence("text"));
-                assertEquals(expectedNewCursorPosition, args.getInt("newCursorPosition"));
-                final TextAttribute textAttribute = args.getParcelable("textAttribute");
-                assertThat(textAttribute).isNotNull();
-                assertThat(textAttribute.getTextConversionSuggestions())
-                        .containsExactlyElementsIn(expectedSuggestions);
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callCommitText(
+                                    expectedText, expectedNewCursorPosition, expectedTextAttribute);
+                    assertTrue(
+                            "commitText() always returns true unless RemoteException is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEqualsForTestCharSequence(
+                                        expectedText, args.getCharSequence("text"));
+                                assertEquals(
+                                        expectedNewCursorPosition,
+                                        args.getInt("newCursorPosition"));
+                                final TextAttribute textAttribute =
+                                        args.getParcelable("textAttribute");
+                                assertThat(textAttribute).isNotNull();
+                                assertThat(textAttribute.getTextConversionSuggestions())
+                                        .containsExactlyElementsIn(expectedSuggestions);
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3099,30 +3493,42 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
-            final ImeEvent result = expectCommand(stream,
-                    session.callCommitText("text", 1,
-                            new TextAttribute.Builder().setTextConversionSuggestions(
-                                    Collections.singletonList("test")).build()),
-                    TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#commitText() still returns true even after unbindInput().",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
+                    final ImeEvent result =
+                            expectCommand(
+                                    stream,
+                                    session.callCommitText(
+                                            "text",
+                                            1,
+                                            new TextAttribute.Builder()
+                                                    .setTextConversionSuggestions(
+                                                            Collections.singletonList("test"))
+                                                    .build()),
+                                    DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#commitText() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#commitText() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#commitText() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -3177,7 +3583,7 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                                 assertThat(textAttribute).isNotNull();
                                 assertThat(textAttribute.isTextSuggestionSelected()).isTrue();
                             },
-                            TIMEOUT);
+                            DEFAULT_TIMEOUT);
                 });
     }
 
@@ -3226,7 +3632,8 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                     assertTrue(
                             "setComposingRegion() always returns true unless RemoteException is"
                                     + " thrown",
-                            expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
                     methodCallVerifier.expectCalledOnce(
                             args -> {
                                 assertEquals(expectedStart, args.getInt("start"));
@@ -3236,7 +3643,7 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                                 assertThat(textAttribute).isNotNull();
                                 assertThat(textAttribute.isTextSuggestionSelected()).isTrue();
                             },
-                            TIMEOUT);
+                            DEFAULT_TIMEOUT);
                 });
     }
 
@@ -3276,19 +3683,28 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callCommitText(
-                    expectedText, expectedNewCursorPosition, expectedTextAttribute);
-            expectA11yImeCommand(stream, command, TIMEOUT);
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEqualsForTestCharSequence(expectedText, args.getCharSequence("text"));
-                assertEquals(expectedNewCursorPosition, args.getInt("newCursorPosition"));
-                final var textAttribute = args.getParcelable("textAttribute", TextAttribute.class);
-                assertThat(textAttribute).isNotNull();
-                assertThat(textAttribute.getTextConversionSuggestions())
-                        .containsExactlyElementsIn(expectedSuggestions);
-            }, TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command =
+                            session.callCommitText(
+                                    expectedText, expectedNewCursorPosition, expectedTextAttribute);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEqualsForTestCharSequence(
+                                        expectedText, args.getCharSequence("text"));
+                                assertEquals(
+                                        expectedNewCursorPosition,
+                                        args.getInt("newCursorPosition"));
+                                final var textAttribute =
+                                        args.getParcelable("textAttribute", TextAttribute.class);
+                                assertThat(textAttribute).isNotNull();
+                                assertThat(textAttribute.getTextConversionSuggestions())
+                                        .containsExactlyElementsIn(expectedSuggestions);
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3332,7 +3748,7 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                     final var command =
                             session.callCommitText(
                                     expectedText, expectedNewCursorPosition, expectedTextAttribute);
-                    expectA11yImeCommand(stream, command, TIMEOUT);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
                     methodCallVerifier.expectCalledOnce(
                             args -> {
                                 assertEqualsForTestCharSequence(
@@ -3345,7 +3761,7 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                                 assertThat(textAttribute).isNotNull();
                                 assertThat(textAttribute.isTextSuggestionSelected()).isTrue();
                             },
-                            TIMEOUT);
+                            DEFAULT_TIMEOUT);
                 });
     }
 
@@ -3404,18 +3820,27 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (imeSession, imeStream, a11ySession, a11yStream) -> {
-            expectCommand(imeStream, imeSession.callSetComposingText("fromIme", 1, null), TIMEOUT);
-            expectA11yImeCommand(a11yStream, a11ySession.callCommitText("fromA11y", 1, null),
-                    TIMEOUT);
-            endBatchEditVerifier.expectCalledOnce(args -> { }, TIMEOUT);
-            assertThat(callHistory).containsExactly(
-                    "setComposingText",
-                    "beginBatchEdit",
-                    "finishComposingText",
-                    "commitText",
-                    "endBatchEdit").inOrder();
-        });
+        testInputConnection(
+                Wrapper::new,
+                (imeSession, imeStream, a11ySession, a11yStream) -> {
+                    expectCommand(
+                            imeStream,
+                            imeSession.callSetComposingText("fromIme", 1, null),
+                            DEFAULT_TIMEOUT);
+                    expectA11yImeCommand(
+                            a11yStream,
+                            a11ySession.callCommitText("fromA11y", 1, null),
+                            DEFAULT_TIMEOUT);
+                    endBatchEditVerifier.expectCalledOnce(args -> {}, DEFAULT_TIMEOUT);
+                    assertThat(callHistory)
+                            .containsExactly(
+                                    "setComposingText",
+                                    "beginBatchEdit",
+                                    "finishComposingText",
+                                    "commitText",
+                                    "endBatchEdit")
+                            .inOrder();
+                });
     }
 
     /**
@@ -3446,16 +3871,26 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callSetComposingText(expectedText, expectedNewCursorPosition);
-            assertTrue("setComposingText() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEqualsForTestCharSequence(expectedText, args.getCharSequence("text"));
-                assertEquals(expectedNewCursorPosition, args.getInt("newCursorPosition"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callSetComposingText(expectedText, expectedNewCursorPosition);
+                    assertTrue(
+                            "setComposingText() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEqualsForTestCharSequence(
+                                        expectedText, args.getCharSequence("text"));
+                                assertEquals(
+                                        expectedNewCursorPosition,
+                                        args.getInt("newCursorPosition"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3483,27 +3918,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callSetComposingText("text", 1);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#setComposingText() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callSetComposingText("text", 1);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#setComposingText() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#setComposingText() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#setComposingText() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -3541,21 +3982,32 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSetComposingText(
-                    expectedText, expectedNewCursorPosition, expectedTextAttribute);
-            assertTrue("testSetComposingTextWithTextAttribute() always returns true unless"
-                            + " RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEqualsForTestCharSequence(expectedText, args.getCharSequence("text"));
-                assertEquals(expectedNewCursorPosition, args.getInt("newCursorPosition"));
-                final TextAttribute textAttribute = args.getParcelable("textAttribute");
-                assertThat(textAttribute).isNotNull();
-                assertThat(textAttribute.getTextConversionSuggestions())
-                        .containsExactlyElementsIn(expectedSuggestions);
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callSetComposingText(
+                                    expectedText, expectedNewCursorPosition, expectedTextAttribute);
+                    assertTrue(
+                            "testSetComposingTextWithTextAttribute() always returns true unless"
+                                    + " RemoteException is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEqualsForTestCharSequence(
+                                        expectedText, args.getCharSequence("text"));
+                                assertEquals(
+                                        expectedNewCursorPosition,
+                                        args.getInt("newCursorPosition"));
+                                final TextAttribute textAttribute =
+                                        args.getParcelable("textAttribute");
+                                assertThat(textAttribute).isNotNull();
+                                assertThat(textAttribute.getTextConversionSuggestions())
+                                        .containsExactlyElementsIn(expectedSuggestions);
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3585,30 +4037,40 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callSetComposingText(
-                    "text", 1, new TextAttribute.Builder()
-                            .setTextConversionSuggestions(Collections.singletonList("test"))
-                            .build());
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#setComposingText() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callSetComposingText(
+                                    "text",
+                                    1,
+                                    new TextAttribute.Builder()
+                                            .setTextConversionSuggestions(
+                                                    Collections.singletonList("test"))
+                                            .build());
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#setComposingText() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#setComposingText() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#setComposingText() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -3638,15 +4100,23 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSetComposingRegion(expectedStart, expectedEnd);
-            assertTrue("setComposingRegion() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedStart, args.getInt("start"));
-                assertEquals(expectedEnd, args.getInt("end"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callSetComposingRegion(expectedStart, expectedEnd);
+                    assertTrue(
+                            "setComposingRegion() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedStart, args.getInt("start"));
+                                assertEquals(expectedEnd, args.getInt("end"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3674,27 +4144,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callSetComposingRegion(1, 23);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#setComposingRegion() still returns true even after"
-                    + " unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callSetComposingRegion(1, 23);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#setComposingRegion() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#setComposingRegion() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#setComposingRegion() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -3704,12 +4180,15 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testSetComposingRegionFailWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSetComposingRegion(1, 23);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("IC#setComposingRegion() returns true even when the target app does not"
-                    + " implement it.", result.getReturnBooleanValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callSetComposingRegion(1, 23);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#setComposingRegion() returns true even when the target app does not"
+                                    + " implement it.",
+                            result.getReturnBooleanValue());
+                });
     }
 
     /**
@@ -3745,20 +4224,29 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSetComposingRegion(
-                    expectedStart, expectedEnd, expectedTextAttribute);
-            assertTrue("setComposingRegion() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedStart, args.getInt("start"));
-                assertEquals(expectedEnd, args.getInt("end"));
-                final TextAttribute textAttribute = args.getParcelable("textAttribute");
-                assertThat(textAttribute).isNotNull();
-                assertThat(textAttribute.getTextConversionSuggestions())
-                        .containsExactlyElementsIn(expectedSuggestions);
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callSetComposingRegion(
+                                    expectedStart, expectedEnd, expectedTextAttribute);
+                    assertTrue(
+                            "setComposingRegion() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedStart, args.getInt("start"));
+                                assertEquals(expectedEnd, args.getInt("end"));
+                                final TextAttribute textAttribute =
+                                        args.getParcelable("textAttribute");
+                                assertThat(textAttribute).isNotNull();
+                                assertThat(textAttribute.getTextConversionSuggestions())
+                                        .containsExactlyElementsIn(expectedSuggestions);
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3787,29 +4275,40 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callSetComposingRegion(1, 23,
-                    new TextAttribute.Builder().setTextConversionSuggestions(
-                            Collections.singletonList("test")).build());
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#setComposingRegion() still returns true even after"
-                    + " unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callSetComposingRegion(
+                                    1,
+                                    23,
+                                    new TextAttribute.Builder()
+                                            .setTextConversionSuggestions(
+                                                    Collections.singletonList("test"))
+                                            .build());
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#setComposingRegion() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#setComposingRegion() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#setComposingRegion() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -3834,12 +4333,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callFinishComposingText();
-            assertTrue("finishComposingText() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> { }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callFinishComposingText();
+                    assertTrue(
+                            "finishComposingText() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(args -> {}, DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3864,37 +4368,42 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // The system internally calls "finishComposingText". So wait for a while then reset
-            // the verifier before our calling "finishComposingText".
-            SystemClock.sleep(TIMEOUT);
-            methodCallVerifier.reset();
+                    // The system internally calls "finishComposingText". So wait for a while then
+                    // reset
+                    // the verifier before our calling "finishComposingText".
+                    SystemClock.sleep(DEFAULT_TIMEOUT.toMillis());
+                    methodCallVerifier.reset();
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callFinishComposingText();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#finishComposingText() still returns true even after"
-                    + " unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callFinishComposingText();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#finishComposingText() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#finishComposingText() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#finishComposingText() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
-    /**
-     * Test {@link InputConnection#commitCompletion(CompletionInfo)} works as expected.
-     */
+    /** Test {@link InputConnection#commitCompletion(CompletionInfo)} works as expected. */
     @Test
     public void testCommitCompletion() throws Exception {
         final CompletionInfo expectedCompletionInfo = new CompletionInfo(0x12345678, 0x87654321,
@@ -3919,22 +4428,35 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callCommitCompletion(expectedCompletionInfo);
-            assertTrue("commitCompletion() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                final CompletionInfo actualCompletionInfo = args.getParcelable("text");
-                assertNotNull(actualCompletionInfo);
-                assertEquals(expectedCompletionInfo.getId(), actualCompletionInfo.getId());
-                assertEquals(expectedCompletionInfo.getPosition(),
-                        actualCompletionInfo.getPosition());
-                assertEqualsForTestCharSequence(expectedCompletionInfo.getText(),
-                        actualCompletionInfo.getText());
-                assertEqualsForTestCharSequence(expectedCompletionInfo.getLabel(),
-                        actualCompletionInfo.getLabel());
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callCommitCompletion(expectedCompletionInfo);
+                    assertTrue(
+                            "commitCompletion() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final CompletionInfo actualCompletionInfo =
+                                        args.getParcelable("text");
+                                assertNotNull(actualCompletionInfo);
+                                assertEquals(
+                                        expectedCompletionInfo.getId(),
+                                        actualCompletionInfo.getId());
+                                assertEquals(
+                                        expectedCompletionInfo.getPosition(),
+                                        actualCompletionInfo.getPosition());
+                                assertEqualsForTestCharSequence(
+                                        expectedCompletionInfo.getText(),
+                                        actualCompletionInfo.getText());
+                                assertEqualsForTestCharSequence(
+                                        expectedCompletionInfo.getLabel(),
+                                        actualCompletionInfo.getLabel());
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -3961,30 +4483,42 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callCommitCompletion(new CompletionInfo(
-                    0x12345678, 0x87654321,
-                    createTestCharSequence("testText", new Annotation("param", "text")),
-                    createTestCharSequence("testLabel", new Annotation("param", "label"))));
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#commitCompletion() still returns true even after"
-                    + " unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callCommitCompletion(
+                                    new CompletionInfo(
+                                            0x12345678,
+                                            0x87654321,
+                                            createTestCharSequence(
+                                                    "testText", new Annotation("param", "text")),
+                                            createTestCharSequence(
+                                                    "testLabel",
+                                                    new Annotation("param", "label"))));
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#commitCompletion() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#commitCompletion() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#commitCompletion() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4014,21 +4548,32 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callCommitCorrection(expectedCorrectionInfo);
-            assertTrue("commitCorrection() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                final CorrectionInfo actualCorrectionInfo = args.getParcelable("correctionInfo");
-                assertNotNull(actualCorrectionInfo);
-                assertEquals(expectedCorrectionInfo.getOffset(),
-                        actualCorrectionInfo.getOffset());
-                assertEqualsForTestCharSequence(expectedCorrectionInfo.getOldText(),
-                        actualCorrectionInfo.getOldText());
-                assertEqualsForTestCharSequence(expectedCorrectionInfo.getNewText(),
-                        actualCorrectionInfo.getNewText());
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callCommitCorrection(expectedCorrectionInfo);
+                    assertTrue(
+                            "commitCorrection() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final CorrectionInfo actualCorrectionInfo =
+                                        args.getParcelable("correctionInfo");
+                                assertNotNull(actualCorrectionInfo);
+                                assertEquals(
+                                        expectedCorrectionInfo.getOffset(),
+                                        actualCorrectionInfo.getOffset());
+                                assertEqualsForTestCharSequence(
+                                        expectedCorrectionInfo.getOldText(),
+                                        actualCorrectionInfo.getOldText());
+                                assertEqualsForTestCharSequence(
+                                        expectedCorrectionInfo.getNewText(),
+                                        actualCorrectionInfo.getNewText());
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4055,29 +4600,42 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callCommitCorrection(new CorrectionInfo(0x11111111,
-                    createTestCharSequence("testOldText", new Annotation("param", "oldText")),
-                    createTestCharSequence("testNewText", new Annotation("param", "newText"))));
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#commitCorrection() still returns true even after"
-                    + " unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callCommitCorrection(
+                                    new CorrectionInfo(
+                                            0x11111111,
+                                            createTestCharSequence(
+                                                    "testOldText",
+                                                    new Annotation("param", "oldText")),
+                                            createTestCharSequence(
+                                                    "testNewText",
+                                                    new Annotation("param", "newText"))));
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#commitCorrection() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#commitCorrection() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#commitCorrection() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4087,14 +4645,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testCommitCorrectionFailWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callCommitCorrection(new CorrectionInfo(0x11111111,
-                    createTestCharSequence("testOldText", new Annotation("param", "oldText")),
-                    createTestCharSequence("testNewText", new Annotation("param", "newText"))));
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("IC#commitCorrection() returns true even when the target app does not"
-                    + " implement it.", result.getReturnBooleanValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callCommitCorrection(
+                                    new CorrectionInfo(
+                                            0x11111111,
+                                            createTestCharSequence(
+                                                    "testOldText",
+                                                    new Annotation("param", "oldText")),
+                                            createTestCharSequence(
+                                                    "testNewText",
+                                                    new Annotation("param", "newText"))));
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#commitCorrection() returns true even when the target app does not"
+                                    + " implement it.",
+                            result.getReturnBooleanValue());
+                });
     }
 
     /**
@@ -4124,15 +4692,21 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSetSelection(expectedStart, expectedEnd);
-            assertTrue("setSelection() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedStart, args.getInt("start"));
-                assertEquals(expectedEnd, args.getInt("end"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callSetSelection(expectedStart, expectedEnd);
+                    assertTrue(
+                            "setSelection() always returns true unless RemoteException is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedStart, args.getInt("start"));
+                                assertEquals(expectedEnd, args.getInt("end"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4160,27 +4734,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callSetSelection(123, 456);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#setSelection() still returns true even after unbindInput().",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callSetSelection(123, 456);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#setSelection() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#setSelection() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#setSelection() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4211,14 +4791,18 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callSetSelection(expectedStart, expectedEnd);
-            expectA11yImeCommand(stream, command, TIMEOUT);
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedStart, args.getInt("start"));
-                assertEquals(expectedEnd, args.getInt("end"));
-            }, TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callSetSelection(expectedStart, expectedEnd);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedStart, args.getInt("start"));
+                                assertEquals(expectedEnd, args.getInt("end"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4246,14 +4830,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callPerformEditorAction(expectedEditorAction);
-            assertTrue("performEditorAction() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedEditorAction, args.getInt("editorAction"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callPerformEditorAction(expectedEditorAction);
+                    assertTrue(
+                            "performEditorAction() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedEditorAction, args.getInt("editorAction"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4280,27 +4872,34 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callPerformEditorAction(EditorInfo.IME_ACTION_GO);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#performEditorAction() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callPerformEditorAction(EditorInfo.IME_ACTION_GO);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#performEditorAction() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#performEditorAction() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#performEditorAction() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4329,13 +4928,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callPerformEditorAction(expectedEditorAction);
-            expectA11yImeCommand(stream, command, TIMEOUT);
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedEditorAction, args.getInt("editorAction"));
-            }, TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callPerformEditorAction(expectedEditorAction);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedEditorAction, args.getInt("editorAction"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4363,15 +4966,21 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callPerformContextMenuAction(expectedId);
-            assertTrue("performContextMenuAction() always returns true unless RemoteException is "
-                            + "thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedId, args.getInt("id"));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callPerformContextMenuAction(expectedId);
+                    assertTrue(
+                            "performContextMenuAction() always returns true unless RemoteException"
+                                    + " is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedId, args.getInt("id"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4398,27 +5007,35 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callPerformEditorAction(EditorInfo.IME_ACTION_GO);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#performContextMenuAction() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callPerformEditorAction(EditorInfo.IME_ACTION_GO);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#performContextMenuAction() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#performContextMenuAction() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#performContextMenuAction() fails"
+                                    + " fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4447,13 +5064,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callPerformContextMenuAction(expectedId);
-            expectA11yImeCommand(stream, command, TIMEOUT);
-            methodCallVerifier.expectCalledOnce(args -> {
-                assertEquals(expectedId, args.getInt("id"));
-            }, TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callPerformContextMenuAction(expectedId);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                assertEquals(expectedId, args.getInt("id"));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4478,12 +5099,16 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callBeginBatchEdit();
-            assertTrue("beginBatchEdit() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> { }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callBeginBatchEdit();
+                    assertTrue(
+                            "beginBatchEdit() always returns true unless RemoteException is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(args -> {}, DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4508,27 +5133,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callBeginBatchEdit();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#beginBatchEdit() still returns true even after unbindInput().",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callBeginBatchEdit();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#beginBatchEdit() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#beginBatchEdit() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#beginBatchEdit() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4553,12 +5184,16 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callEndBatchEdit();
-            assertTrue("endBatchEdit() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> { }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callEndBatchEdit();
+                    assertTrue(
+                            "endBatchEdit() always returns true unless RemoteException is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(args -> {}, DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4583,27 +5218,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callEndBatchEdit();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#endBatchEdit() still returns true even after unbindInput().",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callEndBatchEdit();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#endBatchEdit() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#endBatchEdit() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#endBatchEdit() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4631,17 +5272,25 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSendKeyEvent(expectedKeyEvent);
-            assertTrue("sendKeyEvent() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                final KeyEvent actualKeyEvent = args.getParcelable("event");
-                assertNotNull(actualKeyEvent);
-                assertEquals(expectedKeyEvent.getAction(), actualKeyEvent.getAction());
-                assertEquals(expectedKeyEvent.getKeyCode(), actualKeyEvent.getKeyCode());
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callSendKeyEvent(expectedKeyEvent);
+                    assertTrue(
+                            "sendKeyEvent() always returns true unless RemoteException is thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final KeyEvent actualKeyEvent = args.getParcelable("event");
+                                assertNotNull(actualKeyEvent);
+                                assertEquals(
+                                        expectedKeyEvent.getAction(), actualKeyEvent.getAction());
+                                assertEquals(
+                                        expectedKeyEvent.getKeyCode(), actualKeyEvent.getKeyCode());
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4668,28 +5317,35 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callSendKeyEvent(
-                    new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_X));
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#sendKeyEvent() still returns true even after unbindInput().",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callSendKeyEvent(
+                                    new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_X));
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#sendKeyEvent() still returns true even after"
+                                    + " unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#sendKeyEvent() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#sendKeyEvent() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4718,16 +5374,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callSendKeyEvent(expectedKeyEvent);
-            expectA11yImeCommand(stream, command, TIMEOUT);
-            methodCallVerifier.expectCalledOnce(args -> {
-                final KeyEvent actualKeyEvent = args.getParcelable("event");
-                assertNotNull(actualKeyEvent);
-                assertEquals(expectedKeyEvent.getAction(), actualKeyEvent.getAction());
-                assertEquals(expectedKeyEvent.getKeyCode(), actualKeyEvent.getKeyCode());
-            }, TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callSendKeyEvent(expectedKeyEvent);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final KeyEvent actualKeyEvent = args.getParcelable("event");
+                                assertNotNull(actualKeyEvent);
+                                assertEquals(
+                                        expectedKeyEvent.getAction(), actualKeyEvent.getAction());
+                                assertEquals(
+                                        expectedKeyEvent.getKeyCode(), actualKeyEvent.getKeyCode());
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4755,15 +5417,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callClearMetaKeyStates(expectedStates);
-            assertTrue("clearMetaKeyStates() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                final int actualStates = args.getInt("states");
-                assertEquals(expectedStates, actualStates);
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callClearMetaKeyStates(expectedStates);
+                    assertTrue(
+                            "clearMetaKeyStates() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final int actualStates = args.getInt("states");
+                                assertEquals(expectedStates, actualStates);
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4790,27 +5459,34 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callClearMetaKeyStates(KeyEvent.META_ALT_MASK);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#clearMetaKeyStates() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command =
+                            session.callClearMetaKeyStates(KeyEvent.META_ALT_MASK);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#clearMetaKeyStates() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#clearMetaKeyStates() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#clearMetaKeyStates() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4839,14 +5515,18 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testA11yInputConnection(Wrapper::new, (session, stream) -> {
-            final var command = session.callClearMetaKeyStates(expectedStates);
-            expectA11yImeCommand(stream, command, TIMEOUT);
-            methodCallVerifier.expectCalledOnce(args -> {
-                final int actualStates = args.getInt("states");
-                assertEquals(expectedStates, actualStates);
-            }, TIMEOUT);
-        });
+        testA11yInputConnection(
+                Wrapper::new,
+                (session, stream) -> {
+                    final var command = session.callClearMetaKeyStates(expectedStates);
+                    expectA11yImeCommand(stream, command, DEFAULT_TIMEOUT);
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final int actualStates = args.getInt("states");
+                                assertEquals(expectedStates, actualStates);
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4873,16 +5553,20 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callReportFullscreenMode(true);
-            assertFalse("reportFullscreenMode() always returns false on API 26+",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callReportFullscreenMode(true);
+                    assertFalse(
+                            "reportFullscreenMode() always returns false on API 26+",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "IC#reportFullscreenMode() must be ignored on API 26+",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "IC#reportFullscreenMode() must be ignored on API 26+",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4909,25 +5593,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callReportFullscreenMode(true);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertFalse("reportFullscreenMode() always returns false on API 26+",
-                    result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callReportFullscreenMode(true);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertFalse(
+                            "reportFullscreenMode() always returns false on API 26+",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled("IC#reportFullscreenMode() must be ignored on "
-                    + "API 26+ even after unbindInput().", EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "IC#reportFullscreenMode() must be ignored on "
+                                    + "API 26+ even after unbindInput().",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -4952,12 +5642,17 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callPerformSpellCheck();
-            assertTrue("performSpellCheck() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> { }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callPerformSpellCheck();
+                    assertTrue(
+                            "performSpellCheck() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(args -> {}, DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -4982,27 +5677,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callPerformSpellCheck();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#performSpellCheck() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callPerformSpellCheck();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#performSpellCheck() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#performSpellCheck() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#performSpellCheck() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -5011,12 +5712,15 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testPerformSpellCheckDefaultMethod() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callPerformSpellCheck();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("IC#performSpellCheck() still returns true even when the target "
-                    + "application does not implement it.", result.getReturnBooleanValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callPerformSpellCheck();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#performSpellCheck() still returns true even when the target "
+                                    + "application does not implement it.",
+                            result.getReturnBooleanValue());
+                });
     }
 
     /**
@@ -5049,19 +5753,28 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command =
-                    session.callPerformPrivateCommand(expectedAction, expectedData);
-            assertTrue("performPrivateCommand() always returns true unless RemoteException is "
-                    + "thrown", expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                final String actualAction = args.getString("action");
-                final Bundle actualData = args.getBundle("data");
-                assertEquals(expectedAction, actualAction);
-                assertNotNull(actualData);
-                assertEquals(expectedData.get(expectedDataKey), actualData.getInt(expectedDataKey));
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callPerformPrivateCommand(expectedAction, expectedData);
+                    assertTrue(
+                            "performPrivateCommand() always returns true unless RemoteException is "
+                                    + "thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final String actualAction = args.getString("action");
+                                final Bundle actualData = args.getBundle("data");
+                                assertEquals(expectedAction, actualAction);
+                                assertNotNull(actualData);
+                                assertEquals(
+                                        expectedData.get(expectedDataKey),
+                                        actualData.getInt(expectedDataKey));
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -5089,27 +5802,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callPerformPrivateCommand("myAction", null);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#performPrivateCommand() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callPerformPrivateCommand("myAction", null);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#performPrivateCommand() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#performPrivateCommand() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#performPrivateCommand() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -5133,18 +5852,22 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // The system internally calls "getHandler". So reset the verifier before our calling
-            // "callGetHandler".
-            methodCallVerifier.reset();
-            final ImeCommand command = session.callGetHandler();
-            assertTrue("getHandler() always returns null",
-                    expectCommand(stream, command, TIMEOUT).isNullReturnValue());
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // The system internally calls "getHandler". So reset the verifier before our
+                    // calling
+                    // "callGetHandler".
+                    methodCallVerifier.reset();
+                    final ImeCommand command = session.callGetHandler();
+                    assertTrue(
+                            "getHandler() always returns null",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT).isNullReturnValue());
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled("IC#getHandler() must be ignored.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getHandler() must be ignored.", NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -5169,28 +5892,32 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // The system internally calls "getHandler". So reset the verifier before our calling
-            // "callGetHandler".
-            methodCallVerifier.reset();
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callGetHandler();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("getHandler() always returns null", result.isNullReturnValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // The system internally calls "getHandler". So reset the verifier before our
+                    // calling
+                    // "callGetHandler".
+                    methodCallVerifier.reset();
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callGetHandler();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue("getHandler() always returns null", result.isNullReturnValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "IC#getHandler() must be ignored even after unbindInput().",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getHandler() must be ignored even after unbindInput().",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -5199,12 +5926,15 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testGetHandlerWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callGetHandler();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("IC#getHandler() still returns null even when the target app does not"
-                    + " implement it.", result.isNullReturnValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callGetHandler();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#getHandler() still returns null even when the target app does not"
+                                    + " implement it.",
+                            result.isNullReturnValue());
+                });
     }
 
     /**
@@ -5225,14 +5955,16 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callCloseConnection();
-            expectCommand(stream, command, TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callCloseConnection();
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled("IC#getHandler() must be ignored.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "IC#getHandler() must be ignored.", NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -5256,30 +5988,35 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // The system internally calls "closeConnection". So wait for it to happen then reset
-            // the verifier before our calling "closeConnection".
-            assertTrue("closeConnection() must be called by the system.",
-                    latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
-            methodCallVerifier.reset();
+                    // The system internally calls "closeConnection". So wait for it to happen then
+                    // reset
+                    // the verifier before our calling "closeConnection".
+                    assertTrue(
+                            "closeConnection() must be called by the system.",
+                            latch.await(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+                    methodCallVerifier.reset();
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callCloseConnection();
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callCloseConnection();
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "IC#closeConnection() must be ignored even after unbindInput().",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "IC#closeConnection() must be ignored even after unbindInput().",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -5289,10 +6026,11 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testCloseConnectionWithMethodMissing() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callCloseConnection();
-            expectCommand(stream, command, TIMEOUT);
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callCloseConnection();
+                    expectCommand(stream, command, DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -5320,15 +6058,24 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSetImeConsumesInput(expectedImeConsumesInput);
-            assertTrue("setImeConsumesInput() always returns true unless RemoteException is thrown",
-                    expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
-            methodCallVerifier.expectCalledOnce(args -> {
-                final boolean actualImeConsumesInput = args.getBoolean("imeConsumesInput");
-                assertEquals(expectedImeConsumesInput, actualImeConsumesInput);
-            }, TIMEOUT);
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command =
+                            session.callSetImeConsumesInput(expectedImeConsumesInput);
+                    assertTrue(
+                            "setImeConsumesInput() always returns true unless RemoteException is"
+                                    + " thrown",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
+                    methodCallVerifier.expectCalledOnce(
+                            args -> {
+                                final boolean actualImeConsumesInput =
+                                        args.getBoolean("imeConsumesInput");
+                                assertEquals(expectedImeConsumesInput, actualImeConsumesInput);
+                            },
+                            DEFAULT_TIMEOUT);
+                });
     }
 
     /**
@@ -5355,27 +6102,33 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            // Memorize the current InputConnection.
-            expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    // Memorize the current InputConnection.
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
-            // Let unbindInput happen.
-            triggerUnbindInput();
-            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    // Let unbindInput happen.
+                    triggerUnbindInput();
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
-            // Now this API call on the memorized IC should fail fast.
-            final ImeCommand command = session.callSetImeConsumesInput(true);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            // CAVEAT: this behavior is a bit questionable and may change in a future version.
-            assertTrue("Currently IC#setImeConsumesInput() still returns true even after "
-                    + "unbindInput().", result.getReturnBooleanValue());
-            expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    // Now this API call on the memorized IC should fail fast.
+                    final ImeCommand command = session.callSetImeConsumesInput(true);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    // CAVEAT: this behavior is a bit questionable and may change in a future
+                    // version.
+                    assertTrue(
+                            "Currently IC#setImeConsumesInput() still returns true even after "
+                                    + "unbindInput().",
+                            result.getReturnBooleanValue());
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
-            // Make sure that the app does not receive the call (for a while).
-            methodCallVerifier.expectNotCalled(
-                    "Once unbindInput() happened, IC#setImeConsumesInput() fails fast.",
-                    EXPECTED_NOT_CALLED_TIMEOUT);
-        });
+                    // Make sure that the app does not receive the call (for a while).
+                    methodCallVerifier.expectNotCalled(
+                            "Once unbindInput() happened, IC#setImeConsumesInput() fails fast.",
+                            NOT_EXPECT_TIMEOUT);
+                });
     }
 
     /**
@@ -5385,12 +6138,15 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
      */
     @Test
     public void testSetImeConsumesInputDefaultMethod() throws Exception {
-        testMinimallyImplementedInputConnection((MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callSetImeConsumesInput(true);
-            final ImeEvent result = expectCommand(stream, command, TIMEOUT);
-            assertTrue("IC#setImeConsumesInput() still returns true even when the target "
-                    + "application does not implement it.", result.getReturnBooleanValue());
-        });
+        testMinimallyImplementedInputConnection(
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callSetImeConsumesInput(true);
+                    final ImeEvent result = expectCommand(stream, command, DEFAULT_TIMEOUT);
+                    assertTrue(
+                            "IC#setImeConsumesInput() still returns true even when the target "
+                                    + "application does not implement it.",
+                            result.getReturnBooleanValue());
+                });
     }
 
     /**
@@ -5411,11 +6167,14 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             }
         }
 
-        testInputConnection(Wrapper::new, (MockImeSession session, ImeEventStream stream) -> {
-            final ImeCommand command = session.callTakeSnapshot();
-            assertTrue("takeSnapshot() always returns null",
-                    expectCommand(stream, command, TIMEOUT).isNullReturnValue());
-        });
+        testInputConnection(
+                Wrapper::new,
+                (MockImeSession session, ImeEventStream stream) -> {
+                    final ImeCommand command = session.callTakeSnapshot();
+                    assertTrue(
+                            "takeSnapshot() always returns null",
+                            expectCommand(stream, command, DEFAULT_TIMEOUT).isNullReturnValue());
+                });
     }
 
     /**
@@ -5477,7 +6236,8 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                                     expectedTextAttribute);
                     assertTrue(
                             "replaceText() always returns true unless RemoteException is thrown",
-                            expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
+                            expectCommand(stream, command, DEFAULT_TIMEOUT)
+                                    .getReturnBooleanValue());
                     methodCallVerifier.expectCalledOnce(
                             args -> {
                                 assertEquals(expectedStart, args.getInt("start"));
@@ -5493,7 +6253,7 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                                 assertThat(textAttribute.getTextConversionSuggestions())
                                         .containsExactlyElementsIn(expectedSuggestions);
                             },
-                            TIMEOUT);
+                            DEFAULT_TIMEOUT);
                 });
     }
 
@@ -5536,30 +6296,31 @@ public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                 Wrapper::new,
                 (MockImeSession session, ImeEventStream stream) -> {
                     // Memorize the current InputConnection.
-                    expectCommand(stream, session.memorizeCurrentInputConnection(), TIMEOUT);
+                    expectCommand(
+                            stream, session.memorizeCurrentInputConnection(), DEFAULT_TIMEOUT);
 
                     // Let unbindInput happen.
                     triggerUnbindInput();
-                    expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
+                    expectEvent(stream, eventMatcher("unbindInput"), DEFAULT_TIMEOUT);
 
                     // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
                     final ImeEvent result =
                             expectCommand(
                                     stream,
                                     session.callReplaceText(0, 5, "text", 1, null),
-                                    TIMEOUT);
+                                    DEFAULT_TIMEOUT);
                     // CAVEAT: this behavior is a bit questionable and may change in a future
                     // version.
                     assertTrue(
                             "Currently IC#replaceText() still returns true even after"
                                     + " unbindInput().",
                             result.getReturnBooleanValue());
-                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT_NANO);
+                    expectElapseTimeLessThan(result, IMMEDIATE_TIMEOUT);
 
                     // Make sure that the app does not receive the call (for a while).
                     methodCallVerifier.expectNotCalled(
                             "Once unbindInput() happened, IC#replaceText() fails fast.",
-                            EXPECTED_NOT_CALLED_TIMEOUT);
+                            NOT_EXPECT_TIMEOUT);
                 });
     }
 }
