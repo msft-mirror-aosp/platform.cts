@@ -135,8 +135,8 @@ public class Curve25519Test {
         ImportedKey importedKey = TestUtils.importIntoAndroidKeyStore(
                     alias,
                     getContext(),
-                    R.raw.ec_key8_x25519,
-                    R.raw.ec_key8_x25519_cert,
+                    R.raw.x25519_pkcs8,
+                    R.raw.x25519_cert,
                     importParams);
 
         assertThat(importedKey).isNotNull();
