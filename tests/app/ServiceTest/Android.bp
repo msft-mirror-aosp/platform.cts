@@ -27,6 +27,7 @@ android_test {
         "android.content.flags-aconfig-java-export",
         "am_flags_lib",
         "flag-junit",
+        "services.core.unboosted",
     ],
     srcs: [
         "src/**/*.java",
