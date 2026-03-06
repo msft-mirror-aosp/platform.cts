@@ -53,7 +53,9 @@ public class LocalhostCleartextTest extends BaseTestCase {
 
     @After
     public void tearDown() throws Exception {
-        mServerSocket.close();
+        if (mServerSocket != null) {
+            mServerSocket.close();
+        }
     }
 
     @Test

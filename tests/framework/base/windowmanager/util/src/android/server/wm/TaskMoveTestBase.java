@@ -17,16 +17,6 @@
 package android.server.wm;
 
 import static android.server.wm.StateLogger.logAlways;
-import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_CHECK_IS_TASK_MOVE_ALLOWED;
-import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT;
-import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_DISPLAY_ID_KEY;
-import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_SYNC_EXCEPTION_KEY;
-import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_TASK_MOVE_ALLOWED_RESULT;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -86,70 +76,7 @@ public class TaskMoveTestBase extends MultiDisplayTestBase {
     }
 
     protected IntentFilter getIntentFilter() {
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
-        return filter;
-    }
-
-    protected void assertIsTaskMoveAllowedOnDisplayThrownException(
-            int displayId, Class<?> exceptionClass) {
-        final Intent response = askIfTaskMoveAllowedOnDisplay(displayId);
-        assertTrue(response.getParcelableExtra(EXTRA_SYNC_EXCEPTION_KEY, exceptionClass) != null);
-    }
-
-    protected boolean getIsTaskMoveAllowedOnDisplay(int displayId) {
-        final Intent response = askIfTaskMoveAllowedOnDisplay(displayId);
-
-        if (!response.hasExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT)) {
-            if (response.hasExtra(EXTRA_SYNC_EXCEPTION_KEY)) {
-                fail(
-                        "The activity notified that the isTaskMoveAllowedOnDisplay request thrown"
-                                + " an exception: "
-                                + response.getParcelableExtra(
-                                                EXTRA_SYNC_EXCEPTION_KEY, Exception.class)
-                                        .getMessage());
-            } else {
-                fail(
-                        "The activity has not notified about task movability on display "
-                                + displayId
-                                + ".");
-            }
-        }
-
-        return response.getBooleanExtra(EXTRA_TASK_MOVE_ALLOWED_RESULT, false);
-    }
-
-    // Fails the test if the activity does not respond.
-    private Intent askIfTaskMoveAllowedOnDisplay(int displayId) {
-        logAlways("Sending ACTION_CHECK_IS_TASK_MOVE_ALLOWED intent with displayId = " + displayId);
-        mContext.sendBroadcast(
-                new Intent(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
-                        .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                        .putExtra(EXTRA_DISPLAY_ID_KEY, displayId));
-        final boolean notified = awaitBroadcast(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
-        final Intent intent =
-                mBroadcastsContentsReceived.get(ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT);
-
-        if (!notified || intent == null) {
-            fail(
-                    "The activity has not notified about task movability on display "
-                            + displayId
-                            + ".");
-        }
-
-        return intent;
-    }
-
-    protected void assumeTaskMoveAllowedOnDisplay(int displayId) {
-        assumeTrue(
-                "Only test when task moving is allowed on the display.",
-                getIsTaskMoveAllowedOnDisplay(displayId));
-    }
-
-    protected void assumeTaskMoveNotAllowedOnDisplay(int displayId) {
-        assumeFalse(
-                "Only test when task moving is not allowed on the display.",
-                getIsTaskMoveAllowedOnDisplay(displayId));
+        return new IntentFilter();
     }
 
     protected void grantBrowserRole() {

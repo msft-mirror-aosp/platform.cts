@@ -21,10 +21,13 @@ import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Flags;
 import android.content.Context;
+import android.hardware.display.DisplayManager;
 import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
+import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 
@@ -32,14 +35,19 @@ import org.junit.Test;
 
 @Presubmit
 public class AddWindowAsUserTest extends ActivityManagerTestBase  {
+
     @Test
     public void testAddWindowSecondaryUser() {
-        // Context#getDisplayId() always returns the main display ID, even if it is called from an
-        // app running as a passenger user on secondary display (b/356478691). To work around it,
-        // let's set the correct display ID manually.
-        final int myDisplayId = getMainDisplayId();
-        if (mContext.getDisplayId() != myDisplayId) {
-            mContext.updateDisplay(myDisplayId);
+        if (!Flags.enableDynamicDisplayRetrieval()) {
+            // Context#getDisplayId() always returns the default display ID, even if it is called
+            // from an app running as a passenger user on secondary display (b/356478691).
+            // To work around it, let's set the correct display ID manually.
+            // When the enable_dynamic_display_retrieval flag is fully enabled, remove this
+            // workaround
+            final int myDisplayId = getMainDisplayId();
+            if (mContext.getDisplayId() != myDisplayId) {
+                mContext.updateDisplay(myDisplayId);
+            }
         }
 
         // Get original userId from context first, not every platform use SYSTEM as default user.
@@ -52,9 +60,13 @@ public class AddWindowAsUserTest extends ActivityManagerTestBase  {
     }
 
     private void testAddWindowWithUser(UserHandle user, boolean shouldCatchException) {
+        final DisplayManager dm = mContext.getSystemService(DisplayManager.class);
+        final Display display = dm.getDisplay(mContext.getDisplayId());
+        final Context windowContext = mContext.createWindowContext(
+                display, TYPE_APPLICATION_OVERLAY, /* options= */ null);
         mInstrumentation.runOnMainSync(() -> {
-            final View view = new View(mContext);
-            final WindowManager wm = getWindowManagerForUser(user);
+            final View view = new View(windowContext);
+            final WindowManager wm = getWindowManagerForUser(user, windowContext);
             boolean catchException = false;
             try {
                 wm.addView(view, new WindowManager.LayoutParams(TYPE_APPLICATION_OVERLAY));
@@ -73,8 +85,8 @@ public class AddWindowAsUserTest extends ActivityManagerTestBase  {
         });
     }
 
-    private WindowManager getWindowManagerForUser(UserHandle user) {
-        final Context userContext = mContext.createContextAsUser(user, 0);
+    private WindowManager getWindowManagerForUser(UserHandle user, Context context) {
+        final Context userContext = context.createContextAsUser(user, 0);
         return userContext.getSystemService(WindowManager.class);
     }
 }

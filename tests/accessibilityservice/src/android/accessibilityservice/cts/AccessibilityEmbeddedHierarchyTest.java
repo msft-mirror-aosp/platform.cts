@@ -243,25 +243,11 @@ public class AccessibilityEmbeddedHierarchyTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_EMBEDDED_UI_USES_HOST_WINDOW_ID)
-    @Ignore("Failing due to test ordering issue, see b/484184676")
     public void testEmbeddedViews_nodesAndEventsUseHostWindowId() throws TimeoutException {
         final AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
         final AccessibilityNodeInfo hostWindowNode = findHostAccessibilityNodeInfo(root);
-        final View hostView = mActivity.mInputFocusableView;
         final int hostWindowId = hostWindowNode.getWindowId();
 
-        // Start a11y focus on any other UI element. The rest of the test expects to focus on
-        // unfocused nodes in order to receive TYPE_VIEW_ACCESSIBILITY_FOCUSED events when
-        // focus changes.
-        if (!hostView.isAccessibilityFocused()) {
-            sInstrumentation.runOnMainSync(() -> {
-                assertThat(hostView.performAccessibilityAction(
-                        AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)).isTrue();
-            });
-        }
-
-        // Move a11y focus to embedded nodes and expect that both the node and the focus event use
-        // the host window id.
         final AccessibilityNodeInfo embeddedNode =
                 findEmbeddedAccessibilityNodeInfo(root, EMBEDDED_CONTAINER_RESOURCE_NAME);
         assertNodeAndEventsUseWindowId(embeddedNode, hostWindowId);
@@ -276,10 +262,8 @@ public class AccessibilityEmbeddedHierarchyTest {
 
         final AccessibilityEvent embeddedWindowEvent =
                 sUiAutomation.executeAndWaitForEvent(
-                        () -> node.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS),
-                        event ->
-                                event.getEventType()
-                                        == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED,
+                        () -> node.performAction(AccessibilityNodeInfo.ACTION_CLICK),
+                        event -> event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED,
                         DEFAULT_TIMEOUT_MS);
         assertThat(embeddedWindowEvent.getWindowId()).isEqualTo(expectedWindowId);
     }
@@ -350,6 +334,9 @@ public class AccessibilityEmbeddedHierarchyTest {
 
             View layout = getLayoutInflater().inflate(
                     R.layout.accessibility_embedded_hierarchy_test_embedded_side, null);
+            // Set clickable so tests can perform ACTION_CLICK
+            layout.setClickable(true);
+
             final int viewSizePx = getResources().getDimensionPixelSize(
                     R.dimen.embedded_hierarchy_embedded_layout_size);
             mViewHost.setView(layout, viewSizePx, viewSizePx);

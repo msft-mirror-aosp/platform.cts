@@ -25,6 +25,7 @@ import android.app.admin.flags.Flags
 import android.app.admin.metadata.EnumPolicyMetadata
 import android.app.admin.metadata.GeneratedPolicyMetadata
 import android.app.admin.metadata.IntegerPolicyMetadata
+import android.app.admin.metadata.LongPolicyMetadata
 import android.app.admin.metadata.StringPolicyMetadata
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
@@ -80,9 +81,9 @@ public abstract class CommonPolicyTests<T> {
     abstract val invalidValueTestCases: List<InvalidValueTestCase<T>>
 
     /**
-     * Different test classes are not allowed to share the same {@code DeviceState}
-     * instance, so derived classes must have their own {@code DeviceState} (inside a companion
-     * object) and expose it through this abstact method.
+     * Different test classes are not allowed to share the same {@code DeviceState} instance, so
+     * derived classes must have their own {@code DeviceState} (inside a companion object) and
+     * expose it through this abstact method.
      */
     abstract fun getDeviceState(): DeviceState
 
@@ -273,7 +274,8 @@ public abstract class CommonPolicyTests<T> {
     }
 
     // Invokes `DPM.setPolicy`.
-    // Implementation note: This uses the derived classes of the `PolicyMetadata` to get the value type.
+    // Implementation note: This uses the derived classes of the `PolicyMetadata` to get the value
+    // type.
     // We need this since the type of `T` is not available due to type erasure.
     @Suppress("UNCHECKED_CAST")
     protected fun setPolicy(scope: Int, value: T?) {
@@ -284,6 +286,12 @@ public abstract class CommonPolicyTests<T> {
                     policyIdentifier as PolicyIdentifier<Int>,
                     scope,
                     value as Int?,
+                )
+            is LongPolicyMetadata ->
+                dpcDpm.setPolicy_long(
+                    policyIdentifier as PolicyIdentifier<Long>,
+                    scope,
+                    value as Long?,
                 )
             is StringPolicyMetadata ->
                 dpcDpm.setPolicy_string(
@@ -296,7 +304,8 @@ public abstract class CommonPolicyTests<T> {
     }
 
     // Invokes `DPM.getPolicy` and returns the result.
-    // Implementation note: This uses the derived classes of the `PolicyMetadata` to get the value type.
+    // Implementation note: This uses the derived classes of the `PolicyMetadata` to get the value
+    // type.
     // We need this since the type of `T` is not available due to type erasure.
     @Suppress("UNCHECKED_CAST")
     protected fun getPolicy(scope: Int): T? {
@@ -304,6 +313,8 @@ public abstract class CommonPolicyTests<T> {
             is IntegerPolicyMetadata,
             is EnumPolicyMetadata ->
                 dpcDpm.getPolicy_integer(policyIdentifier as PolicyIdentifier<Int>, scope) as T?
+            is LongPolicyMetadata ->
+                dpcDpm.getPolicy_long(policyIdentifier as PolicyIdentifier<Long>, scope) as T?
             is StringPolicyMetadata ->
                 dpcDpm.getPolicy_string(policyIdentifier as PolicyIdentifier<String>, scope) as T?
             else -> throw IllegalArgumentException("Unsupported type")

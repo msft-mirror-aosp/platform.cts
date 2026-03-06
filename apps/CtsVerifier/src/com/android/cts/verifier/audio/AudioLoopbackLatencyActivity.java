@@ -173,6 +173,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     public static final int MPC_R = Build.VERSION_CODES.R;
     public static final int MPC_S = Build.VERSION_CODES.S;
     public static final int MPC_T = Build.VERSION_CODES.TIRAMISU;
+    public static final int MPC_C = Build.VERSION_CODES.CINNAMON_BUN;
 
     public static final double LATENCY_NOT_MEASURED = 0.0;
     public static final double LATENCY_BASIC = 200.0; // Was 300 in CDD 14 for UDC
@@ -181,6 +182,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     public static final double LATENCY_PRO_AUDIO_ANALOG = 20.0;
     public static final double LATENCY_PRO_AUDIO_USB = 25.0;
     public static final double LATENCY_MPC_AT_LEAST_ONE = 80.0;
+    public static final double LATENCY_MPC_C_AT_LEAST_ONE = 65.0;
     public static final double TIMESTAMP_ACCURACY_MS = 200.0;
 
     // The audio stream callback threads should stop and close
@@ -1322,21 +1324,26 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     // For Media Performance Class T the RT latency must be <= LATENCY_MPC_AT_LEAST_ONE msec
     // on AT LEAST ONE path.
+    // For Media Performance Class C the RT latency must be <= LATENCY_MPC_C_AT_LEAST_ONE msec
+    // on AT LEAST ONE path.
     private boolean calcAnyMPCPass() {
         if (LOG) {
             Log.d(TAG, "calcAnyMPCPass()");
             Log.d(TAG, "  mMediaPerformanceClass:" + mMediaPerformanceClass);
         }
+        double maxMpcLatency = mMediaPerformanceClass >= MPC_C ?
+                LATENCY_MPC_C_AT_LEAST_ONE : LATENCY_MPC_AT_LEAST_ONE;
+
         boolean devicePass =
                 (mTestSpecs[TESTROUTE_DEVICE].isMeasurementValid()
-                        && mTestSpecs[TESTROUTE_DEVICE].mMeanLatencyMS <= LATENCY_MPC_AT_LEAST_ONE);
+                        && mTestSpecs[TESTROUTE_DEVICE].mMeanLatencyMS <= maxMpcLatency);
         boolean analogPass =
                 (mTestSpecs[TESTROUTE_ANALOG_JACK].isMeasurementValid()
                         && mTestSpecs[TESTROUTE_ANALOG_JACK].mMeanLatencyMS
-                                <= LATENCY_MPC_AT_LEAST_ONE);
+                                <= maxMpcLatency);
         boolean usbPass =
                 (mTestSpecs[TESTROUTE_USB].isMeasurementValid()
-                        && mTestSpecs[TESTROUTE_USB].mMeanLatencyMS <= LATENCY_MPC_AT_LEAST_ONE);
+                        && mTestSpecs[TESTROUTE_USB].mMeanLatencyMS <= maxMpcLatency);
 
         boolean mpcPass = (mMediaPerformanceClass < MPC_T) || devicePass || analogPass || usbPass;
 
@@ -1542,7 +1549,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     }
 
     private void formatMPCLatency(TextFormatter textFormatter, double latency) {
-        boolean pass = latency <= LATENCY_MPC_AT_LEAST_ONE;
+        double maxMpcLatency = mMediaPerformanceClass >= MPC_C ?
+                LATENCY_MPC_C_AT_LEAST_ONE : LATENCY_MPC_AT_LEAST_ONE;
+        boolean pass = latency <= maxMpcLatency;
         textFormatter
                 .appendText(
                         " - "
@@ -1554,7 +1563,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                                 + String.format(
                                         Locale.getDefault(),
                                         " (<= %.2f ms) ",
-                                        LATENCY_MPC_AT_LEAST_ONE)
+                                        maxMpcLatency)
                                 + (pass ? mPassSuffix : mFailSuffix))
                 .appendBreak();
     }
@@ -1628,6 +1637,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
         // Media Performance Class
         if (mClaimsMediaPerformance) {
+            double maxMpcLatency = mMediaPerformanceClass >= MPC_C ?
+                    LATENCY_MPC_C_AT_LEAST_ONE : LATENCY_MPC_AT_LEAST_ONE;
             textFormatter
                     .appendText(
                             getString(R.string.ctsv_loopback_formpclevel)
@@ -1636,7 +1647,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     .appendBreak()
                     .appendText(
                             getString(R.string.ctsv_loopback_atleastoneroute)
-                                    + LATENCY_MPC_AT_LEAST_ONE
+                                    + maxMpcLatency
                                     + getString(R.string.ctsv_general_mssuffix))
                     .appendBreak();
         }

@@ -304,9 +304,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.ObserveAppFunctionsTest#unfreezerocessWithDynamicAppFunctionRegistered_shouldCallOnAppFunctionsChanged"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.RuntimeMetadataTest#createAppFunctionStaticMetadata[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.RuntimeMetadataTest#installPackageWithAppFunction_runtimeMetadataExist_noFunctionIdProperty[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_cancellationSignalReceived_unbind[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_sidecarManager_platformAppFunctionService_success[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#isAppFunctionEnabled_sidecar[IncludeRunOnPrimaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-private-profile] -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-private-profile] android.app.appfunctions.cts.AppFunctionManagerV2Test#executeAppFunction_runInPrivateProfile_fail"/>
     <!-- CtsAppFunctionTestCases[run-on-secondary-user] -->
@@ -341,13 +338,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.ObserveAppFunctionsTest#packageUpdated_topLevelDocumentsAdded_callsOnPackageChanged[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.ObserveAppFunctionsTest#packageUpdated_topLevelDocumentsRemoved_callsOnPackageChanged[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SearchAppFunctionsTest#searchAppFunctions_searchByScopeWithTwoScopes_seeFilteredResult[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_legacyFunctionId_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_legacyFunctionId_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionNotAllowlisted_platformManager_sidecarAppFunctionService_fail[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunctionNotAllowlisted_sidecarManager_sidecarAppFunctionService_fail[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_cancellationSignalReceived_unbind[IncludeRunOnSecondaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-work-profile] -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-work-profile] android.app.appfunctions.cts.AppFunctionManagerV2Test#executeAppFunction_deviceOwnerRestricted_fail[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-work-profile] android.app.appfunctions.cts.AppFunctionManagerV2Test#executeAppFunction_runInWorkProfile_fail"/>
@@ -603,7 +593,6 @@
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineLoginMixedCredentialActivityTest#testAutofill_selectCredentialView"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineWebViewActivityTest#testAutofillAndSave"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.OptionalSaveActivityTest#testDontShowSaveUiWhenUserClearedAutofilledFieldThatIsRequired"/>
-    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SaveUiTest#testTapLink_changeOrientationThenTapBack[ROTATE_THEN_TAP_BACK_BUTTON]"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SimpleSaveActivityTest#testAutoFillOneDatasetAndSave_usingUiAutomatorOnly"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SimpleSaveActivityTest#testTapHomeWhileDatasetPickerUiIsShowing"/>
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SimpleSaveActivityTest#testTapLink_tapBack_thenStartOverByTouchOutsideAndManualRequest"/>
@@ -5894,8 +5883,6 @@
     <option name="compatibility:include-filter" value="odsign_e2e_tests com.android.tests.odsign.CompOsSigningHostTest#checkFileCreationTimeAfterVmStartAndBeforeReboot"/>
     <!-- Exclude the failing tests in CtsAppServiceTestCases -->
     <option name="compatibility:exclude-filter" value="CtsAppServiceTestCases android.app.cts.service.ServiceTest#testBindIsolatedServiceLimit"/>
-    <!-- Exclude the failing tests in CtsAutoFillServiceTestCases -->
-    <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.saveui.SaveUiTest#testTapLink_changeOrientationThenTapBack[ROTATE_THEN_TAP_BACK_BUTTON]"/>
     <!-- Exclude the failing tests in CtsMediaAudioTestCases -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioDeviceVolumeManagerTest#testNotifyAbsoluteVolumeChanged_defaultStreamA2dp"/>
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioDeviceVolumeManagerTest#testStreamAssistant_mirrorsScoToA2dp"/>

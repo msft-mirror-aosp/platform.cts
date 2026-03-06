@@ -16,6 +16,7 @@
 
 package android.hardware.lights.cts.tests;
 
+import static android.graphics.Color.BLACK;
 import static android.graphics.Color.BLUE;
 import static android.graphics.Color.GREEN;
 import static android.graphics.Color.MAGENTA;
@@ -522,7 +523,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
         assertThat(sequence.getDelaysMillis()[0]).isEqualTo(2000L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         // Let the light on for a few milliseconds and change to a state.
         sleep(100);
@@ -572,7 +573,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
         assertThat(sequence.getDelaysMillis()[0]).isEqualTo(2000L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         // Let the light on for a few milliseconds and change to a different effect.
         sleep(100);
@@ -585,7 +586,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors()[0]).isEqualTo(RED);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
         assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         session.close();
     }
@@ -629,7 +630,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
         assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         // Sleep beyond the transition from effect -> effect2.
         sleep(500);
@@ -641,7 +642,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors()[0]).isEqualTo(RED);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
         assertThat(sequence.getDelaysMillis()[0]).isEqualTo(300L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         session.close();
     }
@@ -687,7 +688,7 @@ public class LightsManagerTest {
         LightState state = mManager.getLightState(light);
         assertThat(sequence.getColors()).asList().containsExactly(BLUE, GREEN).inOrder();
         assertThat(sequence.getDelaysMillis()).asList().containsExactly(200L, 200L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         // Sleep beyond the transition from effect -> effect2.
         sleep(500);
@@ -697,9 +698,12 @@ public class LightsManagerTest {
         sequence = mManager.getLightSequence(light);
         assertThat(sequence.getColors()).asList().containsExactly(RED);
         assertThat(sequence.getDelaysMillis()).asList().containsExactly(300L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         session.close();
+
+        state = mManager.getLightState(light);
+        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIGHT_ANIMATIONS)
@@ -746,7 +750,7 @@ public class LightsManagerTest {
         LightState state = mManager.getLightState(light);
         assertThat(sequence.getColors()).asList().containsExactly(BLUE).inOrder();
         assertThat(sequence.getDelaysMillis()).asList().containsExactly(200L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         // The high priority session stops using the light. Low priority session should take over
         // and should be still in the first effect.
@@ -756,7 +760,7 @@ public class LightsManagerTest {
         sequence = mManager.getLightSequence(light);
         assertThat(sequence.getColors()).asList().containsExactly(RED);
         assertThat(sequence.getDelaysMillis()).asList().containsExactly(300L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         // At t=200 the low priority session is still on effect2.
         sleep(100);
@@ -782,7 +786,7 @@ public class LightsManagerTest {
         sequence = mManager.getLightSequence(light);
         assertThat(sequence.getColors()).asList().containsExactly(YELLOW);
         assertThat(sequence.getDelaysMillis()).asList().containsExactly(300L);
-        assertThat(state.getColor()).isEqualTo(TRANSPARENT);
+        assertThat(state.getColor()).isEqualTo(BLACK);
 
         lowPrioritySession.close();
     }

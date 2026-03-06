@@ -87,6 +87,12 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             mAssistantDisplayId = assistantStack.mDisplayId;
             mAssistantWindowingMode = assistantStack.getWindowingMode();
         }
+        // AssistantActivity is launched above only to discover display and windowing properties.
+        // It must be removed before the test begins because a pre-existing activity record can
+        // cause flakiness. Specifically, when the test launches the assistant again, the
+        // subsequent launch of the TestActivity can be delayed, leading to a focus mismatch.
+        removeRootTasksWithAssistantTypeActivity();
+        mWmState.waitAndAssertActivityRemoved(ASSISTANT_ACTIVITY);
     }
 
     @After

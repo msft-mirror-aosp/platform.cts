@@ -1118,6 +1118,147 @@ public class VirtualCameraTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_CLOSE_SESSION)
+    public void virtualCamera_closeSession_closesCurrentSession() throws Exception {
+        setupVirtualDeviceCameraManager();
+        VirtualCamera virtualCamera = createFrontVirtualCamera();
+
+        verify(mMockVdContextCameraAvailabilityCallback, timeout(TIMEOUT_MILLIS))
+                .onCameraAvailable(FRONT_CAMERA_ID);
+
+        mCameraManager.openCamera(FRONT_CAMERA_ID, mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                .onOpened(mCameraDeviceCaptor.capture());
+        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
+
+        try (ImageReader reader = createImageReader(YUV_420_888)) {
+            cameraDevice.createCaptureSession(createSessionConfig(reader));
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigureSession(any(VirtualCameraSessionConfig.class), any());
+
+            ArgumentCaptor<Integer> streamIdCaptor = ArgumentCaptor.forClass(Integer.class);
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                    .onStreamConfigured(
+                            streamIdCaptor.capture(),
+                            any(Surface.class),
+                            anyInt(),
+                            anyInt(),
+                            anyInt());
+            int streamId = streamIdCaptor.getValue();
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigured(mCameraCaptureSessionCaptor.capture());
+
+            virtualCamera.closeSessionOnError();
+
+            // Verify client gets camera device error callbacks
+            verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onError(eq(cameraDevice), anyInt());
+
+            // Verify virtual camera owner gets stream closed callback
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(eq(streamId));
+
+            // Verify that the camera device is still available in the cameras list
+            verify(mCameraStateCallback, never()).onDisconnected(eq(cameraDevice));
+            assertThat(mCameraManager.getCameraIdList()).asList().contains(FRONT_CAMERA_ID);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_CLOSE_SESSION)
+    public void virtualCamera_closeSession_noActiveSession_doesNotThrow() throws Exception {
+        setupVirtualDeviceCameraManager();
+        VirtualCamera virtualCamera = createFrontVirtualCamera();
+
+        virtualCamera.closeSessionOnError();
+
+        mCameraManager.openCamera(FRONT_CAMERA_ID, mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS)).onOpened(any());
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIRTUAL_CAMERA_CLOSE_SESSION,
+        Flags.FLAG_VIRTUAL_CAMERA_STABLE_STREAM_ID,
+        Flags.FLAG_CAMERA_MULTIPLE_INPUT_STREAMS,
+    })
+    public void virtualCamera_closeSession_closesCurrentSession_multiStream() throws Exception {
+        setupVirtualDeviceCameraManager();
+
+        int stream0Width = CAMERA_WIDTH;
+        int stream0Height = CAMERA_HEIGHT;
+        int stream2Width = CAMERA_WIDTH * 3;
+        int stream2Height = CAMERA_HEIGHT * 3;
+
+        VirtualCameraConfig config =
+                new VirtualCameraConfig.Builder("MultiStreamCloseSessionCamera")
+                        .addStreamConfig(stream0Width, stream0Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                        .addStreamConfig(
+                                CAMERA_WIDTH * 2, CAMERA_HEIGHT * 2, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                        .addStreamConfig(stream2Width, stream2Height, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                        .setConcurrentStreamConfigSupported(true)
+                        .setVirtualCameraCallback(mExecutor, mVirtualCameraCallback)
+                        .setLensFacing(LENS_FACING_FRONT)
+                        .build();
+
+        VirtualCamera virtualCamera = mVirtualDevice.createVirtualCamera(config);
+        mCameraManager.openCamera(FRONT_CAMERA_ID, mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                .onOpened(mCameraDeviceCaptor.capture());
+        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
+
+        try (ImageReader reader1 =
+                        ImageReader.newInstance(
+                                stream0Width,
+                                stream0Height,
+                                CAMERA_FORMAT,
+                                IMAGE_READER_MAX_IMAGES);
+                ImageReader reader2 =
+                        ImageReader.newInstance(
+                                stream2Width,
+                                stream2Height,
+                                CAMERA_FORMAT,
+                                IMAGE_READER_MAX_IMAGES)) {
+
+            SessionConfiguration sessionConfiguration =
+                    new SessionConfiguration(
+                            SESSION_REGULAR,
+                            List.of(
+                                    new OutputConfiguration(reader1.getSurface()),
+                                    new OutputConfiguration(reader2.getSurface())),
+                            mExecutor,
+                            mSessionStateCallback);
+
+            cameraDevice.createCaptureSession(sessionConfiguration);
+
+            ArgumentCaptor<Integer> streamIdCaptor = ArgumentCaptor.forClass(Integer.class);
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS).times(2))
+                    .onStreamConfigured(
+                            streamIdCaptor.capture(),
+                            any(Surface.class),
+                            anyInt(),
+                            anyInt(),
+                            anyInt());
+            List<Integer> streamIds = streamIdCaptor.getAllValues();
+
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigured(mCameraCaptureSessionCaptor.capture());
+
+            virtualCamera.closeSessionOnError();
+
+            // Verify client gets camera device error callbacks
+            verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onError(eq(cameraDevice), anyInt());
+
+            // Verify virtual camera owner gets stream closed callback for all configured streams
+            for (int streamId : streamIds) {
+                verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                        .onStreamClosed(eq(streamId));
+            }
+        }
+        cameraDevice.close();
+    }
+
     private VirtualCamera createDefaultCameraWithMetadata(boolean perFrameMetadata) {
         VirtualCameraConfig config =
                 new VirtualCameraConfig.Builder("DefaultMetadataCamera")

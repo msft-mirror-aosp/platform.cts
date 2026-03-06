@@ -32,7 +32,7 @@ import android.util.ArraySet;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.internal.pm.pkg.parsing.ParsingPackageUtils;
+import com.android.internal.pm.pkg.component.AconfigFlags;
 import com.android.server.security.advancedprotection.config.AdvancedProtectionConfig;
 import com.android.server.security.advancedprotection.config.Protections;
 import com.android.server.security.advancedprotection.config.XmlParser;
@@ -262,7 +262,7 @@ public abstract class BaseAdvancedProtectionFeatureTest extends BaseAdvancedProt
             negated = true;
             featureFlag = featureFlag.substring(1).strip();
         }
-        Boolean featureFlagValue = ParsingPackageUtils.getAconfigFlags().getFlagValue(featureFlag);
+        Boolean featureFlagValue = AconfigFlags.getInstance().getFlagValue(featureFlag);
         if (featureFlagValue == null) {
             throw new IllegalArgumentException("Invalid feature flag: " + featureFlag);
         }

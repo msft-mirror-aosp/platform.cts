@@ -256,7 +256,14 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         mExecutorService.shutdownNow();
         // Clear any existing app state after each test.
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
+                () -> {
+                    sWifiManager.removeAppState(myUid(), sContext.getPackageName());
+                    try {
+                        Thread.sleep(DURATION_NETWORK_DISCONNECT_MILLIS);
+                    } catch (InterruptedException e) {
+                        Log.d(TAG, "sleep interrupted");
+                    }
+                });
     }
 
     private static final String CA_SUITE_B_RSA3072_CERT_STRING =

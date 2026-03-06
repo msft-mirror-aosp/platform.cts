@@ -614,7 +614,7 @@ public class IntrusionDetectionManagerTest {
         HttpURLConnection urlConnection = null;
         int connectionTimeoutMS = 2_000;
         try {
-            final URL url = new URL("http://" + server);
+            final URL url = new URL("https://" + server);
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setConnectTimeout(connectionTimeoutMS);
             urlConnection.setReadTimeout(connectionTimeoutMS);

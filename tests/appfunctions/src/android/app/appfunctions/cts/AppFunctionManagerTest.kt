@@ -114,11 +114,11 @@ class AppFunctionManagerTest {
             // Doing containsAtLeast instead of containsExactly here in case there app preloaded
             // apps having app functions.
             assertThat(getAllStaticMetadataPackages())
-                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
+                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
             // required permission because runtime metadata is only visible to owner package
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                 assertThat(getAllRuntimeMetadataPackages())
-                    .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
+                    .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
             }
         }
     }
@@ -1236,7 +1236,6 @@ class AppFunctionManagerTest {
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
-        const val TEST_SIDECAR_HELPER_PKG: String = "android.app.appfunctions.cts.helper.sidecar"
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 1

@@ -186,6 +186,18 @@ public class CaptioningManagerTest {
     }
 
     @Test
+    public void testCaptionLocaleWithScript() {
+        putSecureSetting("accessibility_captioning_locale", "zh_HK_#Hant");
+
+        Locale locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("zh", locale.getLanguage());
+        assertEquals("HK", locale.getCountry());
+        assertEquals("Hant", locale.getScript());
+        assertEquals("", locale.getVariant());
+    }
+
+    @Test
     public void testIsCallCaptioningEnabled() {
         Resources resources = mInstrumentation.getTargetContext().getResources();
         // com.android.internal.R is not visible to this test so we need
@@ -311,6 +323,29 @@ public class CaptioningManagerTest {
         locale = mManager.getLocale();
         assertNotNull(locale);
         assertEquals("1996", locale.getVariant());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAPTIONS_EASY_READER)
+    public void testEasyReaderCaptions_getLocale_withScript() {
+        assumeTrue(isEasyReaderSupported());
+
+        Locale locale;
+        putSecureSetting("accessibility_captioning_locale", "zh_HK_#Hant");
+
+        // Easy Reader enabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "1");
+        locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("simple", locale.getVariant());
+        assertEquals("Hant", locale.getScript());
+
+        // Easy Reader disabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "0");
+        locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("", locale.getVariant());
+        assertEquals("Hant", locale.getScript());
     }
 
     @Test
