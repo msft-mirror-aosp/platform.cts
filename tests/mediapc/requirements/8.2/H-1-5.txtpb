@@ -15,4 +15,5 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "8.2/H-1-5"
+group: GROUP_PERFORMANCE
 description: "- Read and write performance"

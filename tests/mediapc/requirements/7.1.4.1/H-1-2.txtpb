@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.1.4.1/H-1-2"
+group: GROUP_GRAPHICS
 name: "EGL"
 description: "Supports EGL_IMG_context_priority and EGL_EXT_protected_content extensions."
 specs {

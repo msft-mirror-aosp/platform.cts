@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.4.3/H-3-1"
+group: GROUP_HARDWARE
 name: "Android 17 BLE Channel Sounding"
 description: "MUST support BLE Channel Sounding feature"
 specs {

@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.6/H-3-1"
+group: GROUP_MEDIA
 name: "Audio CPU Workload"
 description: "Test the ability to switch audio loads without glitching."
 specs {

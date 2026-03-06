@@ -15,4 +15,5 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.1.4/H-1-1"
+group: GROUP_MEDIA
 description: "- Hardware overlays"

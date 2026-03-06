@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.1/H-1-17"
+group: GROUP_MEDIA
 name: "AVIF Baseline Profile"
 description: "AVIF Baseline Profile"
 specs {

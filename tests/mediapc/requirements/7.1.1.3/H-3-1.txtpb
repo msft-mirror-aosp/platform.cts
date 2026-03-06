@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.1.1.3/H-3-1"
+group: GROUP_HARDWARE
 name: "HDR display"
 description: "HDR display"
 specs {

@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.1/H-1-18"
+group: GROUP_MEDIA
 name: "AV1 Encoder"
 description: "AV1 encoder"
 specs {

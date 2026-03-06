@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.5/H-1-19"
+group: GROUP_CAMERA
 name: "Camera Video Preview Stabilization"
 description: "Support for video preview stabilization for primary cameras"
 specs {
