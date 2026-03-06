@@ -71,6 +71,14 @@ public class AudioFocusWithVdmTest {
                     .setDevicePolicy(POLICY_TYPE_AUDIO, DEVICE_POLICY_CUSTOM)
                     .build();
 
+    // Fake audio playback session id different from AUDIO_SESSION_ID_GENERATE (0)
+    private static final int EXTERNAL_AUDIO_PLAYBACK_SESSION_ID = 42;
+    private static final VirtualDeviceParams VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY_EXTERNAL_POLICY =
+            new VirtualDeviceParams.Builder()
+                    .setDevicePolicy(POLICY_TYPE_AUDIO, DEVICE_POLICY_CUSTOM)
+                    .setAudioPlaybackSessionId(EXTERNAL_AUDIO_PLAYBACK_SESSION_ID)
+                    .build();
+
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
             MODIFY_AUDIO_SETTINGS_PRIVILEGED, // ensures focus request is independent of proc state
@@ -167,20 +175,23 @@ public class AudioFocusWithVdmTest {
     }
 
     // This test behavior consistency is independent of the FLAG_AUDIO_FOCUS_ENVIRONMENTS value
-    @Parameters({"false", "true"})
+    @Parameters({"false, false", "true, false", "false, true", "true, true"})
     @Test
-    public void testAudioFocusRequestsOnVdmContextAndPermission(boolean hasPermission) {
+    public void testAudioFocusRequestsOnVdmContextAndPermission(
+            boolean hasPermission, boolean hasExternalPlaybackSession) {
         // Test a VirtualDevice with and without the MODIFY_AUDIO_ROUTING permission
-        verifyAudioFocusRequestsOnVirtualDeviceAndCustomAudioPolicy(hasPermission);
+        verifyAudioFocusRequestsOnVirtualDeviceAndCustomAudioPolicy(
+                hasPermission, hasExternalPlaybackSession);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FOCUS_ENVIRONMENTS)
-    @Parameters({"false", "true"})
+    @Parameters({"false, false", "true, false", "false, true", "true, true"})
     @Test
-    public void testAudioFocusRequestsWithMultiplePlayersAndPermission(boolean hasPermission) {
+    public void testAudioFocusRequestsWithMultiplePlayersAndPermission(
+            boolean hasPermission, boolean hasExternalPlaybackSession) {
         // Test multiple players on default and VirtualDevice with and without
         // the MODIFY_AUDIO_ROUTING permission
-        verifyAudioFocusRequestsWithMultiplePlayers(hasPermission);
+        verifyAudioFocusRequestsWithMultiplePlayers(hasPermission, hasExternalPlaybackSession);
     }
 
     /**
@@ -188,25 +199,31 @@ public class AudioFocusWithVdmTest {
      * confirming environment destruction.
      */
     @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FOCUS_ENVIRONMENTS)
-    @Parameters({"false", "true"})
+    @Parameters({"false, false", "true, false", "false, true", "true, true"})
     @Test
-    public void testAudioFocusEnvironmentCleanupOnVdmCloseAndPermission(boolean hasPermission) {
+    public void testAudioFocusEnvironmentCleanupOnVdmCloseAndPermission(
+            boolean hasPermission, boolean hasExternalPlaybackSession) {
         // Test audio focus behavior on multiple virtual devices when a virtual device is closed
         // with and without the MODIFY_AUDIO_ROUTING permission
-        verifyAudioFocusEnvironmentCleanupOnVdmClose(hasPermission);
+        verifyAudioFocusEnvironmentCleanupOnVdmClose(hasPermission, hasExternalPlaybackSession);
     }
 
     private VirtualDevice createVirtualDeviceWithModifyAudioRoutingPermission(
-            boolean hasPermission) {
+            boolean hasPermission, boolean hasExternalPlaybackSession) {
         return mVirtualDeviceRule.runWithAdditionalTemporaryPermissions(
                 () ->
                         mVirtualDeviceRule.createManagedVirtualDevice(
-                                VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY),
+                                hasExternalPlaybackSession
+                                        ? VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY_EXTERNAL_POLICY
+                                        : VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY),
                 hasPermission ? new String[] {MODIFY_AUDIO_ROUTING} : new String[0]);
     }
 
-    private void verifyAudioFocusRequestsWithMultiplePlayers(boolean hasPermission) {
-        final VirtualDevice vd = createVirtualDeviceWithModifyAudioRoutingPermission(hasPermission);
+    private void verifyAudioFocusRequestsWithMultiplePlayers(
+            boolean hasPermission, boolean hasExternalPlaybackSession) {
+        final VirtualDevice vd =
+                createVirtualDeviceWithModifyAudioRoutingPermission(
+                        hasPermission, hasExternalPlaybackSession);
 
         Context defaultContext = getApplicationContext();
         Context vdmContext = vd.createContext();
@@ -251,10 +268,10 @@ public class AudioFocusWithVdmTest {
             int vdmFocusRequestResult2 = vdmDevicePlayback2.requestFocus();
             assertThat(vdmFocusRequestResult2).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
 
-            // with separate audio environments created with the MODIFY_AUDIO_ROUTING permission,
-            // the second VDM context playback also notifies the first VDM player of focus lost
-            // if (desktop) multi focus is not enabled
-            if (hasPermission && !mMultiFocusEnabled) {
+            // with separate audio environments created with the MODIFY_AUDIO_ROUTING permission
+            // when having an external audio playback session, the second VDM context playback
+            // notifies the first VDM player of focus lost if (desktop) multi focus is not enabled
+            if (hasPermission && hasExternalPlaybackSession && !mMultiFocusEnabled) {
                 assertThat(vdmDevicePlayback1.getLastFocusChange().isPresent()).isTrue();
                 assertThat(vdmDevicePlayback1.getLastFocusChange().get())
                         .isEqualTo(AUDIOFOCUS_LOSS);
@@ -269,8 +286,10 @@ public class AudioFocusWithVdmTest {
     }
 
     private void verifyAudioFocusRequestsOnVirtualDeviceAndCustomAudioPolicy(
-            boolean hasPermission) {
-        final VirtualDevice vd = createVirtualDeviceWithModifyAudioRoutingPermission(hasPermission);
+            boolean hasPermission, boolean hasExternalPlaybackSession) {
+        final VirtualDevice vd =
+                createVirtualDeviceWithModifyAudioRoutingPermission(
+                        hasPermission, hasExternalPlaybackSession);
 
         Context defaultContext = getApplicationContext();
         Context vdmContext = vd.createContext();
@@ -305,7 +324,8 @@ public class AudioFocusWithVdmTest {
         vd.close();
     }
 
-    private void verifyAudioFocusEnvironmentCleanupOnVdmClose(boolean hasPermission) {
+    private void verifyAudioFocusEnvironmentCleanupOnVdmClose(
+            boolean hasPermission, boolean hasExternalPlaybackSession) {
         Context defaultContext = getApplicationContext();
         PlaybackHelperForTest defaultDevicePlayback = new PlaybackHelperForTest(defaultContext);
 
@@ -314,7 +334,9 @@ public class AudioFocusWithVdmTest {
         defaultDevicePlayback.startPlayback();
 
         // Create a virtual device with custom audio policy for audio focus isolated environment.
-        final VirtualDevice vd = createVirtualDeviceWithModifyAudioRoutingPermission(hasPermission);
+        final VirtualDevice vd =
+                createVirtualDeviceWithModifyAudioRoutingPermission(
+                        hasPermission, hasExternalPlaybackSession);
         PlaybackHelperForTest vdmPlayback = new PlaybackHelperForTest(vd.createContext());
 
         // Request focus in the virtual device
@@ -327,7 +349,9 @@ public class AudioFocusWithVdmTest {
 
         // Create a second virtual device. This creates a second isolated audio focus environment
         // if it has the permission.
-        VirtualDevice vd2 = createVirtualDeviceWithModifyAudioRoutingPermission(hasPermission);
+        VirtualDevice vd2 =
+                createVirtualDeviceWithModifyAudioRoutingPermission(
+                        hasPermission, hasExternalPlaybackSession);
         PlaybackHelperForTest vdmPlayback2 = new PlaybackHelperForTest(vd2.createContext());
 
         // Playback in the second virtual device acquires focus.
@@ -339,9 +363,9 @@ public class AudioFocusWithVdmTest {
 
         // Closing the first virtual device will trigger the cleanup path for the first audio
         // focus environment and lose audio focus for the first virtual playback if it was created,
-        // which only happens when having the permission and is not already (desktop) multi focus
-        // enabled
-        if (hasPermission && !mMultiFocusEnabled) {
+        // which only happens when having the permission, an external audio playback session,
+        // and is not already (desktop) multi focus enabled
+        if (hasPermission && hasExternalPlaybackSession && !mMultiFocusEnabled) {
             assertThat(vdmPlayback.getLastFocusChange().isPresent()).isTrue();
             assertThat(vdmPlayback.getLastFocusChange().get()).isEqualTo(AUDIOFOCUS_LOSS);
         }
