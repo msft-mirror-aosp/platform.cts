@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.5/H-1-13"
+group: GROUP_CAMERA
 name: "Camera Logical Multi Camera"
 description: "Logical multi-camera"
 specs {

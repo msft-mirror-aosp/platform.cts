@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.5/H-1-8"
+group: GROUP_CAMERA
 name: "Camera RAW capability"
 description: "RAW capabilities"
 specs {

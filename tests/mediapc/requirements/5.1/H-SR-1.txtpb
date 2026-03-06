@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.1/H-SR-1"
+group: GROUP_MEDIA
 specs {
   key: 33
   value {

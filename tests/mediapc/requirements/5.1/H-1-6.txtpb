@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.1/H-1-6"
+group: GROUP_MEDIA
 name: "Concurrent Video Transcoding Sessions"
 description: "Concurrent video transcoding sessions"
 specs {

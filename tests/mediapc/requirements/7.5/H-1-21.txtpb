@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.5/H-1-21"
+group: GROUP_CAMERA
 name: "At least one camera"
 description: "At least one camera"
 specs {

@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.12/H-1-2"
+group: GROUP_MEDIA
 name: "RGBA 1010102 color format"
 description: "RGBA_1010102 color format support for hardware encoders."
 specs {

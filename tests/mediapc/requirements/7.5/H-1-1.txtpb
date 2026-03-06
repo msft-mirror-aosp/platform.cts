@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.5/H-1-1"
+group: GROUP_CAMERA
 name: "Primary Rear Camera Resolution and Frame Rate"
 description: "Primary rear camera resolution and frame rate"
 specs {

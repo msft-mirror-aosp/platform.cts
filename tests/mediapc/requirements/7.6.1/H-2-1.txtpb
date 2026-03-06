@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.6.1/H-2-1"
+group: GROUP_HARDWARE
 name: "Memory"
 description:
   "Minimum memory available to the kernel as reported by "

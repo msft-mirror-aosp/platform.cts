@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.3/H-1-1"
+group: GROUP_MEDIA
 name: "Frame drop"
 description: "Decoder frame drops"
 specs {

@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.1/H-1-7"
+group: GROUP_MEDIA
 name: "Video encoder init latency"
 description:
   "Maximum codec initialization latency for a 1080p or smaller video encoding "

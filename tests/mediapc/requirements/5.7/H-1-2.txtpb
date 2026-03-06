@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.7/H-1-2"
+group: GROUP_MEDIA
 name: "Media Drm Security Level Hardware Secure All"
 description: "Hardware-backed trusted execution environment"
 specs {
