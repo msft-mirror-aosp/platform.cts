@@ -279,8 +279,12 @@ public class TestMmTelFeature extends MmTelFeature {
                 ImsStreamMediaProfile.DIRECTION_INVALID,
                 ImsStreamMediaProfile.RTT_MODE_DISABLED);
 
-        ImsCallProfile callProfile = new ImsCallProfile(ImsCallProfile.SERVICE_TYPE_NORMAL,
-                ImsCallProfile.CALL_TYPE_VOICE, new Bundle(), mediaProfile);
+        ImsCallProfile callProfile =
+                new ImsCallProfile(
+                        ImsCallProfile.SERVICE_TYPE_NORMAL,
+                        ImsCallProfile.CALL_TYPE_VOICE,
+                        extras,
+                        mediaProfile);
 
         TestImsCallSessionImpl incomingSession = new TestImsCallSessionImpl(callProfile);
         mCallSession = incomingSession;
@@ -301,8 +305,9 @@ public class TestMmTelFeature extends MmTelFeature {
                 ImsStreamMediaProfile.DIRECTION_INVALID,
                 ImsStreamMediaProfile.RTT_MODE_DISABLED);
 
-        ImsCallProfile callProfile = new ImsCallProfile(ImsCallProfile.SERVICE_TYPE_NORMAL,
-                callType, new Bundle(), mediaProfile);
+        ImsCallProfile callProfile =
+                new ImsCallProfile(
+                        ImsCallProfile.SERVICE_TYPE_NORMAL, callType, extras, mediaProfile);
 
         TestImsCallSessionImpl incomingSession = new TestImsCallSessionImpl(callProfile);
         mCallSession = incomingSession;
@@ -323,8 +328,12 @@ public class TestMmTelFeature extends MmTelFeature {
                 ImsStreamMediaProfile.DIRECTION_INVALID,
                 ImsStreamMediaProfile.RTT_MODE_DISABLED);
 
-        ImsCallProfile callProfile = new ImsCallProfile(ImsCallProfile.SERVICE_TYPE_NORMAL,
-                ImsCallProfile.CALL_TYPE_VOICE, new Bundle(), mediaProfile);
+        ImsCallProfile callProfile =
+                new ImsCallProfile(
+                        ImsCallProfile.SERVICE_TYPE_NORMAL,
+                        ImsCallProfile.CALL_TYPE_VOICE,
+                        extras,
+                        mediaProfile);
 
         TestImsCallSessionImpl incomingSession = new TestImsCallSessionImpl(callProfile);
         mCallSession = incomingSession;
