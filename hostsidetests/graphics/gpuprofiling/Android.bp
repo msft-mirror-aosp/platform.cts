@@ -32,6 +32,8 @@ java_library_host {
     ],
 
     srcs: [
+        "src/**/DataSourceParser.kt",
+        "src/**/DataSourceValidator.kt",
         "src/**/RenderStagesChecks.kt",
         "src/**/ClockUtils.kt",
         "src/**/ProfilingDataUtils.kt",
@@ -92,13 +94,17 @@ java_test_host {
     name: "GpuProfilingUtilsTestCases",
     srcs: [
         "src/**/ClockUtilsTest.kt",
+        "src/**/DataSourceParserTest.kt",
+        "src/**/DataSourceValidatorTest.kt",
         "src/**/ProfilingDataUtilsTest.kt",
         "src/**/RenderStagesChecksTest.kt",
         "src/**/RenderStagesDataTest.kt",
     ],
+    java_resources: ["test_res/data_source/*.textproto"],
     static_libs: [
         "GpuProfilingDataTestingUtils",
         "GpuProfilingDataUtils",
+        "host-libprotobuf-java-full",
         "mockito-hostside-prebuilt",
         "perfetto_config-full",
         "perfetto_trace-full",

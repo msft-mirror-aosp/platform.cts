@@ -1,0 +1,29 @@
+data_sources {
+  ds_descriptor {
+    name: "gpu.renderstages"
+  }
+}
+data_sources {
+  ds_descriptor {
+    name: "gpu.counters"
+    gpu_counter_descriptor {
+      specs {
+        counter_id: 1
+        name: "counter 1"
+        description: "description 1"
+        select_by_default: true
+      }
+      specs {
+        counter_id: 2
+        name: "counter 2"
+        description: "description 2"
+        select_by_default: true
+      }
+      specs {
+        counter_id: 3
+        name: "counter 3"
+        description: "description 3"
+      }
+    }
+  }
+}
