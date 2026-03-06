@@ -20,14 +20,18 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.os.Handler;
 import android.os.HandlerThread;
 
+import androidx.media3.common.Effect;
 import androidx.media3.common.MediaItem;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.DefaultEncoderFactory;
 import androidx.media3.transformer.EditedMediaItem;
+import androidx.media3.transformer.Effects;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.ExportResult;
 import androidx.media3.transformer.Transformer;
 import androidx.media3.transformer.VideoEncoderSettings;
+
+import com.google.common.collect.ImmutableList;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -43,19 +47,22 @@ public final class TransformerTranscoder implements Transformer.Listener {
     private final String mOutputMime;
     private final VideoEncoderSettings mVideoEncoderSettings;
     private final CyclicBarrier mTranscodeBarrier;
+    private final ImmutableList<Effect> mEffects;
 
     public TransformerTranscoder(
             Context context,
             String inputFilePath,
             String outputFilePath,
             String outputMime,
-            VideoEncoderSettings videoEncoderSettings) {
+            VideoEncoderSettings videoEncoderSettings,
+            ImmutableList<Effect> effects) {
         mContext = context;
         mInputFilePath = inputFilePath;
         mOutputFilePath = outputFilePath;
         mOutputMime = outputMime;
         mVideoEncoderSettings = videoEncoderSettings;
         mTranscodeBarrier = new CyclicBarrier(2);
+        mEffects = effects;
     }
 
     /**
@@ -99,6 +106,8 @@ public final class TransformerTranscoder implements Transformer.Listener {
         EditedMediaItem item =
                 new EditedMediaItem.Builder(MediaItem.fromUri(mInputFilePath))
                         .setRemoveAudio(true)
+                        .setEffects(
+                                new Effects(/* audioProcessors= */ ImmutableList.of(), mEffects))
                         .build();
 
         handler.post(() -> transformer.start(item, mOutputFilePath));
