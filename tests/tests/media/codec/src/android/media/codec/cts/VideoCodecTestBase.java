@@ -1621,8 +1621,6 @@ public class VideoCodecTestBase {
             final Bundle bitrateLayeringUpdate = new Bundle();
             bitrateLayeringUpdate.putString(
                     MediaFormat.KEY_VIDEO_BITRATE_LAYERING, bitrateLayering);
-            // This is needed to let MediaCodec fill temporal layer id in output MediaFormat.
-            bitrateLayeringUpdate.putInt(MediaFormat.KEY_TEMPORAL_LAYER_ID, 0);
             runCallable(
                     new Callable<Void>() {
                         @Override
