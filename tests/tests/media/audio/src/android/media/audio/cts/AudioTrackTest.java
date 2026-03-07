@@ -2676,9 +2676,8 @@ public class AudioTrackTest {
         params.setAudioFallbackMode(params.AUDIO_FALLBACK_MODE_FAIL);
         assertEquals(TEST_NAME,
                 params.AUDIO_FALLBACK_MODE_FAIL, params.getAudioFallbackMode());
-        params.setPitch(0.0f);
         try {
-            track.setPlaybackParams(params);
+            params.setPitch(0.0f);
             fail("IllegalArgumentException should be thrown on out of range data");
         } catch (IllegalArgumentException e) {
             ; // expect this is invalid

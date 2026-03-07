@@ -34,6 +34,7 @@ android_test {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "cts_app_test_shared_lib",
+        "cts-mediaprojection-common",
         "CtsSurfaceValidatorLib",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",

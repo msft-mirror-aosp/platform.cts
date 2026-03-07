@@ -50,6 +50,9 @@ import javax.microedition.khronos.egl.EGLSurface;
 
 public class TextureViewCtsActivity extends Activity implements SurfaceTextureListener {
     private final static long TIME_OUT_MS = 10000;
+    // A safe inset to ensure the TextureView is not clipped by system decor views,
+    // which could interfere with verification of the TextureView's content.
+    private static final int SAFE_INSET = 100;
     private final Object mLock = new Object();
 
     private View mPreview;
@@ -93,12 +96,16 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
         preview.setBackgroundColor(Color.WHITE);
         mPreview = preview;
         mTextureView = new TextureView(this);
+        FrameLayout.LayoutParams params =
+                new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+        // TODO(b/489527559): Add a TestApi to get the exact client clipped corner radii
+        params.setMargins(SAFE_INSET, SAFE_INSET, SAFE_INSET, SAFE_INSET);
+        mTextureView.setLayoutParams(params);
         mTextureView.setSurfaceTextureListener(this);
 
         FrameLayout content = new FrameLayout(this);
         content.setBackgroundColor(Color.BLACK);
-        content.addView(mTextureView,
-                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+        content.addView(mTextureView);
         content.addView(mPreview,
                 LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
@@ -147,8 +154,13 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
 
     public Bitmap getContents(Bitmap.Config config, ColorSpace colorSpace) throws Throwable {
         CountDownLatch fence = new CountDownLatch(1);
-        final Bitmap bitmap = Bitmap.createBitmap(this.getWindow().getDecorView().getWidth(),
-                this.getWindow().getDecorView().getHeight(), config, true, colorSpace);
+        final Bitmap bitmap =
+                Bitmap.createBitmap(
+                        mTextureView.getWidth(),
+                        mTextureView.getHeight(),
+                        config,
+                        true,
+                        colorSpace);
         RunSignalAndCatch wrapper = new RunSignalAndCatch(() -> {
             this.getTextureView().getBitmap(bitmap);
         }, fence);

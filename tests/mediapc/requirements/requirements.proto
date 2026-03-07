@@ -101,6 +101,7 @@ enum Group {
   GROUP_CAMERA = 2;
   GROUP_HARDWARE = 3;
   GROUP_PERFORMANCE = 4;
+  GROUP_GRAPHICS = 5;
 }
 
 // A required measurement needed verifiy a MPC requirement.

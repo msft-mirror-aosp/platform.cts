@@ -43,6 +43,7 @@ import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.PollingCheck;
 
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -152,23 +153,52 @@ public final class MockA11yImeSession implements AutoCloseable {
     /**
      * Creates a new MockA11yIme session.
      *
-     * <p>Note that in general you cannot call {@link Instrumentation#getUiAutomation()} while
-     * using {@link MockA11yImeSession} because doing so creates a new {@link UiAutomation} instance
+     * <p>Note that in general you cannot call {@link Instrumentation#getUiAutomation()} while using
+     * {@link MockA11yImeSession} because doing so creates a new {@link UiAutomation} instance
      * without {@link UiAutomation#FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES}, which kills all the
      * instances of {@link android.accessibilityservice.AccessibilityService} including MockA11yIme.
-     * </p>
      *
      * @param context {@link Context} to be used to receive inter-process events from the
-     *                MockA11yIme. (e.g. via {@link BroadcastReceiver}
-     * @param uiAutomation {@link UiAutomation}, which is initialized at least with
-     *                     {@link UiAutomation#FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES}.
-     * @param settings {@link MockA11yImeSettings} to be passed to MockA11yIme.
-     * @return A session object, with which you can retrieve event logs from the MockA11yIme and
-     *         can clean up the session.
+     *     MockA11yIme (e.g. via {@link BroadcastReceiver}
+     * @param uiAutomation {@link UiAutomation}, which is initialized at least with {@link
+     *     UiAutomation#FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES}
+     * @param settings {@link MockA11yImeSettings} to be passed to MockA11yIme
+     * @param timeout timeout milliseconds
+     * @return A session object, with which you can retrieve event logs from the MockA11yIme and can
+     *     clean up the session
      */
-    public static MockA11yImeSession create(@NonNull Context context,
-            @NonNull UiAutomation uiAutomation, @NonNull MockA11yImeSettings settings,
-            long timeout) throws Exception {
+    public static MockA11yImeSession create(
+            @NonNull Context context,
+            @NonNull UiAutomation uiAutomation,
+            @NonNull MockA11yImeSettings settings,
+            long timeout)
+            throws Exception {
+        return create(context, uiAutomation, settings, Duration.ofMillis(timeout));
+    }
+
+    /**
+     * Creates a new MockA11yIme session.
+     *
+     * <p>Note that in general you cannot call {@link Instrumentation#getUiAutomation()} while using
+     * {@link MockA11yImeSession} because doing so creates a new {@link UiAutomation} instance
+     * without {@link UiAutomation#FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES}, which kills all the
+     * instances of {@link android.accessibilityservice.AccessibilityService} including MockA11yIme.
+     *
+     * @param context {@link Context} to be used to receive inter-process events from the
+     *     MockA11yIme (e.g. via {@link BroadcastReceiver}
+     * @param uiAutomation {@link UiAutomation}, which is initialized at least with {@link
+     *     UiAutomation#FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES}
+     * @param settings {@link MockA11yImeSettings} to be passed to MockA11yIme
+     * @param timeout timeout duration
+     * @return A session object, with which you can retrieve event logs from the MockA11yIme and can
+     *     clean up the session
+     */
+    public static MockA11yImeSession create(
+            @NonNull Context context,
+            @NonNull UiAutomation uiAutomation,
+            @NonNull MockA11yImeSettings settings,
+            @NonNull Duration timeout)
+            throws Exception {
 
         final String originalEnabledAccessibilityServices =
                 Settings.Secure.getString(context.getContentResolver(),
@@ -211,7 +241,9 @@ public final class MockA11yImeSession implements AutoCloseable {
                     + MockA11yImeConstants.SETTINGS_PROVIDER_AUTHORITY);
         }
 
-        PollingCheck.check("Wait until MockA11yIME becomes unavailable", timeout,
+        PollingCheck.check(
+                "Wait until MockA11yIME becomes unavailable",
+                timeout.toMillis(),
                 notEnabledCondition);
 
         final Bundle bundle = new Bundle();
@@ -230,10 +262,15 @@ public final class MockA11yImeSession implements AutoCloseable {
                         Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                         MockA11yImeConstants.COMPONENT_NAME.flattenToShortString()));
 
-        PollingCheck.check("MockA11yIme did not become available in " + timeout + " msec. "
+        PollingCheck.check(
+                "MockA11yIme did not become available in "
+                        + timeout.toMillis()
+                        + " msec. "
                         + "Make sure you set UiAutomation"
                         + ".FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES when "
-                        + "obtaining UiAutomation object. uiAutomation=" + uiAutomation, timeout,
+                        + "obtaining UiAutomation object. uiAutomation="
+                        + uiAutomation,
+                timeout.toMillis(),
                 enabledCondition);
 
         return new MockA11yImeSession(context, actionName,

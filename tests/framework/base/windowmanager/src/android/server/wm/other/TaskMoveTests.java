@@ -477,6 +477,14 @@ public class TaskMoveTests extends TaskMoveTestBase {
 
         final Rect initialBounds = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
         final Rect requestedBounds = new Rect(initialBounds);
+        final DisplayContent dc = mWmState.getDisplay(displayId);
+        // The 220 dp number comes from CDD requirements (3.8.14/C-1-4).
+        assumeTrue(
+                "Only test when requested bounds are big enough to be a valid target of a"
+                        + " moveTaskTo call",
+                requestedBounds.width() >= WindowManagerState.dpToPx(220f, dc.getDpi())
+                        && requestedBounds.height()
+                                >= WindowManagerState.dpToPx(220f, dc.getDpi()));
 
         sendTaskMoveRequest(displayId, requestedBounds);
 
@@ -495,10 +503,19 @@ public class TaskMoveTests extends TaskMoveTestBase {
                 intent.hasExtra(EXTRA_DISPLAY_ID_KEY) && intent.hasExtra(EXTRA_BOUNDS_KEY);
 
         // Exactly one boolean should be true.
-        assertTrue(reportedException != reportedNewTaskLocation);
+        assertTrue(
+                "Should have either reported an exception or reported a new task location."
+                        + " reportedException: "
+                        + reportedException
+                        + ", reportedNewTaskLocation: "
+                        + reportedNewTaskLocation,
+                reportedException != reportedNewTaskLocation);
 
         if (reportedException) {
             assertNotNull(
+                    "The moveTaskTo call threw exception "
+                            + intent.getParcelableExtra(EXTRA_EXCEPTION_KEY, Exception.class)
+                            + " of unexpected type (expected IllegalStateException).",
                     intent.getParcelableExtra(EXTRA_EXCEPTION_KEY, IllegalStateException.class));
         }
 

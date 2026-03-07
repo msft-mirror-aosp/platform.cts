@@ -75,16 +75,18 @@ class KeyEventTest : EndToEndImeTestBase() {
             uinputKeyboard.close()
         }
 
-        runWithShellPermissionIdentity(
-            ThrowingRunnable {
-                InputSettings.setRepeatKeysEnabled(
-                    instrumentation.context,
-                    originalRepeatKeysEnabled,
-                )
-            },
-            Manifest.permission.WRITE_SECURE_SETTINGS,
-            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
-        )
+        if (this::instrumentation.isInitialized) {
+            runWithShellPermissionIdentity(
+                ThrowingRunnable {
+                    InputSettings.setRepeatKeysEnabled(
+                        instrumentation.context,
+                        originalRepeatKeysEnabled,
+                    )
+                },
+                Manifest.permission.WRITE_SECURE_SETTINGS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+            )
+        }
     }
 
     @Test

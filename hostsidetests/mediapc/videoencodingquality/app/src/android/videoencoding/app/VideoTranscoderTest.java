@@ -31,11 +31,14 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.os.Environment;
 import android.videoencoding.transcoders.TransformerTranscoder;
 
+import androidx.media3.common.Effect;
+import androidx.media3.effect.LanczosResample;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -52,6 +55,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Test transcoding using media codec api.
@@ -82,6 +86,11 @@ public class VideoTranscoderTest {
     private String mDecoderName;
     private String mTestFileMediaType;
     private String mTestFile;
+    private int mInputWidth;
+    private int mInputHeight;
+    private int mTargetWidth;
+    private int mTargetHeight;
+    private String mScalingAlgorithm;
     private EncoderConfigParams[] mEncCfgParams;
     private String[] mOutputFileNames;
     private int mDecColorFormat;
@@ -98,10 +107,23 @@ public class VideoTranscoderTest {
         JSONArray jsonArray = new JSONArray(jsonString);
         JSONObject obj = jsonArray.getJSONObject(0);
         mTestFile = MEDIA_DIR + "samples/" + obj.getString("RefFileName");
+
+        mTargetWidth = obj.getInt("Width");
+        mTargetHeight = obj.getInt("Height");
+
+        mScalingAlgorithm = obj.optString("ScalingAlgorithm", "");
+        if (!mScalingAlgorithm.isEmpty()) {
+            mTargetWidth = obj.getInt("RescaleWidth");
+            mTargetHeight = obj.getInt("RescaleHeight");
+        }
+
+        com.google.common.base.Preconditions.checkArgument(
+                mTargetWidth > 0, "Invalid Config: Target Width is not positive.");
+        com.google.common.base.Preconditions.checkArgument(
+                mTargetHeight > 0, "Invalid Config: Target Height is not positive.");
+
         mTestFileMediaType = obj.getString("RefMediaType");
         mEncMediaType = obj.getString("TestMediaType");
-        int width = obj.getInt("Width");
-        int height = obj.getInt("Height");
         String componentType = obj.getString("EncoderType");
         CodecTestBase.ComponentClass cType = CodecTestBase.ComponentClass.ALL;
         if (componentType.equals("hw")) {
@@ -117,8 +139,8 @@ public class VideoTranscoderTest {
             JSONObject codecConfig = codecConfigs.getJSONObject(i);
             mEncCfgParams[i] =
                     new EncoderConfigParams.Builder(mEncMediaType)
-                            .setWidth(width)
-                            .setHeight(height)
+                            .setWidth(mTargetWidth)
+                            .setHeight(mTargetHeight)
                             .setKeyFrameInterval(codecConfig.getInt("KeyFrameInterval"))
                             .setMaxBFrames(codecConfig.getInt("MaxBFrames"))
                             .setBitRate(codecConfig.getInt("BitRate"))
@@ -129,6 +151,8 @@ public class VideoTranscoderTest {
             mOutputFileNames[i] = codecConfig.getString("EncodedFileName");
         }
         MediaFormat format = getFormatInStream(mTestFileMediaType, mTestFile);
+        mInputWidth = format.getInteger(MediaFormat.KEY_WIDTH);
+        mInputHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
         mDecoderName = MEDIA_CODEC_LIST_REGULAR.findDecoderForFormat(format);
         ArrayList<MediaFormat> formats = new ArrayList<>();
         for (EncoderConfigParams param : mEncCfgParams) {
@@ -165,6 +189,26 @@ public class VideoTranscoderTest {
         if (!dir.exists()) {
             Assert.assertTrue("Unable to create dir " + dir.getAbsolutePath(), dir.mkdirs());
         }
+
+        ImmutableList.Builder<Effect> effectsBuilder = new ImmutableList.Builder<>();
+        switch (mScalingAlgorithm.toLowerCase(Locale.ROOT)) {
+            case "" -> {
+                if (mTargetWidth != mInputWidth || mTargetHeight != mInputHeight) {
+                    throw new IllegalArgumentException(
+                            "Scaling algorithm is not specified but target dimensions "
+                                    + "do not match input dimensions.");
+                }
+            }
+            case "lanczos" ->
+                effectsBuilder.add(
+                        LanczosResample.scaleToFitWithFlexibleOrientation(
+                                mTargetWidth, mTargetHeight));
+            default ->
+                throw new IllegalArgumentException(
+                        "Unsupported scaling algorithm: " + mScalingAlgorithm);
+        }
+        ImmutableList<Effect> effects = effectsBuilder.build();
+
         PATH_PREFIX = dir.getAbsolutePath() + File.separator;
         for (int i = 0; i < mEncCfgParams.length; i++) {
             TransformerTranscoder transformerTranscoder =
@@ -174,7 +218,8 @@ public class VideoTranscoderTest {
                             getTempFilePath(mOutputFileNames[i]),
                             mEncMediaType,
                             TransformerTranscoder.convertEncoderConfigParamsToSettings(
-                                    mEncCfgParams[i]));
+                                    mEncCfgParams[i]),
+                            effects);
             transformerTranscoder.transcode();
         }
     }

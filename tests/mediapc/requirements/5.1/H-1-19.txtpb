@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.1/H-1-19"
+group: GROUP_MEDIA
 name: "Concurrent HDR Transcoding Sessions"
 description: "Concurrent HDR transcoding sessions"
 specs {

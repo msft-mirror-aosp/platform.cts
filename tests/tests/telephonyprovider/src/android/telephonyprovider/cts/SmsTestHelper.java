@@ -16,6 +16,9 @@
 
 package android.telephonyprovider.cts;
 
+import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+import static android.content.pm.PackageManager.DONT_KILL_APP;
 import static android.provider.Telephony.TextBasedSmsColumns.CONTAINS_OTP;
 import static android.provider.Telephony.TextBasedSmsColumns.OTP_TYPE_CONTAINS_OTP;
 
@@ -23,13 +26,23 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Telephony;
+import android.telephonyprovider.TelephonyProviderActivity;
+import android.telephonyprovider.TelephonyProviderService;
+import android.telephonyprovider.TelephonyProviderSmsDeliverReceiver;
+import android.telephonyprovider.TelephonyProviderWapPushDeliverReceiver;
+import android.util.Log;
 
 import com.android.compatibility.common.util.SystemUtil;
+
+import java.util.List;
 
 class SmsTestHelper {
 
@@ -37,6 +50,8 @@ class SmsTestHelper {
     private ContentValues mContentValues;
     public static final String SMS_ADDRESS_BODY_1 = "sms CTS text 1",
             SMS_ADDRESS_BODY_2 = "sms CTS text 2";
+    private static final String TAG = SmsTestHelper.class.getSimpleName();
+
     SmsTestHelper() {
         mContentResolver = getInstrumentation().getContext().getContentResolver();
         mContentValues = new ContentValues();
@@ -171,6 +186,23 @@ class SmsTestHelper {
         int typeResult = cursorStatus.getInt(cursorStatus.getColumnIndex(Telephony.Sms.TYPE));
         assertThat(typeResult).isAnyOf(1, 2);
         assertThat(typeResult).isEqualTo(type);
+    }
+
+    public static void changeSmsAppComponentsState(Context context, boolean enabled) {
+        Log.d(TAG, "changeSmsAppComponentsState: enabled=" + enabled);
+        PackageManager packageManager = context.getPackageManager();
+        int state = enabled ? COMPONENT_ENABLED_STATE_ENABLED : COMPONENT_ENABLED_STATE_DISABLED;
+        List<Class<?>> components =
+                List.of(
+                        TelephonyProviderSmsDeliverReceiver.class,
+                        TelephonyProviderWapPushDeliverReceiver.class,
+                        TelephonyProviderService.class,
+                        TelephonyProviderActivity.class);
+        for (Class<?> component : components) {
+            Log.d(TAG, "changeSmsAppComponentsState: component=" + component.getSimpleName());
+            packageManager.setComponentEnabledSetting(
+                    new ComponentName(context, component), state, DONT_KILL_APP);
+        }
     }
 }
 

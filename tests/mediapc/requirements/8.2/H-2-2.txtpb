@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "8.2/H-2-2"
+group: GROUP_PERFORMANCE
 name: "Random Write S"
 description: "- Random write"
 specs {

@@ -6314,37 +6314,71 @@ public class TelephonyManagerTest {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                 tm -> tm.registerTelephonyCallback(Runnable::run, callback));
 
-        boolean turnedRadioOn = false;
-        if (mTelephonyManager.getRadioPowerState() == TelephonyManager.RADIO_POWER_OFF) {
-            Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice:"
-                    + "turning on radio since it is off");
-            turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-            assertEquals("radio state", TelephonyManager.RADIO_POWER_ON, callback.mRadioPowerState);
-            turnedRadioOn = true;
-        }
+        boolean radioOffUserOnExit = false;
+        boolean radioOnNearbyDeviceOnExit = false;
+        try {
+            if (mTelephonyManager.getRadioPowerState() == TelephonyManager.RADIO_POWER_OFF) {
+                Log.i(
+                        TAG,
+                        "testSetRadioPowerForReasonNearbyDevice:"
+                                + "turning on radio since it is off");
+                radioOffUserOnExit = true;
+                turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                assertEquals(
+                        "radio state", TelephonyManager.RADIO_POWER_ON, callback.mRadioPowerState);
+            }
 
-        Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice:"
-                + "turning radio off due to nearby device ...");
-        turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-        assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+            Log.i(
+                    TAG,
+                    "testSetRadioPowerForReasonNearbyDevice:"
+                            + "turning radio off due to nearby device ...");
+            radioOnNearbyDeviceOnExit = true;
+            turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+            assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
 
-        Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice: turning on airplane mode ...");
-        turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-        assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-
-        Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice: turning off airplane mode ...");
-        turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-        assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-
-        Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice:"
-                + " turning on radio due to nearby device...");
-        turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-        assertEquals(TelephonyManager.RADIO_POWER_ON, callback.mRadioPowerState);
-
-        if (turnedRadioOn) {
-            Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice: turning radio back off");
+            Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice: turning on airplane mode ...");
             turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
             assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+
+            Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice: turning off airplane mode ...");
+            turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+            assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+
+            Log.i(
+                    TAG,
+                    "testSetRadioPowerForReasonNearbyDevice:"
+                            + " turning on radio due to nearby device...");
+            turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+            assertEquals(TelephonyManager.RADIO_POWER_ON, callback.mRadioPowerState);
+            radioOnNearbyDeviceOnExit = false;
+
+            if (radioOffUserOnExit) {
+                Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice: turning radio back off");
+                turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                radioOffUserOnExit = false;
+            }
+        } finally {
+            try {
+                if (radioOnNearbyDeviceOnExit) {
+                    Log.i(
+                            TAG,
+                            "testSetRadioPowerForReasonNearbyDevice: ensure no nearby device"
+                                    + " reason");
+                    turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+                }
+                if (radioOffUserOnExit) {
+                    Log.i(TAG, "testSetRadioPowerForReasonNearbyDevice: turning radio back off");
+                    turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                }
+            } catch (Exception e) {
+                Log.e(
+                        TAG,
+                        "testSetRadioPowerForReasonNearbyDevice: Failed to clean up radio state",
+                        e);
+            }
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, tm -> tm.unregisterTelephonyCallback(callback));
         }
     }
 
@@ -6363,42 +6397,74 @@ public class TelephonyManagerTest {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                 tm -> tm.registerTelephonyCallback(Runnable::run, callback));
 
-        boolean turnedRadioOn = false;
-        if (mTelephonyManager.getRadioPowerState() == TelephonyManager.RADIO_POWER_OFF) {
-            Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning on radio since it is off");
+        boolean radioOffUserOnExit = false;
+        boolean radioOnCarrierOnExit = false;
+        try {
+            if (mTelephonyManager.getRadioPowerState() == TelephonyManager.RADIO_POWER_OFF) {
+                Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning on radio since it is off");
+                radioOffUserOnExit = true;
+                turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                assertEquals(
+                        "callback power state",
+                        TelephonyManager.RADIO_POWER_ON,
+                        callback.mRadioPowerState);
+            }
+
+            Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning radio off due to carrier ...");
+            radioOnCarrierOnExit = true;
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
+                    tm -> tm.setRadioEnabled(false),
+                    permission.MODIFY_PHONE_STATE);
+            callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+            assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_CARRIER);
+
+            Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning on airplane mode ...");
+            turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+            assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_CARRIER);
+
+            Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning off airplane mode ...");
             turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+            assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_CARRIER);
+
+            Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning on radio due to carrier...");
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
+                    tm -> tm.setRadioEnabled(true),
+                    permission.MODIFY_PHONE_STATE);
+            callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
             assertEquals(
-                    "callback power state",
+                    "radio power state",
                     TelephonyManager.RADIO_POWER_ON,
                     callback.mRadioPowerState);
-            turnedRadioOn = true;
-        }
+            radioOnCarrierOnExit = false;
 
-        Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning radio off due to carrier ...");
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setRadioEnabled(false), permission.MODIFY_PHONE_STATE);
-        callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
-        assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_CARRIER);
+            if (radioOffUserOnExit) {
+                Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning radio back off");
+                turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                radioOffUserOnExit = false;
+            }
 
-        Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning on airplane mode ...");
-        turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-        assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_CARRIER);
-
-        Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning off airplane mode ...");
-        turnRadioOn(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-        assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_CARRIER);
-
-        Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning on radio due to carrier...");
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setRadioEnabled(true), permission.MODIFY_PHONE_STATE);
-        callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
-        assertEquals(
-                "radio power state", TelephonyManager.RADIO_POWER_ON, callback.mRadioPowerState);
-
-        if (turnedRadioOn) {
-            Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning radio back off");
-            turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
-            assertRadioOffWithReason(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+        } finally {
+            try {
+                if (radioOnCarrierOnExit) {
+                    Log.i(TAG, "testSetRadioPowerForReasonCarrier: ensure no carrier reason");
+                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                            mTelephonyManager,
+                            tm -> tm.setRadioEnabled(true),
+                            permission.MODIFY_PHONE_STATE);
+                    callback.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
+                }
+                if (radioOffUserOnExit) {
+                    Log.i(TAG, "testSetRadioPowerForReasonCarrier: turning radio back off");
+                    turnRadioOff(callback, TelephonyManager.RADIO_POWER_REASON_USER);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "testSetRadioPowerForReasonCarrier: Failed to clean up radio state", e);
+            }
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, tm -> tm.unregisterTelephonyCallback(callback));
         }
     }
 
@@ -6970,63 +7036,101 @@ public class TelephonyManagerTest {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(secondTelephonyManager,
                 tm -> tm.registerTelephonyCallback(Runnable::run, callbackForSecondSub));
 
-        boolean turnedRadioOn = false;
-        if (mTelephonyManager.getRadioPowerState() == TelephonyManager.RADIO_POWER_OFF) {
-            Log.i(TAG, "testSetRadioPowerForMultiSimDevice:"
-                    + "turning on radio since it is off");
+        boolean radioOffUserOnExit = false;
+        boolean radioOnNearbyDeviceOnExit = false;
+        try {
+            if (mTelephonyManager.getRadioPowerState() == TelephonyManager.RADIO_POWER_OFF) {
+                Log.i(
+                        TAG,
+                        "testSetRadioPowerForMultiSimDevice:" + "turning on radio since it is off");
+                radioOffUserOnExit = true;
+                turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+                assertEquals(
+                        "radio power state",
+                        TelephonyManager.RADIO_POWER_ON,
+                        callbackForFirstSub.mRadioPowerState);
+                callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
+                assertEquals(
+                        "callback power state",
+                        TelephonyManager.RADIO_POWER_ON,
+                        callbackForSecondSub.mRadioPowerState);
+            }
+
+            Log.i(
+                    TAG,
+                    "testSetRadioPowerForMultiSimDevice:"
+                            + "turning radio off due to nearby device ...");
+            radioOnNearbyDeviceOnExit = true;
+            turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+            assertRadioOffWithReason(
+                    callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+            callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+            assertRadioOffWithReason(
+                    secondTelephonyManager,
+                    callbackForSecondSub,
+                    TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+
+            Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning on airplane mode ...");
+            turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+            assertRadioOffWithReason(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+            callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+            assertRadioOffWithReason(
+                    secondTelephonyManager,
+                    callbackForSecondSub,
+                    TelephonyManager.RADIO_POWER_REASON_USER);
+
+            Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning off airplane mode ...");
             turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+            assertRadioOffWithReason(
+                    callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+            assertRadioOffWithReason(
+                    secondTelephonyManager,
+                    callbackForSecondSub,
+                    TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+
+            Log.i(
+                    TAG,
+                    "testSetRadioPowerForMultiSimDevice:"
+                            + " turning on radio due to nearby device...");
+            turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
             assertEquals(
-                    "radio power state",
+                    "callback first power state",
                     TelephonyManager.RADIO_POWER_ON,
                     callbackForFirstSub.mRadioPowerState);
             callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
             assertEquals(
-                    "callback power state",
+                    "callback second power state",
                     TelephonyManager.RADIO_POWER_ON,
                     callbackForSecondSub.mRadioPowerState);
-            turnedRadioOn = true;
-        }
+            radioOnNearbyDeviceOnExit = false;
 
-        Log.i(TAG, "testSetRadioPowerForMultiSimDevice:"
-                + "turning radio off due to nearby device ...");
-        turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-        assertRadioOffWithReason(callbackForFirstSub,
-                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-        callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
-        assertRadioOffWithReason(secondTelephonyManager, callbackForSecondSub,
-                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-
-        Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning on airplane mode ...");
-        turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
-        assertRadioOffWithReason(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
-        callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
-        assertRadioOffWithReason(secondTelephonyManager, callbackForSecondSub,
-                TelephonyManager.RADIO_POWER_REASON_USER);
-
-        Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning off airplane mode ...");
-        turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
-        assertRadioOffWithReason(callbackForFirstSub,
-                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-        assertRadioOffWithReason(secondTelephonyManager, callbackForSecondSub,
-                TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-
-        Log.i(TAG, "testSetRadioPowerForMultiSimDevice:"
-                + " turning on radio due to nearby device...");
-        turnRadioOn(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
-        assertEquals(
-                "callback first power state",
-                TelephonyManager.RADIO_POWER_ON,
-                callbackForFirstSub.mRadioPowerState);
-        callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_ON);
-        assertEquals(
-                "callback second power state",
-                TelephonyManager.RADIO_POWER_ON,
-                callbackForSecondSub.mRadioPowerState);
-
-        if (turnedRadioOn) {
-            Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning radio back off");
-            turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
-            callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+            if (radioOffUserOnExit) {
+                Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning radio back off");
+                turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+                callbackForSecondSub.waitForRadioStateIntent(TelephonyManager.RADIO_POWER_OFF);
+                radioOffUserOnExit = false;
+            }
+        } finally {
+            try {
+                if (radioOnNearbyDeviceOnExit) {
+                    Log.i(
+                            TAG,
+                            "testSetRadioPowerForMultiSimDevice: ensure no nearby device reason");
+                    turnRadioOn(
+                            callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_NEARBY_DEVICE);
+                }
+                if (radioOffUserOnExit) {
+                    Log.i(TAG, "testSetRadioPowerForMultiSimDevice: turning radio back off");
+                    turnRadioOff(callbackForFirstSub, TelephonyManager.RADIO_POWER_REASON_USER);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "testSetRadioPowerForMultiSimDevice: Failed to clean up radio state", e);
+            }
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, tm -> tm.unregisterTelephonyCallback(callbackForFirstSub));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    secondTelephonyManager,
+                    tm -> tm.unregisterTelephonyCallback(callbackForSecondSub));
         }
     }
 

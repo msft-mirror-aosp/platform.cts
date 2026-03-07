@@ -1,0 +1,12 @@
+data_sources {
+  ds_descriptor {
+    name: "gpu.counters"
+    gpu_counter_descriptor {
+      specs {
+        counter_id: 1
+        name: "counter 1"
+        description: "description 1"
+      }
+    }
+  }
+}

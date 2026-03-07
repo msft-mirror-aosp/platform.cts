@@ -3,8 +3,8 @@ package {
 }
 
 android_app_certificate {
-    name: "cts-allow-access-target-cert",
-    certificate: "certs/cts-allow-access-target-cert",
+    name: "cts-allow-access-cert",
+    certificate: "certs/cts-allow-access-cert",
 }
 
 android_test_helper_app {
@@ -15,6 +15,7 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
@@ -26,6 +27,7 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
@@ -37,6 +39,7 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
@@ -48,6 +51,7 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
@@ -59,6 +63,7 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
@@ -70,18 +75,19 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
-    certificate: ":cts-allow-access-target-cert",
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
 android_test_helper_app {
-    name: "CtsAllowComponentAccessSourceAllowCertPrimary",
-    manifest: "Source_AllowCertPrimary_AndroidManifest.xml",
+    name: "CtsAllowComponentAccessSourceBlockCertMissing",
+    manifest: "Source_BlockCertMissing_AndroidManifest.xml",
     srcs: [
         "src/**/*.java",
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
@@ -93,6 +99,7 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }
 
@@ -104,5 +111,6 @@ android_test_helper_app {
         ":CtsAllowComponentAccessTest_Constants",
         ":CtsAllowComponentAccessTest_Aidl",
     ],
+    certificate: ":cts-allow-access-cert",
     sdk_version: "current",
 }

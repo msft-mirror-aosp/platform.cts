@@ -20,12 +20,14 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.art.rw.flags.Flags;
@@ -58,8 +60,8 @@ public class ReadOnlyDynamicCodeLoadingTest {
         assertThat(functionA()).isEqualTo(1);
     }
 
-
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     @RequiresFlagsEnabled(Flags.FLAG_READ_ONLY_DYNAMIC_CODE_LOAD_THROW_EXCEPTION)
     public void testLoadWritableWithFlagEnabled_expectException() throws Exception {
         UnsatisfiedLinkError unsatisfiedLinkError =

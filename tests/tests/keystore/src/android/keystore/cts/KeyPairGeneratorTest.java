@@ -24,6 +24,7 @@ import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -32,10 +33,6 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
@@ -68,6 +65,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidParameterException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -116,6 +114,7 @@ import javax.net.ssl.X509ExtendedKeyManager;
 import javax.security.auth.x500.X500Principal;
 
 @RunWith(JUnitParamsRunner.class)
+@CddTest(requirements = {"9.11/C-1-2"})
 public class KeyPairGeneratorTest {
 
     private static final String TAG = "KeyPairGeneratorTest";
@@ -123,6 +122,8 @@ public class KeyPairGeneratorTest {
     private KeyStore mKeyStore;
 
     private CountingSecureRandom mRng;
+
+    private String[] mExpectedAlgorithms;
 
     private static final String TEST_ALIAS_1 = "test1";
 
@@ -155,39 +156,36 @@ public class KeyPairGeneratorTest {
 
     private static final String EXPECTED_PROVIDER_NAME = TestUtils.EXPECTED_PROVIDER_NAME;
 
-    private static final String[] EXPECTED_ALGORITHMS = {
-        "EC",
-        "RSA",
-    };
-
     private static final Map<String, Integer> DEFAULT_KEY_SIZES =
             new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     static {
         DEFAULT_KEY_SIZES.put("EC", 256);
         DEFAULT_KEY_SIZES.put("RSA", 2048);
+        DEFAULT_KEY_SIZES.put("ML-DSA", -1);
+        DEFAULT_KEY_SIZES.put("ML-DSA-65", -1);
+        DEFAULT_KEY_SIZES.put("ML-DSA-87", -1);
     }
 
     private static KmType[] kmTypes() {
         return new KmType[] {KmType.SB, KmType.TEE};
     }
 
-    private static Object[] kmTypes_x_algorithms() {
+    // The parameters used in parameterized test names must match a regex that doesn't allow dashes.
+    // This means algorithm names like "ML-DSA" can't be used and we add a third parameter that's
+    // only used to generate the test name.
+    private static Object[] kmTypes_x_algorithms_x_algorithmNamesForTests() {
         return new Object[][] {
-            {KmType.SB, "EC"},
-            {KmType.SB, "RSA"},
-
-            {KmType.TEE, "EC"},
-            {KmType.TEE, "RSA"},
+            {KmType.SB, "EC", "EC"},
+            {KmType.SB, "RSA", "RSA"},
+            {KmType.TEE, "EC", "EC"},
+            {KmType.TEE, "RSA", "RSA"},
+            {KmType.TEE, "ML-DSA", "MLDSA"},
         };
     }
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -196,22 +194,28 @@ public class KeyPairGeneratorTest {
         mKeyStore.load(null, null);
     }
 
-    @Test
-    @CddTest(requirements = {"9.11/C-1-2"})
-    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
-    public void testAlgorithmList_withMlDsa() {
-        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
-        testAlgorithmList(/* expectMlDsa= */ true);
+    // ML-DSA is supported for TEE KeyMint v5+ and is not supported for any StrongBox KeyMint
+    // version. We don't check the StrongBox KeyMint version here since this function should only be
+    // used for tests that use TEE KeyMint. Tests that exercise StrongBox KeyMint don't use this
+    // function and are instead parameterized using parameter sets that include the security level.
+    private String[] getExpectedAlgorithmsForTee() {
+        // Lazily initialize the array of expected algorithms. The array can't be initialized in a
+        // static initializer (e.g. a @BeforeClass method) because it depends on the Keystore
+        // version, which comes from the context and is not available.
+        if (mExpectedAlgorithms == null) {
+            mExpectedAlgorithms =
+                    TestUtils.teeKeyMintSupportsMlDsa()
+                            ? new String[] {"EC", "RSA", "ML-DSA", "ML-DSA-65", "ML-DSA-87"}
+                            : new String[] {"EC", "RSA"};
+        }
+
+        // Clone the array so that one test cannot accidentally modify the array in a way that
+        // affects subsequent tests.
+        return mExpectedAlgorithms.clone();
     }
 
     @Test
-    @CddTest(requirements = {"9.11/C-1-2"})
-    @RequiresFlagsDisabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
-    public void testAlgorithmList_withoutMlDsa() {
-        testAlgorithmList(/* expectMlDsa= */ false);
-    }
-
-    private void testAlgorithmList(boolean expectMlDsa) {
+    public void testAlgorithmList() {
         // Assert that Android Keystore Provider exposes exactly the expected KeyPairGenerator
         // algorithms. We don't care whether the algorithms are exposed via aliases, as long as
         // canonical names of algorithms are accepted. If the Provider exposes extraneous
@@ -222,20 +226,12 @@ public class KeyPairGeneratorTest {
         Set<Service> services = provider.getServices();
         Set<String> actualAlgsLowerCase = new HashSet<String>();
         Set<String> expectedAlgsLowerCase = new HashSet<String>(
-                Arrays.asList(TestUtils.toLowerCase(EXPECTED_ALGORITHMS)));
+                Arrays.asList(TestUtils.toLowerCase(getExpectedAlgorithmsForTee())));
 
-        // TODO(b/485887290): Move these values to EXPECTED_ALGORITHMS and add new tests specific to
-        // Curve 22519.
+        // TODO(b/485887290): Add these values in getExpectedAlgorithmsForTee() and add new tests
+        // specific to Curve 22519.
         expectedAlgsLowerCase.add("ed25519");
         expectedAlgsLowerCase.add("xdh");
-
-        if (expectMlDsa) {
-            // TODO(b/395069350): Move these values to EXPECTED_ALGORITHMS once the remaining tests
-            // in this file are updated to handle ML-DSA.
-            expectedAlgsLowerCase.add("ml-dsa");
-            expectedAlgsLowerCase.add("ml-dsa-65");
-            expectedAlgsLowerCase.add("ml-dsa-87");
-        }
 
         for (Service service : services) {
             if ("KeyPairGenerator".equalsIgnoreCase(service.getType())) {
@@ -263,6 +259,9 @@ public class KeyPairGeneratorTest {
 
         getEcGenerator().initialize(spec);
         getEcGenerator().initialize(spec, new SecureRandom());
+
+        getMlDsaGenerator().initialize(spec);
+        getMlDsaGenerator().initialize(spec, new SecureRandom());
     }
 
     @Test
@@ -276,6 +275,9 @@ public class KeyPairGeneratorTest {
 
         getEcGenerator().initialize(spec);
         getEcGenerator().initialize(spec, new SecureRandom());
+
+        getMlDsaGenerator().initialize(spec);
+        getMlDsaGenerator().initialize(spec, new SecureRandom());
     }
 
     @Test
@@ -288,6 +290,10 @@ public class KeyPairGeneratorTest {
                 "EC KeyPairGenerator should not support setting the key size",
                 IllegalArgumentException.class,
                 () -> getEcGenerator().initialize(256));
+        assertThrows(
+                "ML-DSA KeyPairGenerator should not support setting the key size",
+                InvalidParameterException.class,
+                () -> getMlDsaGenerator().initialize(12345));
     }
 
     @Test
@@ -301,16 +307,20 @@ public class KeyPairGeneratorTest {
                 "EC KeyPairGenerator should not support initialization with a key size",
                 IllegalArgumentException.class,
                 () -> getEcGenerator().initialize(1024, new SecureRandom()));
+        assertThrows(
+                "ML-DSA KeyPairGenerator should not support initialization with a key size",
+                InvalidParameterException.class,
+                () -> getMlDsaGenerator().initialize(12345, new SecureRandom()));
     }
 
     @Test
     public void testDefaultKeySize() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithmsForTee()) {
             StrictModeDetector strict = new StrictModeDetector(getContext());
             try {
                 int expectedSizeBits = DEFAULT_KEY_SIZES.get(algorithm);
                 KeyPairGenerator generator = getGenerator(algorithm);
-                generator.initialize(getWorkingSpec().build());
+                generator.initialize(getWorkingSpec(algorithm).build());
                 KeyPair keyPair = generator.generateKeyPair();
                 assertEquals(expectedSizeBits,
                         TestUtils.getKeyInfo(keyPair.getPrivate()).getKeySize());
@@ -323,14 +333,14 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testInitWithUnknownBlockModeFails() {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithmsForTee()) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
                 assertThrows(
                         InvalidAlgorithmParameterException.class,
                         () ->
                                 generator.initialize(
-                                        getWorkingSpec().setBlockModes("weird").build()));
+                                        getWorkingSpec(algorithm).setBlockModes("weird").build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -339,14 +349,16 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testInitWithUnknownEncryptionPaddingFails() {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithmsForTee()) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
                 assertThrows(
                         InvalidAlgorithmParameterException.class,
                         () ->
                                 generator.initialize(
-                                        getWorkingSpec().setEncryptionPaddings("weird").build()));
+                                        getWorkingSpec(algorithm)
+                                                .setEncryptionPaddings("weird")
+                                                .build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -355,11 +367,11 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testInitWithUnknownSignaturePaddingFails() {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithmsForTee()) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
                 assertThrows(InvalidAlgorithmParameterException.class, () -> generator.initialize(
-                            getWorkingSpec().setSignaturePaddings("weird").build()));
+                            getWorkingSpec(algorithm).setSignaturePaddings("weird").build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -368,12 +380,14 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testInitWithUnknownDigestFails() {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithmsForTee()) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
                 assertThrows(
                         InvalidAlgorithmParameterException.class,
-                        () -> generator.initialize(getWorkingSpec().setDigests("weird").build()));
+                        () ->
+                                generator.initialize(
+                                        getWorkingSpec(algorithm).setDigests("weird").build()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
@@ -382,7 +396,7 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testInitRandomizedEncryptionRequiredButViolatedFails() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithmsForTee()) {
             try {
                 KeyPairGenerator generator = getGenerator(algorithm);
                 assertThrows(
@@ -400,10 +414,10 @@ public class KeyPairGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
-    @TestCaseName(value = "{method}_{0}_{1}")
-    public void testGenerateHonorsRequestedAuthorizations(KmType kmType, String algorithm)
-            throws Exception {
+    @Parameters(method = "kmTypes_x_algorithms_x_algorithmNamesForTests")
+    @TestCaseName(value = "{method}_{0}_{2}")
+    public void testGenerateHonorsRequestedAuthorizations(
+            KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
         assumeKmSupport(kmType);
 
         Date keyValidityStart = new Date(System.currentTimeMillis() - TestUtils.DAY_IN_MILLIS);
@@ -416,8 +430,9 @@ public class KeyPairGeneratorTest {
         String[] encryptionPaddings =
                 new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_OAEP,
                         KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1};
-        String[] digests =
-                new String[] {KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1};
+        String[] digests =  algorithm.startsWith("ML-DSA")
+                ? new String[] {KeyProperties.DIGEST_NONE}
+                : new String[] {KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1};
         int purposes = KeyProperties.PURPOSE_SIGN;
         KeyPairGenerator generator = getGenerator(algorithm);
         generator.initialize(getWorkingSpec(purposes)
@@ -446,8 +461,11 @@ public class KeyPairGeneratorTest {
 
         List<String> actualDigests =
                 new ArrayList<String>(Arrays.asList(keyInfo.getDigests()));
-        // Keystore may have added DIGEST_NONE, to allow software digesting.
-        actualDigests.remove(KeyProperties.DIGEST_NONE);
+        if (!algorithm.startsWith("ML-DSA")) {
+            // Keystore may have added DIGEST_NONE to allow software digesting. For ML-DSA,
+            // we set DIGEST_NONE in the spec, so we expect it to appear in the KeyInfo.
+            actualDigests.remove(KeyProperties.DIGEST_NONE);
+        }
         TestUtils.assertContentsInAnyOrder(actualDigests, digests);
 
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
@@ -461,17 +479,19 @@ public class KeyPairGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
-    @TestCaseName(value = "{method}_{0}_{1}")
-    public void testLimitedUseKey(KmType kmType, String algorithm) throws Exception {
+    @Parameters(method = "kmTypes_x_algorithms_x_algorithmNamesForTests")
+    @TestCaseName(value = "{method}_{0}_{2}")
+    public void testLimitedUseKey(
+            KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
         assumeKmSupport(kmType);
         int maxUsageCount = 1;
         int expectedSizeBits = DEFAULT_KEY_SIZES.get(algorithm);
         KeyPairGenerator generator = getGenerator(algorithm);
-        generator.initialize(getWorkingSpec()
-                .setMaxUsageCount(maxUsageCount)
-                .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
-                .build());
+        generator.initialize(
+                getWorkingSpec(algorithm)
+                        .setMaxUsageCount(maxUsageCount)
+                        .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
+                        .build());
         KeyPair keyPair = generator.generateKeyPair();
         assertEquals(expectedSizeBits,
                 TestUtils.getKeyInfo(keyPair.getPrivate()).getKeySize());
@@ -480,9 +500,10 @@ public class KeyPairGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
-    @TestCaseName(value = "{method}_{0}_{1}")
-    public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm) throws Exception {
+    @Parameters(method = "kmTypes_x_algorithms_x_algorithmNamesForTests")
+    @TestCaseName(value = "{method}_{0}_{2}")
+    public void testGenerateAuthBoundKey_Lskf(
+            KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
         assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
@@ -499,10 +520,10 @@ public class KeyPairGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
-    @TestCaseName(value = "{method}_{0}_{1}")
-    public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
-            throws Exception {
+    @Parameters(method = "kmTypes_x_algorithms_x_algorithmNamesForTests")
+    @TestCaseName(value = "{method}_{0}_{2}")
+    public void testGenerateAuthBoundKey_LskfOrStrongBiometric(
+            KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
         assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
@@ -562,9 +583,9 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -609,9 +630,9 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -655,9 +676,9 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -704,9 +725,9 @@ public class KeyPairGeneratorTest {
                         | KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getDigests()),
                 KeyProperties.DIGEST_NONE,
@@ -723,6 +744,63 @@ public class KeyPairGeneratorTest {
         MoreAsserts.assertContentsInAnyOrder(Arrays.asList(keyInfo.getSignaturePaddings()),
                 KeyProperties.SIGNATURE_PADDING_RSA_PSS,
                 KeyProperties.SIGNATURE_PADDING_RSA_PKCS1);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void testGenerate_MlDsa_LegacySpec() throws Exception {
+        KeyPairGenerator generator = getMlDsaGenerator();
+        generator.initialize(
+                new KeyPairGeneratorSpec.Builder(getContext())
+                        .setAlias(TEST_ALIAS_1)
+                        .setKeyType("ML-DSA")
+                        .setSubject(TEST_DN_1)
+                        .setSerialNumber(TEST_SERIAL_1)
+                        .setStartDate(NOW)
+                        .setEndDate(NOW_PLUS_10_YEARS)
+                        .build());
+        KeyPair keyPair = generator.generateKeyPair();
+        assertGeneratedKeyPairAndSelfSignedCertificate(
+                keyPair,
+                TEST_ALIAS_1,
+                "ML-DSA",
+                123, // Dummy value since the key size check should be skipped for ML-DSA.
+                TEST_DN_1,
+                TEST_SERIAL_1,
+                NOW,
+                NOW_PLUS_10_YEARS);
+        assertSelfSignedCertificateSignatureVerifies(TEST_ALIAS_1);
+
+        // Unlike in the tests for key generation with the legacy spec for other algorithms, we
+        // don't call "assertKeyPairAndCertificateUsableForTLSPeerAuthentication(TEST_ALIAS_1)".
+        // This is because Conscrypt doesn't support ML-DSA signatures in the TLS handshake. As of
+        // February 2026, the use of ML-DSA in TLS 1.3 is still a draft:
+        // https://datatracker.ietf.org/doc/draft-ietf-tls-mldsa/
+
+        KeyInfo keyInfo = TestUtils.getKeyInfo(keyPair.getPrivate());
+
+        // AndroidKeyStoreSecretKeyFactorySpi returns this placeholder value for ML-DSA since key
+        // size is ignored for ML-DSA keys.
+        assertEquals(-1, keyInfo.getKeySize());
+
+        assertEquals(TEST_ALIAS_1, keyInfo.getKeystoreAlias());
+        assertOneOf(
+                keyInfo.getOrigin(), KeyProperties.ORIGIN_GENERATED, KeyProperties.ORIGIN_UNKNOWN);
+        assertEquals(
+                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY, keyInfo.getPurposes());
+        assertFalse(keyInfo.isUserAuthenticationRequired());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
+
+        // AndroidKeyStoreKeyPairGeneratorSpi always adds DIGEST_NONE for ML-DSA keys if it is not
+        // already specified in the KeyGenParameterSpec (as the sole digest).
+        MoreAsserts.assertContentsInAnyOrder(
+                Arrays.asList(keyInfo.getDigests()), KeyProperties.DIGEST_NONE);
+
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getEncryptionPaddings()));
     }
 
     @Test
@@ -958,6 +1036,29 @@ public class KeyPairGeneratorTest {
         }
     }
 
+    // Note that unlike for RSA/EC, this test isn't parameterized by KeyMint type since only TEE
+    // KeyMint supports ML-DSA.
+    @Test
+    public void testGenerate_MlDsa_Different_Keys() throws Exception {
+        KeyPairGenerator generator = getMlDsaGenerator();
+        generator.initialize(new KeyGenParameterSpec.Builder(
+                TEST_ALIAS_1,
+                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+                .build());
+        KeyPair keyPair1 = generator.generateKeyPair();
+        PublicKey pub1 = keyPair1.getPublic();
+
+        generator.initialize(new KeyGenParameterSpec.Builder(
+                TEST_ALIAS_2,
+                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+                .build());
+        KeyPair keyPair2 = generator.generateKeyPair();
+        PublicKey pub2 = keyPair2.getPublic();
+        if(Arrays.equals(pub1.getEncoded(), pub2.getEncoded())) {
+            fail("The same ML-DSA key pair was generated twice");
+        }
+    }
+
     @Test
     @Parameters(method = "kmTypes")
     @TestCaseName(value = "{method}_{0}")
@@ -1104,9 +1205,9 @@ public class KeyPairGeneratorTest {
         assertEquals(
                 KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY, keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getDigests()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
@@ -1145,11 +1246,55 @@ public class KeyPairGeneratorTest {
                 KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
                 keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
-        assertEquals(null, keyInfo.getKeyValidityStart());
-        assertEquals(null, keyInfo.getKeyValidityForOriginationEnd());
-        assertEquals(null, keyInfo.getKeyValidityForConsumptionEnd());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getDigests()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getEncryptionPaddings()));
+    }
+
+    @Test
+    public void testGenerate_MlDsa_ModernSpec_Defaults() throws Exception {
+        KeyPairGenerator generator = getMlDsaGenerator();
+        generator.initialize(
+                new KeyGenParameterSpec.Builder(
+                                TEST_ALIAS_1,
+                                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+                        .build());
+        KeyPair keyPair = generator.generateKeyPair();
+        assertGeneratedKeyPairAndSelfSignedCertificate(
+                keyPair,
+                TEST_ALIAS_1,
+                "ML-DSA",
+                123, // Dummy value since the key size check should be skipped for ML-DSA.
+                DEFAULT_CERT_SUBJECT,
+                DEFAULT_CERT_SERIAL_NUMBER,
+                DEFAULT_CERT_NOT_BEFORE,
+                DEFAULT_CERT_NOT_AFTER);
+        KeyInfo keyInfo = TestUtils.getKeyInfo(keyPair.getPrivate());
+
+        // AndroidKeyStoreSecretKeyFactorySpi returns this placeholder value for ML-DSA since key
+        // size is ignored for ML-DSA keys.
+        assertEquals(-1, keyInfo.getKeySize());
+
+        assertEquals(TEST_ALIAS_1, keyInfo.getKeystoreAlias());
+        assertOneOf(
+                keyInfo.getOrigin(), KeyProperties.ORIGIN_GENERATED, KeyProperties.ORIGIN_UNKNOWN);
+        assertEquals(
+                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY, keyInfo.getPurposes());
+        assertFalse(keyInfo.isUserAuthenticationRequired());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
+
+        // AndroidKeyStoreKeyPairGeneratorSpi always adds DIGEST_NONE for ML-DSA keys if it is not
+        // already specified in the KeyGenParameterSpec (as the sole digest).
+        MoreAsserts.assertContentsInAnyOrder(
+                Arrays.asList(keyInfo.getDigests()), KeyProperties.DIGEST_NONE);
+
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
         MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getEncryptionPaddings()));
     }
@@ -1456,6 +1601,70 @@ public class KeyPairGeneratorTest {
                 KeyProperties.ENCRYPTION_PADDING_RSA_OAEP,
                 KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
 
+        assertFalse(keyInfo.isUserAuthenticationRequired());
+        assertEquals(0, keyInfo.getUserAuthenticationValidityDurationSeconds());
+    }
+
+    @Test
+    public void testGenerate_MlDsa_ModernSpec_AsCustomAsPossible() throws Exception {
+        KeyPairGenerator generator = getMlDsaGenerator();
+        Date keyValidityStart = new Date(System.currentTimeMillis());
+        Date keyValidityEndDateForOrigination = new Date(System.currentTimeMillis() + 1000000);
+        Date keyValidityEndDateForConsumption = new Date(System.currentTimeMillis() + 10000000);
+
+        Date certNotBefore = new Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 7);
+        Date certNotAfter = new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7);
+        BigInteger certSerialNumber = new BigInteger("12345678");
+        X500Principal certSubject = new X500Principal("cn=hello");
+        generator.initialize(
+                new KeyGenParameterSpec.Builder(
+                                TEST_ALIAS_1,
+                                KeyProperties.PURPOSE_SIGN
+                                        | KeyProperties.PURPOSE_VERIFY
+                                        | KeyProperties.PURPOSE_ENCRYPT)
+                        .setKeySize(
+                                123) // Dummy value since the key size should be ignored for ML-DSA.
+                        .setDigests(KeyProperties.DIGEST_NONE)
+                        .setKeyValidityStart(keyValidityStart)
+                        .setKeyValidityForOriginationEnd(keyValidityEndDateForOrigination)
+                        .setKeyValidityForConsumptionEnd(keyValidityEndDateForConsumption)
+                        .setCertificateSerialNumber(certSerialNumber)
+                        .setCertificateSubject(certSubject)
+                        .setCertificateNotBefore(certNotBefore)
+                        .setCertificateNotAfter(certNotAfter)
+                        .build());
+        KeyPair keyPair = generator.generateKeyPair();
+        assertGeneratedKeyPairAndSelfSignedCertificate(
+                keyPair,
+                TEST_ALIAS_1,
+                "ML-DSA",
+                123, // Dummy value since the key size check should be skipped for ML-DSA.
+                certSubject,
+                certSerialNumber,
+                certNotBefore,
+                certNotAfter);
+        KeyInfo keyInfo = TestUtils.getKeyInfo(keyPair.getPrivate());
+
+        // AndroidKeyStoreSecretKeyFactorySpi returns this placeholder value for ML-DSA since key
+        // size is ignored for ML-DSA keys.
+        assertEquals(-1, keyInfo.getKeySize());
+
+        assertEquals(TEST_ALIAS_1, keyInfo.getKeystoreAlias());
+        assertOneOf(
+                keyInfo.getOrigin(), KeyProperties.ORIGIN_GENERATED, KeyProperties.ORIGIN_UNKNOWN);
+        assertEquals(
+                KeyProperties.PURPOSE_SIGN
+                        | KeyProperties.PURPOSE_VERIFY
+                        | KeyProperties.PURPOSE_ENCRYPT,
+                keyInfo.getPurposes());
+        assertEquals(keyValidityStart, keyInfo.getKeyValidityStart());
+        assertEquals(keyValidityEndDateForOrigination, keyInfo.getKeyValidityForOriginationEnd());
+        assertEquals(keyValidityEndDateForConsumption, keyInfo.getKeyValidityForConsumptionEnd());
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
+        MoreAsserts.assertContentsInAnyOrder(
+                Arrays.asList(keyInfo.getDigests()), KeyProperties.DIGEST_NONE);
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getEncryptionPaddings()));
         assertFalse(keyInfo.isUserAuthenticationRequired());
         assertEquals(0, keyInfo.getUserAuthenticationValidityDurationSeconds());
     }
@@ -1949,9 +2158,13 @@ public class KeyPairGeneratorTest {
             throws Exception {
         assertNotNull(keyPair);
         TestUtils.assertKeyPairSelfConsistent(keyPair);
-        TestUtils.assertKeySize(expectedKeySize, keyPair);
         assertEquals(expectedKeyAlgorithm, keyPair.getPublic().getAlgorithm());
         TestUtils.assertKeyStoreKeyPair(mKeyStore, alias, keyPair);
+
+        // Key size is ignored for ML-DSA keys.
+        if (!expectedKeyAlgorithm.equalsIgnoreCase("ML-DSA")) {
+            TestUtils.assertKeySize(expectedKeySize, keyPair);
+        }
 
         X509Certificate cert = (X509Certificate) mKeyStore.getCertificate(alias);
         assertTrue(Arrays.equals(keyPair.getPublic().getEncoded(),
@@ -2010,7 +2223,8 @@ public class KeyPairGeneratorTest {
                 TestKeyStore.createTrustManagers(serverKeyStore.keyStore));
         SSLContext clientContext = serverContext;
 
-        if ("EC".equalsIgnoreCase(privateKey.getAlgorithm())) {
+        if ("EC".equalsIgnoreCase(privateKey.getAlgorithm())
+                || "ML-DSA".equalsIgnoreCase(privateKey.getAlgorithm())) {
             // As opposed to RSA (see below) EC keys are used in the same way in all cipher suites.
             // Assert that the key works with the default list of cipher suites.
             assertSSLConnectionWithClientAuth(
@@ -2160,6 +2374,11 @@ public class KeyPairGeneratorTest {
         return getGenerator("EC");
     }
 
+    private KeyPairGenerator getMlDsaGenerator()
+            throws NoSuchAlgorithmException, NoSuchProviderException {
+        return getGenerator("ML-DSA");
+    }
+
     private KeyPairGenerator getGenerator(String algorithm)
             throws NoSuchAlgorithmException, NoSuchProviderException {
         return KeyPairGenerator.getInstance(algorithm, "AndroidKeyStore");
@@ -2180,8 +2399,10 @@ public class KeyPairGeneratorTest {
                 + ", actual: <" + actual + ">");
     }
 
-    private KeyGenParameterSpec.Builder getWorkingSpec() {
-        return getWorkingSpec(0);
+    private KeyGenParameterSpec.Builder getWorkingSpec(String algorithm) {
+        return algorithm.startsWith("ML-DSA")
+                ? getWorkingSpec(KeyProperties.PURPOSE_SIGN)
+                : getWorkingSpec(0);
     }
 
     private KeyGenParameterSpec.Builder getWorkingSpec(@KeyProperties.PurposeEnum int purposes) {

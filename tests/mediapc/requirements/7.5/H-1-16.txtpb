@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.5/H-1-16"
+group: GROUP_CAMERA
 name: "Camera Dynamic Range 10 Bit"
 description: "Support for 10 bit dynamic range for primary cameras"
 specs {

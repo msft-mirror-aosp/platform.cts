@@ -5754,6 +5754,12 @@ You should be prompted to select credentials; choose the ones you just installed
        \nTest the USB MIDI interface first. Then, press the PLAY to button test audio. Verify
        that a tone is correctly played.
     </string>
+
+    <string name="usb_midi_unsupported_peripheral_title">Unsupported USB Peripheral</string>
+    <string name="usb_midi_unsupported_peripheral_message">
+        Please connect a supported USB Audio Peripheral to run this test.
+    </string>
+
     <string name="midiUSBAudioTestLbl">USB Audio Playback Test:</string>
 
     <string name="midiHasMIDILbl">Has MIDI Support</string>
@@ -7938,6 +7944,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsSysuiInteractiveTestCases</item>
         <item>CtsUsbTypecTestCases</item>
         <item>CtsCarInteractiveTestCases</item>
+        <item>CtsPermissionInteractiveTestCases</item>
     </string-array>
 
     <!-- Strings for Audio Workload Test. -->

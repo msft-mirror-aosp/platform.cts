@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "5.1/H-1-10"
+group: GROUP_MEDIA
 name: "Video Decoder Sessions"
 description: "hardware decoders, secure with non-secure hardware decoders"
 specs {

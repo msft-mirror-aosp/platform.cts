@@ -1408,7 +1408,7 @@ public class SignatureTest {
             Context context, String signatureAlgorithm, int maxUsageCount) throws Exception {
         String keyAlgorithm = TestUtils.getSignatureAlgorithmKeyAlgorithm(signatureAlgorithm);
         KeyProtection importParams =
-                TestUtils.getMinimalWorkingImportParametersWithLimitedUsageForSigningingWith(
+                TestUtils.getMinimalWorkingImportParametersWithLimitedUsageForSigningWith(
                         signatureAlgorithm, maxUsageCount);
         if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {
             return ECDSASignatureTest.importKatKeyPairs(context, importParams);

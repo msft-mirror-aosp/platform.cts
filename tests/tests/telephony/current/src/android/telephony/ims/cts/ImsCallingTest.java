@@ -53,7 +53,6 @@ import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CallState;
 import android.telephony.CarrierConfigManager;
-import android.telephony.DisconnectCause;
 import android.telephony.PreciseCallState;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
@@ -2576,33 +2575,30 @@ public class ImsCallingTest extends ImsCallingBase {
         mServiceCallBack = new ServiceCallBack();
         InCallServiceStateValidator.setCallbacks(mServiceCallBack);
 
-        Bundle extras = new Bundle();
-        extras.putBoolean(ImsCallProfile.EXTRA_LOW_BATTERY, true);
+        try {
+            Bundle extras = new Bundle();
+            extras.putBoolean(ImsCallProfile.EXTRA_LOW_BATTERY, true);
 
-        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(
-                extras, ImsCallProfile.CALL_TYPE_VT);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            // Call should be auto rejected when the incoming call is received
+            sServiceConnector
+                    .getCarrierService()
+                    .getMmTelFeature()
+                    .onIncomingCallReceived(extras, ImsCallProfile.CALL_TYPE_VT);
 
-        Call call = getCall(mCurrentCallId);
-        if (call.getDetails().getState() == Call.STATE_RINGING) {
-            // Wait for the call to be rejected
-            waitUntilConditionIsTrueOrTimeout(
-                    new Condition() {
-                        @Override
-                        public Object expected() {
-                            return true;
-                        }
-
-                        @Override
-                        public Object actual() {
-                            return call.getDetails().getState() == Call.STATE_DISCONNECTED;
-                        }
-                    }, WAIT_FOR_CONDITION, "Call is not disconnected");
+            waitForCallSessionToNotBe(null);
+            TestImsCallSessionImpl callSession =
+                    sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+            assertNotNull("Unable to get callSession, its null", callSession);
+            // The call is rejected early in ImsPhoneCallTracker and onCreateIncomingConnection
+            // fails in TelephonyConnectionService.
+            // As a result, the call is NEVER added to the InCallService.
+            assertFalse(
+                    "Call should NOT be added to InCallService",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        } finally {
+            // Cleanup
+            overrideCarrierConfig(null);
         }
-
-        // Verify that the call was rejected due to low battery
-        assertEquals(DisconnectCause.INCOMING_AUTO_REJECTED,
-                call.getDetails().getDisconnectCause().getTelephonyDisconnectCause());
     }
 
     @Test
@@ -2965,6 +2961,7 @@ public class ImsCallingTest extends ImsCallingBase {
             TelephonyCallback.OutgoingEmergencyCallListener,
             TelephonyCallback.EmergencyNumberListListener {
         LinkedBlockingQueue<List<CallState>> mTestCallStateListeQueue;
+        LinkedBlockingQueue<PreciseCallState> mPreciseCallStateQueue = new LinkedBlockingQueue<>();
         private EmergencyNumber mLastOutgoingEmergencyNumber;
         private String mTestEmergencyNumber;
         private Semaphore mOutgoingEmergencyCallSemaphore = new Semaphore(0);
@@ -2981,9 +2978,14 @@ public class ImsCallingTest extends ImsCallingBase {
         @Override
         public void onPreciseCallStateChanged(@NonNull PreciseCallState callState) {
             Log.i(LOG_TAG, "onPreciseCallStateChanged: state=" + callState);
+            mPreciseCallStateQueue.offer(callState);
             if (callState.getForegroundCallState() == PreciseCallState.PRECISE_CALL_STATE_ACTIVE) {
                 mActiveCallStateSemaphore.release();
             }
+        }
+
+        public LinkedBlockingQueue<PreciseCallState> getPreciseCallStateQueue() {
+            return mPreciseCallStateQueue;
         }
 
         @Override

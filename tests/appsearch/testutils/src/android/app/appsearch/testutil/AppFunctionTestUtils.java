@@ -21,6 +21,7 @@ import static android.app.appsearch.testutil.AppsIndexerTestUtils.collectAllResu
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.installPackage;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.retryAssert;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchMobileApplicationWithId;
+import static android.app.appsearch.testutil.FrameworkFlagUtils.isFlagEnabled;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -112,7 +113,6 @@ public final class AppFunctionTestUtils {
                             TEST_APP_FUNCTIONS_SERVICE,
                             "global",
                             /* addAppLevelProperties= */ true);
-
     /**
      * Print app function generic document as defined in the app_appfunctions_v2.xml of dynamic
      * schema test app A.
@@ -280,7 +280,9 @@ public final class AppFunctionTestUtils {
     }
 
     private static GenericDocument createAppAV2PrintAppFunction() {
-        return createAppAV2PrintAppFunction(false);
+        return createAppAV2PrintAppFunction(
+                isFlagEnabled(
+                        android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS));
     }
 
     private static GenericDocument createAppAV2PrintAppFunction(boolean addAppLevelProperties) {
@@ -305,12 +307,17 @@ public final class AppFunctionTestUtils {
             builder.setPropertyString(
                     "serviceName", "com.android.cts.appsearch.indexertestapp.a.AppFunctionService");
             builder.setPropertyString("scope", "global");
+            builder.setPropertyLong(PROPERTY_PACKAGE_NAME_HASH, TEST_APP_A_PKG.hashCode());
+        } else {
+            builder.setPropertyString("functionId", "com.example.utils#print1");
         }
         return builder.build();
     }
 
     private static GenericDocument createAppBPrintFunction() {
-        return createAppBPrintFunction(false);
+        return createAppBPrintFunction(
+                isFlagEnabled(
+                        android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS));
     }
 
     private static GenericDocument createAppBPrintFunction(boolean addAppLevelProperties) {
@@ -333,6 +340,9 @@ public final class AppFunctionTestUtils {
         if (addAppLevelProperties) {
             builder.setPropertyString("serviceName", TEST_APP_FUNCTIONS_SERVICE);
             builder.setPropertyString("scope", "global");
+            builder.setPropertyLong(PROPERTY_PACKAGE_NAME_HASH, TEST_APP_B_PKG.hashCode());
+        } else {
+            builder.setPropertyString("functionId", "com.example.utils#print5");
         }
 
         return builder.build();
@@ -422,7 +432,13 @@ public final class AppFunctionTestUtils {
      */
     private static GenericDocument buildAppFunctionDocument(
             String packageName, String functionSuffix, String serviceName, String scope) {
-        return buildAppFunctionDocument(packageName, functionSuffix, serviceName, scope, false);
+        return buildAppFunctionDocument(
+                packageName,
+                functionSuffix,
+                serviceName,
+                scope,
+                isFlagEnabled(
+                        android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS));
     }
 
     private static GenericDocument buildAppFunctionDocument(
@@ -454,6 +470,8 @@ public final class AppFunctionTestUtils {
             builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
             builder.setPropertyString(PROPERTY_SCOPE, scope);
             builder.setPropertyLong(PROPERTY_PACKAGE_NAME_HASH, packageName.hashCode());
+        } else {
+            builder.setPropertyString("functionId", "com.example.utils#" + functionSuffix);
         }
 
         GenericDocument schemaMetadata =

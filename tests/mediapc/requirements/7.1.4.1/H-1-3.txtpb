@@ -15,6 +15,7 @@
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: Requirement
 id: "7.1.4.1/H-1-3"
+group: GROUP_GRAPHICS
 name: "Vulkan"
 description: "Must support vulkan physical device protected memory and global priority."
 specs {

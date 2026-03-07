@@ -32,6 +32,7 @@ import android.graphics.Insets;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
 import android.view.View;
@@ -40,6 +41,8 @@ import android.view.WindowManager;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.android.server.display.feature.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -339,6 +342,73 @@ public class VirtualDisplayTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({Flags.FLAG_VIRTUAL_DISPLAYS_SUPPORT_DESKTOP_MODE,
+            Flags.FLAG_VIRTUAL_SECONDARY_DISPLAYS})
+    public void createVirtualDisplay_allowsContentModeSwitch_trusted_shouldSpecifyAllowsContentModeSwitchFlag() {
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+
+        assertThat(virtualDisplay).isNotNull();
+        Display display = virtualDisplay.getDisplay();
+        assertThat(display.isValid()).isTrue();
+        int displayFlags = display.getFlags();
+        assertWithMessage(String.format(
+                "Virtual display flags (0x%x) should contain " + "FLAG_ALLOWS_CONTENT_MODE_SWITCH",
+                displayFlags)).that(
+                displayFlags & Display.FLAG_ALLOWS_CONTENT_MODE_SWITCH).isEqualTo(
+                Display.FLAG_ALLOWS_CONTENT_MODE_SWITCH);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_VIRTUAL_DISPLAYS_SUPPORT_DESKTOP_MODE,
+            Flags.FLAG_VIRTUAL_SECONDARY_DISPLAYS})
+    public void createVirtualDisplay_allowsContentModeSwitch_untrusted_shouldNotSpecifyAllowsContentModeSwitchFlag() {
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+
+        assertThat(virtualDisplay).isNotNull();
+        Display display = virtualDisplay.getDisplay();
+        assertThat(display.isValid()).isTrue();
+        int displayFlags = display.getFlags();
+        assertThat(displayFlags & Display.FLAG_ALLOWS_CONTENT_MODE_SWITCH).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_VIRTUAL_DISPLAYS_SUPPORT_DESKTOP_MODE,
+            Flags.FLAG_VIRTUAL_SECONDARY_DISPLAYS})
+    public void createVirtualDisplay_allowsContentModeSwitch_ownContent_shouldNotSpecifyAllowsContentModeSwitchFlag() {
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+
+        assertThat(virtualDisplay).isNotNull();
+        Display display = virtualDisplay.getDisplay();
+        assertThat(display.isValid()).isTrue();
+        int displayFlags = display.getFlags();
+        assertThat(displayFlags & Display.FLAG_ALLOWS_CONTENT_MODE_SWITCH).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_VIRTUAL_DISPLAYS_SUPPORT_DESKTOP_MODE,
+            Flags.FLAG_VIRTUAL_SECONDARY_DISPLAYS})
+    public void createVirtualDisplay_allowsContentModeSwitch_autoMirror_shouldNotSpecifyAllowsContentModeSwitchFlag() {
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_ALLOWS_CONTENT_MODE_SWITCH
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+
+        assertThat(virtualDisplay).isNotNull();
+        Display display = virtualDisplay.getDisplay();
+        assertThat(display.isValid()).isTrue();
+        int displayFlags = display.getFlags();
+        assertThat(displayFlags & Display.FLAG_ALLOWS_CONTENT_MODE_SWITCH).isEqualTo(0);
+    }
+
+    @Test
     public void createVirtualDisplay_nullExecutorButNonNullCallback_shouldThrow() {
         assertThrows(NullPointerException.class,
                 () -> mVirtualDevice.createVirtualDisplay(
@@ -455,6 +525,30 @@ public class VirtualDisplayTest {
         View statusBar = new View(context);
         assertThrows(RuntimeException.class, () ->
                 getInstrumentation().runOnMainSync(() -> windowManager.addView(statusBar, lp)));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_DISPLAYS_SUPPORT_DESKTOP_MODE)
+    public void createVirtualDisplay_withUniqueId_withPermission() {
+        String uniqueId = "abc";
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
+                VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder().setUniqueId(uniqueId));
+
+        assertThat(virtualDisplay).isNotNull();
+        Display display = virtualDisplay.getDisplay();
+        assertThat(display.isValid()).isTrue();
+        assertThat(display.getUniqueId()).endsWith(":" + uniqueId);
+
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_DISPLAYS_SUPPORT_DESKTOP_MODE)
+    public void createVirtualDisplay_withUniqueId_withoutPermission() {
+        String uniqueId = "abc";
+        mRule.runWithoutPermissions(() -> assertThrows(SecurityException.class,
+                () -> mRule.createManagedVirtualDisplay(mVirtualDevice,
+                        VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder().setUniqueId(
+                                uniqueId))));
     }
 
     private void verifyDisplay(VirtualDisplay virtualDisplay) {

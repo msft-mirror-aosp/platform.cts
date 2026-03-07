@@ -16,12 +16,15 @@
 
 package android.virtualdevice.cts.computercontrol
 
+import android.app.Activity
+import android.content.ComponentName
 import android.content.IntentSender
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.server.wm.LockScreenSession
 import android.server.wm.WindowManagerStateHelper
+import android.virtualdevice.cts.common.VirtualDeviceSession
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
@@ -32,7 +35,6 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.use
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
@@ -95,6 +97,8 @@ class ComputerControlExtensionsTest {
         @Deprecated("Use LifecycleCallback instead") override fun onSessionClosed() {}
     }
 
+    private val TARGET_COMPUTER_CONTROL_VERSION = 1
+
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Rule
@@ -120,7 +124,11 @@ class ComputerControlExtensionsTest {
     @Test
     fun testGetInstance_nullContext() {
         assertThrows(NullPointerException::class.java) {
-            ComputerControlExtensions.getInstance(null)
+            ComputerControlExtensions.getInstance(null!!)
+        }
+
+        assertThrows(NullPointerException::class.java) {
+            ComputerControlExtensions.getInstance(null!!, TARGET_COMPUTER_CONTROL_VERSION)
         }
     }
 
@@ -128,17 +136,35 @@ class ComputerControlExtensionsTest {
     fun testGetInstance_withoutPermission_returnsNonNull() {
         getInstrumentation().uiAutomation.dropShellPermissionIdentity()
         assertThat(ComputerControlExtensions.getInstance(context)).isNotNull()
+        assertThat(
+            ComputerControlExtensions.getInstance(
+                context,
+                TARGET_COMPUTER_CONTROL_VERSION
+            )
+        ).isNotNull()
     }
 
     @Test
     fun isSessionCreationAvailable_returnsTrue() {
         assertThat(ComputerControlExtensions.isSessionCreationAvailable(context)).isTrue()
+        assertThat(
+            ComputerControlExtensions.isSessionCreationAvailable(
+                context,
+                TARGET_COMPUTER_CONTROL_VERSION
+            )
+        ).isTrue()
     }
 
     @Test
     fun isSessionCreationAvailable_withoutPermission_returnsFalse() {
         getInstrumentation().uiAutomation.dropShellPermissionIdentity()
         assertThat(ComputerControlExtensions.isSessionCreationAvailable(context)).isFalse()
+        assertThat(
+            ComputerControlExtensions.isSessionCreationAvailable(
+                context,
+                TARGET_COMPUTER_CONTROL_VERSION
+            )
+        ).isTrue()
     }
 
     @Test
@@ -282,6 +308,50 @@ class ComputerControlExtensionsTest {
     }
 
     @Test
+    fun testRequestSession_pretendingToRunOnVirtualDevice_failWithDeviceLocked() {
+        VirtualDeviceSession(getInstrumentation(), "testdevice").use { deviceSession ->
+            // The agent is claiming to be running on the virtual device but is not.
+            val deviceContext = context.createDeviceContext(deviceSession.deviceId)
+            extension = ComputerControlExtensions.getInstance(deviceContext)
+
+            LockScreenSession(getInstrumentation(), WindowManagerStateHelper()).use { lockSession ->
+                lockSession.setLockCredential().gotoKeyguard()
+                val params =
+                    ComputerControlSession.Params.Builder(deviceContext)
+                        .setName("${testName.methodName}")
+                        .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                        .build()
+                val callback = ComputerControlSessionCallbackImpl()
+                extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
+                val errorCode = callback.awaitSessionCreationError()
+                assertThat(errorCode).isEqualTo(ComputerControlSession.ERROR_DEVICE_LOCKED)
+            }
+        }
+    }
+
+    @Test
+    fun testRequestSession_activityOnVirtualDevice_succeedWithDeviceLocked() {
+        VirtualDeviceSession(getInstrumentation(), "testdevice").use { deviceSession ->
+            // The agent has an activity running on the virtual device.
+            deviceSession.launchActivity(ComponentName(context, TestActivity::class.java))
+            val deviceContext = context.createDeviceContext(deviceSession.deviceId)
+            extension = ComputerControlExtensions.getInstance(deviceContext)
+
+            LockScreenSession(getInstrumentation(), WindowManagerStateHelper()).use { lockSession ->
+                lockSession.setLockCredential().gotoKeyguard()
+                val params =
+                    ComputerControlSession.Params.Builder(deviceContext)
+                        .setName("${testName.methodName}")
+                        .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                        .build()
+                val callback = ComputerControlSessionCallbackImpl()
+                extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
+                callback.awaitSessionAndClose()
+            }
+        }
+    }
+
+    @Test
     fun testRequestSession_failWithPermissionDenied() {
         try {
             SystemUtil.runShellCommand("appops set com.android.shell COMPUTER_CONTROL ignore")
@@ -298,6 +368,8 @@ class ComputerControlExtensionsTest {
             SystemUtil.runShellCommand("appops set com.android.shell COMPUTER_CONTROL allow")
         }
     }
+
+    class TestActivity : Activity()
 
     companion object {
         private const val TAG = "ComputerControlExtensionsTest"
