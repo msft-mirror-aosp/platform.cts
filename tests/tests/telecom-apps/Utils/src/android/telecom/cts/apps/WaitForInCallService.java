@@ -142,14 +142,15 @@ public class WaitForInCallService {
 
                     @Override
                     public Object actual() {
-                        return !Objects.equals(
-                                verifierMethods.getLastAddedCall().getDetails().getId(),
-                                idToExclude);
+                        Call lastCall = verifierMethods.getLastAddedCall();
+                        if (lastCall == null || lastCall.getDetails() == null) {
+                            return false;
+                        }
+                        return !Objects.equals(lastCall.getDetails().getId(), idToExclude);
                     }
                 },
                 WaitUntil.DEFAULT_TIMEOUT_MS,
-                NEW_ID_NOT_FOUND_MSG
-        );
+                NEW_ID_NOT_FOUND_MSG);
     }
 
     /***********************************************************

@@ -366,8 +366,11 @@ public class BaseAppVerifierImpl {
 
     public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes,
             Consumer<CallStateTransitionOperation> consumer) throws Exception {
+        Call lastCall = mVerifierMethods.getLastAddedCall();
+        String lastCallId = lastCall != null ? lastCall.getDetails().getId() : null;
         int currentCallCount = addCall(appControl, attributes, consumer);
         waitUntilExpectedCallCount(currentCallCount + 1);
+        waitUntilNewCallId(mVerifierMethods, lastCallId);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
@@ -377,14 +380,20 @@ public class BaseAppVerifierImpl {
 
     public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes)
             throws Exception {
+        Call lastCall = mVerifierMethods.getLastAddedCall();
+        String lastCallId = lastCall != null ? lastCall.getDetails().getId() : null;
         int currentCallCount = addCall(appControl, attributes);
         waitUntilExpectedCallCount(currentCallCount + 1);
+        waitUntilNewCallId(mVerifierMethods, lastCallId);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
     public String verifyCallAddedInCallService(int currentCallCount) {
+        Call lastCall = mVerifierMethods.getLastAddedCall();
+        String lastCallId = lastCall != null ? lastCall.getDetails().getId() : null;
         waitForInCallServiceBinding(mVerifierMethods);
         waitUntilExpectedCallCount(currentCallCount + 1);
+        waitUntilNewCallId(mVerifierMethods, lastCallId);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
@@ -406,10 +415,13 @@ public class BaseAppVerifierImpl {
             Consumer<CallStateTransitionOperation> consumer,
             int numDisconnectDueToEcc)
             throws Exception {
+        Call lastCall = mVerifierMethods.getLastAddedCall();
+        String lastCallId = lastCall != null ? lastCall.getDetails().getId() : null;
         int currentCallCount = mVerifierMethods.getCurrentCallCount();
         appControl.verifyAddCall(attributes, consumer);
         waitForInCallServiceBinding(mVerifierMethods);
         waitUntilExpectedCallCount(currentCallCount + 1 - numDisconnectDueToEcc);
+        waitUntilNewCallId(mVerifierMethods, lastCallId);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
