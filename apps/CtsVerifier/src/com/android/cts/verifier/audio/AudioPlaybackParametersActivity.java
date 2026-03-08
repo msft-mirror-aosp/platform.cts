@@ -21,12 +21,15 @@ import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
-import android.media.MediaPlayer;
-import android.media.MediaRecorder;
+import android.media.MediaCodec;
+import android.media.MediaCodecList;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
 import android.media.PlaybackParams;
 import android.os.Bundle;
 import android.os.Environment;
@@ -39,9 +42,6 @@ import android.widget.TextView;
 
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
-import com.android.compatibility.common.util.CddTest;
-import com.android.cts.verifier.CtsVerifierReportLog;
-import com.android.cts.verifier.R;
 import com.android.compatibility.common.util.CddTest;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
@@ -58,6 +58,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 @CddTest(requirement = "5.5.5")
 public class AudioPlaybackParametersActivity
@@ -74,9 +76,9 @@ public class AudioPlaybackParametersActivity
     private static final double WEIGHING_CONSTANT = 0.9;
 
     private Button mButtonTest;
+    private Button mButtonTestOffload;
     private ProgressBar mProgress;
     private TextView mResultText;
-    private MediaPlayer mMediaPlayer;
 
     private Button mButtonPlayOriginal;
     private Button mButtonPlayRecording1;
@@ -89,13 +91,25 @@ public class AudioPlaybackParametersActivity
 
     private int mResultCode = RESULT_CODE_NOT_RUN;
     private double mCorrelation = 0.0;
+    private double mCorrelationOffload = 0.0;
+    private boolean mTestNonOffloadPassed = false;
+    private boolean mTestOffloadPassed = false;
 
-    private final int mSelectedRecordSource = MediaRecorder.AudioSource.UNPROCESSED;
-    private final int mBlockSizeSamples = 4096;
+    private static final int SELECTED_RECORD_SOURCE =
+            android.media.MediaRecorder.AudioSource.UNPROCESSED;
+    private static final int BLOCK_SIZE_SAMPLES = 4096;
 
     private final float MIN_RMS_DB = -60.0f; //dB
     private final float MIN_RMS_VAL = (float)Math.pow(10,(MIN_RMS_DB/20));
     private static final float MAX_VAL = (float)(1 << 15);
+
+    private static final int PLAYBACK_WAIT_BUFFER_MS = 2000;
+    private static final int CODEC_TIMEOUT_US = 5000;
+    private static final int RAW_BUFFER_SIZE = 1024 * 64;
+    private static final int RECORD_BUFFER_MULTIPLIER = 2;
+    private static final int WAV_HEADER_SIZE = 44;
+    private static final int WAV_WRITE_BUFFER_SIZE = 1024 * 4;
+    private static final int FILE_COPY_BUFFER_SIZE = 1024;
 
     private Thread mTestThread;
 
@@ -105,7 +119,11 @@ public class AudioPlaybackParametersActivity
         setContentView(R.layout.audio_playback_params_activity);
 
         mButtonTest = (Button) findViewById(R.id.audio_playback_params_button_test);
+        mButtonTest.setText("Test Non-Offload");
         mButtonTest.setOnClickListener(this);
+        mButtonTestOffload = (Button) findViewById(
+                R.id.audio_playback_params_button_test_offload);
+        mButtonTestOffload.setOnClickListener(this);
         mProgress = (ProgressBar) findViewById(R.id.audio_playback_params_progress_bar);
         mResultText = (TextView) findViewById(R.id.audio_playback_params_test_result);
 
@@ -122,7 +140,8 @@ public class AudioPlaybackParametersActivity
                 R.id.audio_playback_params_analysis_result);
 
         showView(mProgress, false);
-        setPlaybackButtonsEnabled(false);
+        enableTestButtons(true);
+        enablePlayButtons(false);
 
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
@@ -139,7 +158,9 @@ public class AudioPlaybackParametersActivity
     public void onClick(View v) {
         int id = v.getId();
         if (id == R.id.audio_playback_params_button_test) {
-            startTest();
+            startTest(false);
+        } else if (id == R.id.audio_playback_params_button_test_offload) {
+            startTest(true);
         } else if (id == R.id.audio_playback_params_button_play_original) {
             playRawAudio(mControlRecordingFile);
         } else if (id == R.id.audio_playback_params_button_play_rec1) {
@@ -149,79 +170,301 @@ public class AudioPlaybackParametersActivity
         }
     }
 
-    private android.media.MediaFormat getAudioFormat(Object source) throws java.io.IOException {
-        android.media.MediaExtractor extractor = new android.media.MediaExtractor();
-        if (source instanceof Integer) {
-            android.content.res.AssetFileDescriptor afd =
-                    getResources().openRawResourceFd((Integer) source);
-            extractor.setDataSource(
-                    afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-            afd.close();
-        } else if (source instanceof File) {
-            extractor.setDataSource(((File) source).getAbsolutePath());
-        } else {
-            throw new IllegalArgumentException("Unsupported audio source type");
+    private static class AudioDataSource {
+        final int sampleRate;
+        final int channelCount;
+        final int encoding;
+        final byte[] data;
+
+        AudioDataSource(int sampleRate, int channelCount, int encoding, byte[] data) {
+            this.sampleRate = sampleRate;
+            this.channelCount = channelCount;
+            this.encoding = encoding;
+            this.data = data;
         }
-        android.media.MediaFormat format = extractor.getTrackFormat(0);
-        extractor.release();
-        return format;
     }
 
-    private short[] readPcmData(Object source) throws java.io.IOException {
-        android.media.MediaExtractor extractor = new android.media.MediaExtractor();
+    private AudioDataSource getAudioData(Object source) throws IOException {
+        MediaExtractor extractor = new MediaExtractor();
         if (source instanceof Integer) {
-            android.content.res.AssetFileDescriptor afd =
-                    getResources().openRawResourceFd((Integer) source);
-            extractor.setDataSource(
-                    afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-            afd.close();
+            try (android.content.res.AssetFileDescriptor afd =
+                    getResources().openRawResourceFd((Integer) source)) {
+                extractor.setDataSource(
+                        afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            }
         } else if (source instanceof File) {
             extractor.setDataSource(((File) source).getAbsolutePath());
         } else {
             throw new IllegalArgumentException("Unsupported audio source type");
         }
-        extractor.selectTrack(0);
-        android.media.MediaFormat format = extractor.getTrackFormat(0);
+
+        MediaFormat format = null;
+        String mime = null;
+        int trackIndex = -1;
+        for (int i = 0; i < extractor.getTrackCount(); i++) {
+            format = extractor.getTrackFormat(i);
+            mime = format.getString(MediaFormat.KEY_MIME);
+            if (mime.startsWith("audio/")) {
+                trackIndex = i;
+                break;
+            }
+        }
+
+        if (trackIndex < 0) {
+            extractor.release();
+            throw new IOException("No audio track found");
+        }
+
+        extractor.selectTrack(trackIndex);
+
+        int sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        int channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        int encoding = format.containsKey(MediaFormat.KEY_PCM_ENCODING) ?
+                format.getInteger(MediaFormat.KEY_PCM_ENCODING) : AudioFormat.ENCODING_PCM_16BIT;
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        // Allocate a large buffer to read the audio data. 1-2 MB is recommended.
-        java.nio.ByteBuffer byteBuffer = java.nio.ByteBuffer.allocate(16 * 1024 * 100);
-        while (true) {
-            byteBuffer.clear();
-            Log.d(TAG, "reading data");
-            int sampleSize = extractor.readSampleData(byteBuffer, 0);
-            Log.d(TAG, "read data " + sampleSize);
-            if (sampleSize < 0) {
-                break;
-            }
-            byte[] buffer = new byte[sampleSize];
-            byteBuffer.position(0);
-            byteBuffer.get(buffer, 0, sampleSize);
-            baos.write(buffer);
 
-            if (!extractor.advance()) {
-                break;
+        if (mime.startsWith("audio/raw")) {
+            ByteBuffer buffer = ByteBuffer.allocate(RAW_BUFFER_SIZE);
+            while (true) {
+                int size = extractor.readSampleData(buffer, 0);
+                if (size < 0) break;
+                byte[] bytes = new byte[size];
+                buffer.get(bytes, 0, size);
+                baos.write(bytes);
+                buffer.clear();
+                extractor.advance();
             }
+        } else {
+            MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+            String decoderName = codecList.findDecoderForFormat(format);
+            if (decoderName == null) {
+                throw new IOException("No decoder found for " + mime);
+            }
+            MediaCodec codec = MediaCodec.createByCodecName(decoderName);
+            codec.configure(format, null, null, 0);
+            codec.start();
+
+            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+            boolean inputDone = false;
+            boolean outputDone = false;
+
+            while (!outputDone) {
+                if (!inputDone) {
+                    int inputIndex = codec.dequeueInputBuffer(CODEC_TIMEOUT_US);
+                    if (inputIndex >= 0) {
+                        ByteBuffer buffer = codec.getInputBuffer(inputIndex);
+                        int size = extractor.readSampleData(buffer, 0);
+                        if (size < 0) {
+                            codec.queueInputBuffer(inputIndex, 0, 0, 0,
+                                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                            inputDone = true;
+                        } else {
+                            codec.queueInputBuffer(inputIndex, 0, size,
+                                    extractor.getSampleTime(), 0);
+                            extractor.advance();
+                        }
+                    }
+                }
+
+                int outputIndex = codec.dequeueOutputBuffer(info, CODEC_TIMEOUT_US);
+                if (outputIndex >= 0) {
+                    ByteBuffer buffer = codec.getOutputBuffer(outputIndex);
+                    byte[] bytes = new byte[info.size];
+                    buffer.get(bytes);
+                    baos.write(bytes);
+                    codec.releaseOutputBuffer(outputIndex, false);
+                    if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        outputDone = true;
+                    }
+                } else if (outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    MediaFormat newFormat = codec.getOutputFormat();
+                    sampleRate = newFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+                    channelCount = newFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+                    if (newFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
+                        encoding = newFormat.getInteger(MediaFormat.KEY_PCM_ENCODING);
+                    }
+                }
+            }
+            codec.stop();
+            codec.release();
         }
         extractor.release();
-
-        byte[] pcmBytes = baos.toByteArray();
-        int pcmEncoding = format.containsKey(android.media.MediaFormat.KEY_PCM_ENCODING)
-                ? format.getInteger(android.media.MediaFormat.KEY_PCM_ENCODING)
-                : AudioFormat.ENCODING_PCM_16BIT;
-
-        if (pcmEncoding == AudioFormat.ENCODING_PCM_8BIT) {
-            short[] shorts = new short[pcmBytes.length];
-            for (int i = 0; i < pcmBytes.length; i++) {
-                shorts[i] = (short) (((pcmBytes[i] & 0xFF) - 128) << 8);
-            }
-            return shorts;
-        } else { // Assume 16-bit
-            return byteToShort(pcmBytes);
-        }
+        return new AudioDataSource(sampleRate, channelCount, encoding, baos.toByteArray());
     }
 
-    private void startTest() {
+    private void playAudio(AudioDataSource data, float speed, float pitch, boolean isOffload,
+            CountDownLatch releaseLatch) {
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build();
+
+        if (data.channelCount != 1 && data.channelCount != 2) {
+            throw new IllegalArgumentException("Unsupported channel count: " + data.channelCount);
+        }
+
+        int channelMask = (data.channelCount == 1) ? AudioFormat.CHANNEL_OUT_MONO
+                : AudioFormat.CHANNEL_OUT_STEREO;
+        AudioFormat audioFormat = new AudioFormat.Builder()
+                .setSampleRate(data.sampleRate)
+                .setChannelMask(channelMask)
+                .setEncoding(data.encoding)
+                .build();
+
+        if (isOffload) {
+            if (!AudioManager.isOffloadedPlaybackSupported(audioFormat, audioAttributes)) {
+                throw new UnsupportedOperationException("Offload not supported for this format");
+            }
+        }
+
+        AudioTrack.Builder builder = new AudioTrack.Builder()
+                .setAudioAttributes(audioAttributes)
+                .setAudioFormat(audioFormat)
+                .setTransferMode(AudioTrack.MODE_STREAM);
+
+        if (isOffload) {
+            builder.setOffloadedPlayback(true);
+        } else {
+            int minBufferSize = AudioTrack.getMinBufferSize(data.sampleRate, channelMask,
+                    data.encoding);
+            // Ensure the buffer size is large enough (at least ~1 second of audio) to prevent
+            // underruns when playback parameters (like speed) are modified during the test.
+            builder.setBufferSizeInBytes(Math.max(minBufferSize,
+                    data.sampleRate * data.channelCount * 2));
+        }
+
+        final AudioTrack audioTrack = builder.build();
+
+        int bytesPerSample = 2;
+        if (data.encoding == AudioFormat.ENCODING_PCM_8BIT) {
+            bytesPerSample = 1;
+        } else if (data.encoding == AudioFormat.ENCODING_PCM_FLOAT) {
+            bytesPerSample = 4;
+        } else if (data.encoding != AudioFormat.ENCODING_PCM_16BIT) {
+            throw new IllegalArgumentException("Unsupported encoding: " + data.encoding);
+        }
+        int frameSize = data.channelCount * bytesPerSample;
+        int totalFrames = data.data.length / frameSize;
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Executor executor = Executors.newSingleThreadExecutor();
+        final AudioTrack.StreamEventCallback callback = new AudioTrack.StreamEventCallback() {
+            @Override
+            public void onPresentationEnded(AudioTrack track) {
+                latch.countDown();
+            }
+        };
+
+        if (isOffload) {
+            audioTrack.registerStreamEventCallback(executor, callback);
+        } else {
+            audioTrack.setNotificationMarkerPosition(totalFrames);
+            audioTrack.setPositionNotificationPeriod(data.sampleRate / 10); // 100ms
+            audioTrack.setPlaybackPositionUpdateListener(
+                    new AudioTrack.OnPlaybackPositionUpdateListener() {
+                @Override
+                public void onMarkerReached(AudioTrack track) {
+                    latch.countDown();
+                }
+
+                @Override
+                public void onPeriodicNotification(AudioTrack track) {
+                    if (track.getPlaybackHeadPosition() >= totalFrames) {
+                        latch.countDown();
+                    }
+                }
+            }, new android.os.Handler(android.os.Looper.getMainLooper()));
+        }
+
+        // Only set PlaybackParams if they are non-default.
+        // Some offload implementations might behave unexpectedly if setPlaybackParams is called
+        // with default values or if variable speed is not fully supported.
+        if (speed != 1.0f || pitch != 1.0f) {
+            PlaybackParams params = new PlaybackParams();
+            params.setSpeed(speed);
+            params.setPitch(pitch);
+            try {
+                audioTrack.setPlaybackParams(params);
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                Log.e(TAG, "Failed to set playback params", e);
+                throw new IllegalArgumentException("Failed to set playback params", e);
+            }
+        }
+
+        int bytesWritten = 0;
+        int bufferSize = Math.max(
+                AudioTrack.getMinBufferSize(data.sampleRate, channelMask, data.encoding),
+                data.sampleRate * data.channelCount * 2);
+
+        // For offload, prime the buffer before playing.
+        if (isOffload) {
+            int primeSize = Math.min(bufferSize, data.data.length);
+            int written = audioTrack.write(data.data, 0, primeSize);
+            if (written < 0) {
+                Log.e(TAG, "AudioTrack write error during priming: " + written);
+                audioTrack.release();
+                return;
+            }
+            bytesWritten += written;
+        }
+
+        audioTrack.play();
+
+        while (bytesWritten < data.data.length) {
+            int toWrite = Math.min(bufferSize, data.data.length - bytesWritten);
+            int written = audioTrack.write(data.data, bytesWritten, toWrite);
+            if (written < 0) {
+                Log.e(TAG, "AudioTrack write error: " + written);
+                break;
+            }
+            bytesWritten += written;
+        }
+
+        if (isOffload) {
+            audioTrack.setOffloadEndOfStream();
+        } else {
+            // Update marker if we didn't write everything
+            int actualFrames = bytesWritten / frameSize;
+            if (actualFrames < totalFrames) {
+                audioTrack.setNotificationMarkerPosition(actualFrames);
+            }
+        }
+
+        if (bytesWritten > 0) {
+            try {
+                int actualFrames = bytesWritten / frameSize;
+                long durationMs = (long) ((actualFrames / (double) data.sampleRate) /
+                        speed * 1000);
+                long timeoutMs = durationMs + PLAYBACK_WAIT_BUFFER_MS;
+                if (!latch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                    Log.w(TAG, "Timeout waiting for playback to complete. Head: "
+                            + audioTrack.getPlaybackHeadPosition() + " Target: " + actualFrames);
+                }
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted while waiting for playback", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        if (releaseLatch != null) {
+            try {
+                // Wait for the recording thread to capture the tail acoustic delay
+                releaseLatch.await(3000, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted while waiting for recording to finish", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        audioTrack.stop();
+        if (isOffload) {
+            audioTrack.unregisterStreamEventCallback(callback);
+        }
+        audioTrack.release();
+    }
+
+    private void startTest(boolean isOffload) {
         if (mTestThread != null && mTestThread.isAlive()) {
             Log.v(TAG,"test Thread already running.");
             return;
@@ -231,12 +474,14 @@ public class AudioPlaybackParametersActivity
             public void run() {
                 super.run();
                 mResultCode = RESULT_CODE_NOT_RUN;
-                setPlaybackButtonsEnabled(false);
+                enableTestButtons(false);
+                enablePlayButtons(false);
 
                 // Step 1: Play speech at 1.0x speed and record it as a control.
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
-                        "Playing at 1.0x speed and recording (control)...");
-                mControlRecordingFile = recordPlayback(1.0f, 1.0f, R.raw.speech);
+                        "Playing at 1.0x speed and recording (control)"
+                        + (isOffload ? " [Offload]" : "") + "...");
+                mControlRecordingFile = recordPlayback(1.0f, 1.0f, R.raw.speech, isOffload);
                 if (mControlRecordingFile == null) {
                     sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
                             "Failed to record control playback.");
@@ -249,7 +494,7 @@ public class AudioPlaybackParametersActivity
                 // Step 2: Play speech at 2.0x speed and record it.
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Playing at 2.0x speed and recording...");
-                mRecording1File = recordPlayback(2.0f, 1.0f, R.raw.speech);
+                mRecording1File = recordPlayback(2.0f, 1.0f, R.raw.speech, isOffload);
                 if (mRecording1File == null) {
                     sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
                             "Failed to record first playback.");
@@ -262,7 +507,7 @@ public class AudioPlaybackParametersActivity
                 // Step 3: Play the first recording at 0.5x speed and record it again.
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Playing first recording at 0.5x speed and recording...");
-                mRecording2File = recordPlayback(0.5f, 1.0f, mRecording1File);
+                mRecording2File = recordPlayback(0.5f, 1.0f, mRecording1File, isOffload);
                 if (mRecording2File == null) {
                     sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
                             "Failed to record second playback.");
@@ -278,7 +523,7 @@ public class AudioPlaybackParametersActivity
                     File publicFile = new File(publicDir, "playback_params_final_recording.wav");
                     try (FileInputStream in = new FileInputStream(mRecording2File);
                          FileOutputStream out = new FileOutputStream(publicFile)) {
-                        byte[] buffer = new byte[1024];
+                        byte[] buffer = new byte[FILE_COPY_BUFFER_SIZE];
                         int read;
                         while ((read = in.read(buffer)) != -1) {
                             out.write(buffer, 0, read);
@@ -292,13 +537,25 @@ public class AudioPlaybackParametersActivity
 
                 // Step 4: Analyze the recordings.
                 sendMessage(AudioTestRunner.TEST_MESSAGE, "Analyzing recordings...");
-                analyzeRecordings();
+                analyzeRecordings(isOffload);
 
-                if (mCorrelation >= CORRELATION_PASS_THRESHOLD) {
+                double correlation = isOffload ? mCorrelationOffload : mCorrelation;
+
+                if (correlation >= CORRELATION_PASS_THRESHOLD) {
                     mResultCode = RESULT_CODE_OK;
+                    if (isOffload) {
+                        mTestOffloadPassed = true;
+                    } else {
+                        mTestNonOffloadPassed = true;
+                    }
                     sendMessage(AudioTestRunner.TEST_ENDED_OK, "Test passed.");
                 } else {
                     mResultCode = RESULT_CODE_FAILED;
+                    if (isOffload) {
+                        mTestOffloadPassed = false;
+                    } else {
+                        mTestNonOffloadPassed = false;
+                    }
                     sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
                             "Test failed. Correlation too low.");
                 }
@@ -307,23 +564,20 @@ public class AudioPlaybackParametersActivity
         mTestThread.start();
     }
 
-    private File recordPlayback(float speed, float pitch, Object source) {
+    private File recordPlayback(float speed, float pitch, Object source, boolean isOffload) {
         File rawFile = null;
         File wavFile = null;
-        android.media.MediaFormat format;
         int sampleRate;
         int channelCount;
         int channelConfig;
+        int encoding;
 
         try {
-            format = getAudioFormat(source);
-            sampleRate = format.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE);
-            channelCount = format.getInteger(android.media.MediaFormat.KEY_CHANNEL_COUNT);
-            int pcmEncoding = format.containsKey(android.media.MediaFormat.KEY_PCM_ENCODING)
-                    ? format.getInteger(android.media.MediaFormat.KEY_PCM_ENCODING)
-                    : AudioFormat.ENCODING_PCM_16BIT;
-            int bitsPerSample = pcmEncoding == AudioFormat.ENCODING_PCM_8BIT ? 8 : 16;
-
+            AudioDataSource audioData = getAudioData(source);
+            sampleRate = audioData.sampleRate;
+            channelCount = audioData.channelCount;
+            encoding = audioData.encoding;
+            int bitsPerSample = (encoding == AudioFormat.ENCODING_PCM_8BIT) ? 8 : 16;
 
             switch (channelCount) {
                 case 1 -> channelConfig = AudioFormat.CHANNEL_IN_MONO;
@@ -335,43 +589,47 @@ public class AudioPlaybackParametersActivity
             }
 
             Log.e(TAG, String.format("Audio source format: Sample Rate: %d, Channels: %d, "
-                    + "Encoding: %d", sampleRate, channelCount, pcmEncoding));
+                    + "Encoding: %d", sampleRate, channelCount, encoding));
 
             rawFile = File.createTempFile("playback_record", ".raw", getCacheDir());
             FileOutputStream fos = new FileOutputStream(rawFile);
 
-            if (source instanceof Integer) {
-                mMediaPlayer = MediaPlayer.create(getApplicationContext(), (Integer) source);
-            } else if (source instanceof File) {
-                mMediaPlayer = new MediaPlayer();
-                mMediaPlayer.setDataSource(((File) source).getAbsolutePath());
-                mMediaPlayer.prepare();
-            } else {
-                return null; // Should not happen
-            }
-
-            PlaybackParams params = new PlaybackParams();
-            params.setSpeed(speed);
-            params.setPitch(pitch);
-            mMediaPlayer.setPlaybackParams(params);
-
-            final CountDownLatch latch = new CountDownLatch(1);
-            mMediaPlayer.setOnCompletionListener(mp -> latch.countDown());
-
             int minRecordBuffSizeInBytes = AudioRecord.getMinBufferSize(sampleRate,
-                    channelConfig, pcmEncoding);
-            final AudioRecord recorder = new AudioRecord(mSelectedRecordSource, sampleRate,
-                    channelConfig, pcmEncoding,
-                    2 * minRecordBuffSizeInBytes);
+                    channelConfig, encoding);
+            final AudioRecord recorder = new AudioRecord(SELECTED_RECORD_SOURCE, sampleRate,
+                    channelConfig, encoding,
+                    RECORD_BUFFER_MULTIPLIER * minRecordBuffSizeInBytes);
+
+            int bytesPerSamplePlayback = 2;
+            if (audioData.encoding == AudioFormat.ENCODING_PCM_8BIT) {
+                bytesPerSamplePlayback = 1;
+            } else if (audioData.encoding == AudioFormat.ENCODING_PCM_FLOAT) {
+                bytesPerSamplePlayback = 4;
+            }
+            int frameSizePlayback = audioData.channelCount * bytesPerSamplePlayback;
+            int actualFramesPlayback = audioData.data.length / frameSizePlayback;
+            double playbackDurationSec = (actualFramesPlayback / (double) audioData.sampleRate)
+                    / speed;
+
+            // Add 1 second to capture the acoustic and buffering delay
+            double recordDurationSec = playbackDurationSec + 1.0;
+            int bytesPerSampleRecorder = (encoding == AudioFormat.ENCODING_PCM_8BIT) ? 1 : 2;
+            int frameSizeRecorder = channelCount * bytesPerSampleRecorder;
+            long maxRecordBytes = (long) (recordDurationSec * sampleRate * frameSizeRecorder);
+
+            CountDownLatch releaseLatch = new CountDownLatch(1);
 
             final Thread recordingThread = new Thread(() -> {
                 recorder.startRecording();
                 byte[] buffer = new byte[minRecordBuffSizeInBytes];
-                while (!Thread.currentThread().isInterrupted()) {
+                long totalBytesRead = 0;
+                while (!Thread.currentThread().isInterrupted()
+                        && totalBytesRead < maxRecordBytes) {
                     int bytesRead = recorder.read(buffer, 0, buffer.length);
                     if (bytesRead > 0) {
                         try {
                             fos.write(buffer, 0, bytesRead);
+                            totalBytesRead += bytesRead;
                         } catch (IOException e) {
                             Log.e(TAG, "Error writing to recording file", e);
                             break;
@@ -388,17 +646,25 @@ public class AudioPlaybackParametersActivity
                 } catch (IOException e) {
                     Log.e(TAG, "Error closing file stream", e);
                 }
+                releaseLatch.countDown();
             });
 
             recordingThread.start();
-            mMediaPlayer.start();
+            try {
+                playAudio(audioData, speed, pitch, isOffload, releaseLatch);
+            } catch (UnsupportedOperationException e) {
+                Log.e(TAG, "Offload not supported", e);
+                releaseLatch.countDown(); // unblock if error
+            }
 
-            latch.await();
-
-            recordingThread.interrupt();
-            recordingThread.join();
-            mMediaPlayer.release();
-            mMediaPlayer = null;
+            // Wait for the recording thread to capture the required frames.
+            // It will naturally exit when totalBytesRead >= maxRecordBytes.
+            // Add a timeout of 3 seconds over the expected duration as a fallback.
+            recordingThread.join(3000);
+            if (recordingThread.isAlive()) {
+                recordingThread.interrupt();
+                recordingThread.join();
+            }
 
             Log.d(TAG, "Raw recording size: " + rawFile.length());
 
@@ -407,7 +673,7 @@ public class AudioPlaybackParametersActivity
                  FileOutputStream wavOs = new FileOutputStream(wavFile)) {
                 writeWavHeader(wavOs, (int) rawFile.length(), sampleRate, channelCount,
                         bitsPerSample);
-                byte[] buffer = new byte[1024 * 4];
+                byte[] buffer = new byte[WAV_WRITE_BUFFER_SIZE];
                 int bytesRead;
                 while ((bytesRead = rawIs.read(buffer)) != -1) {
                     wavOs.write(buffer, 0, bytesRead);
@@ -428,11 +694,18 @@ public class AudioPlaybackParametersActivity
         }
     }
 
-    private void setPlaybackButtonsEnabled(boolean enabled) {
+    private void enableTestButtons(boolean enabled) {
         runOnUiThread(() -> {
-            mButtonPlayOriginal.setEnabled(enabled);
-            mButtonPlayRecording1.setEnabled(enabled);
-            mButtonPlayRecording2.setEnabled(enabled);
+            if (mButtonTest != null) mButtonTest.setEnabled(enabled);
+            if (mButtonTestOffload != null) mButtonTestOffload.setEnabled(enabled);
+        });
+    }
+
+    private void enablePlayButtons(boolean enabled) {
+        runOnUiThread(() -> {
+            if (mButtonPlayOriginal != null) mButtonPlayOriginal.setEnabled(enabled);
+            if (mButtonPlayRecording1 != null) mButtonPlayRecording1.setEnabled(enabled);
+            if (mButtonPlayRecording2 != null) mButtonPlayRecording2.setEnabled(enabled);
         });
     }
 
@@ -440,31 +713,25 @@ public class AudioPlaybackParametersActivity
         if (file == null || !file.exists()) {
             return;
         }
-        try {
-            // Play using media player now that it is a wav file
-            mMediaPlayer = new MediaPlayer();
-            mMediaPlayer.setDataSource(file.getAbsolutePath());
-            mMediaPlayer.prepare();
-            mMediaPlayer.setOnCompletionListener(mp -> {
-                mp.release();
-                mMediaPlayer = null;
-            });
-            mMediaPlayer.start();
-        } catch (IOException e) {
-            Log.e(TAG, "Error playing raw file", e);
-        }
+        new Thread(() -> {
+            try {
+                AudioDataSource data = getAudioData(file);
+                playAudio(data, 1.0f, 1.0f, false /* isOffload */, null);
+            } catch (IOException e) {
+                Log.e(TAG, "Error playing raw file", e);
+            }
+        }).start();
     }
 
-    private static void writeWavHeader(FileOutputStream out, int pcmDataSize, int sampleRate, int channels,
-            int bitsPerSample)
+    private static void writeWavHeader(FileOutputStream out, int pcmDataSize, int sampleRate,
+            int channels, int bitsPerSample)
             throws IOException {
         long byteRate = (long) sampleRate * channels * (bitsPerSample / 8);
         int blockAlign = channels * (bitsPerSample / 8);
 
-        int headerSize = 44;
-        long riffChunkSize = (long) pcmDataSize + headerSize - 8;
+        long riffChunkSize = (long) pcmDataSize + WAV_HEADER_SIZE - 8;
 
-        byte[] header = new byte[headerSize];
+        byte[] header = new byte[WAV_HEADER_SIZE];
 
         // RIFF chunk
         header[0] = 'R'; header[1] = 'I'; header[2] = 'F'; header[3] = 'F';
@@ -500,25 +767,27 @@ public class AudioPlaybackParametersActivity
         out.write(header);
     }
 
-    private void analyzeRecordings() {
+    private void analyzeRecordings(boolean isOffload) {
         try {
             // Read original and final recordings as shorts
-            short[] originalShorts = readPcmData(mControlRecordingFile);
-            short[] finalShorts = readPcmData(mRecording2File);
+            AudioDataSource originalData = getAudioData(mControlRecordingFile);
+            short[] originalShorts = byteToShort(originalData.data);
+            AudioDataSource finalData = getAudioData(mRecording2File);
+            short[] finalShorts = byteToShort(finalData.data);
 
             Log.d(TAG, "Original audio length (samples): " + originalShorts.length);
             Log.d(TAG, "Final audio length (samples): " + finalShorts.length);
 
             // Calculate RMS snapshots for both
             int originalShotCount = (int)Math.ceil(
-                    (double)originalShorts.length / mBlockSizeSamples);
-            RmsHelper originalRms = new RmsHelper(mBlockSizeSamples, originalShotCount);
+                    (double)originalShorts.length / BLOCK_SIZE_SAMPLES);
+            RmsHelper originalRms = new RmsHelper(BLOCK_SIZE_SAMPLES, originalShotCount);
             originalRms.addSamples(originalShorts);
             Log.v(TAG, "Original RMS Snapshots: " + Arrays.toString(
                     originalRms.getRmsSnapshots().mData));
 
-            int finalShotCount = (int)Math.ceil((double)finalShorts.length / mBlockSizeSamples);
-            RmsHelper finalRms = new RmsHelper(mBlockSizeSamples, finalShotCount);
+            int finalShotCount = (int)Math.ceil((double)finalShorts.length / BLOCK_SIZE_SAMPLES);
+            RmsHelper finalRms = new RmsHelper(BLOCK_SIZE_SAMPLES, finalShotCount);
             finalRms.addSamples(finalShorts);
             Log.v(TAG, "Final RMS Snapshots: "
             + Arrays.toString(finalRms.getRmsSnapshots().mData));
@@ -528,11 +797,17 @@ public class AudioPlaybackParametersActivity
             // Correlate the middle 80% of the recording to avoid startup/shutdown artifacts.
             int firstShot = shotCount / 10;
             int lastShot = shotCount * 9 / 10;
-            mCorrelation = computeAcousticCouplingFactor(originalRms.getRmsSnapshots(),
+            double correlation = computeAcousticCouplingFactor(originalRms.getRmsSnapshots(),
                     finalRms.getRmsSnapshots(), firstShot, lastShot);
 
+            if (isOffload) {
+                mCorrelationOffload = correlation;
+            } else {
+                mCorrelation = correlation;
+            }
+
             runOnUiThread(() -> {
-                mAnalysisResultText.setText(String.format("Correlation: %.4f", mCorrelation));
+                mAnalysisResultText.setText(String.format("Correlation: %.4f", correlation));
             });
 
         } catch (IOException e) {
@@ -626,8 +901,8 @@ public class AudioPlaybackParametersActivity
                 double valRecorderdB = Math.max(20 * Math.log10(buffRmsRecorder.mData[i]),
                         MIN_RMS_DB);
                 rmsRecorderdB.setValue(index, valRecorderdB);
-                Log.v(TAG, String.format("RMS dB values at index %d - Player: %.4f, Recorder: %.4f",
-                        i, valPlayerdB, valRecorderdB));
+                Log.v(TAG, String.format("RMS dB values at index %d - Player: %.4f," +
+                        " Recorder: %.4f", i, valPlayerdB, valRecorderdB));
             }
 
             //cross correlation...
@@ -683,6 +958,7 @@ public class AudioPlaybackParametersActivity
     private static final String SECTION_PLAYBACK_PARAMS = "playback_params_activity";
     private static final String KEY_RESULT_CODE = "result_code";
     private static final String KEY_CORRELATION = "correlation";
+    private static final String KEY_CORRELATION_OFFLOAD = "correlation_offload";
 
     @Override
     public final String getReportSectionName() {
@@ -700,6 +976,11 @@ public class AudioPlaybackParametersActivity
         reportLog.addValue(
                 KEY_CORRELATION,
                 mCorrelation,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_CORRELATION_OFFLOAD,
+                mCorrelationOffload,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
         reportLog.submit();
@@ -729,10 +1010,11 @@ public class AudioPlaybackParametersActivity
             Log.v(TAG, "Test EndedOk. " + testId + " str:" + str);
             showView(mProgress, false);
             mResultText.setText("test completed. " + str);
-            if (mResultCode == RESULT_CODE_OK) {
+            if (mResultCode == RESULT_CODE_OK && mTestNonOffloadPassed && mTestOffloadPassed) {
                 getPassButton().setEnabled(true);
             }
-            setPlaybackButtonsEnabled(true);
+            enableTestButtons(true);
+            enablePlayButtons(true);
         }
 
         @Override
@@ -741,7 +1023,8 @@ public class AudioPlaybackParametersActivity
             Log.v(TAG, "Test EndedError. " + testId + " str:"+str);
             showView(mProgress, false);
             mResultText.setText("test failed. " + str);
-            setPlaybackButtonsEnabled(true);
+            enableTestButtons(true);
+            enablePlayButtons(true);
         }
     };
 }

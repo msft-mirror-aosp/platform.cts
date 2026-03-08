@@ -57,11 +57,11 @@ public class CujInCallService extends InCallService {
     }
 
     private static final String TAG = CujInCallService.class.getSimpleName();
-    public static boolean sIsServiceBound = false;
-    public static final Map<String, Call> sCallIdToCall = new ConcurrentHashMap();
-    public static final Map<String, CujCallCallback> sCallIdToCallback = new ConcurrentHashMap();
-    public static Call sLastCall = null;
-    public static Bundle sLastCallExtrasAtStart = null;
+    public static volatile boolean sIsServiceBound = false;
+    public static final Map<String, Call> sCallIdToCall = new ConcurrentHashMap<>();
+    public static final Map<String, CujCallCallback> sCallIdToCallback = new ConcurrentHashMap<>();
+    public static volatile Call sLastCall = null;
+    public static volatile Bundle sLastCallExtrasAtStart = null;
 
     @Override
     public IBinder onBind(Intent intent) {

@@ -58,8 +58,8 @@ import android.telecom.cts.apps.CallControlExtras;
 import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.IAppControl;
-import android.telecom.cts.apps.IntegerTransaction;
 import android.telecom.cts.apps.IRemoteOperationConsumer;
+import android.telecom.cts.apps.IntegerTransaction;
 import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.ManagedConnection;
 import android.telecom.cts.apps.NoDataTransaction;
@@ -71,15 +71,16 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 public class ManagedAppControl extends Service {
     private static final String TAG = ManagedAppControl.class.getSimpleName();
     private static final String CLASS_NAME = ManagedAppControl.class.getCanonicalName();
     private static final String PACKAGE_NAME = ManagedAppControl.class.getPackageName();
-    private final HashMap<String, ManagedConnection> mIdToConnection = new HashMap<>();
+    private final Map<String, ManagedConnection> mIdToConnection = new ConcurrentHashMap<>();
     private boolean mIsBound = false;
     private TelecomManager mTelecomManager = null;
 
@@ -289,6 +290,7 @@ public class ManagedAppControl extends Service {
                                 });
                     }
                     mIdToConnection.put(id, connection);
+                    Log.i(TAG, "trackConnection: successfully mapped id " + id);
                     // Reset the connection fields/latches so that they can properly be
                     // tested when referenced
                     resetConnectionFields();
@@ -626,24 +628,25 @@ public class ManagedAppControl extends Service {
                     return mIdToConnection.get(id);
                 }
 
-              @Override
-              public IntegerTransaction getAudioProcessingUseCase(String callId) {
-                List<String> stackTrace =
-                    createStackTraceList(
-                        CLASS_NAME + ".getAudioProcessingUseCase(" + (callId) + ")");
-                try {
-                  ManagedConnection connection = getConnectionOrThrow(callId, stackTrace);
-                  int audioProcessingUseCase = connection.getAudioProcessingUseCase();
-                  return new IntegerTransaction(TestAppTransaction.Success, audioProcessingUseCase);
-                } catch (TestAppException e) {
-                  return new IntegerTransaction(TestAppTransaction.Failure, e);
+                @Override
+                public IntegerTransaction getAudioProcessingUseCase(String callId) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    CLASS_NAME + ".getAudioProcessingUseCase(" + (callId) + ")");
+                    try {
+                        ManagedConnection connection = getConnectionOrThrow(callId, stackTrace);
+                        int audioProcessingUseCase = connection.getAudioProcessingUseCase();
+                        return new IntegerTransaction(
+                                TestAppTransaction.Success, audioProcessingUseCase);
+                    } catch (TestAppException e) {
+                        return new IntegerTransaction(TestAppTransaction.Failure, e);
+                    }
                 }
-              }
 
-              @Override
-              public void cleanup() {
-                cleanupImplementation();
-              }
+                @Override
+                public void cleanup() {
+                    cleanupImplementation();
+                }
             };
 
     @Nullable
