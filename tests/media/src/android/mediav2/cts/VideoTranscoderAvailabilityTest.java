@@ -17,9 +17,6 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
-import static android.media.codec.Flags.codecAvailability;
-import static android.media.codec.Flags.codecAvailabilitySupport;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202504;
 import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCodec;
 import static android.mediav2.cts.CodecResourceUtils.CodecState;
@@ -33,9 +30,6 @@ import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 
 import androidx.test.filters.LargeTest;
@@ -48,7 +42,6 @@ import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,13 +57,9 @@ import java.util.Locale;
  * This class comprises of tests that validate codec resource availability apis for video
  * transcoders
  */
-@RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RunWith(Parameterized.class)
 public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     //private static final String LOG_TAG = VideoTranscoderAvailabilityTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     private static List<CodecResource> GLOBAL_AVBL_RESOURCES;
@@ -131,9 +120,6 @@ public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase
     public void prerequisite() {
         Assume.assumeTrue("Skipping! Requires devices with board_first_sdk >= 202504",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202504);
-        Assume.assumeTrue("requires codec availability api support", codecAvailability());
-        Assume.assumeTrue("requires codec availability api implementation",
-                codecAvailabilitySupport());
         GLOBAL_AVBL_RESOURCES = getCurrentGlobalCodecResources();
     }
 
@@ -157,7 +143,6 @@ public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
     public void testSimpleDecodeEncodeFromSurface() throws IOException, InterruptedException {
