@@ -87,6 +87,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.IBinderParcelable;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.server.am.UidTransitionPolicy;
 import com.android.server.am.nano.ActivityManagerServiceDumpProcessesProto;
 import com.android.server.am.nano.ProcessRecordProto;
 
@@ -1736,6 +1737,7 @@ public final class ServiceTest {
     @Test
     @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_USE_SAFESETID_UID_POLICY2)
     public void testBindIsolatedServiceLimit() throws Exception {
+        assumeTrue("Uid Transition Policy should be enabled", UidTransitionPolicy.isEnabled());
         final int maxServiceCount = 200;
         final CountDownLatch latch = new CountDownLatch(maxServiceCount);
         final List<ServiceConnection> connections = new ArrayList<>();
