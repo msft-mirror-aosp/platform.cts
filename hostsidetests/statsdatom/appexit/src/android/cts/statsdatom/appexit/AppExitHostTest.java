@@ -26,6 +26,7 @@ import static android.app.Importance.IMPORTANCE_SERVICE;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import android.app.cts.AppExitInfoConstants;
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
@@ -49,19 +50,16 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Host-side test for AppExitInfo statsd atoms.
+ *
+ * <p>This test leverages the device-side CTS test {@link
+ * android.app.cts.ActivityManagerAppExitInfoTest} to trigger specific app exit scenarios (e.g.,
+ * crashes, self-exits, kills) on the device. It then verifies that the corresponding statsd atoms
+ * are correctly logged on the host side.
+ */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceiver {
-    private static final String TEST_PKG = "android.app.cts.appexit";
-    private static final String HELPER_PKG1 = "android.externalservice.service";
-    private static final String HELPER_PKG2 = "com.android.cts.launcherapps.simpleapp";
-    private static final String TEST_APK = "CtsAppExitTestCases.apk";
-    private static final String HELPER_APK1 = "CtsExternalServiceService.apk";
-    private static final String HELPER_APK2 = "CtsSimpleApp.apk";
-    private static final String TEST_CLASS = "android.app.cts.ActivityManagerAppExitInfoTest";
-    private static final long APP_EXIT_INFO_STATSD_LOG_DEBOUNCE_MSEC = 15_000;
-    private static final String PERM_PACKAGE_USAGE_STATS = "android.permission.PACKAGE_USAGE_STATS";
-    private static final String PERM_READ_LOGS = "android.permission.READ_LOGS";
-    private static final int TEST_EXIT_CODE = 123;
 
     private IBuildInfo mCtsBuild;
 
@@ -70,25 +68,62 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
-        DeviceUtils.installTestApp(getDevice(), TEST_APK, TEST_PKG, mCtsBuild);
-        DeviceUtils.installTestApp(getDevice(), HELPER_APK1, HELPER_PKG1, mCtsBuild);
-        DeviceUtils.installTestApp(getDevice(), HELPER_APK2, HELPER_PKG2, mCtsBuild);
+        DeviceUtils.installTestApp(
+                getDevice(),
+                AppExitInfoConstants.TEST_APK,
+                AppExitInfoConstants.TEST_PKG,
+                mCtsBuild);
+        DeviceUtils.installTestApp(
+                getDevice(),
+                AppExitInfoConstants.HELPER_APK1,
+                AppExitInfoConstants.HELPER_PKG1,
+                mCtsBuild);
+        DeviceUtils.installTestApp(
+                getDevice(),
+                AppExitInfoConstants.HELPER_APK2,
+                AppExitInfoConstants.STUB_PACKAGE_NAME,
+                mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-        getDevice().executeShellCommand("cmd deviceidle tempwhitelist -r " + HELPER_PKG1);
-        getDevice().executeShellCommand("cmd deviceidle tempwhitelist -r " + HELPER_PKG2);
-        getDevice().executeShellCommand("pm grant " + TEST_PKG + " " + PERM_PACKAGE_USAGE_STATS);
-        getDevice().executeShellCommand("pm grant " + TEST_PKG + " " + PERM_READ_LOGS);
+        getDevice()
+                .executeShellCommand(
+                        "cmd deviceidle tempwhitelist -r " + AppExitInfoConstants.HELPER_PKG1);
+        getDevice()
+                .executeShellCommand(
+                        "cmd deviceidle tempwhitelist -r "
+                                + AppExitInfoConstants.STUB_PACKAGE_NAME);
+        getDevice()
+                .executeShellCommand(
+                        "pm grant "
+                                + AppExitInfoConstants.TEST_PKG
+                                + " "
+                                + AppExitInfoConstants.PERM_PACKAGE_USAGE_STATS);
+        getDevice()
+                .executeShellCommand(
+                        "pm grant "
+                                + AppExitInfoConstants.TEST_PKG
+                                + " "
+                                + AppExitInfoConstants.PERM_READ_LOGS);
     }
 
     @After
     public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
-        getDevice().executeShellCommand("pm revoke " + TEST_PKG + " " + PERM_PACKAGE_USAGE_STATS);
-        getDevice().executeShellCommand("pm revoke " + TEST_PKG + " " + PERM_READ_LOGS);
-        DeviceUtils.uninstallTestApp(getDevice(), TEST_PKG);
-        DeviceUtils.uninstallTestApp(getDevice(), HELPER_PKG1);
-        DeviceUtils.uninstallTestApp(getDevice(), HELPER_PKG2);
+        getDevice()
+                .executeShellCommand(
+                        "pm revoke "
+                                + AppExitInfoConstants.TEST_PKG
+                                + " "
+                                + AppExitInfoConstants.PERM_PACKAGE_USAGE_STATS);
+        getDevice()
+                .executeShellCommand(
+                        "pm revoke "
+                                + AppExitInfoConstants.TEST_PKG
+                                + " "
+                                + AppExitInfoConstants.PERM_READ_LOGS);
+        DeviceUtils.uninstallTestApp(getDevice(), AppExitInfoConstants.TEST_PKG);
+        DeviceUtils.uninstallTestApp(getDevice(), AppExitInfoConstants.HELPER_PKG1);
+        DeviceUtils.uninstallTestApp(getDevice(), AppExitInfoConstants.STUB_PACKAGE_NAME);
     }
 
     @Override
@@ -98,7 +133,7 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
 
     @Test
     public void testLogStatsdPermChanged() throws Exception {
-        final String helperPackage = HELPER_PKG2;
+        final String helperPackage = AppExitInfoConstants.STUB_PACKAGE_NAME;
         final int expectedUid = getAppUid(helperPackage);
         performLogStatsdTest(
                 "testPermissionChange",
@@ -116,21 +151,28 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
 
     @Test
     public void testLogStatsdOther() throws Exception {
-        final String helperPackage = HELPER_PKG1;
-        final int expectedUid = getAppUid(TEST_PKG);
-        performLogStatsdTest("testOther", TEST_PKG, 2, appDied -> {
-            assertThat(appDied.getUid()).isEqualTo(expectedUid);
-            assertThat(appDied.getProcessName()).isEqualTo(
-                    helperPackage + ":android.externalservice.service.ExternalServiceWithZygote");
-            assertThat(appDied.getReason()).isEqualTo(REASON_OTHER);
-            assertThat(appDied.getSubReason()).isEqualTo(SUBREASON_ISOLATED_NOT_NEEDED);
-            assertThat(appDied.getImportance()).isEqualTo(IMPORTANCE_SERVICE);
-        });
+        final String helperPackage = AppExitInfoConstants.HELPER_PKG1;
+        final int expectedUid = getAppUid(AppExitInfoConstants.TEST_PKG);
+        performLogStatsdTest(
+                "testOther",
+                AppExitInfoConstants.TEST_PKG,
+                2,
+                appDied -> {
+                    assertThat(appDied.getUid()).isEqualTo(expectedUid);
+                    assertThat(appDied.getProcessName())
+                            .isEqualTo(
+                                    helperPackage
+                                            + ":android.externalservice.service"
+                                            + ".ExternalServiceWithZygote");
+                    assertThat(appDied.getReason()).isEqualTo(REASON_OTHER);
+                    assertThat(appDied.getSubReason()).isEqualTo(SUBREASON_ISOLATED_NOT_NEEDED);
+                    assertThat(appDied.getImportance()).isEqualTo(IMPORTANCE_SERVICE);
+                });
     }
 
     @Test
     public void testLogStatsdExitSelf() throws Exception {
-        final String helperPackage = HELPER_PKG2;
+        final String helperPackage = AppExitInfoConstants.STUB_PACKAGE_NAME;
         final int expectedUid = getAppUid(helperPackage);
         performLogStatsdTest(
                 "testExitCode",
@@ -140,12 +182,25 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
                     assertThat(appDied.getUid()).isEqualTo(expectedUid);
                     assertThat(appDied.getProcessName()).isEqualTo(helperPackage);
                     assertThat(appDied.getReason()).isEqualTo(REASON_EXIT_SELF);
-                    assertThat(appDied.getExitStatus()).isEqualTo(TEST_EXIT_CODE);
+                    assertThat(appDied.getExitStatus()).isEqualTo(AppExitInfoConstants.EXIT_CODE);
                 });
     }
 
-    private void performLogStatsdTest(String testMethod, String targetPackage, int expectedSize,
-            Consumer<AtomsProto.AppProcessDied> verifier) throws Exception {
+    /**
+     * Helper method to run a device-side test and verify the resulting statsd atom.
+     *
+     * @param testMethod The name of the method in {@link
+     *     android.app.cts.ActivityManagerAppExitInfoTest} to execute.
+     * @param targetPackage The package name expected in the logged atom.
+     * @param expectedSize The expected number of atoms to be collected.
+     * @param verifier The consumer to verify the collected atom.
+     */
+    private void performLogStatsdTest(
+            String testMethod,
+            String targetPackage,
+            int expectedSize,
+            Consumer<AtomsProto.AppProcessDied> verifier)
+            throws Exception {
         final int atomTag = AtomsProto.Atom.APP_PROCESS_DIED_FIELD_NUMBER;
 
         ConfigUtils.removeConfig(getDevice());
@@ -153,8 +208,12 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), targetPackage,
                 atomTag, /* useUidAttributionChain= */ false);
 
-        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG, TEST_CLASS, testMethod);
-        RunUtil.getDefault().sleep(APP_EXIT_INFO_STATSD_LOG_DEBOUNCE_MSEC);
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                AppExitInfoConstants.TEST_PKG,
+                AppExitInfoConstants.TEST_CLASS,
+                testMethod);
+        RunUtil.getDefault().sleep(AppExitInfoConstants.APP_EXIT_INFO_STATSD_LOG_DEBOUNCE_MSEC);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -166,8 +225,13 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
 
     private int getAppUid(String pkgName) throws Exception {
         final int currentUser = getDevice().getCurrentUser();
-        final String uidLine = getDevice().executeShellCommand(
-                "cmd package list packages -U --user " + currentUser + " " + pkgName);
+        final String uidLine =
+                getDevice()
+                        .executeShellCommand(
+                                "cmd package list packages -U --user "
+                                        + currentUser
+                                        + " "
+                                        + pkgName);
         final Pattern pattern = Pattern.compile("package:" + pkgName + " uid:(\\d+)");
         final Matcher matcher = pattern.matcher(uidLine);
         assertWithMessage("Pkg not found: " + pkgName).that(matcher.find()).isTrue();
