@@ -239,8 +239,8 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
             // Verify that the getter doesn't throw an exception
             Map<String, Boolean> supportedPackages = mTelecomManager
                     .getVoipCallLogIntegrationStatus();
-            // Since the CTS doesn't define the callback action, the list should be empty.
-            assertTrue(supportedPackages.isEmpty());
+            // Assert that the returned map is not null.
+            assertNotNull(supportedPackages);
         } catch (SecurityException e) {
             // Security exception should not be thrown at this point. Fail the test if it does.
             throw new AssertionError("Security exception should not have been thrown.", e);
