@@ -354,27 +354,13 @@ public class TestUtils {
             assertEquals("Private and public key must have the same RSA modulus",
                     ((RSAKey) publicKey).getModulus(), ((RSAKey) privateKey).getModulus());
         } else if ("XDH".equalsIgnoreCase(keyAlgorithm)) {
-            // TODO This block should verify that public and private keys are instance of
-            //  java.security.interfaces.XECKey, And below code should be uncommented once
-            //  com.android.org.conscrypt.OpenSSLX25519PublicKey implements XECKey (b/214203951)
-            /*assertTrue("XDH public key must be instance of XECKey: "
-                            + publicKey.getClass().getName(),
-                    publicKey instanceof XECKey);
-            assertTrue("XDH private key must be instance of XECKey: "
-                            + privateKey.getClass().getName(),
-                    privateKey instanceof XECKey);*/
-            assertFalse("XDH public key must not be instance of RSAKey: "
-                            + publicKey.getClass().getName(),
-                    publicKey instanceof RSAKey);
-            assertFalse("XDH private key must not be instance of RSAKey: "
-                            + privateKey.getClass().getName(),
-                    privateKey instanceof RSAKey);
-            assertFalse("XDH public key must not be instanceof ECKey: "
-                            + publicKey.getClass().getName(),
-                    publicKey instanceof ECKey);
-            assertFalse("XDH private key must not be instanceof ECKey: "
-                            + privateKey.getClass().getName(),
-                    privateKey instanceof ECKey);
+            // JEP 324 introduced a number of interfaces for XDH keys, including XECPublicKey and
+            // XECPrivateKey, both extending XECKey (which provides a `getParams()` method).
+            // However, only the AndroidKeyStore provider's XDH key classes implement these
+            // interfaces. Conscrypt's XDH key classes do not. Since `publicKey` is a Conscrypt key
+            // and `privateKey` is an Android Keystore key, there is no way to access the
+            // algorithm-specific parameters of `privateKey`, so there are no meaningful checks to
+            // perform.
         } else if ("ML-DSA".equalsIgnoreCase(keyAlgorithm)) {
             // JEP 497 doesn't introduce any new ML-DSA classes or interfaces, so there are neither
             // inheritance checks nor algorithm-specific parameter comparisons to do.
