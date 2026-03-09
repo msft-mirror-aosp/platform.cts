@@ -20,6 +20,7 @@ from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 
 _AUTO_BRIGHTNESS_OFF = 0
+_CTS_VERIFIER_ACTIVITY = 'com.android.cts.verifier/.CtsVerifierActivity'
 _MAX_BRIGHTNESS = 255
 _SCREEN_OFF_TIMEOUT_MS = 3600000  # 1 hour
 _STAY_ON_WHILE_PLUGGED_IN = 3
@@ -80,7 +81,10 @@ class SecurePlaybackBaseTest(base_test.BaseTestClass):
       )
 
   def teardown_class(self):
-    self.dut.adb.shell('am force-stop com.android.cts.verifier')
     # Un-hide the navigation bar
     self.dut.adb.shell('settings put global policy_control null*')
+    self.dut.adb.shell(
+        f'am start -n {_CTS_VERIFIER_ACTIVITY} '
+        '--activity-brought-to-front --activity-reorder-to-front'
+    )
 
