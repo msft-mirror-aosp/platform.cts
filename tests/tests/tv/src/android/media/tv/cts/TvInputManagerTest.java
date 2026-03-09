@@ -175,15 +175,16 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(newPermissions);
 
-        // Use the test api to add an HDMI hardware device
-        mManager.addHardwareDevice(DUMMY_DEVICE_ID);
-        assertTrue(isHardwareDeviceAdded(mManager.getHardwareList(), DUMMY_DEVICE_ID));
-
         PackageManager pm = getActivity().getPackageManager();
         ComponentName component =
                 new ComponentName(getActivity(), StubHardwareTvInputService.class);
         pm.setComponentEnabledSetting(component, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP);
+
+        // Use the test api to add an HDMI hardware device
+        mManager.addHardwareDevice(DUMMY_DEVICE_ID);
+        assertTrue(isHardwareDeviceAdded(mManager.getHardwareList(), DUMMY_DEVICE_ID));
+
         new PollingCheck(LONG_TIME_OUT_MS) {
             @Override
             protected boolean check() {
