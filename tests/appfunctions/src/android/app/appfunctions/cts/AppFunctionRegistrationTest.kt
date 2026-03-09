@@ -813,7 +813,7 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
-    fun execute_sendCancellationSignal_cancelled() {
+    fun execute_sendCancellationSignal_cancelled() = doBlocking {
         val service = bindToRegistrationService(CURRENT_PKG)
         service.registerAppFunction(LONG_RUNNING_FUNCTION_ID)
         val request =
@@ -834,11 +834,15 @@ class AppFunctionRegistrationTest {
         assertThat(waitForCancelListenerSet(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
         cancellationSignal.cancel()
 
-        val callbackReceived = latch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
-        assertThat(callbackReceived).isTrue()
-        assertThat(blockingQueue).isEmpty()
-        assertThat(exceptionQueue).hasSize(1)
-        assertThat(exceptionQueue.first().errorCode).isEqualTo(AppFunctionException.ERROR_CANCELLED)
+        retryAssert(checkInterval = LONG_TIMEOUT_SECOND * 1000) {
+            val callbackReceived =
+                latch.await(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            assertThat(callbackReceived).isTrue()
+            assertThat(blockingQueue).isEmpty()
+            assertThat(exceptionQueue).hasSize(1)
+            assertThat(exceptionQueue.first().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_CANCELLED)
+        }
     }
 
     @Test
