@@ -126,41 +126,69 @@ public class SmsOtpTestHelper {
 
     /** Asserts that the SMS is present in the given URI with the expected body. */
     public void assertSmsPresence(Uri uri, String smsBody, boolean canRead) {
-        Cursor cursor = mContentResolver.query(uri, null, null, null);
-        if (!canRead) {
-            assertThat(cursor.getCount()).isEqualTo(0);
-            return;
-        }
-        assertWithMessage("Expected to get a query result")
-                .that(cursor.getCount())
-                .isGreaterThan(0);
+        try (Cursor cursor = mContentResolver.query(uri, null, null, null)) {
+            if (!canRead) {
+                assertThat(cursor.getCount()).isEqualTo(0);
+                return;
+            }
+            assertWithMessage("Expected to get a query result")
+                    .that(cursor.getCount())
+                    .isGreaterThan(0);
 
-        while (cursor.moveToNext()) {
-            String actualSmsBody = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
-            assertThat(actualSmsBody).isEqualTo(smsBody);
+            while (cursor.moveToNext()) {
+                String actualSmsBody = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
+                assertThat(actualSmsBody).isEqualTo(smsBody);
+            }
         }
     }
 
     /** Asserts that the SMS is present in the given URI. */
     public void assertSmsPresence(Uri uri, boolean canRead) {
-        Cursor cursor = mContentResolver.query(uri, new String[] {Telephony.Sms._ID}, null, null);
-        int expectedCount = canRead ? 1 : 0;
-        assertThat(cursor.getCount()).isEqualTo(expectedCount);
+        try (Cursor cursor =
+                mContentResolver.query(uri, new String[] {Telephony.Sms._ID}, null, null)) {
+            int expectedCount = canRead ? 1 : 0;
+            assertThat(cursor.getCount()).isEqualTo(expectedCount);
+        }
     }
 
     /** Asserts that the SMS is present in the given URI without projection. */
     public void assertSmsPresenceWithoutProjection(Uri uri, boolean canRead) {
-        Cursor cursor = mContentResolver.query(uri, null, null, null);
-        int expectedCount = canRead ? 1 : 0;
-        assertThat(cursor.getCount()).isEqualTo(expectedCount);
+        try (Cursor cursor = mContentResolver.query(uri, null, null, null)) {
+            int expectedCount = canRead ? 1 : 0;
+            assertThat(cursor.getCount()).isEqualTo(expectedCount);
+        }
     }
 
     /** Asserts that the SMS OTP column matches the expected value. */
     public void assertSmsOtpColumn(Uri uri, int expectedOtpColumn) {
-        Cursor cursor = mContentResolver.query(uri, null, null, null);
-        cursor.moveToNext();
+        try (Cursor cursor = mContentResolver.query(uri, null, null, null)) {
+            cursor.moveToNext();
 
-        int actualSmsOtpColumn = cursor.getInt(cursor.getColumnIndex(CONTAINS_OTP));
-        assertThat(actualSmsOtpColumn).isEqualTo(expectedOtpColumn);
+            int actualSmsOtpColumn = cursor.getInt(cursor.getColumnIndex(CONTAINS_OTP));
+            assertThat(actualSmsOtpColumn).isEqualTo(expectedOtpColumn);
+        }
+    }
+
+    /** Asserts that the SMS snippet is redacted or not based on the isRedacted flag. */
+    public void assertSnippetRedacted(Uri uri, String expectedSnippet, boolean isRedacted) {
+        String[] projection =
+                new String[] {
+                    Telephony.Threads._ID,
+                    Telephony.Threads.SNIPPET,
+                    Telephony.Threads.SNIPPET_CHARSET
+                };
+        try (Cursor cursor = mContentResolver.query(uri, projection, null, null, null)) {
+            assertThat(cursor.getCount()).isEqualTo(1);
+            while (cursor.moveToNext()) {
+                int snippetIdx = cursor.getColumnIndex(Telephony.Threads.SNIPPET);
+                int snippetCsIdx = cursor.getColumnIndex(Telephony.Threads.SNIPPET_CHARSET);
+                assertThat(cursor.getInt(snippetCsIdx)).isEqualTo(0);
+                if (isRedacted) {
+                    assertThat(cursor.getString(snippetIdx)).isEmpty();
+                } else {
+                    assertThat(cursor.getString(snippetIdx)).isEqualTo(expectedSnippet);
+                }
+            }
+        }
     }
 }
