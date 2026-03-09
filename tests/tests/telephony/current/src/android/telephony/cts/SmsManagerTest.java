@@ -105,7 +105,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -218,6 +217,8 @@ public class SmsManagerTest {
     private static final int TIME_OUT = 1000 * 60 * 10;
     private static final int SHORT_TIME_OUT = 1000 * 5; // 5 seconds
     private static final int NO_CALLS_TIMEOUT_MILLIS = 1000; // 1 second
+    // TODO(b/492408141): Remove this delay once DMA broadcasts are deterministic.
+    private static final int DMA_CHANGE_PROPAGATION_DELAY = 100;
     private static final List<String> TRUSTED_SMS_PERMISSIONS =
             List.of(
                     READ_PRIVILEGED_PHONE_STATE,
@@ -596,6 +597,7 @@ public class SmsManagerTest {
         Uri messageUri = insertTextMessage(messageText);
         try {
             DefaultSmsAppHelper.setDefaultSmsApp(mContext, MESSAGE_UPGRADE_APP);
+            SystemClock.sleep(DMA_CHANGE_PROPAGATION_DELAY);
 
             smsManager.sendStoredTextMessage(messageUri, mSentIntent, mDeliveredIntent);
 
@@ -683,6 +685,7 @@ public class SmsManagerTest {
 
         try {
             DefaultSmsAppHelper.setDefaultSmsApp(mContext, MESSAGE_UPGRADE_APP);
+            SystemClock.sleep(DMA_CHANGE_PROPAGATION_DELAY);
 
             smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
 
