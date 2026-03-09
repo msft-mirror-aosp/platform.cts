@@ -103,11 +103,6 @@ public class VirtualCameraCaptureHelper {
     private final Handler mImageReaderHandler = VirtualCameraUtils.createHandler(
             "image-reader-callback");
 
-    /** Returns a {@link Handler} for image reader callbacks. */
-    public Handler getImageReaderHandler() {
-        return mImageReaderHandler;
-    }
-
     private final Executor mCameraExecutor = Executors.newSingleThreadExecutor();
     @Mock
     private CameraDevice.StateCallback mCameraStateCallback;
@@ -411,6 +406,11 @@ public class VirtualCameraCaptureHelper {
     private Surface getInputSurface() {
         mVirtualCameraCallback.waitForSessionConfigured();
         return mVirtualCameraCallback.mConfiguredStreams.values().iterator().next();
+    }
+
+    /** Returns the input surface for the specified input stream id. */
+    public Surface getInputSurface(int streamId) {
+        return mVirtualCameraCallback.mConfiguredStreams.get(streamId);
     }
 
     /** Create a new capture session with the provided ImageReader as output targets. */
@@ -792,17 +792,9 @@ public class VirtualCameraCaptureHelper {
                 int streamId, @NonNull Surface surface, int width, int height, int format) {
             Log.d(
                     TAG,
-                    "onStreamConfigured() called with: streamId = ["
-                            + streamId
-                            + "], surface = ["
-                            + surface
-                            + "], width = ["
-                            + width
-                            + "], height = ["
-                            + height
-                            + "], format = ["
-                            + format
-                            + "]");
+                    ("onStreamConfigured() called with: streamId = [%d], surface = [%s], width = "
+                                    + "[%d], height = [%d], format = [%d]")
+                            .formatted(streamId, surface, width, height, format));
             mConfiguredStreams.put(streamId, surface);
             mCallbackDelegate.onStreamConfigured(streamId, surface, width, height, format);
             mSessionConfiguredLatch.countDown();
