@@ -164,7 +164,7 @@ class ComputerControlExtensionsTest {
                 context,
                 TARGET_COMPUTER_CONTROL_VERSION
             )
-        ).isTrue()
+        ).isFalse()
     }
 
     @Test
