@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -39,6 +38,9 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,6 +53,8 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 /**
  * Set of tests that verify behavior of Resume on Reboot, if supported.
@@ -487,7 +491,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         Pattern pattern = Pattern.compile(".*LSKF capture status: (\\w+)");
         String cmd = "cmd recovery is-lskf-captured " + clientName;
         String status = getDevice().executeShellCommand(cmd);
-        CLog.d("isLskfCapturedForClient(%s): cmd '%s' returned '%s'", clientName, cmd, status);
+        CLog.d("isLskfCapturedForClient(%s): command '%s' returned '%s'", clientName, cmd, status);
         Matcher matcher = pattern.matcher(status);
         if (!matcher.find()) {
             CLog.i(TAG, "is-lskf-captured isn't implemented on build, assuming captured");
@@ -511,16 +515,10 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         verifyLskfCaptured(clientName);
         mBootCountTrackingRule.increaseExpectedBootCountDifference(1);
 
-        String cmd = "cmd recovery reboot-and-apply " + clientName + " cts-test";
-        String res = executeShellCommandWithLogging(cmd);
-        CLog.d("Response of '%s': '%s'", cmd, res);
+        String res = rebootWithCommand("cmd recovery reboot-and-apply %s cts-test", clientName);
         if (res != null && res.contains("Reboot and apply status: failure")) {
             fail("could not call reboot-and-apply. Response was: " + res);
         }
-
-        device.waitForDeviceNotAvailable(SHUTDOWN_TIME_MS);
-        device.waitForDeviceOnline(120000);
-
         CLog.d("After reboot, current user is %d", currentUserBeforeReboot);
 
         waitForBootCompleted(device);
@@ -742,6 +740,16 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         String result = getDevice().executeShellCommand(command);
         CLog.d("Output for command \"" + command + "\": " + result);
         return result;
+    }
+
+    @FormatMethod
+    private String rebootWithCommand(@FormatString String cmdFmt, @Nullable Object... cmdArgs)
+            throws DeviceNotAvailableException {
+        String command = String.format(cmdFmt, cmdArgs);
+        logAndDisplay("Rebooting with command: '%s'", command);
+        String response = getDevice().reboot(command, /* reason= */ null);
+        logAndDisplay("Response: '%s'", response);
+        return response;
     }
 
     private int[] prepareUsers(int count) throws DeviceNotAvailableException {
