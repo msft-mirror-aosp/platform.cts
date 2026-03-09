@@ -325,6 +325,11 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
             return;
         }
 
+        if (isAutomotiveDevice()) {
+            CLog.w("Skipping test - no AuthenticationPolicyManager on device");
+            return;
+        }
+
         if (!hasAidlBiometrics()) {
             CLog.w("Skipping test - no AIDL biometrics on device");
             return;
