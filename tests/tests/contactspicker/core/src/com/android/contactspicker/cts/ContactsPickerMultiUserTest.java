@@ -103,6 +103,7 @@ public class ContactsPickerMultiUserTest {
 
     @Before
     public void setUp() throws AdbException {
+        mUserManager = sContext.getSystemService(UserManager.class);
         // Setup for Clone profile
         if (isCloneProfileContext()) {
             assumeTrue(
@@ -112,7 +113,6 @@ public class ContactsPickerMultiUserTest {
             switchOnAppCloningBuildingBlocksFlag();
         }
 
-        mUserManager = sContext.getSystemService(UserManager.class);
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mUiDevice.pressHome();
 
