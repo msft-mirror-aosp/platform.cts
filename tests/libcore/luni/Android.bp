@@ -24,7 +24,6 @@ android_test {
     static_libs: [
         "apache-harmony-tests",
         "conscrypt-support",
-        "conscrypt-tests",
         "core-tests",
         "cts-core-test-runner-axt",
 
@@ -62,6 +61,38 @@ android_test {
     test_suites: [
         "cts",
         "mts-art",
+        "general-tests",
+        "automotive-general-tests",
+    ],
+}
+
+
+android_test {
+    name: "CtsConscryptTestCases",
+    defaults: ["cts_support_defaults"],
+    sdk_version: "test_current",
+    static_libs: [
+        "conscrypt-support",
+        "conscrypt-tests",
+        "cts-core-test-runner-axt",
+    ],
+    test_config: "AndroidTestConscrypt.xml",
+    manifest: "AndroidManifestConscrypt.xml",
+    dex_preopt: {
+        enabled: false,
+    },
+    dxflags: [
+        "--android-platform-build",
+        "--multi-dex",
+    ],
+    optimize: {
+        enabled: false,
+    },
+    min_sdk_version: "31",
+    target_sdk_version: "31",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
         "general-tests",
         "automotive-general-tests",
     ],
