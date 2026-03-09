@@ -1,0 +1,159 @@
+packet {
+  timestamp: 10
+  ftrace_events {
+    cpu: 0
+    event {
+      timestamp: 10
+      pid: 406
+      gpu_frequency {
+        gpu_id: 0
+        state: 1000
+      }
+    }
+  }
+}
+packet {
+  timestamp: 10
+  ftrace_events {
+    cpu: 0
+    event {
+      timestamp: 10
+      pid: 406
+      print {
+        buf: "S|406|CtsTestQueueSubmit|0\n"
+      }
+    }
+  }
+}
+packet {
+  timestamp: 20
+  vulkan_api_event {
+    vk_queue_submit {
+      submission_id: 0
+      pid: 406
+      duration_ns: 20
+    }
+  }
+}
+packet {
+  timestamp: 30
+  ftrace_events {
+    cpu: 0
+    event {
+      timestamp: 30
+      pid: 406
+      print {
+        buf: "F|406|CtsTestQueueSubmit|0\n"
+      }
+    }
+  }
+}
+packet {
+  timestamp: 40
+  gpu_render_stage_event {
+    event_id: 1
+    duration: 100
+    hw_queue_iid: 1
+    stage_iid: 1
+    gpu_id: 0
+    context: 1
+    submission_id: 0
+  }
+}
+
+packet {
+  timestamp: 110
+  ftrace_events {
+    cpu: 0
+    event {
+      timestamp: 110
+      pid: 406
+      print {
+        buf: "S|406|CtsTestQueueSubmit|1\n"
+      }
+    }
+  }
+}
+packet {
+  timestamp: 120
+  vulkan_api_event {
+    vk_queue_submit {
+      submission_id: 1
+      pid: 406
+      duration_ns: 20
+    }
+  }
+}
+packet {
+  timestamp: 130
+  ftrace_events {
+    cpu: 0
+    event {
+      timestamp: 130
+      pid: 406
+      print {
+        buf: "F|406|CtsTestQueueSubmit|1\n"
+      }
+    }
+  }
+}
+packet {
+  timestamp: 140
+  gpu_render_stage_event {
+    event_id: 2
+    duration: 100
+    hw_queue_iid: 1
+    stage_iid: 1
+    gpu_id: 0
+    context: 1
+    submission_id: 1
+  }
+}
+packet {
+  timestamp: 210
+  ftrace_events {
+    cpu: 0
+    event {
+      timestamp: 210
+      pid: 406
+      print {
+        buf: "S|406|CtsTestQueueSubmit|2\n"
+      }
+    }
+  }
+}
+packet {
+  timestamp: 220
+  vulkan_api_event {
+    vk_queue_submit {
+      submission_id: 2
+      pid: 406
+      duration_ns: 20
+    }
+  }
+}
+packet {
+  timestamp: 230
+  ftrace_events {
+    cpu: 0
+    event {
+      timestamp: 230
+      pid: 406
+      print {
+        buf: "F|406|CtsTestQueueSubmit|2\n"
+      }
+    }
+  }
+}
+packet {
+  timestamp: 240
+  gpu_render_stage_event {
+    event_id: 3
+    duration: 100
+    hw_queue_iid: 1
+    stage_iid: 1
+    gpu_id: 0
+    context: 1
+    submission_id: 2
+  }
+}
