@@ -2586,6 +2586,14 @@ public class AndroidKeyStoreTest {
                 "4096", R.raw.rsa_key4_4096_pkcs8, R.raw.rsa_key4_4096_cert, params);
     }
 
+    @Test
+    public void testKeyStore_ImportSupported_X25519() throws Exception {
+        mKeyStore.load(null);
+        KeyProtection params = new KeyProtection.Builder(KeyProperties.PURPOSE_AGREE_KEY).build();
+        checkKeyPairImportSucceeds(
+                "x25519", R.raw.x25519_pkcs8, R.raw.x25519_cert, params);
+    }
+
     private void checkKeyPairImportSucceeds(
             String alias, int privateResId, int certResId, KeyProtection params) throws Exception {
         try {
