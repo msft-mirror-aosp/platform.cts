@@ -45,7 +45,7 @@ public abstract class BaseInsightRendererService extends InsightRendererService 
             Log.w(TAG, "  Render Token: " + renderToken);
             TestAppController.getListener(getComponentName()).onRendererConnected(renderToken);
         } catch (Exception e) {
-            Log.w(TAG, "  onConnected Error: " + e, e);
+            Log.w(TAG, getClass().getSimpleName() + ".onConnected() error", e);
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onConnected() end");
         }
@@ -61,7 +61,7 @@ public abstract class BaseInsightRendererService extends InsightRendererService 
             TestAppController.getExecutor().execute(this::onReady);
             return filter;
         } catch (Exception e) {
-            Log.w(TAG, "  onInitializeFilter Error: " + e, e);
+            Log.w(TAG, getClass().getSimpleName() + ".onInitializeFilter() error", e);
             return InsightFilter.REQUIRE_RENDER_TOKEN;
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onInitializeFilter() end");
@@ -77,7 +77,7 @@ public abstract class BaseInsightRendererService extends InsightRendererService 
             TestAppController.getListener(getComponentName())
                     .onRendererRender(insight.toBundle(), renderToken);
         } catch (Exception e) {
-            Log.w(TAG, "  onRender Error: " + e, e);
+            Log.w(TAG, getClass().getSimpleName() + ".onRender() error", e);
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onRender() end");
         }
@@ -88,7 +88,7 @@ public abstract class BaseInsightRendererService extends InsightRendererService 
             Log.w(TAG, getClass().getSimpleName() + ".onReady()");
             TestAppController.getListener(getComponentName()).onReady();
         } catch (RemoteException e) {
-            Log.e(TAG, getClass().getSimpleName() + ".onReady() failed", e);
+            Log.w(TAG, getClass().getSimpleName() + ".onReady() error", e);
         }
     }
 }

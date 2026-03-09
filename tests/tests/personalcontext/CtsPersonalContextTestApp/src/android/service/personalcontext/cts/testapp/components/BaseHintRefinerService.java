@@ -44,7 +44,7 @@ public abstract class BaseHintRefinerService extends HintRefinerService {
         try {
             TestAppController.getListener(getComponentName()).onRefinerConnected();
         } catch (Exception e) {
-            // Do nothing.
+            Log.w(TAG, getClass().getSimpleName() + ".onConnected() error", e);
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onConnected() end");
         }
@@ -60,7 +60,7 @@ public abstract class BaseHintRefinerService extends HintRefinerService {
             TestAppController.getExecutor().execute(this::onReady);
             return filter;
         } catch (Exception e) {
-            Log.w(TAG, "  Filter Error: " + e, e);
+            Log.w(TAG, getClass().getSimpleName() + ".onInitializeFilter() error", e);
             return new HintFilter.Builder()
                     .addBundleHintTypeName("[No hints]", HintFilter.FILTER_TYPE_REQUIRED)
                     .build();
@@ -93,6 +93,7 @@ public abstract class BaseHintRefinerService extends HintRefinerService {
 
             return outputHints;
         } catch (Exception e) {
+            Log.w(TAG, getClass().getSimpleName() + ".onRefine() error", e);
             throw new RuntimeException(e);
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onRefine() end");
@@ -104,7 +105,7 @@ public abstract class BaseHintRefinerService extends HintRefinerService {
             Log.w(TAG, getClass().getSimpleName() + ".onReady() start");
             TestAppController.getListener(getComponentName()).onReady();
         } catch (RemoteException e) {
-            Log.e(TAG, getClass().getSimpleName() + ".onReady() failed", e);
+            Log.w(TAG, getClass().getSimpleName() + ".onReady() error", e);
         }
     }
 }

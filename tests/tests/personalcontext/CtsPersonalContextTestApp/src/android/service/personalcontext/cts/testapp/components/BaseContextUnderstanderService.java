@@ -48,7 +48,7 @@ public abstract class BaseContextUnderstanderService extends ContextUnderstander
         try {
             TestAppController.getListener(getComponentName()).onUnderstanderConnected();
         } catch (Exception e) {
-            // Do nothing.
+            Log.w(TAG, getClass().getSimpleName() + ".onConnected() error", e);
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onConnected() end");
         }
@@ -65,7 +65,7 @@ public abstract class BaseContextUnderstanderService extends ContextUnderstander
             TestAppController.getExecutor().execute(this::onReady);
             return filter;
         } catch (Exception e) {
-            Log.w(TAG, "  Filter Error: " + e, e);
+            Log.w(TAG, getClass().getSimpleName() + ".onInitializeFilter() error", e);
             return new HintFilter.Builder()
                     .addBundleHintTypeName("[No hints]", HintFilter.FILTER_TYPE_REQUIRED)
                     .build();
@@ -99,6 +99,7 @@ public abstract class BaseContextUnderstanderService extends ContextUnderstander
 
             return outputInsights;
         } catch (Exception e) {
+            Log.w(TAG, getClass().getSimpleName() + ".onUnderstand() error", e);
             throw new RuntimeException(e);
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onUnderstand() end");
@@ -115,6 +116,7 @@ public abstract class BaseContextUnderstanderService extends ContextUnderstander
             TestAppController.getListener(getComponentName())
                     .onUnderstanderEvent(packageName, event);
         } catch (Exception e) {
+            Log.w(TAG, getClass().getSimpleName() + ".onHandleEvent() error", e);
             throw new RuntimeException(e);
         } finally {
             Log.w(TAG, getClass().getSimpleName() + ".onHandleEvent() end");
@@ -126,7 +128,7 @@ public abstract class BaseContextUnderstanderService extends ContextUnderstander
             Log.w(TAG, getClass().getSimpleName() + ".onReady()");
             TestAppController.getListener(getComponentName()).onReady();
         } catch (RemoteException e) {
-            Log.e(TAG, getClass().getSimpleName() + ".onReady() failed", e);
+            Log.w(TAG, getClass().getSimpleName() + ".onReady() error", e);
         }
     }
 }
