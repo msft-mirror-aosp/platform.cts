@@ -16,6 +16,7 @@
 
 package android.service.personalcontext.cts.workflows;
 
+import static android.service.personalcontext.cts.workflows.WorkflowUtils.configureBasicUnderstander;
 import static android.service.personalcontext.cts.workflows.WorkflowUtils.createBasicHint;
 import static android.service.personalcontext.cts.workflows.WorkflowUtils.grabBasicUnderstander;
 
@@ -23,6 +24,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -36,11 +38,13 @@ import android.service.personalcontext.Flags;
 import android.service.personalcontext.PersonalContextManager;
 import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.cts.workflows.ComponentManager.RendererCallback;
+import android.service.personalcontext.cts.workflows.ComponentManager.UnderstanderCallback;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.insight.BundleInsight;
 import android.service.personalcontext.insight.ContextInsight;
 import android.service.personalcontext.insight.InsightFilter;
 import android.service.personalcontext.insight.PublishedContextInsight;
+import android.service.personalcontext.insight.interaction.InsightEvent;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -52,6 +56,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -195,6 +200,70 @@ public class InsightWorkflowTest {
 
         // Confirm that renderer2 was never called.
         verify(renderer3, never()).onRender(any(), any());
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager#publishTriggeringHint",
+                "android.service.personalcontext.PersonalContextManager#reportInsightEvent",
+                "android.service.personalcontext.hint.BundleHint.Builder#build",
+                "android.service.personalcontext.insight.BundleInsight.Builder#addOriginHint",
+                "android.service.personalcontext.insight.BundleInsight.Builder#build",
+                "android.service.personalcontext.insight.BundleInsight.Builder"
+                        + "#setInsightTypeName",
+                "android.service.personalcontext.insight.InsightFilter.Builder#addInsightType",
+                "android.service.personalcontext.insight.InsightFilter.Builder#build",
+                "android.service.personalcontext.insight.interaction.InsightEvent#getEventType",
+                "android.service.personalcontext.renderer.InsightRendererService#onConnected",
+                "android.service.personalcontext.renderer.InsightRendererService"
+                        + "#onInitializeFilter",
+                "android.service.personalcontext.renderer.InsightRendererService#onRender",
+                "android.service.personalcontext.understander.ContextUnderstanderService"
+                        + "#onConnected",
+                "android.service.personalcontext.understander.ContextUnderstanderService"
+                        + "#onInitializeFilter",
+                "android.service.personalcontext.understander.ContextUnderstanderService"
+                        + "#onUnderstand",
+            })
+    @Test
+    public void testReportEvent() throws InterruptedException {
+        // Create a basic hint for the workflow.
+        final BundleHint hint = createBasicHint(mWorkflow);
+
+        // Set up a basic understander and a renderer.
+        UnderstanderCallback understander =
+                mWorkflow.grabUnderstander(WorkflowUtils.filterForHint(hint));
+        RendererCallback renderer = mWorkflow.grabRenderer();
+
+        // Configure the understander to create an insight when it gets the hint.
+        configureBasicUnderstander(understander, hint);
+
+        // When the renderer gets the insight, report an event based on it.
+        doAnswer(
+                        invocation -> {
+                            mPersonalContextManager.reportInsightEvent(
+                                    /* insight= */ invocation.getArgument(0),
+                                    InsightEvent.EVENT_USER_FEEDBACK_POSITIVE,
+                                    /* renderToken= */ invocation.getArgument(1));
+                            return null;
+                        })
+                .when(renderer)
+                .onRender(any(), any());
+
+        // Wait for all components to be ready.
+        mWorkflow.waitForComponentsReady();
+
+        // Publish the hint with a render token.
+        mPersonalContextManager.publishTriggeringHint(
+                List.of(hint), List.of(renderer.getRenderToken()), List.of());
+
+        // Wait for the event to be reported and confirmed.
+        ArgumentCaptor<InsightEvent> eventCaptor = ArgumentCaptor.forClass(InsightEvent.class);
+        verify(understander, timeout(5000))
+                .onHandleEvent(eq("android.personalcontext.cts"), eventCaptor.capture());
+
+        assertThat(eventCaptor.getValue().getEventType())
+                .isEqualTo(InsightEvent.EVENT_USER_FEEDBACK_POSITIVE);
     }
 
     /** Mockito matcher for an object that needs to be converted before testing for equality. */

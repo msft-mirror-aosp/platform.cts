@@ -44,21 +44,26 @@ public final class WorkflowUtils {
                 .build();
     }
 
+    /** Gets a filter for a specific bundle hint by type. */
+    public static HintFilter filterForHint(BundleHint hint) {
+        return new HintFilter.Builder()
+                .addBundleHintTypeName(hint.getHintTypeName(), HintFilter.FILTER_TYPE_REQUIRED)
+                .build();
+    }
+
     /**
      * Gets an understander and configures it to generate a BundleInsight when it gets the provided
      * hint.
      */
     public static CompletableFuture<BundleInsight> grabBasicUnderstander(
             WorkflowTestRule rule, BundleHint hint) {
-        final HintFilter filter =
-                new HintFilter.Builder()
-                        .addBundleHintTypeName(
-                                hint.getHintTypeName(), HintFilter.FILTER_TYPE_REQUIRED)
-                        .build();
+        return configureBasicUnderstander(rule.grabUnderstander(filterForHint(hint)), hint);
+    }
 
-        final UnderstanderCallback understander = rule.grabUnderstander(filter);
+    /** Configures an understander to generate a BundleInsight when it gets the provided hint. */
+    public static CompletableFuture<BundleInsight> configureBasicUnderstander(
+            UnderstanderCallback understander, BundleHint hint) {
         final CompletableFuture<BundleInsight> future = new CompletableFuture<>();
-
         when(understander.onUnderstand(any()))
                 .thenAnswer(
                         invocation -> {
