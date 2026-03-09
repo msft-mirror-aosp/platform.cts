@@ -20,7 +20,10 @@ java_test_host {
     name: "CtsAppExitAtomHostTestCases",
     team: "trendy_team_system_performance",
     defaults: ["CtsStatsdAtomHostTest_defaults"],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        ":CtsAppExitTestCasesConstants",
+    ],
     device_common_data: [
         ":CtsAppExitTestCases",
         ":CtsSimpleApp",

@@ -64,3 +64,8 @@ test_module_config {
     test_suites: ["general-tests"],
     exclude_annotations: ["androidx.test.filters.FlakyTest"],
 }
+
+filegroup {
+    name: "CtsAppExitTestCasesConstants",
+    srcs: ["src/android/app/cts/AppExitInfoConstants.java"],
+}
