@@ -161,15 +161,25 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
         return annotation.annotationClass.java.isAnnotationPresent(RepeatingAnnotation::class.java)
     }
 
+    private val INDIRECT_ANNOTATIONS_CACHE = mutableMapOf<String, List<Annotation>>()
+
     /**
-     * Returns all indirect annotations of a given annotation. Those are the annotations that are
-     * annotating the annotation class.
+     * Returns relevant indirect annotations of a given annotation.
+     *
+     * Those are the annotations that are annotating the annotation class. These get filtered via
+     * [shouldSkipAnnotation].
      */
-    private fun getIndirectAnnotations(annotation: Annotation): Array<Annotation> {
+    private fun getIndirectAnnotations(annotation: Annotation): List<Annotation> {
         if (annotation is DynamicParameterizedAnnotation) {
-            return annotation.annotations()
+            return annotation
+                .annotations()
+                .filterNot(this::shouldSkipAnnotation)
         }
-        return annotation.annotationClass.java.getAnnotations()
+        return INDIRECT_ANNOTATIONS_CACHE.getOrPut(annotation.annotationClass.java.name) {
+            annotation.annotationClass.java
+                .getAnnotations()
+                .filterNot(this::shouldSkipAnnotation)
+        }
     }
 
     /**
@@ -375,7 +385,6 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
 
         val replacementAnnotations =
             getIndirectAnnotations(annotation)
-                .filterNot { shouldSkipAnnotation(it) }
                 .flatMap { getReplacementAnnotations(it, parameterizedAnnotations) }
                 .toList()
 
