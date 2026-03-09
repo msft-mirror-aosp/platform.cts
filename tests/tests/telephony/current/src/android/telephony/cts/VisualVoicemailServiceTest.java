@@ -61,6 +61,8 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,6 +77,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -549,6 +552,7 @@ public class VisualVoicemailServiceTest {
                 CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
 
         mTelephonyManager.setVisualVoicemailSmsFilterSettings(settings);
+        waitForSettingsToBeApplied(settings);
 
         CompletableFuture<VisualVoicemailSms> future = new CompletableFuture<>();
         MockVisualVoicemailService.setSmsFuture(future);
@@ -587,6 +591,7 @@ public class VisualVoicemailServiceTest {
     private VisualVoicemailSms getSmsFromData(VisualVoicemailSmsFilterSettings settings, short port,
             String text, boolean expectVvmSms) {
         mTelephonyManager.setVisualVoicemailSmsFilterSettings(settings);
+        waitForSettingsToBeApplied(settings);
 
         CompletableFuture<VisualVoicemailSms> future = new CompletableFuture<>();
         MockVisualVoicemailService.setSmsFuture(future);
@@ -797,6 +802,36 @@ public class VisualVoicemailServiceTest {
                 throw rethrown;
             } catch (Exception ignored) {
             }
+        }
+    }
+
+    private void waitForSettingsToBeApplied(VisualVoicemailSmsFilterSettings settings) {
+        if (settings == null) {
+            return;
+        }
+
+        try {
+            PollingCheck.check(
+                    "Timeout waiting for VVM settings to be applied",
+                    5000,
+                    () -> {
+                        getInstrumentation()
+                                .getUiAutomation()
+                                .adoptShellPermissionIdentity(
+                                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+                        try {
+                            VisualVoicemailSmsFilterSettings currentSettings =
+                                    mTelephonyManager.getActiveVisualVoicemailSmsFilterSettings(
+                                            mTelephonyManager.getSubscriptionId());
+                            return currentSettings != null
+                                    && Objects.equals(
+                                            settings.clientPrefix, currentSettings.clientPrefix);
+                        } finally {
+                            // Identity is maintained for the duration of the test
+                        }
+                    });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
