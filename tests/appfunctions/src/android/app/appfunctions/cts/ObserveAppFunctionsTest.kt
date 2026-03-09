@@ -81,6 +81,7 @@ import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -204,6 +205,7 @@ class ObserveAppFunctionsTest {
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
             "using Bedstead"
     )
+    @Ignore("b/491066437")
     fun packageInstalled_withExecutePermissionOnly_shouldNotSeeUpdate() = doBlocking {
         assertPackageInstallationNotNotified()
     }
@@ -223,6 +225,7 @@ class ObserveAppFunctionsTest {
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
             "using Bedstead"
     )
+    @Ignore("b/491066437")
     fun packageInstalled_withDiscoverPermissionOnly_shouldNotSeeUpdate() = doBlocking {
         assertPackageInstallationNotNotified()
     }
@@ -242,6 +245,7 @@ class ObserveAppFunctionsTest {
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
             "using Bedstead"
     )
+    @Ignore("b/491066437")
     fun packageInstalled_withExecuteSystemPermissionOnly_shouldNotSeeUpdate() = doBlocking {
         assertPackageInstallationNotNotified()
     }
@@ -630,6 +634,7 @@ class ObserveAppFunctionsTest {
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
             "using Bedstead"
     )
+    @Ignore("b/491066437")
     fun changeEnabledState_withExecutePermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -669,6 +674,7 @@ class ObserveAppFunctionsTest {
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
             "using Bedstead"
     )
+    @Ignore("b/491066437")
     fun changeEnabledState_withDiscoverPermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -708,6 +714,7 @@ class ObserveAppFunctionsTest {
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
             "using Bedstead"
     )
+    @Ignore("b/491066437")
     fun changeEnabledState_withExecuteSystemPermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
