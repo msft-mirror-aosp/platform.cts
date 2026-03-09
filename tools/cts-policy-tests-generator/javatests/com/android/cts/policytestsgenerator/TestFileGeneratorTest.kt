@@ -75,6 +75,12 @@ class TestFileGeneratorTest {
             .setPackageName("java.util")
             .build()
 
+    val packageType =
+        FullyQualifiedClassName.newBuilder()
+            .setClassName("PackageIdentifier")
+            .setPackageName("android.app.admin")
+            .build()
+
     val allDpcTypes =
         DpcType.values().filter { it != DpcType.DPC_TYPE_UNSPECIFIED && it != DpcType.UNRECOGNIZED }
 
@@ -131,6 +137,38 @@ class TestFileGeneratorTest {
                             0L,
                             1L,
                             12345L,
+                        )
+
+                    override val invalidValueTestCases = listOf()
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
+                }
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun packagePolicy_generatesTestClass() {
+        val metadata = packagePolicyMetadata("MY_PACKAGE_POLICY")
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file.getTestClass())
+            .isEqualTo(
+                """
+                class MyPackagePolicyGeneratedTest : CommonPolicyTests<PackageIdentifier>() {
+
+                    override val policyIdentifier = PolicyIdentifier.MY_PACKAGE_POLICY
+
+                    override val validValues =
+                        listOf(
+                            PackageIdentifier("com.example.app"),
+                            PackageIdentifier("com.example.app2"),
                         )
 
                     override val invalidValueTestCases = listOf()
@@ -860,6 +898,18 @@ class TestFileGeneratorTest {
                 TypeSpecificPolicyMetadata.newBuilder()
                     .setIntegerMetadata(
                         TypeSpecificPolicyMetadata.IntegerPolicyMetadata.newBuilder()
+                    )
+            )
+            .build()
+
+    private fun packagePolicyMetadata(identifier: String) =
+        PolicyMetadata.newBuilder()
+            .setIdentifier(fullyQualifiedFieldName(identifier))
+            .setType(packageType)
+            .setTypeSpecificMetadata(
+                TypeSpecificPolicyMetadata.newBuilder()
+                    .setPackageMetadata(
+                        TypeSpecificPolicyMetadata.PackagePolicyMetadata.newBuilder()
                     )
             )
             .build()
