@@ -56,6 +56,8 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
+import com.android.cts.verifier.TestResultHistoryCollection;
+import com.android.compatibility.common.util.TestResultHistory;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -532,15 +534,27 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                             // Get start/end time per camera/scene for result history collection.
                             mStartTime = sceneResult.getLong("start");
                             mEndTime = sceneResult.getLong("end");
-                            setTestResult(testId(cameraId, scene), pass
-                                    ? TestResult.TEST_RESULT_PASSED : TestResult.TEST_RESULT_FAILED);
-                            Log.e(
-                                    TAG,
-                                    "setTestResult for " + testId(cameraId, scene) + ": " + result);
                             String summary = sceneResult.optString("summary");
                             if (!summary.equals("")) {
                                 mSummaryMap.put(key, summary);
                             }
+                            // Create history collection
+                            TestResultHistoryCollection historyCollection = new TestResultHistoryCollection();
+                            List<TestResultHistory.TestDetails> testDetails = new ArrayList<>();
+                            if (!summary.equals("")) {
+                                addSubTestsToDetails(testDetails, summary);
+                            }
+                            mIsAutomated = true;
+                            // Add the scene level history with details
+                            historyCollection.addAll(testId(cameraId, scene),
+                                    new HashSet<TestResultHistory.ExecutionRecord>(), testDetails);
+
+                            setTestResult(testId(cameraId, scene), pass
+                                    ? TestResult.TEST_RESULT_PASSED : TestResult.TEST_RESULT_FAILED,
+                                    null /*testDetails*/, historyCollection);
+                            Log.e(
+                                    TAG,
+                                    "setTestResult for " + testId(cameraId, scene) + ": " + result);
                         } // do nothing for NOT_EXECUTED scenes
 
                         if (sceneResult.isNull("mpc_metrics")) {
@@ -710,6 +724,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                     line = reader.readLine();
                     if (line != null) {
                         summary.append(line);
+                        summary.append("\n");
                     }
                 } while (line != null);
             } catch (FileNotFoundException e) {
@@ -1613,6 +1628,54 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         } catch (ActivityNotFoundException e) {
             Logt.e(TAG, "Error starting video capture intent activity: " + e);
+        }
+    }
+
+    private void addSubTestsToDetails(
+            List<TestResultHistory.TestDetails> testDetails, String summaryPath) {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(summaryPath));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Parse lines like "PASS  test_jitter.py" or "FAIL  test_metadata.py"
+                Log.i(TAG, "line: " + line);
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length >= 2) {
+                    String status = parts[0];
+                    String testName = parts[1];
+                    if (status.equals("PASS") || status.equals("FAIL") || status.equals("SKIP")) {
+                        testDetails.add(new TestResultHistory.TestDetails(testName, status));
+                        Log.i(TAG, "Added test detail: " + testName + " result: " + status);
+                    } else {
+                        Log.i(TAG, "Skipping line, status not PASS/FAIL/SKIP: " + line);
+                    }
+                } else {
+                    Log.i(TAG, "Skipping line, malformed: " + line);
+                }
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error reading summary file for details: " + summaryPath, e);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
+    }
+
+    protected void setTestResult(String testName, int result, String testDetails,
+            TestResultHistoryCollection historyCollection) {
+        // Bundle result in an intent to feed into handleLaunchTestResult
+        Intent resultIntent = new Intent();
+        TestResult.addResultData(resultIntent, result, testName, testDetails,
+                /* reportLog */ null, historyCollection);
+        handleLaunchTestResult(RESULT_OK, resultIntent);
+        if (mCurrentTestPosition + 1 < mAdapter.getCount()) {
+            getListView().smoothScrollToPosition(mCurrentTestPosition + 1);
         }
     }
 
