@@ -126,7 +126,10 @@ public class NetworkScanApiTest extends BaseCarrierApiTest {
 
     @Before
     public void setUp() throws Exception {
-        mTelephonyManager = getContext().getSystemService(TelephonyManager.class);
+        mTelephonyManager =
+                getContext()
+                        .getSystemService(TelephonyManager.class)
+                        .createForSubscriptionId(getActiveCarrierPrivSubId());
         String selfPackageName = getContext().getPackageName();
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()

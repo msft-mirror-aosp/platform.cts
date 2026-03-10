@@ -17,11 +17,13 @@
 package com.android.compatibility.common.util;
 
 import android.Manifest;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringDef;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.List;
 
@@ -126,12 +128,37 @@ public final class UiccUtil {
                 InstrumentationRegistry.getInstrumentation()
                         .getTargetContext()
                         .getSystemService(TelephonyManager.class);
+        SubscriptionManager sm =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getSystemService(SubscriptionManager.class);
+
+        List<SubscriptionInfo> activeSubscriptions =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        sm,
+                        SubscriptionManager::getActiveSubscriptionInfoList,
+                        Manifest.permission.READ_PHONE_STATE);
+
+        if (activeSubscriptions == null || activeSubscriptions.isEmpty()) {
+            return hasCertificate(tm, requiredCert);
+        }
+
+        for (SubscriptionInfo subInfo : activeSubscriptions) {
+            TelephonyManager specificTm = tm.createForSubscriptionId(subInfo.getSubscriptionId());
+            if (hasCertificate(specificTm, requiredCert)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasCertificate(TelephonyManager tm, String requiredCert) {
         List<String> uiccCerts =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
                         tm,
                         TelephonyManager::getCertsFromCarrierPrivilegeAccessRules,
                         Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-        return uiccCerts == null ? false : uiccCerts.contains(requiredCert);
+        return uiccCerts != null && uiccCerts.contains(requiredCert);
     }
 
     /**
