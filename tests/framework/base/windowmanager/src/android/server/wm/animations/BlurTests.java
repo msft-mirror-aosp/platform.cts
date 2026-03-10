@@ -414,6 +414,26 @@ public class BlurTests extends WindowManagerTestBase {
         Mockito.verifyNoMoreInteractions(activity.mBlurEnabledListener);
     }
 
+
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager.LayoutParams#setBlurBehindRadius",
+                     "android.view.Window#setDimAmount"})
+    public void testBlurBehindWithZeroDimAmount() throws Exception {
+        final BlurActivity blurActivity = startTestActivity(BlurActivity.class);
+        getInstrumentation().runOnMainSync(() -> {
+            blurActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            blurActivity.getWindow().setDimAmount(0f);
+            blurActivity.setBlurBehindRadius(BLUR_BEHIND_PX);
+        });
+        waitForActivityIdle(blurActivity);
+        final Rect windowFrame = getFloatingWindowFrame(blurActivity);
+
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertNoBackgroundBlur(screenshot, windowFrame);
+        });
+    }
+
     public static class BackgroundActivity extends FocusableActivity {
         private Insets mInsetsToBeIgnored = Insets.of(0, 0, 0, 0);
 
