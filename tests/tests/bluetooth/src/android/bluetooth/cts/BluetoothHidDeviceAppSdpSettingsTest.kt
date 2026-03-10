@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,36 +14,33 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static com.google.common.truth.Truth.assertThat;
+import android.bluetooth.BluetoothHidDeviceAppSdpSettings
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertThat
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-/** Unit test cases for {@link BluetoothHidDeviceAppSdpSettings}. */
-@RunWith(AndroidJUnit4.class)
+/** Unit test cases for [BluetoothHidDeviceAppSdpSettings]. */
+@RunWith(AndroidJUnit4::class)
 @SmallTest
-public class BluetoothHidDeviceAppSdpSettingsTest {
+class BluetoothHidDeviceAppSdpSettingsTest {
+
     @Test
-    public void getters() {
-        String name = "test-name";
-        String description = "test-description";
-        String provider = "test-provider";
-        byte subclass = 1;
-        byte[] descriptors = new byte[] {10};
-        BluetoothHidDeviceAppSdpSettings settings =
-                new BluetoothHidDeviceAppSdpSettings(
-                        name, description, provider, subclass, descriptors);
-        assertThat(settings.getName()).isEqualTo(name);
-        assertThat(settings.getDescription()).isEqualTo(description);
-        assertThat(settings.getProvider()).isEqualTo(provider);
-        assertThat(settings.getSubclass()).isEqualTo(subclass);
-        assertThat(settings.getDescriptors()).isEqualTo(descriptors);
+    fun getters() {
+        val name = "test-name"
+        val description = "test-description"
+        val provider = "test-provider"
+        val subclass: Byte = 1
+        val descriptors = byteArrayOf(10)
+        val settings =
+            BluetoothHidDeviceAppSdpSettings(name, description, provider, subclass, descriptors)
+        assertThat(settings.name).isEqualTo(name)
+        assertThat(settings.description).isEqualTo(description)
+        assertThat(settings.provider).isEqualTo(provider)
+        assertThat(settings.subclass).isEqualTo(subclass)
+        assertThat(settings.descriptors).isEqualTo(descriptors)
     }
 }
