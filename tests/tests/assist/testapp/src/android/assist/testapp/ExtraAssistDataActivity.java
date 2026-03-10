@@ -15,10 +15,19 @@
  */
 package android.assist.testapp;
 
+import android.app.appfunctions.AppFunctionException;
+import android.app.appfunctions.AppFunctionManager;
+import android.app.appfunctions.AppFunctionName;
+import android.app.appfunctions.AppFunctionRegistration;
+import android.app.appfunctions.AppFunctionState;
+import android.app.appfunctions.ExecuteAppFunctionResponse;
 import android.app.assist.AssistContent;
 import android.assist.common.Utils;
 import android.os.Bundle;
+import android.os.OutcomeReceiver;
 import android.util.Log;
+
+import java.util.List;
 
 /**
  * Test the onProvideAssistData and onProvideAssistContent methods activities may override to
@@ -27,6 +36,22 @@ import android.util.Log;
  */
 public class ExtraAssistDataActivity extends BaseThirdPartyActivity {
     private static final String TAG = "ExtraAssistDataActivity";
+
+    private AppFunctionRegistration mAppFunctionRegistration;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        registerDummyAppFunction();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mAppFunctionRegistration != null) {
+            mAppFunctionRegistration.unregister();
+        }
+        super.onDestroy();
+    }
 
     @Override
     public void onProvideAssistData(Bundle data) {
@@ -44,5 +69,26 @@ public class ExtraAssistDataActivity extends BaseThirdPartyActivity {
         } catch (Exception e) {
             Log.i(TAG, "Failed to get Structured JSON to put into the AssistContent.");
         }
+    }
+
+    private void registerDummyAppFunction() {
+        if (!android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+            return;
+        }
+        AppFunctionManager appFunctionManager = getSystemService(AppFunctionManager.class);
+        if (appFunctionManager == null) {
+            Log.i(TAG, "AppFunctionManager is null, not registering dummy app function.");
+            return;
+        }
+        // Registering a dummy app function to be able to compare the AppFunctionActivityId.
+        mAppFunctionRegistration =
+                appFunctionManager.registerAppFunction(
+                        "stubAppFunction",
+                        Runnable::run,
+                        (request, cancellationSignal, callback) ->
+                                callback.onError(
+                                        new AppFunctionException(
+                                                AppFunctionException.ERROR_CANCELLED,
+                                                "unimplemented")));
     }
 }
