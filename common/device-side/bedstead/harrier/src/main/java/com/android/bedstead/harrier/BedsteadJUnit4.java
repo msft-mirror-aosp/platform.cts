@@ -20,10 +20,7 @@ import android.util.Log;
 
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
-import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
-
-import com.google.common.collect.ImmutableList;
 
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -40,10 +37,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -99,71 +94,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                                         != null);
     }
 
-    /**
-     * Groups list of annotations of type [ParameterizedAnnotation] by its [scope].
-     *
-     * @param parameterizedAnnotations the list of annotations of type [ParameterizedAnnotation]
-     * @return list of list of [ParameterizedAnnotation] where each sub list corresponds to
-     *     annotations of one scope.
-     */
-    private List<List<Annotation>> getParameterizedAnnotationsGroupedByScope(
-            Set<Annotation> parameterizedAnnotations) {
-        Map<String, List<Annotation>> annotationsPerScope = new HashMap<>();
-        for (Annotation annotation : parameterizedAnnotations) {
-            if (BedsteadAnnotationGenerator.INSTANCE.isAnnotationClassParameterizedAnnotation(
-                            annotation)
-                    && !BedsteadAnnotationGenerator.INSTANCE.shouldSkipAnnotation(annotation)) {
-                ParameterizedAnnotation parameterizedAnnotation =
-                        annotation.annotationType().getAnnotation(ParameterizedAnnotation.class);
-                annotationsPerScope.putIfAbsent(
-                        parameterizedAnnotation.scope().name(), new ArrayList<>());
-                annotationsPerScope.get(parameterizedAnnotation.scope().name()).add(annotation);
-            }
-        }
-
-        return new ArrayList<>(annotationsPerScope.values());
-    }
-
-    /**
-     * Generates a cartesian product of multiple sets of annotations. For example: If the
-     * [annotations] param has value [[A1, A2], [A3, A4]] then it will return [[A1, A3], [A1, A4],
-     * [A2, A3], [A2, A4]].
-     *
-     * @param annotations list of list of annotations whose cartesian product we want to generate.
-     * @return cartesian product of the annotation sets.
-     */
-    private static List<List<Annotation>> calculateCartesianProductOfAnnotationSets(
-            List<List<Annotation>> annotations) {
-        List<List<Annotation>> result = new ArrayList<>();
-        if (!annotations.isEmpty()) {
-            generateCartesianProductOfAnnotationSets(annotations, 0, result, new ArrayList<>());
-        }
-        return result;
-    }
-
-    /**
-     * Generates a cartesian product of multiple sets of annotations. This method is an internal
-     * helper method for {@code calculateCartesianProductOfAnnotationSets()}. Refer {@code
-     * calculateCartesianProductOfAnnotationSets()} for an example.
-     */
-    private static void generateCartesianProductOfAnnotationSets(
-            List<List<Annotation>> annotations,
-            int position,
-            List<List<Annotation>> result,
-            List<Annotation> subResult) {
-        if (position == annotations.size()) {
-            if (!subResult.isEmpty()) {
-                result.add(new ArrayList<>(subResult));
-            }
-            return;
-        }
-        for (int i = 0; i < annotations.get(position).size(); i++) {
-            subResult.add(annotations.get(position).get(i));
-            generateCartesianProductOfAnnotationSets(annotations, position + 1, result, subResult);
-            subResult.remove(subResult.size() - 1);
-        }
-    }
-
     @Override
     protected List<FrameworkMethod> computeTestMethods() {
         // TODO: It appears that the annotations are computed up to 8 times per run. Figure out how
@@ -171,60 +101,20 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         if (mComputedTestMethods != null) {
             return mComputedTestMethods;
         }
-        List<FrameworkMethod> basicTests = getBasicTests(getTestClass());
-        List<FrameworkMethod> modifiedTests = new ArrayList<>();
         long startTime = System.currentTimeMillis();
-        BedsteadAnnotationGenerator annotationGenerator = BedsteadAnnotationGenerator.INSTANCE;
 
-        for (FrameworkMethod m : basicTests) {
-            Set<Annotation> parameterizedAnnotations =
-                    annotationGenerator.getParameterizedAnnotations(
-                            m.getAnnotations(), getRuntimeClassAnnotations());
+        List<FrameworkMethod> modifiedTests =
+                getBasicTests(getTestClass()).stream()
+                        .flatMap(
+                                m ->
+                                        BedsteadAnnotationGenerator.INSTANCE
+                                                .computeTestMethodsForBasicTest(
+                                                        m, getRuntimeClassAnnotations())
+                                                .stream())
+                        .flatMap(this::generateGeneralParameterizationMethods)
+                        .collect(Collectors.toList());
 
-            if (parameterizedAnnotations.isEmpty()) {
-                // Unparameterized, just add the original
-                modifiedTests.add(
-                        annotationGenerator.constructFrameworkMethod(
-                                m.getMethod(), getRuntimeClassAnnotations()));
-                continue;
-            }
-
-            // Create [BedsteadFrameworkMethod] for parameterized annotation of instance {@Code
-            // DynamicParameterizedAnnotation}.
-            for (Annotation annotation : parameterizedAnnotations) {
-                if (annotationGenerator.shouldSkipAnnotation(annotation)
-                        || annotationGenerator.isAnnotationClassParameterizedAnnotation(
-                                annotation)) {
-                    // Special case - does not generate a run
-                    continue;
-                }
-                modifiedTests.add(
-                        annotationGenerator.constructFrameworkMethod(
-                                m.getMethod(),
-                                getRuntimeClassAnnotations(),
-                                ImmutableList.of(annotation)));
-            }
-
-            List<List<Annotation>> parametrizedAnnotationsGroupedByScope =
-                    getParameterizedAnnotationsGroupedByScope(parameterizedAnnotations);
-
-            List<List<Annotation>> cartesianProductOfAnnotationSets =
-                    calculateCartesianProductOfAnnotationSets(
-                            parametrizedAnnotationsGroupedByScope);
-
-            // Create [BedsteadFrameworkMethod] for each parameterized annotation of type
-            // [ParameterizedAnnotation].
-            for (List<Annotation> annotationsToApplyTogether : cartesianProductOfAnnotationSets) {
-                modifiedTests.add(
-                        annotationGenerator.constructFrameworkMethod(
-                                m.getMethod(),
-                                getRuntimeClassAnnotations(),
-                                ImmutableList.copyOf(annotationsToApplyTogether)));
-            }
-        }
-
-        modifiedTests =
-                FrameworkMethodSorter.sort(generateGeneralParameterizationMethods(modifiedTests));
+        modifiedTests = FrameworkMethodSorter.sort(modifiedTests);
 
         if (isDebug()) {
             dumpFullTestDetails(modifiedTests);
@@ -240,13 +130,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         mComputedTestMethods = modifiedTests;
         return modifiedTests;
-    }
-
-    private List<FrameworkMethod> generateGeneralParameterizationMethods(
-            List<FrameworkMethod> modifiedTests) {
-        return modifiedTests.stream()
-                .flatMap(this::generateGeneralParameterizationMethods)
-                .collect(Collectors.toList());
     }
 
     private Stream<FrameworkMethod> generateGeneralParameterizationMethods(FrameworkMethod method) {
