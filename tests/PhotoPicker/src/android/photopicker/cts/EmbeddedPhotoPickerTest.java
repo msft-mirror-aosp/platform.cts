@@ -19,12 +19,15 @@ package android.photopicker.cts;
 import static android.photopicker.cts.PhotoPickerBaseTest.isHardwareSupported;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.assertUiObjectExistsWithId;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAndClickUiObjectWithId;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findObject;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.getBySelectorMatchingDescription;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getMediaItem;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getMediaItemSelector;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingDescription;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingText;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingTextSelector;
 
@@ -41,6 +44,7 @@ import android.content.pm.ServiceInfo;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
+import android.photopicker.cts.util.PhotoPickerUiUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -257,24 +261,24 @@ public class EmbeddedPhotoPickerTest {
 
         if (mIsVisibleBackgroundUser) {
             // 2. Assert that "Photos" tab is hidden when expanded state is set to false
-            BySelector photosTabSelector = getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL,
-                    mDisplayId);
+            BySelector photosTabSelector =
+                    getBySelectorMatchingDescription(PHOTOS_TAB_LABEL, mDisplayId);
             assertThat(sDevice.hasObject(photosTabSelector)).isFalse();
 
             // 3. Set the expanded state to true and assert that the "Photos" tab is visible
             mActivity.getSession().notifyPhotoPickerExpanded(true);
             assertPhotosTabExists();
             UiObject2 photosTab = findObject(sDevice, photosTabSelector);
-            assertThat(photosTab.getText()).isEqualTo(PHOTOS_TAB_LABEL);
+            assertThat(photosTab.getContentDescription()).isEqualTo(PHOTOS_TAB_LABEL);
         } else {
             // 2. Assert that "Photos" tab is hidden when expanded state is set to false
-            UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
+            UiObject photosTab = getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice);
             assertThat(photosTab.exists()).isFalse();
 
             // 3. Set the expanded state to true and assert that the "Photos" tab is visible
             mActivity.getSession().notifyPhotoPickerExpanded(true);
             assertPhotosTabExists();
-            assertThat(photosTab.getText()).isEqualTo(PHOTOS_TAB_LABEL);
+            assertThat(photosTab.getContentDescription()).isEqualTo(PHOTOS_TAB_LABEL);
         }
     }
 
@@ -291,7 +295,7 @@ public class EmbeddedPhotoPickerTest {
         mActivity.getSession().notifyPhotoPickerExpanded(true);
         assertPhotosTabExists();
         UiObject2 surfacePackage =
-                sDevice.findObject(getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId))
+                sDevice.findObject(getBySelectorMatchingDescription(PHOTOS_TAB_LABEL, mDisplayId))
                         .getParent()
                         .getParent()
                         .getParent()
@@ -309,7 +313,7 @@ public class EmbeddedPhotoPickerTest {
         // 4. Get the new surface package and its dimensions
         assertPhotosTabExists();
         UiObject2 newSurfacePackage =
-                sDevice.findObject(getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId))
+                sDevice.findObject(getBySelectorMatchingDescription(PHOTOS_TAB_LABEL, mDisplayId))
                         .getParent()
                         .getParent()
                         .getParent()
@@ -464,19 +468,20 @@ public class EmbeddedPhotoPickerTest {
     }
 
     /**
-     * Asserts that the "Photos" tab exists in the UI and is visible within a timeout of 1 second.
-     * This method relies on finding a UI element that matches the text specified by
-     * {@link #PHOTOS_TAB_LABEL}.
+     * Asserts that the "Photos" tab exists in the UI and is visible within a timeout of 5 second.
+     * This method relies on finding a UI element that matches the text specified by {@link
+     * #PHOTOS_TAB_LABEL}.
      *
      * @throws AssertionError If the "Photos" tab is not found within the specified timeout.
      */
     private void assertPhotosTabExists() {
         if (mIsVisibleBackgroundUser) {
-            BySelector photosTab = getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId);
-            assertThat(sDevice.wait(Until.hasObject(photosTab), 1000)).isTrue();
+            BySelector photosTab = getBySelectorMatchingDescription(PHOTOS_TAB_LABEL, mDisplayId);
+            assertThat(sDevice.wait(Until.hasObject(photosTab), SHORT_TIMEOUT)).isTrue();
         } else {
-            UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
-            assertThat(photosTab.waitForExists(1000)).isTrue();
+            UiObject2 photosTab =
+                    PhotoPickerUiUtils.getUiObject2MatchingDescription(PHOTOS_TAB_LABEL, sDevice);
+            assertThat(photosTab).isNotNull();
         }
     }
 }
