@@ -15,20 +15,27 @@
  */
 package com.android.bedstead.harrier
 
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.isParameterizedAnnotation
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.maybeReplaceUsingParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
+import com.android.bedstead.nene.TestApis.users
+import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.types.OptionalBoolean
 import com.google.auto.value.AutoAnnotation
 import com.google.common.collect.ImmutableList
+import com.google.common.collect.ImmutableMap
 import com.google.common.collect.ImmutableSet
 import com.google.errorprone.annotations.CanIgnoreReturnValue
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
+import java.util.function.Function
 
 /** This class exposes a number of annotation-related helper methods. */
 object BedsteadAnnotationGenerator {
@@ -53,7 +60,59 @@ object BedsteadAnnotationGenerator {
     private val IGNORED_ANNOTATION_PREFIXES: ImmutableList<String> =
         ImmutableList.of("kotlin", "com.android.networkstack.kotlin")
 
+    private val ANNOTATION_REPLACEMENTS:
+        ImmutableMap<Class<out Annotation>, Function<Annotation, List<Annotation>>> =
+        ImmutableMap.of<Class<out Annotation>, Function<Annotation, List<Annotation>>>(
+            RequireRunOnInitialUser::class.java,
+            Function { a: Annotation ->
+                val requireRunOnInitialUserAnnotation = a as RequireRunOnInitialUser
+                if (users().isHeadlessSystemUserMode()) {
+                    return@Function listOf(
+                        a,
+                        ensureHasSecondaryUser(),
+                        requireRunOnSecondaryUser(requireRunOnInitialUserAnnotation.switchedToUser),
+                    )
+                } else {
+                    return@Function listOf(
+                        a,
+                        requireRunOnPrimaryUser(requireRunOnInitialUserAnnotation.switchedToUser),
+                    )
+                }
+            },
+            RequireRunOnAdditionalUser::class.java,
+            Function { a: Annotation? ->
+                val requireRunOnAdditionalUserAnnotation = a as RequireRunOnAdditionalUser
+                if (users().isHeadlessSystemUserMode()) {
+                    return@Function listOf(ensureHasSecondaryUser(), a)
+                } else {
+                    return@Function listOf(
+                        a,
+                        requireRunOnSecondaryUser(
+                            requireRunOnAdditionalUserAnnotation.switchedToUser
+                        ),
+                    )
+                }
+            },
+        )
+
     private val mLocator: BedsteadServiceLocator = BedsteadServiceLocator()
+
+    @AutoAnnotation
+    private fun requireRunOnSecondaryUser(
+        switchedToUser: OptionalBoolean?
+    ): RequireRunOnSecondaryUser {
+        return AutoAnnotation_BedsteadAnnotationGenerator_requireRunOnSecondaryUser(switchedToUser)
+    }
+
+    @AutoAnnotation
+    private fun ensureHasSecondaryUser(): EnsureHasSecondaryUser {
+        return AutoAnnotation_BedsteadAnnotationGenerator_ensureHasSecondaryUser()
+    }
+
+    @AutoAnnotation
+    private fun requireRunOnPrimaryUser(switchedToUser: OptionalBoolean?): RequireRunOnPrimaryUser {
+        return AutoAnnotation_BedsteadAnnotationGenerator_requireRunOnPrimaryUser(switchedToUser)
+    }
 
     @AutoAnnotation
     private fun requireRunOnInitialUser(switchedToUser: OptionalBoolean?): RequireRunOnInitialUser {
@@ -65,7 +124,7 @@ object BedsteadAnnotationGenerator {
      *
      * Returns true for @link DynamicParameterizedAnnotation.
      */
-    fun isParameterizedAnnotation(annotation: Annotation): Boolean {
+    private fun isParameterizedAnnotation(annotation: Annotation): Boolean {
         if (annotation is DynamicParameterizedAnnotation) {
             return true
         }
@@ -89,7 +148,7 @@ object BedsteadAnnotationGenerator {
     }
 
     /** Returns whether a given annotation is a repeating annotation. */
-    fun isRepeatingAnnotation(annotation: Annotation): Boolean {
+    private fun isRepeatingAnnotation(annotation: Annotation): Boolean {
         if (annotation is DynamicParameterizedAnnotation) {
             return false
         }
@@ -101,7 +160,7 @@ object BedsteadAnnotationGenerator {
      * Returns all indirect annotations of a given annotation. Those are the annotations that are
      * annotating the annotation class.
      */
-    fun getIndirectAnnotations(annotation: Annotation): Array<Annotation> {
+    private fun getIndirectAnnotations(annotation: Annotation): Array<Annotation> {
         if (annotation is DynamicParameterizedAnnotation) {
             return annotation.annotations()
         }
@@ -145,7 +204,7 @@ object BedsteadAnnotationGenerator {
         return if (hasRequireRunOnAnnotation) {
             listOf()
         } else {
-            BedsteadJUnit4.getReplacementAnnotations(
+            getReplacementAnnotations(
                 requireRunOnInitialUser(OptionalBoolean.ANY),
                 ImmutableList.of(),
             )
@@ -201,21 +260,16 @@ object BedsteadAnnotationGenerator {
     fun getParameterizedAnnotations(
         methodAnnotations: Array<Annotation>,
         classAnnotations: List<Annotation>,
-    ): MutableSet<Annotation> {
-        val parameterizedAnnotations: MutableSet<Annotation> = HashSet()
-        val annotations: List<Annotation> = methodAnnotations.toList()
+    ): Set<Annotation> {
+        val parameterizedAnnotations =
+            methodAnnotations
+                .flatMap {
+                    maybeReplaceUsingParameterizedTestGenerator(it, classAnnotations) ?: listOf()
+                }
+                .toSet()
 
-        for (annotation in annotations) {
-            val replacements =
-                maybeReplaceUsingParameterizedTestGenerator(annotation, classAnnotations)
-            replacements?.let { parameterizedAnnotations.addAll(it) }
-
-            if (isParameterizedAnnotation(annotation)) {
-                parameterizedAnnotations.add(annotation)
-            }
-        }
-
-        return parameterizedAnnotations
+        return parameterizedAnnotations +
+            methodAnnotations.filter(BedsteadAnnotationGenerator::isParameterizedAnnotation)
     }
 
     /**
@@ -225,8 +279,7 @@ object BedsteadAnnotationGenerator {
      * 1. Extract all class and method-level annotations.
      * 2. Run them through [maybeReplaceUsingParameterizedTestGenerator] to generate bedstead
      *    replacements.
-     * 3. Run them all through [BedsteadJUnit4.resolveRecursiveAnnotations] to resolve recursive
-     *    annotations.
+     * 3. Run them all through [resolveRecursiveAnnotations] to resolve recursive annotations.
      * 4. Ensure that at least one [RequireRunOnAnnotation] is present.
      */
     private fun calculateAnnotationsForMethod(
@@ -234,23 +287,22 @@ object BedsteadAnnotationGenerator {
         runtimeClassAnnotations: List<Annotation>,
         parameterizedAnnotations: ImmutableList<Annotation>,
     ): ImmutableList<Annotation> {
-        val resultAnnotations: MutableList<Annotation> = ArrayList()
-
-        resultAnnotations.addAll(
+        val localAnnotations =
             maybeReplaceUsingParameterizedTestGenerator(
                 method.declaringClass.annotations,
                 runtimeClassAnnotations,
-            )
+            ) +
+                maybeReplaceUsingParameterizedTestGenerator(
+                    method.annotations,
+                    runtimeClassAnnotations,
+                )
+
+        val resolvedAnnotations =
+            resolveRecursiveAnnotations(localAnnotations, parameterizedAnnotations)
+
+        return ImmutableList.copyOf(
+            resolvedAnnotations + createRunOnAnnotationsIfNeeded(resolvedAnnotations)
         )
-        resultAnnotations.addAll(
-            maybeReplaceUsingParameterizedTestGenerator(method.annotations, runtimeClassAnnotations)
-        )
-
-        BedsteadJUnit4.resolveRecursiveAnnotations(resultAnnotations, parameterizedAnnotations)
-
-        resultAnnotations.addAll(createRunOnAnnotationsIfNeeded(resultAnnotations))
-
-        return ImmutableList.copyOf(resultAnnotations)
     }
 
     /** Construct a [BedsteadFrameworkMethod] for the given [Method] and parameterization. */
@@ -269,5 +321,82 @@ object BedsteadAnnotationGenerator {
             ),
             parameterizedAnnotations,
         )
+    }
+
+    /**
+     * Some annotations have hardcoded replacements as per [ANNOTATION_REPLACEMENTS]. Return these
+     * if present.
+     */
+    private fun getSpecialReplacementFunction(
+        annotation: Annotation
+    ): Function<Annotation, List<Annotation>>? {
+        if (annotation is DynamicParameterizedAnnotation) {
+            return null
+        }
+
+        return ANNOTATION_REPLACEMENTS[annotation.annotationClass.java]
+    }
+
+    private fun getReplacementForRepeatingAnnotation(annotation: Annotation): List<Annotation> {
+        try {
+            val annotations =
+                annotation.annotationClass.java.getMethod("value").invoke(annotation)
+                    as Array<Annotation>
+            return annotations.asList()
+        } catch (e: IllegalAccessException) {
+            throw NeneException("Error expanding repeated annotations", e)
+        } catch (e: InvocationTargetException) {
+            throw NeneException("Error expanding repeated annotations", e)
+        } catch (e: NoSuchMethodException) {
+            throw NeneException("Error expanding repeated annotations", e)
+        }
+    }
+
+    /** Recursively expand an annotation by its indirect annotations. */
+    fun getReplacementAnnotations(
+        annotation: Annotation,
+        parameterizedAnnotations: ImmutableList<Annotation>,
+    ): List<Annotation> {
+        val specialReplaceFunction = getSpecialReplacementFunction(annotation)
+        if (specialReplaceFunction != null) {
+            return specialReplaceFunction.apply(annotation)
+        }
+
+        if (isRepeatingAnnotation(annotation)) {
+            return getReplacementForRepeatingAnnotation(annotation)
+        }
+
+        if (
+            isParameterizedAnnotation(annotation) && !parameterizedAnnotations.contains(annotation)
+        ) {
+            return listOf()
+        }
+
+        val replacementAnnotations =
+            getIndirectAnnotations(annotation)
+                .filterNot { shouldSkipAnnotation(it) }
+                .flatMap { getReplacementAnnotations(it, parameterizedAnnotations) }
+                .toList()
+
+        return if (annotation is DynamicParameterizedAnnotation) {
+            replacementAnnotations
+        } else {
+            replacementAnnotations + annotation
+        }
+    }
+
+    /**
+     * Resolves annotations recursively.
+     *
+     * @param parameterizedAnnotations The class of the parameterized annotation to expand, if any
+     */
+    @JvmOverloads
+    fun resolveRecursiveAnnotations(
+        annotations: List<Annotation>,
+        parameterizedAnnotations: ImmutableList<Annotation> = ImmutableList.of(),
+    ): List<Annotation> {
+        return annotations
+            .flatMap { getReplacementAnnotations(it, parameterizedAnnotations).sortedByPriority() }
+            .toList()
     }
 }
