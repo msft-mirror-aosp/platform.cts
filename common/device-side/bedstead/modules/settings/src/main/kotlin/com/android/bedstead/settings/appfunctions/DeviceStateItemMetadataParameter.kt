@@ -15,14 +15,15 @@
  */
 package com.android.bedstead.settings.appfunctions
 
-import android.app.appfunctions.AppFunctionService
+import android.service.settings.preferences.SettingsPreferenceMetadata
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator
+import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.settings.SETTINGS_PACKAGE_NAME
 import com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenerator
 
 /**
- * Mark a [DeviceStateItem] parameter as being parameterized with all available preferences.
+ * Mark a [DeviceStateItemMetadata] parameter as being parameterized with all available preferences.
  *
  * You must be using the [BedsteadJUnit4] test runner to use this annotation.
  */
@@ -31,24 +32,15 @@ import com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenera
 @UsesParameterizedTestWithArgumentGenerator(
     SettingsParameterizedTestWithArgumentGenerator::class
 )
-annotation class DeviceStateItemsParameter(
+annotation class DeviceStateItemMetadataParameter(
     /**
      * Package name of the application for which tests will be generated.
      */
     val packageName: String = SETTINGS_PACKAGE_NAME,
 
     /**
-     * A list of functionIdentifiers - they're used by the [AppFunctionService] from the
-     * target app to uniquely identify the function to be invoked.
+     * If the value is different from ANY, preferences will be filtered using
+     * [SettingsPreferenceMetadata.isWritable] value.
      */
-    val functionIdentifiers: Array<String> = [
-        "getUncategorizedDeviceState",
-        "getStorageDeviceState",
-        "getBatteryDeviceState",
-        "getMobileDataUsageDeviceState",
-//        "getPermissionsDeviceState",
-        "getNotificationsDeviceState",
-//        "getWellbeingDeviceState",
-        "getAppsDeviceState"
-    ],
+    val isWritable: OptionalBoolean = OptionalBoolean.ANY,
 )

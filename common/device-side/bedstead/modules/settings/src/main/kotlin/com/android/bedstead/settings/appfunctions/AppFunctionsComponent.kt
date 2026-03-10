@@ -16,6 +16,7 @@
 package com.android.bedstead.settings.appfunctions
 
 import com.android.bedstead.harrier.FrameworkMethodWithParameter
+import com.android.bedstead.nene.types.OptionalBoolean
 import org.junit.runners.model.FrameworkMethod
 
 /**
@@ -26,7 +27,7 @@ class AppFunctionsComponent {
     /**
      * Contains logic to handle [PerScreenDeviceStatesParameter].
      */
-    fun perScreenDeviceStatesParameter(
+    internal fun handlePerScreenDeviceStatesParameter(
         annotation: PerScreenDeviceStatesParameter,
         frameworkMethod: FrameworkMethod
     ): List<FrameworkMethod> {
@@ -41,7 +42,7 @@ class AppFunctionsComponent {
     /**
      * Contains logic to handle [DeviceStateItemsParameter].
      */
-    fun deviceStateItemsParameter(
+    internal fun handleDeviceStateItemsParameter(
         annotation: DeviceStateItemsParameter,
         frameworkMethod: FrameworkMethod
     ): List<FrameworkMethod> {
@@ -56,7 +57,34 @@ class AppFunctionsComponent {
     private fun allPerScreenDeviceStates(
         functionIdentifiers: Array<String>,
         packageName: String
-    ): List<PerScreenDeviceStates> = functionIdentifiers.flatMap {
-        AppFunctionDeviceStateParser(packageName, it).getAllPerScreenDeviceStates()
+    ): List<PerScreenDeviceStates> {
+        val client = AppFunctionsBlockingClient(packageName)
+        return functionIdentifiers.flatMap {
+            client.getDeviceState(functionIdentifier = it)
+        }
+    }
+
+    internal fun handleDeviceStateItemMetadataParameter(
+        annotation: DeviceStateItemMetadataParameter,
+        frameworkMethod: FrameworkMethod
+    ): List<FrameworkMethod> {
+        val client = AppFunctionsBlockingClient(annotation.packageName)
+        return client.getDeviceStateMetadata().flatMap {
+            it.deviceStateItemsMetadata
+        }.applyIsWritableFilter(annotation.isWritable).map {
+            FrameworkMethodWithParameter(frameworkMethod, it, it.key)
+        }
+    }
+
+    private fun List<DeviceStateItemMetadata>.applyIsWritableFilter(
+        isWritable: OptionalBoolean
+    ): List<DeviceStateItemMetadata> {
+        return if (isWritable == OptionalBoolean.ANY) {
+            this
+        } else {
+            filter {
+                it.writable == isWritable.toBoolean()
+            }
+        }
     }
 }

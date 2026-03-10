@@ -22,7 +22,7 @@ import com.android.bedstead.settings.SETTINGS_PACKAGE_NAME
 import com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenerator
 
 /**
- * Mark a [PerScreenDeviceStates] parameter as being parameterised with all available screens.
+ * Mark a [PerScreenDeviceStates] parameter as being parameterized with all available screens.
  *
  * You must be using the [BedsteadJUnit4] test runner to use this annotation.
  */
