@@ -16,6 +16,9 @@
 
 package android.virtualdevice.cts.common;
 
+import android.content.ComponentName;
+
 interface IVirtualDeviceSession {
     String getCreateDeviceCommand(in String deviceName);
+    void bindService(in ComponentName componentName);
 }

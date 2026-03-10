@@ -111,6 +111,15 @@ public class VirtualDeviceSession implements AutoCloseable {
         mWmState.waitAndAssertActivityState(componentName, WindowManagerState.STATE_RESUMED);
     }
 
+    /** Creates a service binding from the virtual device owner to the given service. */
+    public void bindService(@NonNull ComponentName componentName) {
+        try {
+            mSession.bindService(componentName);
+        } catch (RemoteException e) {
+            throw new RuntimeException("Failed to create service binding to " + componentName);
+        }
+    }
+
     @Override
     public void close() {
         try {
