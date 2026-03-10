@@ -46,6 +46,7 @@ import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_V3_
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_DYNAMIC_SCHEMA_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_PKG;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_V1_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_MULTIPLE_APP_LEVEL_XML_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.assertContainsAppFunctionDocument;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.clearTimestampsAndParentTypesInDocument;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.installAppAndGetAppFunctions;
@@ -60,6 +61,7 @@ import static android.app.appsearch.testutil.AppsIndexerTestUtils.retryAssert;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchMobileApplicationWithId;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.uninstallPackage;
 import static android.app.appsearch.testutil.FrameworkFlagUtils.isFlagEnabled;
+import static android.app.appsearch.testutil.FrameworkFlagUtils.assumeFlagIsEnabled;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -807,6 +809,27 @@ public class AppFunctionCtsTest {
                         assertThat(appFnMap).isEmpty();
                     });
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML)
+    @Test
+    public void indexApp_multipleAppLevelXml_functionsIndexed() throws Throwable {
+        // Platform flag for app level app functions.
+        assumeFlagIsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
+
+        installPackage(mContext, TEST_APP_B_MULTIPLE_APP_LEVEL_XML_PATH);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // AppFunctions for App B should be indexed.
+                    Map<String, GenericDocument> appFnMap =
+                            searchAppFunctionDocumentsIntoMap(TEST_APP_B_PKG);
+                    assertThat(appFnMap.keySet())
+                            .containsExactly(
+                                    TEST_APP_B_PKG + "/com.example.utils#print1",
+                                    TEST_APP_B_PKG + "/com.example.utils#print2");
+                });
     }
 
     /**
