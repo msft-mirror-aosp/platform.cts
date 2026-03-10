@@ -17,6 +17,7 @@
 package android.assist.cts;
 
 import static android.Manifest.permission.ADD_TRUSTED_DISPLAY;
+import static android.Manifest.permission.EXECUTE_APP_FUNCTIONS;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED;
 import static android.view.Display.DEFAULT_DISPLAY;
@@ -133,7 +134,8 @@ abstract class AssistTestBase {
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    ADD_TRUSTED_DISPLAY);
+                    ADD_TRUSTED_DISPLAY,
+                    EXECUTE_APP_FUNCTIONS);
 
     @Rule
     public final RuleChain mLookAllTheseRules =

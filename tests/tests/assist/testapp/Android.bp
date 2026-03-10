@@ -20,7 +20,10 @@ package {
 android_test_helper_app {
     name: "CtsAssistApp",
     defaults: ["cts_support_defaults"],
-    static_libs: ["CtsAssistCommon"],
+    static_libs: [
+        "CtsAssistCommon",
+        "android.app.appfunctions.flags-aconfig-java",
+    ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [
