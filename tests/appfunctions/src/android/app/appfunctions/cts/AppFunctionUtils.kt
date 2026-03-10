@@ -50,6 +50,26 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 object AppFunctionUtils {
+    suspend fun getAllAppFunctionPackages(context: Context): List<String> {
+        var result: List<String> = emptyList()
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val session = getGlobalSearchSession(context)
+            val getSchemaResponse = session.getSchemaAsync("android", "apps-db").get()
+            result = buildList {
+                for (schema in getSchemaResponse.schemas) {
+                    val schemaType = schema.schemaType
+                    if (!schemaType.startsWith("AppFunctionStaticMetadata")) {
+                        continue
+                    }
+                    val packageName = parsePackageNameFromSchemaType(schemaType)
+                    if (packageName != null) {
+                        add(packageName)
+                    }
+                }
+            }
+        }
+        return result
+    }
 
     suspend fun assertFunctionEnabledState(
         packageName: String,
@@ -382,6 +402,14 @@ object AppFunctionUtils {
         } else {
             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(context).get()
         }
+    }
+
+    private fun parsePackageNameFromSchemaType(schemaType: String): String? {
+        val indexBeforePackageName = schemaType.indexOf("-")
+        if (indexBeforePackageName == -1) {
+            return null
+        }
+        return schemaType.substring(indexBeforePackageName + 1)
     }
 
     private const val PROPERTY_PACKAGE_NAME = "packageName"

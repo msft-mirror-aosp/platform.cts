@@ -68,6 +68,14 @@
         <receiver
             android:name="android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver"
             android:exported="true"/>
+        <service
+            android:name="android.app.appfunctions.testutils.TestAppFunctionProxyManagerService"
+            android:process=":manager_proxy"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionProxyManagerService"/>
+            </intent-filter>
+        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
