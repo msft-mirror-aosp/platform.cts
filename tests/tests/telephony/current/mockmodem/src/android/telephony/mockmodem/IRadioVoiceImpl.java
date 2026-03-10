@@ -628,8 +628,14 @@ public class IRadioVoiceImpl extends IRadioVoice.Stub {
     @Override
     public void hangupForegroundResumeBackground(int serial) {
         Log.d(mTag, "hangupForegroundResumeBackground");
-
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        int responseError = RadioError.NONE;
+        if (mMockModemConfigInterface != null) {
+            mMockModemConfigInterface.hangupForegroundResumeBackground(mLogicalSlotIndex, mTag);
+        } else {
+            Log.e(mTag, "Failed: mMockModemConfigInterface == null");
+            responseError = RadioError.INTERNAL_ERR;
+        }
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, responseError);
         try {
             mRadioVoiceResponse.hangupForegroundResumeBackgroundResponse(rsp);
         } catch (RemoteException ex) {
