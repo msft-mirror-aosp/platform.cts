@@ -36,12 +36,8 @@ java_test_host {
     java_resource_dirs: ["resources"],
 
     test_suites: [
-        "cts",
-        "mcts",
         "general-tests",
         "mts-art",
-        "mcts-art",
         "mts-conscrypt",
-        "mcts-conscrypt",
     ],
 }

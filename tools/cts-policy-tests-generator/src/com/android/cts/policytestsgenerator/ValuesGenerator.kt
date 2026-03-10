@@ -20,9 +20,10 @@ import android.processor.devicepolicy.protos.PolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.BooleanPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.EnumPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.IntegerPolicyMetadata
-import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.LongPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata.ListElementMetadataCase
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.LongPolicyMetadata
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.PackagePolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.StringPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.TypeMetadataCase
 
@@ -36,6 +37,7 @@ object ValuesGenerator {
             TypeMetadataCase.LONG_METADATA -> return generateValidLongs(type.longMetadata)
             TypeMetadataCase.BOOLEAN_METADATA -> return generateValidBooleans(type.booleanMetadata)
             TypeMetadataCase.ENUM_METADATA -> return generateValidEnums(type.enumMetadata)
+            TypeMetadataCase.PACKAGE_METADATA -> return generateValidPackages(type.packageMetadata)
             TypeMetadataCase.LIST_METADATA -> return generateValidLists(type.listMetadata)
             else -> throw IllegalArgumentException("Unsupported type ${type.typeMetadataCase}")
         }
@@ -47,11 +49,12 @@ object ValuesGenerator {
             TypeMetadataCase.STRING_METADATA -> return generateInvalidStrings(type.stringMetadata)
             TypeMetadataCase.INTEGER_METADATA ->
                 return generateInvalidIntegers(type.integerMetadata)
-            TypeMetadataCase.LONG_METADATA ->
-                return generateInvalidLongs(type.longMetadata)
+            TypeMetadataCase.LONG_METADATA -> return generateInvalidLongs(type.longMetadata)
             TypeMetadataCase.BOOLEAN_METADATA ->
                 return generateInvalidBooleans(type.booleanMetadata)
             TypeMetadataCase.ENUM_METADATA -> return generateInvalidEnums(type.enumMetadata)
+            TypeMetadataCase.PACKAGE_METADATA ->
+                return generateInvalidPackages(type.packageMetadata)
             TypeMetadataCase.LIST_METADATA -> return generateInvalidLists(type.listMetadata)
             else -> throw IllegalArgumentException("Unsupported type")
         }
@@ -96,9 +99,7 @@ object ValuesGenerator {
         return listOf("-1L", "0L", "1L", "12345L")
     }
 
-    private fun generateInvalidLongs(
-        metadata: LongPolicyMetadata
-    ): List<InvalidValueTestCase> {
+    private fun generateInvalidLongs(metadata: LongPolicyMetadata): List<InvalidValueTestCase> {
         return listOf()
     }
 
@@ -125,6 +126,19 @@ object ValuesGenerator {
         )
     }
 
+    private fun generateValidPackages(metadata: PackagePolicyMetadata): List<String> {
+        return listOf(
+            "PackageIdentifier(\"com.example.app\")",
+            "PackageIdentifier(\"com.example.app2\")",
+        )
+    }
+
+    private fun generateInvalidPackages(
+        metadata: PackagePolicyMetadata
+    ): List<InvalidValueTestCase> {
+        return listOf()
+    }
+
     private fun generateValidLists(metadata: ListPolicyMetadata): List<String> {
         val validElementValues = generateValidListElementValues(metadata)
         if (metadata.emptyListAllowed) {
@@ -136,9 +150,7 @@ object ValuesGenerator {
     private fun generateInvalidLists(metadata: ListPolicyMetadata): List<InvalidValueTestCase> {
         val cases = mutableListOf<InvalidValueTestCase>()
         cases.addAll(
-            generateInvalidListElementValues(metadata).map {
-                it.copy(value = "[${it.value}]")
-            }
+            generateInvalidListElementValues(metadata).map { it.copy(value = "[${it.value}]") }
         )
 
         if (!metadata.emptyListAllowed) {

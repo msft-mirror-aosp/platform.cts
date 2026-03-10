@@ -19,7 +19,6 @@ package com.android.cts.policytestsgenerator
 import android.processor.devicepolicy.protos.FullyQualifiedClassName
 import android.processor.devicepolicy.protos.FullyQualifiedFieldName
 import com.google.common.base.CaseFormat
-import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.exists
@@ -28,8 +27,7 @@ import kotlin.io.path.listDirectoryEntries
 val SCRIPT_NAME = "cts-policy-tests-generator"
 
 // Converts SCREEN_CAPTURE_ALLOWED to ScreenCaptureAllowed
-fun String.toCamelCase(): String =
-    CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, this)
+fun String.toCamelCase(): String = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, this)
 
 fun FullyQualifiedClassName.toKotlinType(): String {
     return when (this.format()) {
@@ -39,6 +37,7 @@ fun FullyQualifiedClassName.toKotlinType(): String {
         "java.lang.Long" -> "Long"
         "java.util.List<java.lang.String>" -> "List<String>"
         "java.util.List<java.lang.Integer>" -> "List<Int>"
+        "android.app.admin.PackageIdentifier" -> "PackageIdentifier"
         else -> throw IllegalArgumentException("Unsupported type: ${this.format()}")
     }
 }
@@ -74,7 +73,9 @@ fun String.replacePrefixes(vararg prefixes: Pair<String, String>): String {
 // We don't know exactly where the text proto is thanks to sharding.
 fun findPoliciesTextProtoFile(outDir: String): Path? {
     val common_directory =
-        Path("$outDir/soong/.intermediates/frameworks/base/framework-minus-apex/android_common/javac/")
+        Path(
+            "$outDir/soong/.intermediates/frameworks/base/framework-minus-apex/android_common/javac/"
+        )
     if (!common_directory.exists()) {
         // The caller needs to compile!
         return null

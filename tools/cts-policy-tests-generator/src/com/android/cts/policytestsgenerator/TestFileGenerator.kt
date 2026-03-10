@@ -105,6 +105,7 @@ private fun generateTestFile(
 
       package android.devicepolicy.cts
 
+      import android.app.admin.PackageIdentifier
       import android.app.admin.PolicyIdentifier
       import android.app.admin.flags.Flags
       import com.android.bedstead.enterprise.annotations.EnterprisePolicy

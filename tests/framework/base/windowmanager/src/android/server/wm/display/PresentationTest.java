@@ -33,7 +33,6 @@ import android.content.res.Resources;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -85,37 +84,6 @@ public class PresentationTest extends MultiDisplayTestBase {
     }
 
     /**
-     * Asserts the legacy presentation flag policy in the real device display setting. The actual
-     * set of tested displays is different depending on the environment the test is running in.
-     * Critical policies are tested in other test cases using virtual/simulated displays, so this
-     * test case serves as additional checks on top of them to detect any physical display errors.
-     * Note that this is based on the legacy policy where whether a presentation is allowed or not
-     * only depends on the display flag.
-     */
-    @ApiTest(apis = {"android.app.Presentation#show"})
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
-    @Test
-    public void testPresentationFollowsDisplayFlag() {
-        // TODO(b/485015685): Re-enable the test once proper API is in place.
-        // In a Multi-User Multi-Display (MUMD) environment, a test running as a passenger
-        // user may not have permission to launch activities on displays assigned to other
-        // users.
-        // For now, test is skipped as there is no clean way to filter display based on
-        // user visibility due to lack of API.
-        assumeFalse(
-                "Not currently supported in MUMD devices due to user to display association",
-                isVisibleBackgroundUserSupported());
-        for (Display display : mDm.getDisplays()) {
-            launchPresentationActivity(getMainDisplayId(), display.getDisplayId());
-            if ((display.getFlags() & Display.FLAG_PRESENTATION) != Display.FLAG_PRESENTATION) {
-                waitAndAssertNoPresentationDisplayed();
-            } else {
-                waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(display.getDisplayId());
-            }
-        }
-    }
-
-    /**
      * Asserts that a presentation can be created on a presentation display, which is the most basic
      * scenario the API is intended for.
      */
@@ -130,10 +98,7 @@ public class PresentationTest extends MultiDisplayTestBase {
 
     /** Asserts that a presentation occludes another activity behind it. */
     @ApiTest(apis = {"android.app.Presentation#show"})
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS,
-        Flags.FLAG_ENABLE_PRESENTATION_STOPS_TOP_TASK_BUGFIX
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_STOPS_TOP_TASK_BUGFIX)
     @Test
     public void testPresentationOccludesOtherActivitiesBehind() {
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
@@ -153,7 +118,6 @@ public class PresentationTest extends MultiDisplayTestBase {
      * the presentation, even if it's a presentation display.
      */
     @ApiTest(apis = {"android.app.Presentation#show"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
     public void testPresentationBlockedOverHostActivity() {
         final WindowManagerState.DisplayContent displayForActivity =
@@ -164,7 +128,6 @@ public class PresentationTest extends MultiDisplayTestBase {
 
     /** Asserts that hiding a presentation leads to removing it automatically. */
     @ApiTest(apis = {"android.app.Presentation#show", "android.app.Presentation#hide"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
     public void testInvisiblePresentationDisallowed() {
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
@@ -184,7 +147,6 @@ public class PresentationTest extends MultiDisplayTestBase {
      * disabled.
      */
     @ApiTest(apis = {"android.app.Presentation#show"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
     public void testPresentationDisallowedOnInternalWithConfigFlagDisabled() {
         assumeDefaultDisplayIsInternal();
@@ -200,7 +162,6 @@ public class PresentationTest extends MultiDisplayTestBase {
      * that's created the presentation is globally focused on another display.
      */
     @ApiTest(apis = {"android.app.Presentation#show"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
     public void testPresentationAllowedOnInternalDisplayWithFocusedHostTaskOnAnotherDisplay() {
         assumeDefaultDisplayIsInternal();
@@ -235,23 +196,6 @@ public class PresentationTest extends MultiDisplayTestBase {
                 + "display resize", mWmState.waitForWithAmState(
                 state -> isPresentationOnDisplay(state, display.mId),
                 "Presentation window still shows"));
-    }
-
-    /**
-     * Asserts that a presentation is blocked on a non-presentation display. Note that this is based
-     * on the legacy policy where whether a presentation is allowed or not only depends on the
-     * display flag.
-     */
-    @ApiTest(apis = {"android.app.Presentation#show"})
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
-    @Test
-    public void testPresentationBlockedOnNonPresentationDisplay() {
-        final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
-        final WindowManagerState.DisplayContent nonPresentationDisplay =
-                createNonPresentationDisplay();
-
-        launchPresentationActivity(displayForActivity.mId, nonPresentationDisplay.mId);
-        waitAndAssertNoPresentationDisplayed();
     }
 
     /** Asserts that a private presentation is created on a private presentation display. */
