@@ -172,8 +172,7 @@ fun counterMatchesGpuUtilisation(
     ) {
         return false
     }
-    if (gpuUsageTimeline.size < 2 || counterValues.size < 2 ||
-        counterValues.last().timestamp < gpuUsageTimeline.last().timestamp) {
+    if (gpuUsageTimeline.size < 2 || counterValues.size < 2) {
         return false
     }
 

@@ -1,0 +1,62 @@
+packet {
+  timestamp: 2458953768266
+  service_event {
+    all_data_sources_started: true
+  }
+}
+packet {
+  timestamp: 2459000000000
+  ftrace_events {
+    event {
+      timestamp: 2459000000000
+      print { buf: "C|17406|CtsTestGpuUsageMode|0\n" }
+    }
+  }
+}
+packet {
+  timestamp: 2459500000000
+  ftrace_events {
+    event {
+      timestamp: 2459500000000
+      print { buf: "C|17406|CtsTestGpuUsageMode|1\n" }
+    }
+  }
+}
+packet {
+  timestamp: 2460000000000
+  ftrace_events {
+    event {
+      timestamp: 2460000000000
+      print { buf: "C|17406|CtsTestGpuUsageMode|0\n" }
+    }
+  }
+}
+packet {
+  gpu_counter_event {
+    counter_descriptor {
+      specs {
+        counter_id: 11
+        name: "GPU_BUSY"
+        numerator_units: PERCENT
+      }
+    }
+  }
+}
+packet {
+  timestamp: 2459100000000
+  gpu_counter_event {
+    counters {
+      counter_id: 11
+      double_value: 0.0
+    }
+  }
+}
+packet {
+  timestamp: 2459600000000
+  gpu_counter_event {
+    counters {
+      counter_id: 11
+      double_value: 100.0
+    }
+  }
+}
