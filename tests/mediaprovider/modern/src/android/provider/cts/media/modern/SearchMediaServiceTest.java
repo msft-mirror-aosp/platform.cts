@@ -39,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
@@ -60,6 +61,7 @@ import android.provider.ISearchMediaService;
 import android.provider.MediaStore;
 import android.provider.SearchMediaResult;
 import android.provider.SearchMediaService;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.test.filters.SdkSuppress;
@@ -103,6 +105,8 @@ public class SearchMediaServiceTest {
         Intent intent = new Intent(SearchMediaService.SERVICE_INTERFACE);
         String packageNameToConnect =
                 MediaStore.getPackageForSearchMediaService(mContext.getContentResolver());
+        // empty package name indicates there is no valid implementor of SearchMediaService
+        assumeFalse(TextUtils.isEmpty(packageNameToConnect));
         intent.setPackage(packageNameToConnect);
 
         mIsServiceConnected = mContext.bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
