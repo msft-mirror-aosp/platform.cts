@@ -47,7 +47,7 @@ java_test_host {
     name: "CtsGpuProfilingDataTestCases",
     srcs: [
         "src/**/CtsFrameTracerDataSourceTest.java",
-        "src/**/CtsGpuProfilingDataTest.java",
+        "src/**/CtsGpuProfilingDataTest.kt",
     ],
     // tag this module as a cts test artifact
     test_suites: [
