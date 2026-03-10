@@ -21,10 +21,8 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.os.UserManager;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.SubscriptionManager;
@@ -91,9 +89,6 @@ public class SatelliteManagerOnMockServiceTestBase extends CarrierRoamingSatelli
 
     protected static void beforeAllSatelliteManagerTestsOnMockService(
             int[] mSupportedRadioTechnologies) throws Exception {
-        UserManager userManager = getContext().getSystemService(UserManager.class);
-        assumeFalse("Skipping test on HSUM device", userManager.isHeadlessSystemUserMode());
-
         logd("beforeAllTests");
 
         sActiveSubscriptionRequired = false;
@@ -136,11 +131,6 @@ public class SatelliteManagerOnMockServiceTestBase extends CarrierRoamingSatelli
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd("afterAllTests start");
-        UserManager userManager = getContext().getSystemService(UserManager.class);
-        if (userManager.isHeadlessSystemUserMode()) {
-            logd("Skipping afterAllTests on HSUM device");
-            return;
-        }
         if (!shouldTestSatelliteWithMockService()) return;
         if (sInitError == null) {
             grantSatellitePermission();
