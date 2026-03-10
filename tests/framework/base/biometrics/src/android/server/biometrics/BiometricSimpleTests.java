@@ -95,6 +95,7 @@ import java.util.concurrent.TimeUnit;
 @Presubmit
 public class BiometricSimpleTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Simple";
+    private static final long BROADCAST_TIMEOUT_SECONDS = 5L;
 
     /**
      * Tests that enrollments created via {@link BiometricTestSession} show up in the
@@ -220,7 +221,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                                 WalletTestHelperConstants.ACTIVITY_NAME))) {
             // Launch the wallet test helper activity and wait for the broadcast result intent.
             launchActivityAndWaitForResumed(activitySession);
-            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            Intent resultIntent = broadcastQueue.poll(BROADCAST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
                             "Timed out waiting for result from test helper app %s.",
@@ -286,7 +287,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
             // Directly launch the wallet test helper activity without granting the wallet role
             // to the wallet test helper app and wait for the broadcast result intent.
             launchActivityAndWaitForResumed(activitySession);
-            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            Intent resultIntent = broadcastQueue.poll(BROADCAST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
                             "Timed out waiting for result from test helper app %s.",
@@ -340,7 +341,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                                 WalletTestHelperConstants.ACTIVITY_NAME))) {
             // Launch the wallet test helper activity and wait for the broadcast result intent.
             launchActivityAndWaitForResumed(activitySession);
-            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            Intent resultIntent = broadcastQueue.poll(BROADCAST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
                             "Timed out waiting for result from test helper app %s.",
@@ -395,7 +396,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                                 WalletTestHelperConstants.ACTIVITY_NAME))) {
             // Launch the wallet test helper activity and wait for the broadcast result intent.
             launchActivityAndWaitForResumed(activitySession);
-            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            Intent resultIntent = broadcastQueue.poll(BROADCAST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
                             "Timed out waiting for result from test helper app %s.",
@@ -446,7 +447,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
             triggerIntent.setPackage(WalletTestHelperConstants.PACKAGE_NAME);
             triggerIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             mContext.sendBroadcast(triggerIntent);
-            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            Intent resultIntent = broadcastQueue.poll(BROADCAST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertNotNull(
                     String.format(
                             "Timed out waiting for result from background thread of test helper app"

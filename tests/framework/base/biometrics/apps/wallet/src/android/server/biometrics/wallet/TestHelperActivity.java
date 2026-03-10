@@ -24,15 +24,11 @@ import android.server.biometrics.util.WalletTestHelperConstants;
 import java.util.Map;
 
 public class TestHelperActivity extends Activity {
-    private boolean mResultObtained = false;
 
     @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus && !mResultObtained) {
-            mResultObtained = true;
-            getBiometricSensorStrengthsAndBroadcastResults();
-        }
+    protected void onResume() {
+        super.onResume();
+        getBiometricSensorStrengthsAndBroadcastResults();
     }
 
     /**
