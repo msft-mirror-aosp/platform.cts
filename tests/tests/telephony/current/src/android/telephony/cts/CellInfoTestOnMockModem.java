@@ -16,11 +16,19 @@
 package android.telephony.cts;
 
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertTrue;
 
 import android.telephony.mockmodem.MockModemManager;
+import android.telephony.ServiceState;
+import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.util.Log;
+import com.android.compatibility.common.util.ShellIdentityUtils;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -52,6 +60,35 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
         MockModemTestBase.afterAllTestsBase();
     }
 
+    private void waitForServiceStateInService() throws Exception {
+        CountDownLatch serviceStateLatch = new CountDownLatch(1);
+
+        class ServiceStateListener extends TelephonyCallback
+                implements TelephonyCallback.ServiceStateListener {
+            @Override
+            public void onServiceStateChanged(ServiceState serviceState) {
+                if (serviceState != null
+                        && serviceState.getState() == ServiceState.STATE_IN_SERVICE) {
+                    serviceStateLatch.countDown();
+                }
+            }
+        }
+
+        ServiceStateListener listener = new ServiceStateListener();
+        TelephonyManager tm = getInstrumentation().getContext()
+                .getSystemService(TelephonyManager.class);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                tm,  (t) -> t.registerTelephonyCallback(Runnable::run, listener));
+
+        try {
+            assertTrue("Framework did not update ServiceState to IN_SERVICE within timeout",
+                    serviceStateLatch.await(5, TimeUnit.SECONDS));
+        } finally {
+            tm.unregisterTelephonyCallback(listener);
+        }
+    }
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -66,6 +103,8 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
         assertTrue(
                 sMockModemManager.changeNetworkService(
                         TEST_SIM_SLOT_ID, MOCK_SIM_PROFILE_ID_TWN_CHT, true));
+
+        waitForServiceStateInService();
     }
 
     @After
