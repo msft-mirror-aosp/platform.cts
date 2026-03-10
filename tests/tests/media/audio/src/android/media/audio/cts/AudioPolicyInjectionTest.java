@@ -29,6 +29,9 @@ import static com.google.common.util.concurrent.Uninterruptibles.joinUninterrupt
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
+
+import static com.android.compatibility.common.util.FeatureUtil.isAutomotive;
 
 import android.media.AudioAttributes;
 import android.media.AudioDeviceCallback;
@@ -487,6 +490,8 @@ public class AudioPolicyInjectionTest {
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
     public void testPersistentLoopbackMixPlaybackWithRecord() {
+        assumeFalse("Auto has its own interfering routing policies.", isAutomotive());
+
         int sessionId = mAudioManager.generateAudioSessionId();
         AudioMix audioMix = setupPersistentLoopbackPolicy(sessionId);
         AudioTrack playbackTrack = createMediaAudioTrack(sessionId);
