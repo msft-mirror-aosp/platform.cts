@@ -203,6 +203,19 @@ public class MmsTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void updateRestrictedMms_toUnRestricted_moreThanOneRowAtOnce_throwsException() {
+        insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ true);
+        insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ true);
+
+        ContentValues values = new ContentValues();
+        values.put(Telephony.ReadRestriction.RESTRICTED, false);
+
+        assertThrows(UnsupportedOperationException.class,
+               () -> mContentResolver.update(Telephony.Mms.CONTENT_URI, values, null, null));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
     public void insertMms_withReadRestriction_throwsException() {
         final ContentValues mmsValues = new ContentValues();
         mmsValues.put(Telephony.Mms.TEXT_ONLY, 1);

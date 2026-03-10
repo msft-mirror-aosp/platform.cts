@@ -919,6 +919,20 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void updateRestrictedSms_toUnrestricted_moreThanOneRowAtOnce_throwsException() {
+        mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY, TEST_THREAD_ID_1,
+                /* isRestricted= */ true);
+        mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY, TEST_THREAD_ID_1,
+                /* isRestricted= */ true);
+
+        ContentValues values = new ContentValues();
+        values.put(ReadRestriction.RESTRICTED, false);
+        assertThrows(UnsupportedOperationException.class,
+               () -> mContentResolver.update(Telephony.Sms.CONTENT_URI, values, null, null));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
     public void updateUnRestrictedSms_toRestricted_failsWithUnsupportedOperation() {
         Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
                 TEST_THREAD_ID_1, /* isRestricted= */ false);
