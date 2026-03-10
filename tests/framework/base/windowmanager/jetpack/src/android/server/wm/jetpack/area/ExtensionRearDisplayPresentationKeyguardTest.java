@@ -35,6 +35,7 @@ import android.app.KeyguardManager;
 import android.content.Context;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
+import android.hardware.devicestate.cts.util.DeviceStateManagerTestRule;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DeviceStateUtils;
@@ -98,6 +99,10 @@ public class ExtensionRearDisplayPresentationKeyguardTest
     public final WindowExtensionTestRule mWindowManagerJetpackTestRule =
             new WindowExtensionTestRule(WindowAreaComponent.class);
 
+    @Rule
+    public final DeviceStateManagerTestRule mDeviceStateManagerTestRule =
+            new DeviceStateManagerTestRule();
+
     @Before
     public void setUp() {
         final List<DeviceState> supportedStates = mDeviceStateManager.getSupportedDeviceStates();
@@ -123,8 +128,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             mWindowAreaComponent.removeRearDisplayPresentationStatusListener(mStatusListener);
             mDeviceStateManager.unregisterCallback(this);
             try {
-                DeviceStateUtils.runWithControlDeviceStatePermission(
-                        mDeviceStateManager::cancelStateRequest);
                 DeviceStateUtils.runWithControlDeviceStatePermission(
                         mDeviceStateManager::cancelBaseStateOverride);
             } catch (Throwable t) {

@@ -98,6 +98,7 @@ android_test {
         "android.hardware.devicestate.feature.flags-aconfig-java",
         "truth",
         "bedstead",
+        "cts-device_state_manager-util",
     ],
     libs: [
         "android.test.base.stubs.test",
