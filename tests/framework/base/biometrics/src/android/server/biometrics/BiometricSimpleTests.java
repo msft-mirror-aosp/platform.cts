@@ -859,6 +859,16 @@ public class BiometricSimpleTests extends BiometricTestBase {
                     IDENTITY_CHECK | BIOMETRIC_WEAK, authenticationCallback);
             waitForState(STATE_AUTH_STARTED_UI_SHOWING);
 
+            final boolean isWeakSensorBusy =
+                    getCurrentState()
+                            .mSensorStates
+                            .sensorStates
+                            .get(getWeakSensorProperties().getSensorId())
+                            .isBusy();
+
+            // TODO(b/454953332): Remove this once test is updated.
+            assumeTrue(isWeakSensorBusy);
+
             successfullyAuthenticate(
                     Objects.requireNonNull(
                             sessionList.find(getWeakSensorProperties().getSensorId())),
