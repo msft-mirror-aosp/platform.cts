@@ -17,8 +17,7 @@ package android.input.cts.hostside.app
 
 import android.graphics.Point
 import android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop
-import android.util.DisplayMetrics
-import android.util.Size
+import android.util.Log
 import android.view.MotionEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -50,7 +49,6 @@ import org.junit.runner.RunWith
 class EmulateInputDevice {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var activity: CaptureEventActivity
-    private lateinit var screenSize: Size
     private lateinit var verifier: BlockingQueueEventVerifier
 
     @get:Rule
@@ -59,12 +57,9 @@ class EmulateInputDevice {
     @get:Rule
     val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)
 
-    @Suppress("DEPRECATION")
     @Before
     fun setUp() {
         activityRule.scenario.onActivity { activity = it }
-        val dm = DisplayMetrics().also { activity.display.getRealMetrics(it) }
-        screenSize = Size(dm.widthPixels, dm.heightPixels)
         verifier = activity.verifier
         assertTrue(
             "Failed to wait for activity window to be on top",
@@ -83,13 +78,17 @@ class EmulateInputDevice {
     @DebugInputRule.DebugInput(bug = 385015451)
     @Test
     fun useTouchscreenForFiveSeconds() {
+        val centerX = activity.display.mode.physicalWidth / 2
+        val centerY = activity.display.mode.physicalHeight / 2
+        // TODO(b/489763812): remove this log once the bug is fixed.
+        Log.d(TAG, "Screen center: ($centerX, $centerY)")
         UinputTouchScreen(instrumentation, activity.display).use { touchscreen ->
             // Use touchscreen for five more seconds, tapping it 6 times, with a 1 second wait
             for (i in 0 until 6) {
                 if (i != 0) {
                     Thread.sleep(1000)
                 }
-                touchscreen.tapOnScreen()
+                touchscreen.tapOnScreen(centerX, centerY)
                 verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
                 verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_MOVE))
                 verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
@@ -97,8 +96,8 @@ class EmulateInputDevice {
         }
     }
 
-    private fun UinputTouchDevice.tapOnScreen() {
-        val pointer = Point(screenSize.width / 2, screenSize.height / 2)
+    private fun UinputTouchDevice.tapOnScreen(x: Int, y: Int) {
+        val pointer = Point(x, y)
         val pointerId = 0
 
         // Down
@@ -261,6 +260,7 @@ class EmulateInputDevice {
     }
 
     companion object {
+        private const val TAG = "EmulateInputDevice"
         const val TOUCHPAD_SCAN_DELAY_MILLIS: Long = 5
 
         // When a uinput device is closed, there's a race between InputReader picking up the final
