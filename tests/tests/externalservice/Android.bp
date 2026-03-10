@@ -36,6 +36,9 @@ android_test {
         "android.os.flags-aconfig-java",
     ],
     libs: ["android.test.base.stubs.test"],
+    jni_libs: [
+        "libcts_jni",
+    ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [

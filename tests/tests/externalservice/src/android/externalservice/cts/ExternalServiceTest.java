@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -47,6 +48,8 @@ import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.CpuFeatures;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -399,6 +402,8 @@ public class ExternalServiceTest {
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
     public void testBindExternalNativeService() {
+        assumeFalse(CpuFeatures.isNativeBridgedCpu());
+
         // Start the service and wait for connection.
         Intent intent = new Intent();
         intent.setComponent(
