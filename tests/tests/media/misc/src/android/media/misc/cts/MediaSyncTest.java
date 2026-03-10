@@ -183,11 +183,9 @@ public class MediaSyncTest extends ActivityInstrumentationTestCase2<MediaStubAct
      */
     public void testSetPlaybackParamsFail() throws InterruptedException {
         final float rate = -1.0f;
-        try {
-            mMediaSync.setPlaybackParams(new PlaybackParams().setSpeed(rate));
-            fail("playback rate " + rate + " is not handled correctly");
-        } catch (IllegalArgumentException e) {
-        }
+        mMediaSync.setPlaybackParams(new PlaybackParams().setSpeed(rate));
+        assertFalse("playback rate " + rate + " is not handled correctly",
+                    mMediaSync.getPlaybackParams().getSpeed() == rate);
 
         assertTrue("The stream in test file can not be decoded",
                 mDecoderAudio.setup(INPUT_RESOURCE, null, Long.MAX_VALUE, NO_TIMESTAMP));
@@ -195,12 +193,9 @@ public class MediaSyncTest extends ActivityInstrumentationTestCase2<MediaStubAct
         // get audio track.
         mMediaSync.setAudioTrack(mDecoderAudio.getAudioTrack());
 
-        try {
-            mMediaSync.setPlaybackParams(new PlaybackParams().setSpeed(rate));
-            fail("With audio track set, playback rate " + rate
-                    + " is not handled correctly");
-        } catch (IllegalArgumentException e) {
-        }
+        mMediaSync.setPlaybackParams(new PlaybackParams().setSpeed(rate));
+        assertFalse("playback rate " + rate + " is not handled correctly",
+                mMediaSync.getPlaybackParams().getSpeed() == rate);
     }
 
     /**
