@@ -105,6 +105,7 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
     private View passFailButtons;
     private DrmSessionManager drmSessionManager;
     private TextView instructions;
+    private View instructionsContainer;
 
     private CtsVerifierReportLog reportLog;
     private static final String REPORT_LOG_NAME = "CtsMediaTestCases";
@@ -183,6 +184,7 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
         this.getPassButton().setEnabled(true);
 
         instructions = findViewById(R.id.instructions);
+        instructionsContainer = findViewById(R.id.instructions_container);
         instructions.setText(R.string.secure_playback_test_info);
 
         if (!canConnectToWidevine()) {
@@ -229,7 +231,7 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
      * @param visible {@code true} to show non-player UI elements, {@code false} to hide them.
      */
     private void setNonPlayerVisibility(boolean visible) {
-        instructions.setVisibility(visible ? View.VISIBLE : View.GONE);
+        instructionsContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
         passFailButtons.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
