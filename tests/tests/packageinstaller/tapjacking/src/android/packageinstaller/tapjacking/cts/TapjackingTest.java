@@ -15,6 +15,9 @@
  */
 package android.packageinstaller.tapjacking.cts;
 
+import static android.app.AppOpsManager.MODE_ALLOWED;
+import static android.app.AppOpsManager.MODE_DEFAULT;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -22,10 +25,18 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
@@ -39,6 +50,9 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
+
+import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,12 +76,17 @@ public class TapjackingTest {
     private static final String OVERLAY_ACTIVITY_TEXT_VIEW_ID = "overlay_description";
     private static final String WM_DISMISS_KEYGUARD_COMMAND = "wm dismiss-keyguard";
     private static final String TEST_APP_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts";
-
     private static final long WAIT_FOR_UI_TIMEOUT = 5000;
+    private static final long TIMEOUT_MS_L = 10000L;
+    private static final int TIMEOUT_S = 10;
+    private static final String OVERLAY_TEXT = "Overlay View";
 
     private Context mContext = InstrumentationRegistry.getTargetContext();
     private String mPackageName;
     private UiDevice mUiDevice;
+    private WindowManager mWindowManager;
+    private View mOverlayView;
+    private Handler mMainHandler = new Handler(Looper.getMainLooper());
 
     ActivityScenario<TestActivity> mScenario;
 
@@ -79,6 +98,7 @@ public class TapjackingTest {
             mUiDevice.wakeUp();
         }
         mUiDevice.executeShellCommand(WM_DISMISS_KEYGUARD_COMMAND);
+        mWindowManager = mContext.getSystemService(WindowManager.class);
     }
 
     private void launchPackageInstaller() {
@@ -222,9 +242,85 @@ public class TapjackingTest {
             Until.gone(getBySelector(INSTALL_BUTTON_ID)), WAIT_FOR_UI_TIMEOUT));
     }
 
+    @Test
+    public void overlaysAreSuppressedWhenConfirmingInstall() throws Exception {
+        // 1. Grant permission to draw overlays for the test app
+        AppOpsUtils.setOpMode(mContext.getPackageName(), "SYSTEM_ALERT_WINDOW", MODE_ALLOWED);
+
+        // 2. Create and add the overlay view on the main thread
+        createAndShowOverlayV2();
+
+        // 3. Wait until the overlay is visible
+        assertTrue(
+                "Overlay view was not visible before starting install",
+                mUiDevice.wait(Until.hasObject(By.text(OVERLAY_TEXT)), TIMEOUT_MS_L));
+
+        // 4. Start the installation flow
+        launchPackageInstaller();
+
+        // 5. Verify the overlay is hidden (suppressed) by the InstallLaunch activity.
+        // The SYSTEM_FLAG_HIDE_NON_SYSTEM_OVERLAY_WINDOWS flag causes the system to hide our
+        // overlay, so UiAutomator should not be able to find it.
+        TestUtils.waitUntil(
+                "Overlay was not suppressed by InstallLaunch activity",
+                TIMEOUT_S,
+                () -> mUiDevice.findObject(By.text(OVERLAY_TEXT)) == null);
+
+        // 6. Create and add the overlay view again
+        createAndShowOverlayV2();
+
+        // 7. Verify the overlay is hidden (suppressed) by the InstallLaunch activity.
+        TestUtils.waitUntil(
+                "Overlay was not suppressed by InstallLaunch activity",
+                TIMEOUT_S,
+                () -> mUiDevice.findObject(By.text(OVERLAY_TEXT)) == null);
+    }
+
+    /**
+     * Creates a simple overlay window and adds it to the WindowManager. This must be called from
+     * the main thread.
+     *
+     * <p>This creates an overlay in a different way to the other method {@link
+     * TapjackingTest#launchOverlayingActivity()}
+     */
+    private void createAndShowOverlayV2() {
+        mMainHandler.post(
+                () -> {
+                    WindowManager.LayoutParams layoutParams =
+                            new WindowManager.LayoutParams(
+                                    WindowManager.LayoutParams.MATCH_PARENT,
+                                    WindowManager.LayoutParams.MATCH_PARENT,
+                                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                                    0,
+                                    PixelFormat.TRANSLUCENT);
+                    layoutParams.gravity = Gravity.CENTER;
+
+                    mOverlayView = new TextView(mContext);
+                    ((TextView) mOverlayView).setText(OVERLAY_TEXT);
+                    // Semi-transparent red background to make it obvious
+                    mOverlayView.setBackgroundColor(Color.parseColor("#88FF0000"));
+                    ((TextView) mOverlayView).setGravity(Gravity.CENTER);
+                    mWindowManager.addView(mOverlayView, layoutParams);
+                });
+    }
+
     @After
     public void tearDown() throws Exception {
         mUiDevice.pressHome();
+        // Ensure the view is removed on the main thread to avoid leaks
+        if (mOverlayView != null) {
+            mMainHandler.post(
+                    () -> {
+                        try {
+                            mWindowManager.removeView(mOverlayView);
+                            mOverlayView = null;
+                        } catch (Exception e) {
+                            // View might already be gone, ignore.
+                        }
+                    });
+        }
+        // Revoke the permission after the test
+        AppOpsUtils.setOpMode(mContext.getPackageName(), "SYSTEM_ALERT_WINDOW", MODE_DEFAULT);
     }
 
     public static final class TestActivity extends Activity {
