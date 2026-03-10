@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static android.Manifest.permission.MANAGE_MULTIUSER_DEVICE_PROVISIONING_STATE;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_AVAILABLE;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_REMOVED;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
@@ -30,11 +31,13 @@ import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.annotation.NonNull;
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.ManagedProfileProvisioningParams;
 import android.app.admin.MultiuserManagedDeviceProvisioningParams;
@@ -42,7 +45,6 @@ import android.app.admin.ProvisioningException;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
-import android.devicepolicy.cts.utils.DevicePolicyManagementRoleUtils;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -57,18 +59,22 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.roles.RoleContext;
+import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
 import com.android.bedstead.nene.utils.Poll;
@@ -80,6 +86,7 @@ import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
 import com.android.compatibility.common.util.CddTest;
 import com.android.eventlib.truth.EventLogsSubject;
+import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -113,6 +120,11 @@ public class DevicePolicyManagementRoleHolderTest {
 
     private static final String FEATURE_ALLOW =
             "android.account.DEVICE_OR_PROFILE_OWNER_ALLOWED";
+
+    private enum DmrhQualificationApi {
+        SHOULD_ALLOW_BYPASSING_DEVICE_POLICY_MANAGEMENT_ROLE_QUALIFICATION,
+        IS_PACKAGE_QUALIFIED_FOR_DEVICE_POLICY_MANAGEMENT_ROLE
+    }
 
     @Postsubmit(reason = "new test")
     @RequireFeature(FEATURE_MANAGED_USERS)
@@ -217,8 +229,9 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasNoDpc
     @EnsureHasNoAccounts(onUser = ANY)
-    public void shouldAllowBypassingDevicePolicyManagementRoleQualification_noUsersAndAccounts_returnsTrue()
-            throws Exception {
+    public void
+            shouldAllowBypassingDevicePolicyManagementRoleQualification_noUsersAndAccounts_returnsTrue()
+                    throws Exception {
         // We don't want to reset the cache too early in case the account state hasn't been cached
         Poll.forValue("shouldAllowBypassingDevicePolicyManagementRoleQualification", () -> {
                     TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
@@ -277,16 +290,25 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasAdditionalUser
     @EnsureHasNoDpc
-    @EnsureHasAccount(onUser = ADDITIONAL_USER, features = {})
-    public void shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonAllowedAccounts_returnsFalse()
-            throws Exception {
-        // We don't want to reset the cache too early in case the account state hasn't been cached - REMOVE THIS ONCE ADD ACOCUNT AND REMOVE ACCOUNT IS BLOCKING CORRECTLY
-        Poll.forValue("shouldAllowBypassingDevicePolicyManagementRoleQualification", () -> {
-            TestApis.devicePolicy().resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
-            return sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
-        }).toBeEqualTo(false)
-          .errorOnFail()
-          .await();
+    @EnsureHasAccount(
+            onUser = ADDITIONAL_USER,
+            features = {})
+    public void
+            shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonAllowedAccounts_returnsFalse()
+                    throws Exception {
+        // We don't want to reset the cache too early in case the account state hasn't been cached -
+        // REMOVE THIS ONCE ADD ACCOUNT AND REMOVE ACCOUNT IS BLOCKING CORRECTLY
+        Poll.forValue(
+                        "shouldAllowBypassingDevicePolicyManagementRoleQualification",
+                        () -> {
+                            TestApis.devicePolicy()
+                                    .resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
+                            return sDevicePolicyManager
+                                    .shouldAllowBypassingDevicePolicyManagementRoleQualification();
+                        })
+                .toBeEqualTo(false)
+                .errorOnFail()
+                .await();
     }
 
     @Postsubmit(reason = "New test")
@@ -317,11 +339,140 @@ public class DevicePolicyManagementRoleHolderTest {
                 sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification());
     }
 
+    @Postsubmit(reason = "New test")
+    @Test
+    @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = ANY)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void callDmrhQualificationApi_noUsersAndAccounts_returnsTrue(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api)
+            throws Exception {
+        // We don't want to reset the cache too early in case the account state hasn't been cached
+        Poll.forValue("callDmrhQualificationApi", () -> callDmrhQualificationApi(api))
+                .toBeEqualTo(true)
+                .errorOnFail()
+                .await();
+    }
+
+    @Postsubmit(reason = "New test")
+    @Test
+    @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = ANY)
+    @EnsureCanAddSecondaryUser
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void isPackageQualifiedForDevicePolicyManagementRole_withNonTestUsers_false()
+            throws Exception {
+        try (UserReference user =
+                TestApis.users()
+                        .createUser()
+                        .name(
+                                "isPackageQualifiedForDevicePolicyManagementRole_"
+                                        + "withNonTestUsers_false")
+                        .forTesting(false)
+                        .create()) {
+            // The packageName is only used for checking if the application is marked as testOnly,
+            // which is not relevant for this test case.
+            boolean qualified =
+                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole("package");
+            assertThat(qualified).isFalse();
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @Test
+    @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = ANY)
+    @EnsureCanAddSecondaryUser
+    @EnsureHasDevicePolicyManagerRoleHolder
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void
+            isPackageQualifiedForDevicePolicyManagementRole_withNonTestUsers_previouslyBypassed_true()
+                    throws Exception {
+        try (UserReference user =
+                TestApis.users()
+                        .createUser()
+                        .name(
+                                "isPackageQualifiedForDevicePolicyManagementRole_"
+                                        + "withNonTestUsers_previouslyBypassed_true")
+                        .forTesting(false)
+                        .create()) {
+            String packageName = dpmRoleHolder(sDeviceState).packageName();
+            boolean qualified =
+                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole(
+                            packageName);
+            assertThat(qualified).isTrue();
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @Test
+    @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = ANY)
+    @EnsureCanAddSecondaryUser
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void callDmrhQualificationApi_withTestUsers_returnsTrue(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api)
+            throws Exception {
+        try (UserReference user = TestApis.users().createUser().forTesting(true).create()) {
+            assertThat(callDmrhQualificationApi(api)).isTrue();
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @Test
+    @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
+    @EnsureHasAdditionalUser
+    @EnsureHasNoDpc
+    @EnsureHasAccount(
+            onUser = ADDITIONAL_USER,
+            features = {})
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void callDmrhQualificationApi_withNonAllowedAccounts_returnsFalse(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api)
+            throws Exception {
+        // We don't want to reset the cache too early in case the account state hasn't been cached -
+        // REMOVE THIS ONCE ADD ACCOUNT AND REMOVE ACCOUNT IS BLOCKING CORRECTLY
+        Poll.forValue("callDmrhQualificationApi", () -> callDmrhQualificationApi(api))
+                .toBeEqualTo(false)
+                .errorOnFail()
+                .await();
+    }
+
+    @Postsubmit(reason = "New test")
+    @Test
+    @EnsureHasPermission(MANAGE_ROLE_HOLDERS)
+    @EnsureHasAdditionalUser
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts // TODO: Specify no accounts that don't match the account we actually want
+    @EnsureHasAccount(onUser = ADDITIONAL_USER, features = FEATURE_ALLOW)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void callDmrhQualificationApi_withAllowedAccounts_returnsTrue(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api)
+            throws Exception {
+        // We don't want to reset the cache too early in case the account state hasn't been cached
+        Poll.forValue("callDmrhQualificationApi", () -> callDmrhQualificationApi(api))
+                .toBeEqualTo(true)
+                .errorOnFail()
+                .await();
+    }
+
+    @Postsubmit(reason = "New test")
+    @Test
+    @EnsureDoesNotHavePermission(MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    public void callDmrhQualificationApi_withoutRequiredPermission_throwsSecurityException(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
+        assertThrows(SecurityException.class, () -> callDmrhQualificationApi(api));
+    }
+
     private static ManagedProfileProvisioningParams.Builder
             createManagedProfileProvisioningParamsBuilder() {
         return new ManagedProfileProvisioningParams.Builder(
-                DEVICE_ADMIN_COMPONENT_NAME,
-                PROFILE_OWNER_NAME);
+                DEVICE_ADMIN_COMPONENT_NAME, PROFILE_OWNER_NAME);
     }
 
     /**
@@ -420,14 +571,15 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasNoAccounts
     @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
-    public void nonTestOnlyDeviceOwner_shouldAllowBypassing_false() {
-        DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(sContext);
+    // TODO(b/476350458): enable test for HSUM
+    @RequireNotHeadlessSystemUserMode(reason = "No non-testonly test app which supports headless")
+    public void nonTestOnlyDeviceOwner_shouldAllowBypassing_false(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
         TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ false);
         ComponentName adminComponent = getDeviceAdminComponentName(dpc);
         try (TestAppInstance ignored = dpc.install(TestApis.users().instrumented());
                 DeviceOwner ignored1 = TestApis.devicePolicy().setDeviceOwner(adminComponent)) {
-            TestApis.roles().setBypassingRoleQualification(false);
-            assertAllowsBypassingRoleQualification(/* expected */ false);
+            assertThat(callDmrhQualificationApi(api)).isFalse();
         }
     }
 
@@ -440,13 +592,14 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasNoAccounts
     @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
-    public void testOnlyDeviceOwner_shouldAllowBypassing_true() {
+    public void testOnlyDeviceOwner_shouldAllowBypassing_true(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
         TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ true);
         ComponentName adminComponent = getDeviceAdminComponentName(dpc);
-        try (TestAppInstance ignored = dpc.install(TestApis.users().instrumented());
+        try (TestAppInstance ignored = dpc.install(TestApis.users().system());
                 DeviceOwner ignored1 = TestApis.devicePolicy().setDeviceOwner(adminComponent)) {
 
-            assertAllowsBypassingRoleQualification(/* expected */ true);
+            assertThat(callDmrhQualificationApi(api)).isTrue();
         }
     }
 
@@ -460,8 +613,8 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasNoWorkProfile
     @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
-    public void nonTestOnlyProfileOwner_shouldAllowBypassing_false() {
-        DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(sContext);
+    public void nonTestOnlyProfileOwner_shouldAllowBypassing_false(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
         TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ false);
         ComponentName adminComponent = getDeviceAdminComponentName(dpc);
 
@@ -469,7 +622,7 @@ public class DevicePolicyManagementRoleHolderTest {
             TestAppInstance ignored = dpc.install(profileUser);
             TestApis.devicePolicy().setProfileOwner(profileUser, adminComponent);
 
-            assertAllowsBypassingRoleQualification(/* expected */ false);
+            assertThat(callDmrhQualificationApi(api)).isFalse();
         }
     }
 
@@ -483,7 +636,8 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasNoWorkProfile
     @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
-    public void testOnlyProfileOwner_shouldAllowBypassing_true() {
+    public void testOnlyProfileOwner_shouldAllowBypassing_true(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
         TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ true);
         ComponentName adminComponent = getDeviceAdminComponentName(dpc);
 
@@ -491,46 +645,55 @@ public class DevicePolicyManagementRoleHolderTest {
             TestAppInstance ignored = dpc.install(profileUser);
             TestApis.devicePolicy().setProfileOwner(profileUser, adminComponent);
 
-            assertAllowsBypassingRoleQualification(/* expected */ true);
+            assertThat(callDmrhQualificationApi(api)).isTrue();
         }
     }
 
     /**
      * Verifies that the checks for adding a DMRH can be bypassed when a test-only DMRH (and no
      * non-test-only DMRH) exists on a multi-user managed device.
-     *
-     * <p>We need to set the test-only DMRH on both the headless system user and the initial user
-     * (user 10) so the default DMRH (clouddpc) is not set on any user.
      */
     @Test
+    @Postsubmit(reason = "new test")
     @EnsureHasNoDpc
     @EnsureHasNoAccounts
     @EnsureHasNoAdditionalUser
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
     @EnsureHasPermission({
         CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
-        CommonPermissions.MANAGE_ROLE_HOLDERS
+        CommonPermissions.MANAGE_ROLE_HOLDERS,
+        MANAGE_MULTIUSER_DEVICE_PROVISIONING_STATE
     })
-    @RequireRunOnSystemUser()
+    @RequireRunOnSystemUser(switchedToUser = OptionalBoolean.TRUE)
     @RequireHeadlessSystemUserMode(
             reason =
                     "This test provisions a multi-user device, which is "
-                            + " only supported on headless system user mode devices")
+                            + " only supported on headless system user mode devices",
+            interactive = OptionalBoolean.TRUE)
+    @RequireResourcesBooleanValue(
+            configName = "config_enableMultiuserManagement",
+            requiredValue = true)
     @RequiresFlagsEnabled({
         android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING,
         android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
     })
-    public void testOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_true() {
+    @RequireRootInstrumentation(reason = "Requires permission MANAGE_MULTIUSER_DEVICE_PROVISIONING_STATE")
+    public void testOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_true(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
+        TestApis.users().ensureNoOtherUsers();
         Package dmrhPackage = dpmRoleHolder(sDeviceState).pkg();
+
         try (var ignored =
                 TestApis.devicePolicy()
                         .setDevicePolicyManagementRoleHolder(
-                                dmrhPackage, TestApis.users().initial())) {
-            provisionMultiuserManagedDevice(dmrhPackage.packageName());
+                                dmrhPackage, TestApis.users().instrumented())) {
+            try {
+                provisionMultiuserManagedDevice(dmrhPackage.packageName());
 
-            assertAllowsBypassingRoleQualification(/* expected */ true);
-        } finally {
-            TestApis.devicePolicy().clearMultiuserDeviceManagement(dmrhPackage.packageName());
+                assertThat(callDmrhQualificationApi(api)).isTrue();
+            } finally {
+                TestApis.devicePolicy().clearMultiuserDeviceManagement(dmrhPackage.packageName());
+            }
         }
     }
 
@@ -538,16 +701,15 @@ public class DevicePolicyManagementRoleHolderTest {
      * Verifies that the checks for adding a DMRH cannot be bypassed when a non test-only DMRH
      * exists on a multi-user managed device.
      *
-     * <p>We cannot use the default DMRH (clouddpc) for provisioning the multi-user device, as
-     *
-     * <p>{@code clearMultiuserDeviceManagement} will fail. To avoid this, we set a test-only
-     * DMRH on the headless system user. This way, clouddpc is set as DMRH on user 10, and the
-     * test-only DMRH is set on user 0.
+     * <p> The test manually sets a non testOnly DMRH on the initial user (most often user 10),
+     * then provisions the device using a testOnly DMRH set on system user (user 0).
+     * It is necessary sing two different DMRHs as using a non testOnly test app for MUM
+     * provisioning will throw an error during cleanup.
      */
     @Test
+    @Postsubmit(reason = "new test")
     @EnsureHasNoDpc
     @EnsureHasNoAccounts
-    @EnsureHasNoAdditionalUser
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
     @EnsureHasPermission({
         CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
@@ -556,20 +718,30 @@ public class DevicePolicyManagementRoleHolderTest {
     @RequireHeadlessSystemUserMode(
             reason =
                     "This test provisions a multi-user device, which is "
-                            + " only supported on headless system user mode devices")
-    @RequireRunOnSystemUser()
+                            + " only supported on headless system user mode devices",
+            interactive = OptionalBoolean.TRUE)
+    @RequireResourcesBooleanValue(
+            configName = "config_enableMultiuserManagement",
+            requiredValue = true)
+    @RequireRunOnSystemUser(switchedToUser = OptionalBoolean.TRUE)
     @RequiresFlagsEnabled({
         android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING,
         android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
     })
-    public void nonTestOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_false() {
-        String dmrhPackageName = dpmRoleHolder(sDeviceState).pkg().packageName();
+    public void nonTestOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_false(
+            @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
+        TestApp nonTestOnlyTestApp = getDeviceAdminTestApp(/* isTestOnly */ false);
+        var dmrhPackageName = dpmRoleHolder(sDeviceState).packageName();
 
-        try {
-            provisionMultiuserManagedDevice(dmrhPackageName);
-            assertAllowsBypassingRoleQualification(/* expected */ false);
-        } finally {
-            TestApis.devicePolicy().clearMultiuserDeviceManagement(dmrhPackageName);
+        try (var ignored1 = nonTestOnlyTestApp.install(TestApis.users().initial());
+                var ignored2 = TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(
+                        nonTestOnlyTestApp.pkg(), TestApis.users().initial())) {
+            try {
+                provisionMultiuserManagedDevice(dmrhPackageName);
+                assertThat(callDmrhQualificationApi(api)).isFalse();
+            } finally {
+                TestApis.devicePolicy().clearMultiuserDeviceManagement(dmrhPackageName);
+            }
         }
     }
 
@@ -626,15 +798,30 @@ public class DevicePolicyManagementRoleHolderTest {
                 .get();
     }
 
+    // The packageName is only used for checking if the application is already a Device Policy
+    // Management Role Holder, which may not be relevant for some test cases.
+    private static boolean callDmrhQualificationApi(@NonNull DmrhQualificationApi api) {
+        return callDmrhQualificationApi(api, "generic_package_name");
+    }
+
+    private static boolean callDmrhQualificationApi(
+            @NonNull DmrhQualificationApi api, @NonNull String packageName) {
+        return switch (api) {
+            case SHOULD_ALLOW_BYPASSING_DEVICE_POLICY_MANAGEMENT_ROLE_QUALIFICATION -> {
+                TestApis.devicePolicy()
+                        .resetShouldAllowBypassingDevicePolicyManagementRoleQualificationState();
+                yield sDevicePolicyManager
+                        .shouldAllowBypassingDevicePolicyManagementRoleQualification();
+            }
+            case IS_PACKAGE_QUALIFIED_FOR_DEVICE_POLICY_MANAGEMENT_ROLE ->
+                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole(
+                            packageName);
+        };
+    }
+
     private static ComponentName getDeviceAdminComponentName(TestApp testApp) {
         return testApp.pkg()
                 .component(testApp.packageName() + ".DeviceAdminReceiver")
                 .componentName();
-    }
-
-    private static void assertAllowsBypassingRoleQualification(boolean expected) {
-        boolean bypassed =
-                sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
-        assertThat(bypassed).isEqualTo(expected);
     }
 }

@@ -58,6 +58,7 @@ import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
@@ -80,6 +81,7 @@ import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.permissions.annotations.PermissionTest
 import com.android.bedstead.remotedpc.RemoteDpc
+import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapps.testApps
 import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.truth.EventLogsSubject.assertThat
@@ -1001,6 +1003,115 @@ class ProvisioningTest {
         assertThat(
             exception.provisioningError
         ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
+    }
+
+    @Postsubmit(reason = "new test")
+    @EnsureHasNoDeviceOwner
+    @EnsureHasNoProfileOwner
+    @EnsureHasNoWorkProfile
+    @EnsureHasNoAdditionalUser
+    @EnsureHasPermission(
+        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+    )
+    @RequireFlagsEnabled(
+        Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING,
+        Flags.FLAG_SECURE_ADB_ROLE_BYPASSING
+    )
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiuserManagement",
+        requiredValue = true
+    )
+    @EnsureHasDevicePolicyManagerRoleHolder
+    @RequireRunOnInitialUser
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
+    fun provisionMultiUserManagedUser_testOnlyDmrh_nonDefaultDmrhExists_success() {
+        SetupCompleteResource(setupComplete = false).use {
+            val params = createDefaultMultiuserManagedUserProvisioningParamsBuilder().build()
+
+            localDevicePolicyManager.provisionMultiuserManagedUser(params)
+
+            assertThat(TestApis.devicePolicy().getActiveAdmins()).containsExactly(
+                DeviceAdmin.of(
+                    DEVICE_ADMIN_COMPONENT_NAME
+                )
+            )
+            assertThat(TestApis.devicePolicy().getProfileOwner()!!.pkg().packageName()).isEqualTo(
+                context.packageName
+            )
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @EnsureHasNoDeviceOwner
+    @EnsureHasNoProfileOwner
+    @EnsureHasNoWorkProfile
+    @EnsureHasNoAdditionalUser
+    @EnsureHasPermission(
+        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+    )
+    @RequireFlagsEnabled(
+        Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING,
+        Flags.FLAG_SECURE_ADB_ROLE_BYPASSING
+    )
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiuserManagement",
+        requiredValue = true
+    )
+    @EnsureHasDevicePolicyManagerRoleHolder
+    @RequireRunOnInitialUser
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
+    fun provisionMultiUserManagedUser_nonTestOnlyDmrh_nonDefaultDmrhExists_throwsException() {
+        val dmrh = deviceState.testApps().query().whereTestOnly().isTrue.get()
+        val dmrhComponent = getAdminReceiverComponent(dmrh)
+        SetupCompleteResource(setupComplete = false).use {
+            val params = MultiuserManagedUserProvisioningParams.Builder(dmrhComponent)
+                .setLeaveAllSystemAppsEnabled(true)
+                .build()
+
+            val exception = assertThrows(ProvisioningException::class.java) {
+                localDevicePolicyManager.provisionMultiuserManagedUser(params)
+            }
+            assertThat(
+                exception.provisioningError
+            ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @EnsureHasNoDeviceOwner
+    @EnsureHasNoProfileOwner
+    @EnsureHasNoWorkProfile
+    @EnsureHasNoAdditionalUser
+    @EnsureHasPermission(
+        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+    )
+    @RequireFlagsEnabled(
+        Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING,
+        Flags.FLAG_SECURE_ADB_ROLE_BYPASSING
+    )
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiuserManagement",
+        requiredValue = true
+    )
+    @EnsureHasDevicePolicyManagerRoleHolder
+    @RequireRunOnInitialUser
+    @Test
+    fun checkProvisioningPrecondition_nonTestOnlyDmrh_nonDefaultDmrhExists_returnsNonDefaultDmrhExists() {
+        val dmrh = deviceState.testApps().query().whereTestOnly().isTrue.get()
+        SetupCompleteResource(setupComplete = false).use {
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_USER,
+                    dmrh.packageName()
+                )
+            ).isEqualTo(DevicePolicyManager
+                .STATUS_NON_DEFAULT_DEVICE_POLICY_MANAGEMENT_ROLE_HOLDER_EXISTS)
+        }
     }
 
     @Postsubmit(reason = "new test")
@@ -2202,6 +2313,11 @@ class ProvisioningTest {
                 Truth.assertWithMessage("Intent bundles are not equal").that(bundle2).isNull()
             }
         }
+
+        private fun getAdminReceiverComponent(testApp: TestApp) = ComponentName(
+            testApp.packageName(),
+            testApp.packageName() + ".DeviceAdminReceiver"
+        )
 
         private class SetupCompleteResource(
             private val setupComplete: Boolean,
