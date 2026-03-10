@@ -18,6 +18,7 @@ package android.app.notification.current.cts
 import android.app.Flags
 import android.app.Notification
 import android.app.NotificationRule
+import android.app.NotificationRule.Action.PRIMARY_ACTION_HIGHLIGHT
 import android.app.NotificationRule.Condition
 import android.app.NotificationRule.Condition.CONDITION_TYPE_LOCATION
 import android.app.NotificationRule.Condition.CONDITION_TYPE_TIME
@@ -33,7 +34,6 @@ import android.service.notification.Adjustment
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
-import java.util.List
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -85,16 +85,13 @@ class NotificationRuleTest {
     }
 
     private fun createFullRule(): NotificationRule {
-        return NotificationRule.Builder(ruleId, ruleName)
-            .setAction(
-                NotificationRule.Action.Builder(primaryAction)
-                    .setDynamicBundleName(bundleName)
-                    .setDynamicBundleEmojiIcon(emojiIcon)
-                    .setLightColorOverride(lightColor)
-                    .setModeBreakthroughIds(modes)
-                    .setSoundHapticOverride(soundHaptics)
-                    .build()
-            )
+        return NotificationRule.Builder(ruleId, NotificationRule.Action.Builder(primaryAction)
+            .setDynamicBundleName(bundleName)
+            .setDynamicBundleEmojiIcon(emojiIcon)
+            .setLightColorOverride(lightColor)
+            .setModeBreakthroughIds(modes)
+            .setSoundHapticOverride(soundHaptics)
+            .build())
             .setConditions(
                 listOf(
                     Condition.createTimeCondition(days, startHour, startMinute, endHour, endMinute),
@@ -130,7 +127,6 @@ class NotificationRuleTest {
         val rule = createFullRule()
 
         assertThat(rule.id).isEqualTo(ruleId)
-        assertThat(rule.name).isEqualTo(ruleName)
         assertThat(rule.editIntentAction).isEqualTo(editAction)
         assertThat(rule.isEnabled).isFalse()
         assertThat(rule.canBeDisabled()).isFalse()
@@ -173,10 +169,9 @@ class NotificationRuleTest {
 
     @Test
     fun testBuilderConstructor_minimal() {
-        val rule = NotificationRule.Builder(ruleId, ruleName)
-            .build()
+        val rule = NotificationRule.Builder(ruleId,
+            NotificationRule.Action.Builder(PRIMARY_ACTION_HIGHLIGHT).build()).build()
         assertThat(rule.getId()).isEqualTo(ruleId)
-        assertThat(rule.getName()).isEqualTo(ruleName)
         assertThat(rule.getEditIntentAction()).isNull()
         assertThat(rule.isEnabled()).isTrue()
         assertThat(rule.canBeDisabled()).isTrue()
@@ -185,8 +180,8 @@ class NotificationRuleTest {
     @Test
     fun testDescribeContents() {
         val expected = 0
-        val rule = NotificationRule.Builder(ruleId, ruleName)
-            .build()
+        val rule = NotificationRule.Builder(ruleId,
+            NotificationRule.Action.Builder(PRIMARY_ACTION_HIGHLIGHT).build()).build()
         assertThat(expected).isEqualTo(rule.describeContents())
     }
 
