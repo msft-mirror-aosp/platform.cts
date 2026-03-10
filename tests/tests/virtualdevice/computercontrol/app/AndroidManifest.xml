@@ -37,5 +37,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".app.InteractionReceiverBinder"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.computercontrol.testapp.action.SET_REMOTE_CALLBACK" />
+                <action android:name="android.computercontrol.testapp.action.REMOVE_REMOTE_CALLBACK" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

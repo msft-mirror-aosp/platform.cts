@@ -63,6 +63,13 @@ sealed interface Action : Parcelable {
     }
 
     @Parcelize
+    data object CallbackRemoved : Action {
+        override fun toString(): String {
+            return "CallbackRemoved"
+        }
+    }
+
+    @Parcelize
     data class TextFieldValueChange(
         val textFieldId: String,
         val text: String,

@@ -17,6 +17,8 @@ package android.computercontrol.testapp.common
 
 import android.content.Context
 import android.content.Intent
+import android.os.Binder
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -24,19 +26,25 @@ import android.os.Messenger
 import android.util.Log
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 
 class TestAppInteractionReceiver(private val context: Context) :
     AutoCloseable {
 
+    private val token = Binder()
     private val interactionQueue = Channel<Interaction>(Channel.UNLIMITED)
     private var isBound = false
-    private var isClosed = false
+    private val closeJob = Job()
 
-    private class IncomingHandler(private val onInteractionReceived: (Interaction) -> Unit) :
+    private class IncomingHandler(
+        private val onInteractionReceived: (Interaction) -> Unit,
+        private val onClosed: () -> Unit
+    ) :
         Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             Log.d(Constants.TAG, "Received message: $msg")
@@ -44,6 +52,10 @@ class TestAppInteractionReceiver(private val context: Context) :
             val interaction =
                 msg.data?.getParcelable(Constants.KEY_INTERACTION, Interaction::class.java)
             if (interaction != null) {
+                if (interaction.action is Action.CallbackRemoved) {
+                    onClosed()
+                    return
+                }
                 onInteractionReceived.invoke(interaction)
             } else {
                 Log.w(Constants.TAG, "Received message without interaction")
@@ -51,28 +63,37 @@ class TestAppInteractionReceiver(private val context: Context) :
         }
     }
 
-    fun bind() {
-        ensureBound()
-    }
-
     private fun ensureBound() {
-        check(!isClosed) { "TestAppInteractionReceiver is already closed" }
+        check(closeJob.isActive) { "TestAppInteractionReceiver is already closed" }
         if (isBound) {
             return
         }
         Log.d(Constants.TAG, "Binding interaction receiver")
-        val handler = IncomingHandler(interactionQueue::trySend)
-        val messenger = Messenger(handler)
-        val intent = Intent(Constants.ACTION_REMOTE_CALLBACK)
-        intent.setPackage(Constants.TEST_APP_PACKAGE)
-        intent.putExtra(Constants.EXTRA_REMOTE_MESSENGER, messenger)
+        val handler = IncomingHandler(interactionQueue::trySend, closeJob::complete)
+        val intent = Intent(Constants.ACTION_SET_REMOTE_CALLBACK)
+        intent.setComponent(Constants.RECEIVER_COMPONENT)
+        val bundle = Bundle()
+        bundle.putBinder(Constants.EXTRA_REMOTE_CALLBACK_TOKEN, token)
+        intent.putExtras(bundle)
+        intent.putExtra(Constants.EXTRA_REMOTE_MESSENGER, Messenger(handler))
         context.sendBroadcast(intent)
         isBound = true
     }
 
     override fun close() {
-        isClosed = true
+        if (!isBound) {
+            closeJob.complete()
+            return
+        }
         interactionQueue.close()
+        val intent = Intent(Constants.ACTION_REMOVE_REMOTE_CALLBACK)
+        intent.setComponent(Constants.RECEIVER_COMPONENT)
+        val bundle = Bundle()
+        bundle.putBinder(Constants.EXTRA_REMOTE_CALLBACK_TOKEN, token)
+        intent.putExtras(bundle)
+        context.sendBroadcast(intent)
+
+        runBlocking { withTimeout(5.seconds) { closeJob.join() } }
     }
 
     suspend fun <T : Action> nextActionOrNull(clazz: Class<T>, timeout: Duration): T? {

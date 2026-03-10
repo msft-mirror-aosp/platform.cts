@@ -27,6 +27,7 @@ import android.server.wm.WindowManagerStateHelper
 import android.util.Log
 import android.view.Display
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.extensions.computercontrol.ComputerControlSession
@@ -411,6 +412,7 @@ class ComputerControlSessionManagementTest {
         }
     }
 
+    @FlakyTest(bugId = 491587958)
     @Test
     fun testHandOver() {
         launchTestAppAgent().use { testAppAgent ->
@@ -429,7 +431,9 @@ class ComputerControlSessionManagementTest {
             val displayId = getDisplayId(TEST_APP_COMPONENT_NAME)
             assertThat(displayId).isNotEqualTo(virtualDisplayId)
             assertThat(displayId).isEqualTo(Display.DEFAULT_DISPLAY)
-            // Assert that activity isn't destroyed when handover applications.
+
+            // TODO: b/491587958 - Activity should not be destroyed when being moved
+            //  to the main display.
             testAppInteractions.assertNoAction<Action.Destroy>()
         }
 
