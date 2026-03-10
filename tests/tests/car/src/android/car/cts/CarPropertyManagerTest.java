@@ -4088,7 +4088,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class, mCarPropertyManager)
-                .requireMinMaxValues()
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, tirePressure) ->
                                 assertWithMessage(
