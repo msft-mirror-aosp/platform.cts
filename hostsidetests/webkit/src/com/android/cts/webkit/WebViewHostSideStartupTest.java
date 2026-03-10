@@ -60,6 +60,7 @@ public class WebViewHostSideStartupTest extends DeviceTestCase {
         assertDeviceTestPasses("testCookieManagerBlockingUiThread");
     }
 
+    @AppModeFull(reason = "Instant apps for WebView are no longer supported.")
     public void testStrictMode() throws DeviceNotAvailableException {
         assertDeviceTestPasses("testStrictModeNotViolatedOnStartup");
     }
