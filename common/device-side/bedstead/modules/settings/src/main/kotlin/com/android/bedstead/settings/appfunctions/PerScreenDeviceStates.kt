@@ -60,3 +60,24 @@ data class LocalizedString(
     val english: String,
     val localized: String
 )
+
+/**
+ * A human-readable representation of AppFunction's PerScreenMetadata.
+ */
+data class PerScreenMetadata(
+    val key: String? = null,
+    val description: String,
+    val intentUri: String? = null,
+    val deviceStateItemsMetadata: List<DeviceStateItemMetadata> = listOf()
+)
+
+/**
+ * A human-readable representation of AppFunction's DeviceStateItemMetadata.
+ */
+data class DeviceStateItemMetadata(
+    val key: String,
+    val name: LocalizedString?,
+    val possibleValues: String?,
+    val purpose: String?,
+    val writable: Boolean
+)

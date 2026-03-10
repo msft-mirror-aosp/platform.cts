@@ -187,7 +187,6 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
     }
 
     companion object {
-        private const val LOG_TAG = "bedstead-settings"
         private const val SHORT_TIMEOUT_SECONDS = 1L
         private const val TIMEOUT_SECONDS = 10L
         private const val RETRYING_INTERVAL_MILLISECONDS = 100L
