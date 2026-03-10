@@ -32,7 +32,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".services.PccStorageWriteService"
+            android:name=".services.PccStorageService"
             android:exported="true"
             android:privateComputeCore="true"/>
     </application>

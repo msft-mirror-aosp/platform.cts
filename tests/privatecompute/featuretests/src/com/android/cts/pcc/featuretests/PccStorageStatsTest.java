@@ -19,12 +19,12 @@ package com.android.cts.pcc.featuretests;
 import static android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT;
 
 import static com.android.cts.pcc.common.StorageTestUtils.writeFile;
-import static com.android.cts.pcc.featuretests.services.PccStorageWriteService.COMMAND_CLEANUP;
-import static com.android.cts.pcc.featuretests.services.PccStorageWriteService.COMMAND_WRITE_CACHE_FILE;
-import static com.android.cts.pcc.featuretests.services.PccStorageWriteService.COMMAND_WRITE_DE_FILE;
-import static com.android.cts.pcc.featuretests.services.PccStorageWriteService.COMMAND_WRITE_FILE;
-import static com.android.cts.pcc.featuretests.services.PccStorageWriteService.EXTRA_COMMAND;
-import static com.android.cts.pcc.featuretests.services.PccStorageWriteService.EXTRA_FILE_SIZE_BYTES;
+import static com.android.cts.pcc.featuretests.services.PccStorageService.COMMAND_CLEANUP;
+import static com.android.cts.pcc.featuretests.services.PccStorageService.COMMAND_WRITE_CACHE_FILE;
+import static com.android.cts.pcc.featuretests.services.PccStorageService.COMMAND_WRITE_DE_FILE;
+import static com.android.cts.pcc.featuretests.services.PccStorageService.COMMAND_WRITE_FILE;
+import static com.android.cts.pcc.featuretests.services.PccStorageService.EXTRA_COMMAND;
+import static com.android.cts.pcc.featuretests.services.PccStorageService.EXTRA_FILE_SIZE_BYTES;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -50,7 +50,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.cts.pcc.featuretests.services.PccStorageWriteService;
+import com.android.cts.pcc.featuretests.services.PccStorageService;
 
 import org.junit.After;
 import org.junit.Before;
@@ -108,7 +108,7 @@ public class PccStorageStatsTest {
 
     private void sendCommand(String command, long size) throws Exception {
         ComponentName serviceComponent =
-                new ComponentName(mPackageName, PccStorageWriteService.class.getName());
+                new ComponentName(mPackageName, PccStorageService.class.getName());
         Intent intent = new Intent();
         intent.setComponent(serviceComponent);
         mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
