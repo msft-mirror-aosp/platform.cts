@@ -32,6 +32,7 @@ import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
+import android.hardware.devicestate.cts.util.DeviceStateManagerTestRule;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.DisplayTopology;

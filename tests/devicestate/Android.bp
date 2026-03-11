@@ -37,3 +37,15 @@ android_test {
     ],
     sdk_version: "test_current",
 }
+
+java_test_helper_library {
+    name: "cts-device_state_manager-util",
+    srcs: [
+        "src/**/util/*.java",
+    ],
+    static_libs: [
+        "androidx.test.ext.junit",
+        "cts-wm-util",
+    ],
+    sdk_version: "test_current",
+}
