@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,50 +14,45 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static com.google.common.truth.Truth.assertThat;
+import android.bluetooth.BluetoothGattService
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.CddTest
+import com.google.common.truth.Truth.assertThat
+import java.util.UUID
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import android.bluetooth.BluetoothGattService;
+@RunWith(AndroidJUnit4::class)
+class BluetoothGattServiceTest {
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
+    private val TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb")
 
-import com.android.compatibility.common.util.CddTest;
-
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.UUID;
-
-@RunWith(AndroidJUnit4.class)
-public class BluetoothGattServiceTest {
-
-    private UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
-    private BluetoothGattService mBluetoothGattService;
+    private lateinit var bluetoothGattService: BluetoothGattService
 
     @Before
-    public void setUp() {
+    fun setUp() {
         Assume.assumeTrue(
-                TestUtils.isBleSupported(
-                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
+            TestUtils.isBleSupported(InstrumentationRegistry.getInstrumentation().targetContext)
+        )
 
-        mBluetoothGattService =
-                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        bluetoothGattService =
+            BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @CddTest(requirements = ["7.4.3/C-2-1", "7.4.3/C-3-2"])
     @Test
-    public void getInstanceId() {
-        assertThat(mBluetoothGattService.getInstanceId()).isEqualTo(0);
+    fun getInstanceId() {
+        assertThat(bluetoothGattService.instanceId).isEqualTo(0)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @CddTest(requirements = ["7.4.3/C-2-1", "7.4.3/C-3-2"])
     @Test
-    public void getType() {
-        assertThat(mBluetoothGattService.getType())
-                .isEqualTo(BluetoothGattService.SERVICE_TYPE_PRIMARY);
+    fun getType() {
+        assertThat(bluetoothGattService.type).isEqualTo(BluetoothGattService.SERVICE_TYPE_PRIMARY)
     }
 }
