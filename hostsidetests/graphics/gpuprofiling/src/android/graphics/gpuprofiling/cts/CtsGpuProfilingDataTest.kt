@@ -53,9 +53,10 @@ import perfetto.protos.PerfettoTrace.Trace
 @RunWith(DeviceJUnit4ClassRunner::class)
 class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
     private var initialDebugPropertyValue: String? = null
-    private var mHasGpuCountersCapability = false
+    private var hasGpuCountersCapability = false
 
-    private val mTraceFiles = mutableListOf<File>()
+    private val traceFiles = mutableListOf<File>()
+    private var dataSourceFile: File? = null
 
     @get:Rule
     val errorCollector = ErrorCollector()
@@ -66,7 +67,16 @@ class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
     @get:Rule
     val testWatcher = object : TestWatcher() {
         override fun failed(e: Throwable, description: Description) {
-            for (file in mTraceFiles) {
+            dataSourceFile?.let { file ->
+                CLog.logAndDisplay(Log.LogLevel.INFO, "DataSource file kept: ${file.name}")
+                testLogData.addTestLog(
+                    file.name,
+                    LogDataType.TEXT,
+                    FileInputStreamSource(file)
+                )
+                file.delete()
+            }
+            for (file in traceFiles) {
                 CLog.logAndDisplay(Log.LogLevel.INFO, "Trace files kept: ${file.name}")
                 testLogData.addTestLog(
                     file.name,
@@ -75,21 +85,25 @@ class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
                 )
                 file.delete()
             }
-            CLog.logAndDisplay(Log.LogLevel.ERROR, "TEST FAILED; trace files saved: $mTraceFiles.")
+            CLog.logAndDisplay(
+                Log.LogLevel.ERROR,
+                "TEST FAILED; files saved: $traceFiles; ${dataSourceFile?.name}."
+            )
         }
 
         override fun succeeded(description: Description) {
             CLog.logAndDisplay(Log.LogLevel.INFO, "TEST SUCCEEDED; cleaning up trace files.")
-            for (file in mTraceFiles) {
+            dataSourceFile?.delete()
+            for (file in traceFiles) {
                 file.delete()
             }
         }
     }
 
-    private inner class ShellThread(private val mCmd: String) : Thread("ShellThread") {
+    private inner class ShellThread(private val cmd: String) : Thread("ShellThread") {
         override fun run() {
             try {
-                device.executeShellV2Command(mCmd)
+                device.executeShellV2Command(cmd)
             } catch (e: Exception) {
                 CLog.e("Failed to start counters producer: ${e.message}")
             }
@@ -138,7 +152,7 @@ class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
         }
         installPackage(APK)
         device.setProperty(DEBUG_PROPERTY, "1")
-        mHasGpuCountersCapability = getProperty(GPU_COUNTERS_CAPABILITY_PROPERTY)
+        hasGpuCountersCapability = getProperty(GPU_COUNTERS_CAPABILITY_PROPERTY)
 
         // Spin up a new thread to avoid blocking the main thread while the native
         // process waits to be killed.
@@ -163,6 +177,10 @@ class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
         val decodedBytes = Base64.getMimeDecoder().decode(queryStatus.stdout)
         val state = TracingServiceState.parseFrom(decodedBytes)
 
+        val queryFile = File.createTempFile("perfetto-query", ".txt")
+        queryFile.writeText(state.toString())
+        dataSourceFile = queryFile
+
         val parsedData = DataSourceParser.parse(state)
 
         val validator = DataSourceValidator(errorCollector)
@@ -174,7 +192,7 @@ class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
         var defaultCounterIds: Set<Int> = emptySet()
         var gpuCounterSpecsList: List<GpuCounterSpec> = emptyList()
 
-        if (mHasGpuCountersCapability) {
+        if (hasGpuCountersCapability) {
             validator.validateGpuCountersFound(parsedData)
             validator.validateGpuCounters(parsedData)
 
@@ -204,7 +222,7 @@ class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
             traceValidator.validateGpuFrequency(traceFrequencyRenderStagesDefaultCounters5Ms)
         }
 
-        if (mHasGpuCountersCapability) {
+        if (hasGpuCountersCapability) {
             traceValidator.validateDefaultCounterValuesPresence(
                 traceFrequencyRenderStagesDefaultCounters5Ms,
                 defaultCounterIds
@@ -273,7 +291,7 @@ class CtsGpuProfilingDataTest : BaseHostJUnit4Test() {
             Trace.parseFrom(CodedInputStream.newInstance(it))
         }
 
-        mTraceFiles.add(traceResult)
+        traceFiles.add(traceResult)
         configFile.delete()
 
         val deleteTraceStatus = device.executeShellV2Command("rm -f $traceFilePath")
