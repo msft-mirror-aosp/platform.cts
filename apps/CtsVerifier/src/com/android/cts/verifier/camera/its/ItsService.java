@@ -2206,6 +2206,7 @@ public class ItsService extends Service implements SensorEventListener {
         boolean reuseSession = params.optBoolean("reuseSession", false);
         boolean firstSurfaceFor3A = params.optBoolean("firstSurfaceFor3A", false);
         List<OutputConfiguration> captureOutputConfigurations = new ArrayList<>();
+        JSONObject report = new JSONObject();
         try {
             // Start a 3A action, and wait for it to converge.
             // Get the converged values for each "A", and package into JSON result for caller.
@@ -2391,6 +2392,9 @@ public class ItsService extends Service implements SensorEventListener {
                 // at a time, to simplify the logic here.
                 if (!mInterlock3A.block(TIMEOUT_3A * 1000) ||
                         System.currentTimeMillis() - tstart > TIMEOUT_3A * 1000) {
+                    report.put("ae", mConvergedAE);
+                    report.put("af", mConvergedAF);
+                    report.put("awb", mConvergedAWB);
                     throw new ItsException(
                             "3A failed to converge after " + TIMEOUT_3A + " seconds.\n" +
                             "AE converge state: " + mConvergedAE + ", \n" +
@@ -2496,6 +2500,11 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                 }
             }
+
+            report.put("ae", mConvergedAE);
+            report.put("af", mConvergedAF);
+            report.put("awb", mConvergedAWB);
+
             mSession.stopRepeating();
             mSessionListener.getStateWaiter().waitForState(
                     BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
@@ -2505,7 +2514,7 @@ public class ItsService extends Service implements SensorEventListener {
         } catch (org.json.JSONException e) {
             throw new ItsException("JSON error: ", e);
         } finally {
-            mSocketRunnableObj.sendResponse("3aDone", "");
+            mSocketRunnableObj.sendResponse("3aDone", report);
             // stop listener from updating 3A states
             threeAListener.stop();
             if (mSession != null && !reuseSession) {
