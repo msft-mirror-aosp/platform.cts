@@ -79,6 +79,17 @@ class TraceValidatorTest {
         errorCollector.assertSuccess()
     }
 
+    // Regression test for b/491213145.
+    @Test
+    fun testValidateGpuUtilisationCounter_success() {
+        val (errorCollector, validator) = setupValidator()
+        val parsedTrace = loadTrace("b-491213145.textproto")
+
+        validator.validateGpuUtilisationCounter(parsedTrace)
+
+        errorCollector.assertSuccess()
+    }
+
     @Test
     fun testValidateRequiredGroupsPresent_hasRayTracingSupportNull_reportsError() {
         // Create a trace with hasRayTracingSupport = null
