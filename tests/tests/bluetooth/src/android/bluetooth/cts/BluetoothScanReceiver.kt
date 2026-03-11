@@ -29,17 +29,20 @@ private const val TAG = "BluetoothScanReceiver"
 class BluetoothScanReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        Log.i(TAG, "Received scan results:$intent")
         val scanResults =
-            intent.getParcelableArrayListExtra<ScanResult>(
-                BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT
+            intent.getParcelableArrayListExtra(
+                BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT,
+                ScanResult::class.java,
             )
-        Log.i(TAG, "ScanResults = $scanResults")
+        val callbackType = intent.getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, -1)
+        val errorCode = intent.getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, -1)
         Log.i(
             TAG,
-            "Callback Type = ${intent.getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, -1)}",
+            "Received scan results:$intent\n" +
+                "ScanResults = $scanResults\n" +
+                "Callback Type = $callbackType\n" +
+                "Error Code = $errorCode",
         )
-        Log.i(TAG, "Error Code = ${intent.getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, -1)}")
         countDownLatch?.let {
             it.countDown()
             countDownLatch = null
