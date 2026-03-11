@@ -33,6 +33,8 @@ const val FTRACE_SOURCE_NAME = "linux.ftrace"
 const val GPU_FREQ_FTRACE = "power/gpu_frequency"
 const val APP = "android.graphics.gpuprofiling.app"
 const val TRACE_BUFFER_SIZE_KB = 131072 // 1024 * 128
+const val APP_BUFFER_SIZE_KB = 65536 // 1024 * 64
+const val APP_PAGE_SIZE_KB = 32
 val TRACE_DURATION: Duration = Duration.ofSeconds(10)
 
 enum class Mode {
@@ -255,6 +257,11 @@ fun buildConfig(
 ): TraceConfig {
     val config = TraceConfig.newBuilder().setDurationMs(TRACE_DURATION.toMillis().toInt())
     config.addBuffersBuilder().setSizeKb(TRACE_BUFFER_SIZE_KB)
+    config.addProducersBuilder().apply {
+        shmSizeKb = APP_BUFFER_SIZE_KB
+        pageSizeKb = APP_PAGE_SIZE_KB
+        producerName = APP
+    }
     if (counterIds.isNotEmpty()) {
         config.addDataSourcesBuilder()
             .configBuilder

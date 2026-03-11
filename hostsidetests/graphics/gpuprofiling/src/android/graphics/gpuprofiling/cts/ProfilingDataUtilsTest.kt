@@ -292,6 +292,9 @@ class ProfilingDataUtilsTest {
 
         assertThat(config.durationMs).isEqualTo(TRACE_DURATION.toMillis().toInt())
         assertThat(config.buffersList[0].sizeKb).isEqualTo(TRACE_BUFFER_SIZE_KB)
+        assertThat(config.producersList[0].shmSizeKb).isEqualTo(APP_BUFFER_SIZE_KB)
+        assertThat(config.producersList[0].pageSizeKb).isEqualTo(APP_PAGE_SIZE_KB)
+        assertThat(config.producersList[0].producerName).isEqualTo(APP)
         assertThat(config.dataSourcesList.map { it.config.name }).containsExactly(
             COUNTERS_SOURCE_NAME,
             FTRACE_SOURCE_NAME
