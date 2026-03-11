@@ -1111,6 +1111,9 @@ public abstract class CodecTestBase {
                 list.add(MediaFormat.MIMETYPE_AUDIO_VORBIS);
                 list.add(MediaFormat.MIMETYPE_AUDIO_RAW);
                 list.add(MediaFormat.MIMETYPE_AUDIO_OPUS);
+                if (IS_AFTER_B) {
+                    list.add(MediaFormat.MIMETYPE_AUDIO_IAMF);
+                }
             }
             if (MediaUtils.isHandheld() || MediaUtils.isTablet() || MediaUtils.isTv()
                     || MediaUtils.isAutomotive()) {

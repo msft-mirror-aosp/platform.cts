@@ -827,13 +827,17 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
         if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_Opus_no_video.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                            null, -1.0f, -1L, 48000, 2, -1, -1,
+                            IS_AFTER_B ? CODEC_ALL : CODEC_OPTIONAL},
                     {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_AAC.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                            null, -1.0f, -1L, 48000, 2, -1, -1,
+                            IS_AFTER_B ? CODEC_ALL : CODEC_OPTIONAL},
                     {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_FLAC_48000.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                            null, -1.0f, -1L, 48000, 2, -1, -1,
+                            IS_AFTER_B ? CODEC_ALL : CODEC_OPTIONAL},
                     {MEDIA_TYPE_IAMF, new String[]{"audio/7_1_4_PCM16_48000_no_video.mp4"},
-                            null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                            null, -1.0f, -1L, 48000, 2, -1, -1,
+                            IS_AFTER_B ? CODEC_ALL : CODEC_OPTIONAL},
             }));
         }
 

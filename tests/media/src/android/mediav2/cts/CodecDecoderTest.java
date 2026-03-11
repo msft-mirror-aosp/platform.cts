@@ -280,7 +280,8 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
         if (IS_AT_LEAST_B) {
             if (iamfDefinitionsApi() && extractorMp4EnableIamf()) {
                 exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
-                    "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L, CODEC_OPTIONAL});
+                    "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L,
+                    IS_AFTER_B ? CODEC_ALL : CODEC_OPTIONAL});
             }
         }
         if (IS_AFTER_B) {
