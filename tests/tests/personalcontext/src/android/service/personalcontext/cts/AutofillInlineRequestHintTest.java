@@ -41,6 +41,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.RequiredServiceRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,6 +58,10 @@ public class AutofillInlineRequestHintTest {
 
     private static final InlinePresentationSpec INLINE_PRESENTATION_SPEC =
             new InlinePresentationSpec.Builder(new Size(100, 100), new Size(100, 100)).build();
+
+    @Rule
+    public final RequiredServiceRule mRequiredServiceRule =
+            new RequiredServiceRule(Util.PERSONAL_CONTEXT_SERVICE_NAME);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
