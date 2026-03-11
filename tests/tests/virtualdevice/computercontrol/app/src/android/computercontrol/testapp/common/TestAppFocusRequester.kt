@@ -26,5 +26,8 @@ class TestAppFocusRequester(private val context: Context) {
         intent.putExtra(Constants.EXTRA_FOCUS_TEXT_FIELD_ID, id)
         intent.setPackage(Constants.TEST_APP_PACKAGE)
         context.sendBroadcast(intent)
+
+        // TODO: look into how to get rid of this sleep for requesting focus.
+        Thread.sleep(1000)
     }
 }
