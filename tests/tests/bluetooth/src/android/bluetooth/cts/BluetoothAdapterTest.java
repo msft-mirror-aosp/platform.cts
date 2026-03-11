@@ -57,6 +57,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemProperties;
+import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -168,6 +169,7 @@ public class BluetoothAdapterTest {
     }
 
     @Test
+    @PlatinumTest(focusArea = "bluetooth")
     public void enableDisable() {
         assumeTrue(mHasBluetooth);
 
