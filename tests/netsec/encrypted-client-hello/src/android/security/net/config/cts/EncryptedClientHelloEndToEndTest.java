@@ -31,6 +31,8 @@ import android.net.dns.HttpsEndpoint;
 import android.net.dns.HttpsRecord;
 import android.net.ssl.EchConfigList;
 import android.net.ssl.SSLSockets;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -38,6 +40,7 @@ import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,13 +80,25 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
     private static final String ECH_USED_STRING = "You are using ECH. :)";
     private static final String ECH_NOT_USED_STRING = "You are not using ECH. :(";
     private static final int TIMEOUT_MS = 12_000;
-    private DnsResolver mDnsResolver;
+    private DnsResolver mDnsResolverMainLooper;
+    private DnsResolver mDnsResolverCustomLooper;
     private Executor mExecutor;
+    private HandlerThread mHandlerThread;
 
     @Before
     public void setUp() {
-        mDnsResolver = DnsResolver.getInstance();
+        mDnsResolverMainLooper = DnsResolver.getInstance();
+        mHandlerThread = new HandlerThread("DnsResolverTest");
+        mHandlerThread.start();
+        mDnsResolverCustomLooper = new DnsResolver(mContext, mHandlerThread.getLooper());
         mExecutor = Executors.newSingleThreadExecutor();
+    }
+
+    @After
+    public void tearDown() {
+        if (mHandlerThread != null) {
+            mHandlerThread.quitSafely();
+        }
     }
 
     static class DnsCallback<T> implements DnsResolver.Callback<T> {
@@ -113,7 +128,7 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
     @Test
     public void testConnectWithoutEch_connectionSucceeds() throws Exception {
         DnsCallback<List<InetAddress>> callback = new DnsCallback<>();
-        mDnsResolver.query(
+        mDnsResolverMainLooper.query(
                 /* network= */ null,
                 ECH_DOMAIN,
                 /* flags= */ 0,
@@ -121,7 +136,24 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
                 /* cancellationSignal= */ null,
                 callback);
         callback.waitForAnswer();
-        List<InetAddress> addresses = callback.getAnswer();
+        assertConnectWithoutEchSucceeds(callback.getAnswer());
+    }
+
+    @Test
+    public void testConnectWithoutEch_separateThread_connectionSucceeds() throws Exception {
+        DnsCallback<List<InetAddress>> callback = new DnsCallback<>();
+        mDnsResolverCustomLooper.query(
+                /* network= */ null,
+                ECH_DOMAIN,
+                /* flags= */ 0,
+                mExecutor,
+                /* cancellationSignal= */ null,
+                callback);
+        callback.waitForAnswer();
+        assertConnectWithoutEchSucceeds(callback.getAnswer());
+    }
+
+    private void assertConnectWithoutEchSucceeds(List<InetAddress> addresses) throws Exception {
         assumeTrue("No DNS response", addresses != null);
 
         SSLSocket sslSocket = createSocketWithSNI(addresses.get(0));
@@ -140,7 +172,7 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
     })
     public void testSetValidEchConfigList_connectionSucceeds() throws Exception {
         DnsCallback<HttpsEndpoint> callback = new DnsCallback<>();
-        mDnsResolver.query(
+        mDnsResolverMainLooper.query(
                 /* network= */ null,
                 ECH_DOMAIN,
                 /* flags= */ 0,
@@ -149,8 +181,30 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
                 /* cancellationSignal= */ null,
                 callback);
         callback.waitForAnswer();
+        assertValidEchConfigList(callback.getAnswer());
+    }
 
-        HttpsEndpoint endpoint = callback.getAnswer();
+    @Test
+    @RequiresFlagsEnabled({
+        FLAG_ENCRYPTED_CLIENT_HELLO_CONFIGURATION,
+        FLAG_ENCRYPTED_CLIENT_HELLO_PLATFORM,
+        FLAG_ENCRYPTED_CLIENT_HELLO_DNS
+    })
+    public void testSetValidEchConfigList_separateThread_connectionSucceeds() throws Exception {
+        DnsCallback<HttpsEndpoint> callback = new DnsCallback<>();
+        mDnsResolverCustomLooper.query(
+                /* network= */ null,
+                ECH_DOMAIN,
+                /* flags= */ 0,
+                mExecutor,
+                /* httpsTimeoutMillis= */ 1000,
+                /* cancellationSignal= */ null,
+                callback);
+        callback.waitForAnswer();
+        assertValidEchConfigList(callback.getAnswer());
+    }
+
+    private void assertValidEchConfigList(HttpsEndpoint endpoint) throws Exception {
         assumeTrue("No DNS response", endpoint != null);
 
         List<HttpsRecord> httpsRecords = endpoint.getHttpsRecords();
@@ -179,7 +233,7 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
     })
     public void testCorruptedEchConfigList_throwsEchConfigMismatchException() throws Exception {
         DnsCallback<HttpsEndpoint> callback = new DnsCallback<>();
-        mDnsResolver.query(
+        mDnsResolverMainLooper.query(
                 /* network= */ null,
                 ECH_DOMAIN,
                 /* flags= */ 0,
@@ -188,8 +242,32 @@ public class EncryptedClientHelloEndToEndTest extends BaseTestCase {
                 /* cancellationSignal= */ null,
                 callback);
         callback.waitForAnswer();
+        assertCorruptedEchConfigList_throwsException(callback.getAnswer());
+    }
 
-        HttpsEndpoint endpoint = callback.getAnswer();
+    @Test
+    @RequiresFlagsEnabled({
+        FLAG_ENCRYPTED_CLIENT_HELLO_CONFIGURATION,
+        FLAG_ENCRYPTED_CLIENT_HELLO_PLATFORM,
+        FLAG_ENCRYPTED_CLIENT_HELLO_DNS
+    })
+    public void testCorruptedEchConfigList_separateThread_throwsEchConfigMismatchException()
+            throws Exception {
+        DnsCallback<HttpsEndpoint> callback = new DnsCallback<>();
+        mDnsResolverCustomLooper.query(
+                /* network= */ null,
+                ECH_DOMAIN,
+                /* flags= */ 0,
+                mExecutor,
+                /* httpsTimeoutMillis= */ 1000,
+                /* cancellationSignal= */ null,
+                callback);
+        callback.waitForAnswer();
+        assertCorruptedEchConfigList_throwsException(callback.getAnswer());
+    }
+
+    private void assertCorruptedEchConfigList_throwsException(HttpsEndpoint endpoint)
+            throws Exception {
         assumeTrue("No DNS response", endpoint != null);
 
         List<HttpsRecord> httpsRecords = endpoint.getHttpsRecords();
