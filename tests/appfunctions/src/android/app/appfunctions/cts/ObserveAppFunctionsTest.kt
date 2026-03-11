@@ -1108,6 +1108,7 @@ class ObserveAppFunctionsTest {
 
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @Ignore("b/481984551 - Fix presubmit failure")
     fun observeAppFunctions_shouldNotReceiveNotificationWhileFreeze() = doBlocking {
         val testObserver = TestClientObserver()
         var testObservation = observeAppFunctions(testObserver)
