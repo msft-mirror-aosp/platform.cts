@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,51 +14,48 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static com.google.common.truth.Truth.assertThat;
+import android.bluetooth.UidTraffic
+import android.os.Parcel
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertThat
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import android.bluetooth.UidTraffic;
-import android.os.Parcel;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
+@RunWith(AndroidJUnit4::class)
 @SmallTest
-public class UidTrafficTest {
+class UidTrafficTest {
 
-    private UidTraffic mUidTraffic;
+    private lateinit var uidTraffic: UidTraffic
 
     @Before
-    public void setUp() {
-        final Parcel uidTrafficParcel = Parcel.obtain();
-        uidTrafficParcel.writeInt(1000);
-        uidTrafficParcel.writeLong(2000);
-        uidTrafficParcel.writeLong(3000);
-        uidTrafficParcel.setDataPosition(0);
-        mUidTraffic = UidTraffic.CREATOR.createFromParcel(uidTrafficParcel);
-        assertThat(mUidTraffic).isNotNull();
-        uidTrafficParcel.recycle();
+    fun setUp() {
+        val uidTrafficParcel = Parcel.obtain()
+        uidTrafficParcel.writeInt(1000)
+        uidTrafficParcel.writeLong(2000)
+        uidTrafficParcel.writeLong(3000)
+        uidTrafficParcel.setDataPosition(0)
+        uidTraffic = UidTraffic.CREATOR.createFromParcel(uidTrafficParcel)
+        assertThat(uidTraffic).isNotNull()
+        uidTrafficParcel.recycle()
     }
 
     @Test
-    public void cloneMethod() {
-        UidTraffic clonedUidTraffic = mUidTraffic.clone();
-        assertThat(clonedUidTraffic).isNotNull();
-        assertThat(clonedUidTraffic.getUid()).isEqualTo(mUidTraffic.getUid());
-        assertThat(clonedUidTraffic.getRxBytes()).isEqualTo(mUidTraffic.getRxBytes());
-        assertThat(clonedUidTraffic.getTxBytes()).isEqualTo(mUidTraffic.getTxBytes());
+    fun cloneMethod() {
+        val clonedUidTraffic = uidTraffic.clone()
+        assertThat(clonedUidTraffic).isNotNull()
+        assertThat(clonedUidTraffic.uid).isEqualTo(uidTraffic.uid)
+        assertThat(clonedUidTraffic.rxBytes).isEqualTo(uidTraffic.rxBytes)
+        assertThat(clonedUidTraffic.txBytes).isEqualTo(uidTraffic.txBytes)
     }
 
     @Test
-    public void getMethod() {
-        assertThat(mUidTraffic.getUid()).isEqualTo(1000);
-        assertThat(mUidTraffic.getRxBytes()).isEqualTo(2000);
-        assertThat(mUidTraffic.getTxBytes()).isEqualTo(3000);
+    fun getMethod() {
+        assertThat(uidTraffic.uid).isEqualTo(1000)
+        assertThat(uidTraffic.rxBytes).isEqualTo(2000)
+        assertThat(uidTraffic.txBytes).isEqualTo(3000)
     }
 }
