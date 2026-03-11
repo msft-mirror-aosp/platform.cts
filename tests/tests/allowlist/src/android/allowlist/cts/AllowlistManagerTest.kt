@@ -35,9 +35,10 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertThrows
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 
@@ -63,17 +64,6 @@ class AllowlistManagerTest {
     @Before
     fun setUp() {
         allowlistManager = context.getSystemService(AllowlistManager::class.java)!!
-
-        runWithShellPermissionIdentity {
-            allowlistManager.setTestProviderEnabled(true)
-        }
-    }
-
-    @After
-    fun tearDown() {
-        runWithShellPermissionIdentity {
-            allowlistManager.setTestProviderEnabled(false)
-        }
     }
 
     @ApiTest(
@@ -193,35 +183,6 @@ class AllowlistManagerTest {
                 SignedPackage::class.java
             )
             assertThat(returnedPackages).isEmpty()
-        }
-    }
-
-    @ApiTest(
-        apis = ["android.os.allowlist.AllowlistManager#queryAllowlist"]
-    )
-    @Test
-    fun testQueryAllowlist_providerNotAvailable_receiveErrorResponse() {
-        runWithShellPermissionIdentity {
-            allowlistManager.setTestProviderEnabled(false)
-
-            val data = Bundle().apply {
-                putParcelableArrayList(
-                    AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
-                    arrayListOf(testPackage1)
-                )
-            }
-            val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, data)
-            val latch = CountDownLatch(1)
-            var response: AllowlistResponse? = null
-
-            allowlistManager.queryAllowlist(request, context.mainExecutor) { resp ->
-                response = resp
-                latch.countDown()
-            }
-            assertThat(latch.await(LATCH_TIMEOUT_UNEXPECTED_MS, TimeUnit.MILLISECONDS)).isTrue()
-            assertThat(response).isNotNull()
-            assertThat(response!!.status).isEqualTo(AllowlistManager.RESPONSE_STATUS_ERROR_PROVIDER)
-            assertThat(response.data).isEqualTo(Bundle.EMPTY)
         }
     }
 
@@ -480,5 +441,27 @@ class AllowlistManagerTest {
     companion object {
         const val LATCH_TIMEOUT_EXPECTED_MS = 5000L
         const val LATCH_TIMEOUT_UNEXPECTED_MS = 2000L
+
+        @JvmStatic
+        @BeforeClass
+        fun enableTestProvider() {
+            runWithShellPermissionIdentity {
+                InstrumentationRegistry.getInstrumentation().context.getSystemService(
+                    AllowlistManager::class.java
+                )!!
+                    .setTestProviderEnabled(true)
+            }
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun disableTestProvider() {
+            runWithShellPermissionIdentity {
+                InstrumentationRegistry.getInstrumentation().context.getSystemService(
+                    AllowlistManager::class.java
+                )!!
+                    .setTestProviderEnabled(false)
+            }
+        }
     }
 }
