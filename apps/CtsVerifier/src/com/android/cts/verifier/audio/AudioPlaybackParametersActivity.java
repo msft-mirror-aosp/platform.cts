@@ -148,6 +148,12 @@ public class AudioPlaybackParametersActivity
 
         setInfoResources(R.string.audio_playback_params_test,
                 R.string.audio_playback_params_info, -1);
+
+        // Show the info dialog so the user knows how to run the test
+        View infoButton = findViewById(R.id.info_button);
+        if (infoButton != null) {
+            infoButton.performClick();
+        }
     }
 
     private void showView(View v, boolean show) {
@@ -894,7 +900,11 @@ public class AudioPlaybackParametersActivity
             DspBufferDouble rmsRecorderdB = new DspBufferDouble(actualLen);
             DspBufferDouble crossCorr = new DspBufferDouble(actualLen);
 
+            double maxRecorderRms = 0.0;
             for (int i = firstShot, index = 0; i <= lastShot; ++i, ++index) {
+                if (buffRmsRecorder.mData[i] > maxRecorderRms) {
+                    maxRecorderRms = buffRmsRecorder.mData[i];
+                }
                 double valPlayerdB
                          = Math.max(20 * Math.log10(buffRmsPlayer.mData[i]), MIN_RMS_DB);
                 rmsPlayerdB.setValue(index, valPlayerdB);
@@ -903,6 +913,15 @@ public class AudioPlaybackParametersActivity
                 rmsRecorderdB.setValue(index, valRecorderdB);
                 Log.v(TAG, String.format("RMS dB values at index %d - Player: %.4f," +
                         " Recorder: %.4f", i, valPlayerdB, valRecorderdB));
+            }
+
+            if (maxRecorderRms <= MIN_RMS_VAL * 2.0) {
+                Log.w(TAG, "Recorded volume is too low or zero. Failing correlation.");
+                runOnUiThread(() -> {
+                    mAnalysisResultText.setText("Recorded volume is too low or zero.\n" +
+                            "Make sure the device volume is not muted.");
+                });
+                return 0.0;
             }
 
             //cross correlation...
