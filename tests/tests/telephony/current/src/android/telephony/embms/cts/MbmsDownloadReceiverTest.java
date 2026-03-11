@@ -36,6 +36,10 @@ import android.telephony.mbms.MbmsDownloadReceiver;
 import android.telephony.mbms.UriPathPair;
 import android.telephony.mbms.vendor.VendorUtils;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,9 +48,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class MbmsDownloadReceiverTest extends MbmsDownloadTestBase {
     private static final String CTS_BROADCAST_PERMISSION =
@@ -207,7 +208,9 @@ public class MbmsDownloadReceiverTest extends MbmsDownloadTestBase {
         populateIntentWithCommonFields(fdRequestIntent);
 
         Bundle b = sendBroadcastAndValidate(fdRequestIntent, MbmsDownloadReceiver.RESULT_OK);
-        assertTrue(b == null || b.isEmpty());
+        assertTrue(
+                "Result bundle should be null or empty for no file descriptor request",
+                b == null || b.isEmpty());
     }
 
     @Test
@@ -218,7 +221,7 @@ public class MbmsDownloadReceiverTest extends MbmsDownloadTestBase {
 
         Bundle result = sendBroadcastAndValidate(fdRequestIntent, MbmsDownloadReceiver.RESULT_OK);
         List<UriPathPair> freeUris = result.getParcelableArrayList(VendorUtils.EXTRA_FREE_URI_LIST);
-        assertNotNull(freeUris);
+        assertNotNull("List of free URIs should not be null", freeUris);
         assertEquals(5, freeUris.size());
         for (UriPathPair pathPair : freeUris) {
             assertEquals(ContentResolver.SCHEME_CONTENT, pathPair.getContentUri().getScheme());
@@ -246,9 +249,14 @@ public class MbmsDownloadReceiverTest extends MbmsDownloadTestBase {
                 result2.getParcelableArrayList(VendorUtils.EXTRA_PAUSED_URI_LIST);
         assertEquals(freeUris.size(), refreshUris.size());
         for (UriPathPair pathPair : refreshUris) {
-            assertTrue(freeUris.stream()
-                    .anyMatch((originalPair) ->
-                            originalPair.getFilePathUri().equals(pathPair.getFilePathUri())));
+            assertTrue(
+                    "Missing expected file path URI",
+                    freeUris.stream()
+                            .anyMatch(
+                                    (originalPair) ->
+                                            originalPair
+                                                    .getFilePathUri()
+                                                    .equals(pathPair.getFilePathUri())));
         }
     }
 

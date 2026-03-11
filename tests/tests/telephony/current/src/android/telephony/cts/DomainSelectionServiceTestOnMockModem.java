@@ -138,7 +138,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
 
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
-        assertNotNull(sMockModemManager);
+        assertNotNull("MockModemManager should not be null", sMockModemManager);
         assertTrue(
                 "Connect mock modem service failed", sMockModemManager.connectMockModemService());
 
@@ -227,7 +227,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         setupForEmergencyCalling();
 
         TestDomainSelectionService testService = sServiceConnector.getTestService();
-        assertNotNull(testService);
+        assertNotNull("TestDomainSelectionService should not be null", testService);
 
         Call call = placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
@@ -235,7 +235,9 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         assertTrue(
                 "Timeout waiting for onDomainSelection",
                 testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
-        assertNotNull(testService.getTransportSelectorCallback());
+        assertNotNull(
+                "TransportSelectorCallback should not be null",
+                testService.getTransportSelectorCallback());
 
         call.disconnect();
 
@@ -258,7 +260,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         setupForEmergencyCalling();
 
         TestDomainSelectionService testService = sServiceConnector.getTestService();
-        assertNotNull(testService);
+        assertNotNull("TestDomainSelectionService should not be null", testService);
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
@@ -266,7 +268,9 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         assertTrue(
                 "Timeout waiting for onDomainSelection",
                 testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
-        assertNotNull(testService.getTransportSelectorCallback());
+        assertNotNull(
+                "TransportSelectorCallback should not be null",
+                testService.getTransportSelectorCallback());
 
         // onSelectionTerminated()
         assertTrue(
@@ -286,7 +290,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         setupForEmergencyCalling();
 
         TestDomainSelectionService testService = sServiceConnector.getTestService();
-        assertNotNull(testService);
+        assertNotNull("TestDomainSelectionService should not be null", testService);
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
@@ -294,7 +298,9 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         assertTrue(
                 "Timeout waiting for onDomainSelection",
                 testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
-        assertNotNull(testService.getTransportSelectorCallback());
+        assertNotNull(
+                "TransportSelectorCallback should not be null",
+                testService.getTransportSelectorCallback());
         assertTrue(
                 "Timeout waiting for service state updated",
                 testService.waitForLatchCountdown(LATCH_ON_SERVICE_STATE_UPDATED));
@@ -309,7 +315,8 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         assertTrue(
                 "Timeout waiting for wwan selector callback",
                 testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
-        assertNotNull(testService.getWwanSelectorCallback());
+        assertNotNull(
+                "WwanSelectorCallback should not be null", testService.getWwanSelectorCallback());
 
         // onDomainSelected(DOMAIN_CS)
         assertTrue("onDomainSelected failed", testService.onDomainSelected(DOMAIN_CS));
@@ -345,7 +352,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         setupForEmergencyCalling();
 
         TestDomainSelectionService testService = sServiceConnector.getTestService();
-        assertNotNull(testService);
+        assertNotNull("TestDomainSelectionService should not be null", testService);
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
@@ -353,7 +360,9 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         assertTrue(
                 "Timeout waiting for onDomainSelection",
                 testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
-        assertNotNull(testService.getTransportSelectorCallback());
+        assertNotNull(
+                "TransportSelectorCallback should not be null",
+                testService.getTransportSelectorCallback());
         assertTrue(
                 "Timeout waiting for service state updated",
                 testService.waitForLatchCountdown(LATCH_ON_SERVICE_STATE_UPDATED));
@@ -362,17 +371,21 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
                 testService.waitForLatchCountdown(LATCH_ON_BARRING_INFO_UPDATED));
 
         SelectionAttributes attr = testService.getSelectionAttributes();
-        assertNotNull(attr);
+        assertNotNull("SelectionAttributes should not be null", attr);
         assertEquals(SELECTOR_TYPE_CALLING, attr.getSelectorType());
         assertTrue("SelectionAttributes should be for emergency", attr.isEmergency());
-        assertNotNull(attr.getAddress());
-        assertNotNull(attr.getAddress().getSchemeSpecificPart());
+        assertNotNull("Address should not be null", attr.getAddress());
+        assertNotNull(
+                "Scheme specific part should not be null",
+                attr.getAddress().getSchemeSpecificPart());
         assertEquals(TEST_EMERGENCY_NUMBER, attr.getAddress().getSchemeSpecificPart());
         assertTrue(
                 "CsDisconnectCause should be NOT_VALID or NO_DISCONNECT_CAUSE_AVAILABLE",
                 attr.getCsDisconnectCause() == NOT_VALID
                         || attr.getCsDisconnectCause() == NO_DISCONNECT_CAUSE_AVAILABLE);
-        assertNotNull(attr.getEmergencyRegistrationResult());
+        assertNotNull(
+                "EmergencyRegistrationResult should not be null",
+                attr.getEmergencyRegistrationResult());
 
         assertTrue("onCreated failed", testService.onCreated());
 
@@ -381,7 +394,8 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         assertTrue(
                 "Timeout waiting for wwan selector callback",
                 testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
-        assertNotNull(testService.getWwanSelectorCallback());
+        assertNotNull(
+                "WwanSelectorCallback should not be null", testService.getWwanSelectorCallback());
 
         // onDomainSelected(DOMAIN_CS)
         assertTrue("onDomainSelected failed", testService.onDomainSelected(DOMAIN_CS));
@@ -403,7 +417,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         setupForEmergencyCalling();
 
         TestDomainSelectionService testService = sServiceConnector.getTestService();
-        assertNotNull(testService);
+        assertNotNull("TestDomainSelectionService should not be null", testService);
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
@@ -438,7 +452,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
 
         EmergencyRegistrationResult receivedResult = testService.getEmergencyRegResult();
 
-        assertNotNull(receivedResult);
+        assertNotNull("EmergencyRegistrationResult should not be null", receivedResult);
         assertEquals(regResult.getAccessNetwork(), receivedResult.getAccessNetwork());
         assertEquals(regResult.getRegState(), receivedResult.getRegState());
         assertEquals(regResult.getDomain(), receivedResult.getDomain());
@@ -469,7 +483,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
 
         Call call = getCall(getCurrentCallId());
 
-        assertNotNull(call);
+        assertNotNull("Call should not be null", call);
         assertTrue(
                 "Timeout waiting for call dialing",
                 callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));

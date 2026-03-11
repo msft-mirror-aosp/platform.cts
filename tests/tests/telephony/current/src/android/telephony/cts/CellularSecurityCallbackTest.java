@@ -102,8 +102,10 @@ public class CellularSecurityCallbackTest {
             throw ex;
         }
         sMockModemManager = new MockModemManager();
-        assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService());
+        assertNotNull("MockModemManager should not be null", sMockModemManager);
+        assertTrue(
+                "Failed to connect to MockModemService",
+                sMockModemManager.connectMockModemService());
     }
 
     /**
@@ -119,7 +121,9 @@ public class CellularSecurityCallbackTest {
                 sMockModemManager.unsolOnNetworkSecurityEvents(SLOT_ID_0, new ArraySet<>());
             }
             sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI, false);
-            assertTrue(sMockModemManager.disconnectMockModemService());
+            assertTrue(
+                    "Failed to disconnect MockModemService",
+                    sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
         }
         sTelephonyManager = null;
@@ -164,7 +168,9 @@ public class CellularSecurityCallbackTest {
                 "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Inserting a SIM is necessary otherwise mockmodem will crash
-        assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
+        assertTrue(
+                "Failed to insert SIM card",
+                sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
         // Timeout required after inserting a SIM to prevent the test from flakiness
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
         // Enter service ...
@@ -186,12 +192,13 @@ public class CellularSecurityCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnSecurityAlgorithmsChangedCalled);
+        assertTrue(
+                "onSecurityAlgorithmsChanged should be called", mOnSecurityAlgorithmsChangedCalled);
 
         // Leave service
         sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI, false);
         // Remove the SIM
-        assertTrue(sMockModemManager.removeSimCard(SLOT_ID_0));
+        assertTrue("Failed to remove SIM card", sMockModemManager.removeSimCard(SLOT_ID_0));
         // Unregister callback
         unRegisterTelephonyCallback(mOnSecurityAlgorithmsChangedCalled,
                 mSecurityAlgorithmsListener);
@@ -217,7 +224,9 @@ public class CellularSecurityCallbackTest {
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Inserting a SIM is necessary otherwise mockmodem will crash
-        assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
+        assertTrue(
+                "Failed to insert SIM card",
+                sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
         // Timeout required after inserting a SIM to prevent the test from flakiness
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
         // Enter service ...
@@ -239,12 +248,14 @@ public class CellularSecurityCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnCellularIdentifierDisclosedChangedCalled);
+        assertTrue(
+                "onCellularIdentifierDisclosedChanged should be called",
+                mOnCellularIdentifierDisclosedChangedCalled);
 
         // Leave service
         sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI, false);
         // Remove the SIM
-        assertTrue(sMockModemManager.removeSimCard(SLOT_ID_0));
+        assertTrue("Failed to remove SIM card", sMockModemManager.removeSimCard(SLOT_ID_0));
         // Unregister callback
         unRegisterTelephonyCallback(mOnCellularIdentifierDisclosedChangedCalled,
                 mCellularIdentifierDisclosedListener);
@@ -272,7 +283,9 @@ public class CellularSecurityCallbackTest {
                 "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Inserting a SIM is necessary otherwise mockmodem will crash
-        assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
+        assertTrue(
+                "Failed to insert SIM card",
+                sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
         // Timeout required after inserting a SIM to prevent the test from flakiness
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
         // Enter service ...
@@ -288,9 +301,9 @@ public class CellularSecurityCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnNetworkSecurityEventsCalled);
-        assertNotNull(mNetworkSecurityEvents);
-        assertTrue(mNetworkSecurityEvents.isEmpty());
+        assertTrue("onNetworkSecurityEvents should be called", mOnNetworkSecurityEventsCalled);
+        assertNotNull("NetworkSecurityEvents should not be null", mNetworkSecurityEvents);
+        assertTrue("NetworkSecurityEvents should be empty", mNetworkSecurityEvents.isEmpty());
 
         // Reset for the next event.
         mOnNetworkSecurityEventsCalled = false;
@@ -310,17 +323,16 @@ public class CellularSecurityCallbackTest {
                 mLock.wait(WAIT_TIME);
             }
         }
-        assertTrue(mOnNetworkSecurityEventsCalled);
-        assertNotNull(mNetworkSecurityEvents);
+        assertTrue("onNetworkSecurityEvents should be called", mOnNetworkSecurityEventsCalled);
+        assertNotNull("NetworkSecurityEvents should not be null", mNetworkSecurityEvents);
         assertEquals(1, mNetworkSecurityEvents.size());
         assertEquals(event, mNetworkSecurityEvents.iterator().next());
         // Leave service
         sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI, false);
         // Remove the SIM
-        assertTrue(sMockModemManager.removeSimCard(SLOT_ID_0));
+        assertTrue("Failed to remove SIM card", sMockModemManager.removeSimCard(SLOT_ID_0));
         // Test unregister
         unRegisterTelephonyCallback(
                 mOnNetworkSecurityEventsCalled, mNetworkSecurityEventsCallback);
     }
 }
-

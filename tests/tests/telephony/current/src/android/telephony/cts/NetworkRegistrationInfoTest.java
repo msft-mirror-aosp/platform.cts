@@ -123,7 +123,7 @@ public class NetworkRegistrationInfoTest {
                 .setRegistrationState(
                     NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING)
                 .build();
-        assertTrue(nri.isSearching());
+        assertTrue("NetworkRegistrationInfo should be searching", nri.isSearching());
     }
 
     /**
@@ -136,7 +136,7 @@ public class NetworkRegistrationInfoTest {
                 .setRegistrationState(
                         NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING)
                 .build();
-        assertTrue(nri.isNetworkSearching());
+        assertTrue("NetworkRegistrationInfo should be network searching", nri.isNetworkSearching());
     }
 
     @Test
@@ -172,7 +172,9 @@ public class NetworkRegistrationInfoTest {
                 .setRegistrationState(NetworkRegistrationInfo.REGISTRATION_STATE_ROAMING)
                 .build();
         nriNetworkRoaming.setRoamingType(NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
-        assertTrue(nriNetworkRoaming.isNetworkRoaming());
+        assertTrue(
+                "NetworkRegistrationInfo should be network roaming",
+                nriNetworkRoaming.isNetworkRoaming());
 
         NetworkRegistrationInfo nriNetworkHome = new NetworkRegistrationInfo.Builder()
                 .setRegistrationState(NetworkRegistrationInfo.REGISTRATION_STATE_HOME)
@@ -212,7 +214,8 @@ public class NetworkRegistrationInfoTest {
         NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
                 .setEmergencyOnly(true)
                 .build();
-        assertTrue(nri.isEmergencyEnabled());
+        assertTrue(
+                "NetworkRegistrationInfo should have emergency enabled", nri.isEmergencyEnabled());
     }
 
     @Test
@@ -237,7 +240,7 @@ public class NetworkRegistrationInfoTest {
             NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
                     .setRegistrationState(state)
                     .build();
-            assertTrue(nri.isRegistered());
+            assertTrue("NetworkRegistrationInfo should be registered", nri.isRegistered());
         }
 
         final int[] unregisteredStates = new int[] {
@@ -262,7 +265,9 @@ public class NetworkRegistrationInfoTest {
             NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
                     .setRegistrationState(state)
                     .build();
-            assertTrue(nri.isNetworkRegistered());
+            assertTrue(
+                    "NetworkRegistrationInfo should be network registered",
+                    nri.isNetworkRegistered());
         }
 
         final int[] unregisteredStates = new int[] {
@@ -290,7 +295,7 @@ public class NetworkRegistrationInfoTest {
             NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
                     .setRegistrationState(state)
                     .build();
-            assertTrue(nri.isSearching());
+            assertTrue("NetworkRegistrationInfo should be searching", nri.isSearching());
         }
 
         final int[] isNotSearchingStates = new int[] {
@@ -315,7 +320,9 @@ public class NetworkRegistrationInfoTest {
             NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
                     .setRegistrationState(state)
                     .build();
-            assertTrue(nri.isNetworkSearching());
+            assertTrue(
+                    "NetworkRegistrationInfo should be network searching",
+                    nri.isNetworkSearching());
         }
 
         final int[] isNotSearchingStates = new int[] {
@@ -410,7 +417,9 @@ public class NetworkRegistrationInfoTest {
         NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
                 .setIsNonTerrestrialNetwork(true)
                 .build();
-        assertTrue(nri.isNonTerrestrialNetwork());
+        assertTrue(
+                "NetworkRegistrationInfo should be non-terrestrial network",
+                nri.isNonTerrestrialNetwork());
     }
 
     @Test

@@ -130,15 +130,24 @@ public class ConfigUpdateIntentsTest {
                 CONFIG_UPDATE_INTENT[INDEX_INTENT_CONFIG]);
 
         configUpdateIntent.putExtra(ConfigUpdate.EXTRA_VERSION, "version");
-        assertTrue(configUpdateIntent.getExtras()
-                .containsKey(CONFIG_UPDATE_EXTRA[INDEX_EXTRA_VERSION]));
+        assertTrue(
+                "Intent should contain extra VERSION",
+                configUpdateIntent
+                        .getExtras()
+                        .containsKey(CONFIG_UPDATE_EXTRA[INDEX_EXTRA_VERSION]));
 
         configUpdateIntent.putExtra(ConfigUpdate.EXTRA_REQUIRED_HASH, "hash");
-        assertTrue(configUpdateIntent.getExtras()
-                .containsKey(CONFIG_UPDATE_EXTRA[INDEX_EXTRA_REQUIRED_HASH]));
+        assertTrue(
+                "Intent should contain extra REQUIRED_HASH",
+                configUpdateIntent
+                        .getExtras()
+                        .containsKey(CONFIG_UPDATE_EXTRA[INDEX_EXTRA_REQUIRED_HASH]));
 
         configUpdateIntent.putExtra(ConfigUpdate.EXTRA_DOMAIN, "domain");
-        assertTrue(configUpdateIntent.getExtras()
-                .containsKey(CONFIG_UPDATE_EXTRA[INDEX_EXTRA_DOMAIN]));
+        assertTrue(
+                "Intent should contain extra DOMAIN",
+                configUpdateIntent
+                        .getExtras()
+                        .containsKey(CONFIG_UPDATE_EXTRA[INDEX_EXTRA_DOMAIN]));
     }
 }

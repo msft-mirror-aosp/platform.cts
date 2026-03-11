@@ -83,23 +83,23 @@ public final class CellBroadcastIdRangeTest {
         CellBroadcastIdRange range2 = new CellBroadcastIdRange(CHANNEL_VALUES[0][0],
                 CHANNEL_VALUES[0][1], TYPE_VALUES[0], ENABLED_VALUES[0]);
 
-        assertTrue(!range1.equals(null));
-        assertTrue(range1.equals(range2));
+        assertTrue("equals() with null should return false", !range1.equals(null));
+        assertTrue("Ranges with same values should be equal", range1.equals(range2));
 
         range2 = new CellBroadcastIdRange(CHANNEL_VALUES[1][0], CHANNEL_VALUES[1][1],
                 TYPE_VALUES[0], ENABLED_VALUES[0]);
 
-        assertTrue(!range1.equals(range2));
+        assertTrue("Ranges with different values should not be equal", !range1.equals(range2));
 
         range2 = new CellBroadcastIdRange(CHANNEL_VALUES[0][0], CHANNEL_VALUES[0][1],
                 TYPE_VALUES[1], ENABLED_VALUES[0]);
 
-        assertTrue(!range1.equals(range2));
+        assertTrue("Ranges with different values should not be equal", !range1.equals(range2));
 
         range2 = new CellBroadcastIdRange(CHANNEL_VALUES[0][0], CHANNEL_VALUES[0][1],
                 TYPE_VALUES[0], ENABLED_VALUES[1]);
 
-        assertTrue(!range1.equals(range2));
+        assertTrue("Ranges with different values should not be equal", !range1.equals(range2));
     }
 
     @Test

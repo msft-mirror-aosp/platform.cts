@@ -116,7 +116,7 @@ public class CarrierMessagingServiceWrapperTest {
                 .adoptShellPermissionIdentity(BIND_CARRIER_SERVICES, INTERACT_ACROSS_USERS);
         boolean bindResult = mServiceWrapper.bindToCarrierMessagingService(
                 mContext, packageName, Runnable::run, mOnServiceReadyCallback);
-        assertTrue(bindResult);
+        assertTrue("Failed to bind to CarrierMessagingService", bindResult);
 
         waitForServiceReady("Service " + packageName + " should be ready.");
     }
@@ -266,7 +266,7 @@ public class CarrierMessagingServiceWrapperTest {
             mServiceReadyFuture.get(CarrierMessagingServiceWrapperTest.TIMEOUT_IN_MS,
                     TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException e) {
-            assertTrue(isServiceReady());
+            assertTrue(failMessage, isServiceReady());
         } catch (TimeoutException e) {
             fail(failMessage + " within "
                     + CarrierMessagingServiceWrapperTest.TIMEOUT_IN_MS + " ms.");

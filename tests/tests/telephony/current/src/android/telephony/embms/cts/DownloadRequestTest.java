@@ -47,13 +47,16 @@ public class DownloadRequestTest {
     @Test
     public void testGetMaxAppIntentSize() {
         // Test that the max intent size is positive
-        assertTrue(DownloadRequest.getMaxAppIntentSize() > 0);
+        assertTrue(
+                "getMaxAppIntentSize() should be > 0", DownloadRequest.getMaxAppIntentSize() > 0);
     }
 
     @Test
     public void testGetMaxDestinationUriSize() {
         // Test that the max intent size is positive
-        assertTrue(DownloadRequest.getMaxDestinationUriSize() > 0);
+        assertTrue(
+                "getMaxDestinationUriSize() should be > 0",
+                DownloadRequest.getMaxDestinationUriSize() > 0);
     }
 
     @Test

@@ -80,7 +80,9 @@ public class ModemActivityInfoTest {
     public void testAccessors() {
         ModemActivityInfo info = new ModemActivityInfo(SystemClock.elapsedRealtime(),
                 VALID_SLEEP_TIME_MS, VALID_IDLE_TIME_MS, VALID_TX_TIME_MS, VALID_RX_TIME_MS);
-        assertTrue(SystemClock.elapsedRealtime() >= info.getTimestampMillis());
+        assertTrue(
+                "elapsedRealtime < timestamp in ModemActivityInfo",
+                SystemClock.elapsedRealtime() >= info.getTimestampMillis());
         assertEquals(VALID_SLEEP_TIME_MS, info.getSleepTimeMillis());
         assertEquals(VALID_IDLE_TIME_MS, info.getIdleTimeMillis());
         assertEquals(VALID_RX_TIME_MS, info.getReceiveTimeMillis());

@@ -161,12 +161,15 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
             throws Exception {
         assertNotNull("SipDelegate was null when sending message", connection);
         connection.sendMessage(messageToSend, sipConfig.getVersion());
-        Pair<String, Integer> ack = mSentMessageAcks.poll(ImsUtils.TEST_TIMEOUT_MS,
-                TimeUnit.MILLISECONDS);
-        assertNotNull(ack);
-        assertEquals(messageToSend.getViaBranchParameter(), ack.first);
-        assertNotNull(ack.second);
-        assertEquals(-1, ack.second.intValue());
+        Pair<String, Integer> ack =
+                mSentMessageAcks.poll(ImsUtils.TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertNotNull("Timed out waiting for message sent acknowledgement", ack);
+        assertEquals(
+                "Transaction ID in ACK does not match sent message",
+                messageToSend.getViaBranchParameter(),
+                ack.first);
+        assertNotNull("Reason in ACK should not be null", ack.second);
+        assertEquals("Message sent should be successful", -1, ack.second.intValue());
     }
 
     public void sendMessageAndVerifyFailure(SipMessage messageToSend, int expectedReason)
@@ -175,14 +178,17 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
         // send invalid version if it was not sent.
         long version = (sipConfig != null) ? sipConfig.getVersion() : -1;
         connection.sendMessage(messageToSend, version);
-        Pair<String, Integer> ack = mSentMessageAcks.poll(ImsUtils.TEST_TIMEOUT_MS,
-                TimeUnit.MILLISECONDS);
-        assertNotNull(ack);
+        Pair<String, Integer> ack =
+                mSentMessageAcks.poll(ImsUtils.TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertNotNull("Timed out waiting for message failure acknowledgement", ack);
         // TODO actually check this, but for now the platform can not inspect SipMessages and send
         // the real transaction ID. So, just ensure it is null.
-        //assertEquals(ImsUtils.TEST_TRANSACTION_ID, ack.first);
-        assertNotNull(ack.second);
-        assertEquals(expectedReason, ack.second.intValue());
+        // assertEquals(ImsUtils.TEST_TRANSACTION_ID, ack.first);
+        assertNotNull("Reason in ACK should not be null", ack.second);
+        assertEquals(
+                "Message send failure reason does not match expected",
+                expectedReason,
+                ack.second.intValue());
     }
 
     public void verifyMessageReceived(SipMessage messageToVerify)
@@ -211,7 +217,7 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
     }
 
     public void verifyRegistrationStateRegistered(Set<String> tags) {
-        assertNotNull(regState);
+        assertNotNull("Registration state should not be null", regState);
         assertFalse("No registered features found",
                 regState.getRegisteredFeatureTags().isEmpty());
         ArraySet<String> notRegistered = new ArraySet<>(tags);
@@ -222,12 +228,13 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
                 regState.getDeregisteringFeatureTags().isEmpty());
         assertTrue("Deregistered features should be empty",
                 regState.getDeregisteredFeatureTags().isEmpty());
-        assertTrue("Registering features should be empty",
+        assertTrue(
+                "Registering features should be empty",
                 regState.getRegisteringFeatureTags().isEmpty());
     }
 
     public void verifyRegistrationStateEmpty() {
-        assertNotNull(regState);
+        assertNotNull("Registration state should not be null", regState);
         assertTrue("Registered features should be empty",
                 regState.getRegisteredFeatureTags().isEmpty());
         assertTrue("Deregistering features should be empty",
@@ -258,30 +265,29 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
         return false;
     }
 
-
     public void verifyNoneDenied() {
-        assertNotNull(deniedTags);
+        assertNotNull("Set of denied tags should not be null", deniedTags);
         assertTrue("Denied tags should be empty", deniedTags.isEmpty());
     }
 
     public void verifyDenied(Set<FeatureTagState> denied) {
-        assertNotNull(deniedTags);
+        assertNotNull("Set of denied tags should not be null", deniedTags);
         assertEquals(denied, deniedTags);
     }
 
     public void verifyAllDenied(int reason) {
-        assertNotNull(deniedTags);
+        assertNotNull("Set of denied tags should not be null", deniedTags);
         // Ensure that if the request is empty, the denied tags are also empty.
         if (delegateRequest.getFeatureTags().isEmpty()) {
             assertTrue("Denied tags should be empty when request tags are empty",
                     deniedTags.isEmpty());
         }
         // All should be denied with the same reason.
-        FeatureTagState incorrectReason = deniedTags.stream().filter((t) -> t.getState() != reason)
-                .findAny().orElse(null);
+        FeatureTagState incorrectReason =
+                deniedTags.stream().filter((t) -> t.getState() != reason).findAny().orElse(null);
         Set<String> deniedFeatures = deniedTags.stream().map(FeatureTagState::getFeatureTag)
                 .collect(Collectors.toSet());
-        assertNull(incorrectReason);
+        assertNull("All denied tags should have the same reason", incorrectReason);
 
         Set<String> requestedTags = new ArraySet<>(delegateRequest.getFeatureTags());
         requestedTags.removeAll(deniedFeatures);

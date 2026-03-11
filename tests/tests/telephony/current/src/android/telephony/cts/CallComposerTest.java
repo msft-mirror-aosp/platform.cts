@@ -207,7 +207,7 @@ public class CallComposerTest {
             return null;
         }
 
-        assertNotNull(result.first);
+        assertNotNull("UUID should not be null on successful upload", result.first);
 
         // Make sure that any file descriptors opened to the test file have been closed.
         if (inputFile != null) {

@@ -105,7 +105,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -337,7 +336,9 @@ public class SmsManagerTest {
             mContext.unregisterReceiver(mMessageUpgradeReceiver);
         }
         if (!TextUtils.isEmpty(mOriginalDefaultSmsApp)) {
-            assertTrue(DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
+            assertTrue(
+                    "Failed to restore original default SMS app",
+                    DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
         }
         if (!mInsertedMessageUris.isEmpty()) {
             cleanupMessages(mInsertedMessageUris);
@@ -347,26 +348,34 @@ public class SmsManagerTest {
     @Test
     public void testDivideMessage() {
         ArrayList<String> dividedMessages = divideMessage(LONG_TEXT);
-        assertNotNull(dividedMessages);
+        assertNotNull("dividedMessages should not be null", dividedMessages);
         if (TelephonyUtils.isSkt(mTelephonyManager)) {
-            assertTrue(isComplete(dividedMessages, 5, LONG_TEXT)
-                    || isComplete(dividedMessages, 3, LONG_TEXT));
+            assertTrue(
+                    "dividedMessages are incorrectly",
+                    isComplete(dividedMessages, 5, LONG_TEXT)
+                            || isComplete(dividedMessages, 3, LONG_TEXT));
         } else if (TelephonyUtils.isKt(mTelephonyManager)) {
-            assertTrue(isComplete(dividedMessages, 4, LONG_TEXT)
-                    || isComplete(dividedMessages, 3, LONG_TEXT));
+            assertTrue(
+                    "dividedMessages incorrectly",
+                    isComplete(dividedMessages, 4, LONG_TEXT)
+                            || isComplete(dividedMessages, 3, LONG_TEXT));
         } else {
-            assertTrue(isComplete(dividedMessages, 3, LONG_TEXT));
+            assertTrue(
+                    "dividedMessages are incorrectly", isComplete(dividedMessages, 3, LONG_TEXT));
         }
     }
 
     @Test
     public void testDivideUnicodeMessage() {
         ArrayList<String> dividedMessages = divideMessage(LONG_TEXT_WITH_32BIT_CHARS);
-        assertNotNull(dividedMessages);
-        assertTrue(isComplete(dividedMessages, 3, LONG_TEXT_WITH_32BIT_CHARS));
+        assertNotNull("dividedMessages should not be null", dividedMessages);
+        assertTrue(
+                "dividedMessages incorrectly",
+                isComplete(dividedMessages, 3, LONG_TEXT_WITH_32BIT_CHARS));
         for (String messagePiece : dividedMessages) {
-            assertFalse(Character.isHighSurrogate(
-                    messagePiece.charAt(messagePiece.length() - 1)));
+            assertFalse(
+                    "messagePiece ends with high surrogate",
+                    Character.isHighSurrogate(messagePiece.charAt(messagePiece.length() - 1)));
         }
     }
 
@@ -410,7 +419,7 @@ public class SmsManagerTest {
         Bundle bundle = callbackResult.get(200, TimeUnit.SECONDS);
         String token = bundle.getString("token");
         assertThat(bundle.getString("class"), startsWith(SMS_RETRIEVER_APP));
-        assertNotNull(token);
+        assertNotNull("Token should not be null", token);
 
         return token;
     }
@@ -442,20 +451,26 @@ public class SmsManagerTest {
         assertTrue("[RERUN] Could not send SMS. Check signal.",
                 mSendReceiver.waitForCalls(1, TIME_OUT));
         if (mDeliveryReportSupported) {
-            assertTrue("[RERUN] SMS message delivery notification not received. Check signal.",
+            assertTrue(
+                    "[RERUN] SMS message delivery notification not received. Check signal.",
                     mDeliveryReceiver.waitForCalls(1, TIME_OUT));
         }
 
-        assertTrue(mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+        assertTrue(
+                "mSmsReceivedReceiver not called", mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
         // Received SMS should always contain a generated messageId
         assertNotEquals(0L, sMessageId);
 
         if (defaultSmsApp) {
             // default app should receive SMS_DELIVER_ACTION
-            assertTrue(mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
+            assertTrue(
+                    "mSmsDeliverReceiver not called",
+                    mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
         } else {
             // non-default app should receive only SMS_RECEIVED_ACTION
-            assertTrue(mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
+            assertTrue(
+                    "mSmsDeliverReceiver should not be called",
+                    mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
         }
     }
 
@@ -464,23 +479,32 @@ public class SmsManagerTest {
         sMessageId = 0L;
         int numPartsSent = sendMultipartTextMessageIfSupported(mccmnc, addMessageId);
         if (numPartsSent > 0) {
-            assertTrue("[RERUN] Could not send multi part SMS. Check signal.",
+            assertTrue(
+                    "[RERUN] Could not send multi part SMS. Check signal.",
                     mSendReceiver.waitForCalls(numPartsSent, TIME_OUT));
             if (mDeliveryReportSupported) {
-                assertTrue("[RERUN] Multi part SMS message delivery notification not received. "
-                        + "Check signal.", mDeliveryReceiver.waitForCalls(numPartsSent, TIME_OUT));
+                assertTrue(
+                        "[RERUN] Multi part SMS message delivery notification not received. "
+                                + "Check signal.",
+                        mDeliveryReceiver.waitForCalls(numPartsSent, TIME_OUT));
             }
 
-            assertTrue(mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+            assertTrue(
+                    "mSmsReceivedReceiver not called",
+                    mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
             // Received SMS should contain a generated messageId
             assertNotEquals(0L, sMessageId);
 
             if (defaultSmsApp) {
                 // default app should receive SMS_DELIVER_ACTION
-                assertTrue(mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
+                assertTrue(
+                        "mSmsDeliverReceiver not called",
+                        mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
             } else {
                 // non-default app should receive only SMS_RECEIVED_ACTION
-                assertTrue(mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
+                assertTrue(
+                        "mSmsDeliverReceiver should not be called",
+                        mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
             }
         } else {
             // This GSM network doesn't support Multipart SMS message.
@@ -582,7 +606,9 @@ public class SmsManagerTest {
             assertTrue(
                     "Could not send SMS. Check signal.", mSendReceiver.waitForCalls(1, TIME_OUT));
             if (mDeliveryReportSupported) {
-                assertTrue(mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+                assertTrue(
+                        "mDeliveryReceiver not called",
+                        mDeliveryReceiver.waitForCalls(1, TIME_OUT));
             }
         } finally {
             DefaultSmsAppHelper.stopBeingDefaultSmsApp();
@@ -612,7 +638,9 @@ public class SmsManagerTest {
                         "Could not send SMS. Check signal.",
                         mSendReceiver.waitForCalls(1, TIME_OUT));
                 if (mDeliveryReportSupported) {
-                    assertTrue(mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+                    assertTrue(
+                            "mDeliveryReceiver not called",
+                            mDeliveryReceiver.waitForCalls(1, TIME_OUT));
                 }
             }
         } finally {
@@ -1102,20 +1130,26 @@ public class SmsManagerTest {
     }
 
     private void setSmsApp(String pkg) throws Exception {
-        executeWithShellPermissionIdentity(() -> {
-            Context context = getInstrumentation().getContext();
-            RoleManager roleManager = context.getSystemService(RoleManager.class);
-            CompletableFuture<Boolean> result = new CompletableFuture<>();
-            if (roleManager.getRoleHoldersAsUser(RoleManager.ROLE_SMS,
-                    context.getUser()).contains(pkg)) {
-                result.complete(true);
-            } else {
-                roleManager.addRoleHolderAsUser(RoleManager.ROLE_SMS, pkg,
-                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, context.getUser(),
-                        AsyncTask.THREAD_POOL_EXECUTOR, result::complete);
-            }
-            assertTrue(result.get(5, TimeUnit.SECONDS));
-        });
+        executeWithShellPermissionIdentity(
+                () -> {
+                    Context context = getInstrumentation().getContext();
+                    RoleManager roleManager = context.getSystemService(RoleManager.class);
+                    CompletableFuture<Boolean> result = new CompletableFuture<>();
+                    if (roleManager
+                            .getRoleHoldersAsUser(RoleManager.ROLE_SMS, context.getUser())
+                            .contains(pkg)) {
+                        result.complete(true);
+                    } else {
+                        roleManager.addRoleHolderAsUser(
+                                RoleManager.ROLE_SMS,
+                                pkg,
+                                RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
+                                context.getUser(),
+                                AsyncTask.THREAD_POOL_EXECUTOR,
+                                result::complete);
+                    }
+                    assertTrue("Failed to set SMS app", result.get(5, TimeUnit.SECONDS));
+                });
     }
 
     private <T> T executeWithShellPermissionIdentity(Callable<T> callable) throws Exception {
@@ -1211,7 +1245,7 @@ public class SmsManagerTest {
 
     @Test
     public void testGetDefault() {
-        assertNotNull(getSmsManager());
+        assertNotNull("Default SmsManager is null", getSmsManager());
     }
 
     @Test

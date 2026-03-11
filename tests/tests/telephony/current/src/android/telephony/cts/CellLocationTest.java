@@ -93,7 +93,7 @@ public class CellLocationTest {
         CellLocation cl = CellLocation.getEmpty();
         if (cl instanceof GsmCellLocation) {
             GsmCellLocation gcl = (GsmCellLocation) cl;
-            assertNotNull(gcl);
+            assertNotNull("GsmCellLocation should not be null", gcl);
             assertEquals(-1, gcl.getCid());
             assertEquals(-1, gcl.getLac());
         }
@@ -125,7 +125,7 @@ public class CellLocationTest {
             }
         }
         Thread.sleep(1000);
-        assertTrue(mOnCellLocationChangedCalled);
+        assertTrue("onCellLocationChanged should be called", mOnCellLocationChangedCalled);
         t.checkException();
     }
 }
