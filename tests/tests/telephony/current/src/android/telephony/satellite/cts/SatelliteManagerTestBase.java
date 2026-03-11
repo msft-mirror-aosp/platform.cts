@@ -62,6 +62,7 @@ import android.os.Looper;
 import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
@@ -227,6 +228,11 @@ public class SatelliteManagerTestBase {
     }
 
     protected static boolean shouldTestSatelliteWithMockService() {
+        UserManager userManager = getContext().getSystemService(UserManager.class);
+        if (userManager.isHeadlessSystemUserMode()) {
+            logd("Skipping tests because HSUM device is not available");
+            return false;
+        }
         if (!getContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY)) {
             logd("Skipping tests because FEATURE_TELEPHONY is not available");
