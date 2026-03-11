@@ -8000,14 +8000,18 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="sysui_smt_launch_movable_task_info_dialog_title">Test step info</string>
     <string name="sysui_smt_launch_movable_task_info_dialog_content">
-        After this information is acknowledged, a new window will be launched.
-        \nPlease place it so that you can still see instructions provided in this window.
+        After this information is acknowledged either a new window will be launched or the testing
+        logic will determine that the test can be skipped on this device (e.g. if the device does
+        not support freeform windowing).
+        \nIf a new window is launched, please place it so that you can still see instructions
+        provided in this window.
     </string>
     <string name="sysui_smt_launch_movable_task_fail_info_dialog_title">Test step info</string>
     <string name="sysui_smt_launch_movable_task_fail_info_dialog_content">
-        This device does not fulfill assumptions required by the test.
+        This device does not support the feature being tested so this test can be skipped.
         \nAfter this information is acknowledged, the test will be marked as passed and will finish
-        automatically.
+        automatically. This is fully expected for some devices, especially those not supporting
+        freeform windowing.
     </string>
     <string name="sysui_smt_decoration_visibility_info_dialog_title">Verification needed</string>
     <string name="sysui_smt_decoration_visibility_info_dialog_content">
