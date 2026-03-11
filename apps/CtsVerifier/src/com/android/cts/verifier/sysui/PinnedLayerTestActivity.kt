@@ -57,6 +57,7 @@ class PinnedLayerTestActivity : PassFailButtons.Activity() {
     private lateinit var textPrimary: TextView
     private lateinit var textSecondary: TextView
     private lateinit var ackBtn: Button
+    private lateinit var launchBtn: Button
 
     private val appOpsManager by lazy { getSystemService(AppOpsManager::class.java) }
 
@@ -69,6 +70,9 @@ class PinnedLayerTestActivity : PassFailButtons.Activity() {
         textPrimary = findViewById(R.id.text_primary)
         textSecondary = findViewById(R.id.text_secondary)
         ackBtn = findViewById(R.id.button_acknowledge)
+        launchBtn = findViewById(R.id.button_launch)
+
+        launchBtn.setOnClickListener { launchPinnedTask() }
 
         checkPermissions()
     }
@@ -110,28 +114,20 @@ class PinnedLayerTestActivity : PassFailButtons.Activity() {
         setStepDescription(
             R.string.pinned_layer_close_affordance_title,
             R.string.pinned_layer_close_affordance_desc,
-            R.string.pinned_layer_launch_sample_button,
+            R.string.pinned_layer_acknowledge_button,
         )
-        ackBtn.setOnClickListener {
-            launchPinnedTask()
-
-            ackBtn.setText(R.string.pinned_layer_acknowledge_button)
-            ackBtn.setOnClickListener { showDisableActionStep() }
-        }
+        launchBtn.isVisible = true
+        ackBtn.setOnClickListener { showDisableActionStep() }
     }
 
     private fun showDisableActionStep() {
         setStepDescription(
             R.string.pinned_layer_disable_affordance_title,
             R.string.pinned_layer_disable_affordance_desc,
-            R.string.pinned_layer_launch_sample_button,
+            R.string.pinned_layer_acknowledge_button,
         )
-        ackBtn.setOnClickListener {
-            launchPinnedTask()
-
-            ackBtn.setText(R.string.pinned_layer_acknowledge_button)
-            ackBtn.isVisible = false
-        }
+        launchBtn.isVisible = true
+        ackBtn.isVisible = false
     }
 
     private fun launchPinnedTask() {

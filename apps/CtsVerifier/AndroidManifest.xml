@@ -6789,7 +6789,8 @@
 
         <activity
             android:name=".sysui.PinnedSampleActivity"
-            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen">
+            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen"
+            android:autoRemoveFromRecents="true">
 
             <meta-data android:name="NonApiTest" android:value="Helper class" />
         </activity>
