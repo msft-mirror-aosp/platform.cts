@@ -169,6 +169,21 @@ public class StepSensorPermissionTestActivity extends SensorCtsVerifierTestActiv
 
         mEventReceivedLatch = new CountDownLatch(1);
         Sensor sensor = mSensorManager.getDefaultSensor(sensorType);
+
+        if (sensor == null) {
+            if (mHasAccelFeature && !expected) {
+                mAccelRecorder.stop();
+            }
+
+            String errorMsg =
+                    String.format(
+                            "System mismatch: PackageManager claims feature is supported, but"
+                                + " SensorManager.getDefaultSensor(%d) returned null. Check device"
+                                + " HAL or permissions XML.",
+                            sensorType);
+            org.junit.Assert.fail(errorMsg);
+        }
+
         mSensorUnderTest = sensor;
 
         String msg = String.format("Should %sbe able to register for '%s' events",
