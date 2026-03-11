@@ -234,14 +234,17 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        //To avoid NPE during onResume,before start to iterate next test order
-        if (mCurrentTest != null && mCurrentTest.status != SETUP && mCurrentTest.autoStart()) {
-            Log.i(TAG, "auto starting: " + mCurrentTest.getClass().getSimpleName());
-            mCurrentTest.status = mCurrentTest.autoStartStatus();
+    public void onTopResumedActivityChanged(boolean isTopResumedActivity) {
+        super.onTopResumedActivityChanged(isTopResumedActivity);
+        if (isTopResumedActivity) {
+            // To avoid NPE during onTopResumedActivityChanged,before start to iterate next test
+            // order
+            if (mCurrentTest != null && mCurrentTest.status != SETUP && mCurrentTest.autoStart()) {
+                Log.i(TAG, "auto starting: " + mCurrentTest.getClass().getSimpleName());
+                mCurrentTest.status = mCurrentTest.autoStartStatus();
+            }
+            next();
         }
-        next();
     }
 
     // Interface Utilities
