@@ -381,6 +381,29 @@ public class DuplexAudioManager {
     }
 
     /**
+     * Stops both streams but does not close or teardown the streams.
+     *
+     * @return Either StreamBase.OK or an appropriate error code.
+     */
+    public int stopWithoutUnwind() {
+        if (LOG) {
+            Log.d(TAG, "stopWithoutUnwind()");
+        }
+        int result = StreamBase.OK;
+        if (mPlayer != null && (result = mPlayer.stop()) != StreamBase.OK) {
+            if (LOG) {
+                Log.d(TAG, "  player stop fails result:" + result);
+            }
+        }
+        if (mRecorder != null && (result = mRecorder.stop()) != StreamBase.OK) {
+            if (LOG) {
+                Log.d(TAG, "  recorder stop fails result:" + result);
+            }
+        }
+        return result;
+    }
+
+    /**
      * Stops and tears down both streams. It's not clear we can return a useful error code, so just
      * let StreamBase.unwind() do the work.
      */

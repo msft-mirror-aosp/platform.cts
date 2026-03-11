@@ -23,7 +23,7 @@
     <LinearLayout
         android:fitsSystemWindows="@bool/fit_system_windows"
         android:orientation="vertical"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <!-- devices -->
@@ -47,36 +47,40 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <!-- Channel Selection -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/audio_loopback_calibrate_channel"/>
+
+        <Spinner
+            android:id="@+id/audio_calibration_channel_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
         <!-- Player Controls -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginStart="10dp"
             style="?android:attr/buttonBarStyle"
             android:id="@+id/audio_calibration_process">
             <Button
-                android:text="@string/audio_general_left"
+                android:text="@string/audio_general_start"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:id="@+id/audio_calibration_left"
-                style="?android:attr/buttonBarButtonStyle"/>
-            <Button
-                android:text="@string/audio_general_right"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:id="@+id/audio_calibration_right"
+                android:layout_height="wrap_content"
+                android:id="@+id/audio_calibration_start"
                 style="?android:attr/buttonBarButtonStyle"/>
             <Button
                 android:text="@string/audio_general_stop"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:id="@+id/audio_calibration_stop"
                 style="?android:attr/buttonBarButtonStyle"/>
             <Button
                 android:text="@string/audio_general_done"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:id="@+id/audio_calibration_done"
                 style="?android:attr/buttonBarButtonStyle"/>
         </LinearLayout>
@@ -86,9 +90,17 @@
             android:layout_width="match_parent"
             android:layout_height="200dp"/>
 
+        <TextView
+            android:id="@+id/audio_calibration_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="5dp"
+            android:textStyle="bold" />
+
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="fill_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_marginTop="5dp"
             android:id="@+id/audio_calibration_info">
