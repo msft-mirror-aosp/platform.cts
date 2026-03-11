@@ -6506,6 +6506,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_playback_params_info">
         This test checks that audio playback parameters are working correctly.
         Please ensure that the device has speaker and microphone available as it runs in loopback mode.
+        Please ensure that the device is at its max volume.
 
         Press "Test Non-Offload" and "Test Offload" to start the respective tests. Both must pass. The test will:\n
         1. Play a sound at 1.0x speed and record it via the loopback (control).\n
