@@ -51,9 +51,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.UiAutomatorUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -412,6 +413,9 @@ public class DragDropTest extends WindowManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeFalse(isWatchDevice());
+        assumeFalse(
+                "Drag and Drop is blocked for visible background users",
+                new UserHelper().isVisibleBackgroundUser());
         UiAutomatorUtils.getUiDevice().waitForIdle();
         mActivity = startActivityInWindowingMode(DragDropActivity.class, WINDOWING_MODE_FULLSCREEN);
         mWmState.waitUntilActivityReadyForInputInjection(
