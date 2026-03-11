@@ -26,8 +26,9 @@ import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized.Parameter;
@@ -58,7 +59,7 @@ import java.util.regex.Pattern;
 @RunWith(DeviceJUnit4Parameterized.class)
 @UseParametersRunnerFactory(DeviceJUnit4ClassRunnerWithParameters.RunnerFactory.class)
 public class SELinuxNeverallowRulesTestVendor extends BaseHostJUnit4Test {
-    private File mSepolicyAnalyze;
+    private static File sSepolicyAnalyze;
     private File mDeviceVendorPolicyFile;
 
     private IBuildInfo mBuild;
@@ -119,6 +120,14 @@ public class SELinuxNeverallowRulesTestVendor extends BaseHostJUnit4Test {
     @Parameter(2)
     public SELinuxNeverallowRule mRule;
 
+    @BeforeClass
+    public static void copySepolicyAnalyze() throws Exception {
+        if (sSepolicyAnalyze == null) {
+            sSepolicyAnalyze = SELinuxHostTest.copyResourceToTempFile("/sepolicy-analyze");
+            sSepolicyAnalyze.setExecutable(true);
+        }
+    }
+
     @Before
     public void setUp() throws Exception {
         mDevice = getDevice();
@@ -132,23 +141,23 @@ public class SELinuxNeverallowRulesTestVendor extends BaseHostJUnit4Test {
         assumeTrue("skipping not matching vendor", mVendorSepolicyVersion == mVersion);
         assumeTrue("skipping not compatible rule", mRule.isCompatible(mDevice));
 
-        if (mSepolicyAnalyze == null) {
-            mSepolicyAnalyze = SELinuxHostTest.copyResourceToTempFile("/sepolicy-analyze");
-            mSepolicyAnalyze.setExecutable(true);
+        if (sSepolicyAnalyze == null) {
+            sSepolicyAnalyze = SELinuxHostTest.copyResourceToTempFile("/sepolicy-analyze");
+            sSepolicyAnalyze.setExecutable(true);
         }
         mDeviceVendorPolicyFile = SELinuxHostTest.getDeviceVendorPolicyFile(mBuild, mDevice);
     }
 
-    @After
-    public void tearDown() throws Exception {
-        if (mSepolicyAnalyze != null) {
-            mSepolicyAnalyze.delete();
-            mSepolicyAnalyze = null;
+    @AfterClass
+    public static void removeSepolicyAnalyze() throws Exception {
+        if (sSepolicyAnalyze != null) {
+            sSepolicyAnalyze.delete();
+            sSepolicyAnalyze = null;
         }
     }
 
     @Test
     public void testNeverallowRules() throws Exception {
-        mRule.testNeverallowRule(mSepolicyAnalyze, mDeviceVendorPolicyFile);
+        mRule.testNeverallowRule(sSepolicyAnalyze, mDeviceVendorPolicyFile);
     }
 }
