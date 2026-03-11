@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,42 +14,41 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import android.bluetooth.le.BluetoothLeScanner;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.util.Log;
+import android.bluetooth.le.BluetoothLeScanner
+import android.bluetooth.le.ScanResult
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import java.util.concurrent.CountDownLatch
 
-import java.util.concurrent.CountDownLatch;
+private const val TAG = "BluetoothScanReceiver"
 
-public class BluetoothScanReceiver extends BroadcastReceiver {
-    private static final String TAG = BluetoothScanReceiver.class.getSimpleName();
+class BluetoothScanReceiver : BroadcastReceiver() {
 
-    private static CountDownLatch sCountDownLatch;
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        Log.i(TAG, "Received scan results:" + intent);
+    override fun onReceive(context: Context, intent: Intent) {
+        Log.i(TAG, "Received scan results:$intent")
+        val scanResults =
+            intent.getParcelableArrayListExtra<ScanResult>(
+                BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT
+            )
+        Log.i(TAG, "ScanResults = $scanResults")
         Log.i(
-                TAG,
-                "ScanResults = "
-                        + intent.getParcelableArrayListExtra(
-                                BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT));
-        Log.i(
-                TAG,
-                "Callback Type = "
-                        + intent.getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, -1));
-        Log.i(TAG, "Error Code = " + intent.getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, -1));
-        if (sCountDownLatch != null) {
-            sCountDownLatch.countDown();
-            sCountDownLatch = null;
+            TAG,
+            "Callback Type = ${intent.getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, -1)}",
+        )
+        Log.i(TAG, "Error Code = ${intent.getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, -1)}")
+        countDownLatch?.let {
+            it.countDown()
+            countDownLatch = null
         }
     }
 
-    public static CountDownLatch createCountDownLatch() {
-        sCountDownLatch = new CountDownLatch(1);
-        return sCountDownLatch;
+    companion object {
+        private var countDownLatch: CountDownLatch? = null
+
+        @JvmStatic fun createCountDownLatch() = CountDownLatch(1).also { countDownLatch = it }
     }
 }
