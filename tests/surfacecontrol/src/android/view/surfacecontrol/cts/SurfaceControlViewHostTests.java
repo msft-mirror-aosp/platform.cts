@@ -2199,7 +2199,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         final int[] viewInWindow = new int[2];
         mSurfaceView.getLocationInWindow(viewInWindow);
-        Point point = new Point(viewInWindow[0] + 1, viewInWindow[1] + 1);
+        Point point =
+                new Point(
+                        viewInWindow[0] + mSurfaceView.getWidth() / 2,
+                        viewInWindow[1] + mSurfaceView.getHeight() / 2);
 
         CtsWindowInfoUtils.tapOnWindow(mInstrumentation, mSurfaceView::getWindowToken, point,
                 mDisplayId);
