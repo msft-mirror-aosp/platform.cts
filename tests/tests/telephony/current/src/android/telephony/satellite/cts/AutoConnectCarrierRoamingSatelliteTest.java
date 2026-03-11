@@ -151,29 +151,29 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
         int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
 
-        // 1. Enable Satellite
-        logd(TAG, "testEnableSatelliteForAutoAndByUser: Enable Satellite");
-        requestSatelliteEnabled(subId, true);
-
-        // 2. Verify Enabled
-        logd(TAG, "testEnableSatelliteForAutoAndByUser: Verify if Auto Satellite is enabled");
-        verifySatelliteEnabledStatus(subId, true);
-
-        // 3. Disable Satellite
+        // 1. Disable Satellite
         logd(TAG, "testEnableSatelliteForAutoAndByUser: Disable Satellite");
         requestSatelliteEnabled(subId, false);
 
-        // 4. Verify Disabled
+        // 2. Verify Disabled
         logd(TAG, "testEnableSatelliteForAutoAndByUser: Verify if Auto Satellite is disabled");
         verifySatelliteEnabledStatus(subId, false);
 
-        // 5. Enable Satellite
+        // 3. Enable Satellite
         logd(TAG, "testEnableSatelliteForAutoAndByUser: Enable Satellite by user");
         requestSatelliteEnabled(subId, true);
 
-        // 6. Verify Enabled
+        // 4. Verify Enabled
         logd(TAG, "testEnableSatelliteForAutoAndByUser: Verify if Auto Satellite is enabled");
         verifySatelliteEnabledStatus(subId, true);
+
+        // 5. Disable Satellite
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Disable Satellite");
+        requestSatelliteEnabled(subId, false);
+
+        // 6. Verify Disabled
+        logd(TAG, "testEnableSatelliteForAutoAndByUser: Verify if Auto Satellite is disabled");
+        verifySatelliteEnabledStatus(subId, false);
     }
 
     private void requestSatelliteEnabled(int subId, boolean enable) throws Exception {
@@ -191,6 +191,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     private void verifySatelliteEnabledStatus(int subId, boolean expectedEnabled) throws Exception {
+        String satellitePlmn = sMockModemManager.getSimInfo(SLOT_ID_0, SIM_INFO_TYPE_MCC_MNC);
         final AtomicReference<EnableResponse> enableResponse = new AtomicReference<>();
         final AtomicReference<SatelliteManager.SatelliteException> exception = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
@@ -211,10 +212,25 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
         sSatelliteManager.requestIsEnabled(subId, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC,
                 getContext().getMainExecutor(), receiver);
-        assertTrue("Timeout waiting for requestIsEnabled result", latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
-        assertNull("requestIsEnabled failed with error: " + (exception.get() == null ? "" : exception.get().getErrorCode()), exception.get());
+        assertTrue(
+                "Timeout waiting for requestIsEnabled result",
+                latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        assertNull(
+                "requestIsEnabled failed with error: "
+                        + (exception.get() == null ? "" : exception.get().getErrorCode()),
+                exception.get());
         assertNotNull(enableResponse.get());
         assertEquals(expectedEnabled, enableResponse.get().isEnabled());
+
+        if (expectedEnabled) {
+            // Verify that the PLMN list passed to modem is has satellitePlmn in it
+            List<String> expectedConfiguredCarrierPlmnList = new ArrayList<>();
+            expectedConfiguredCarrierPlmnList.add(satellitePlmn);
+            waitForCarrierPlmnListConfigured(SLOT_ID_0, expectedConfiguredCarrierPlmnList);
+        } else {
+            // Verify that the PLMN list passed to modem is empty
+            waitForCarrierPlmnListConfigured(SLOT_ID_0, new ArrayList<>());
+        }
     }
 
     @Test

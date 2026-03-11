@@ -77,3 +77,4 @@ fun DeviceState.getCurrentlySetPreferenceValue(
 }
 
 const val SETTINGS_PACKAGE_NAME = "com.android.settings"
+const val LOG_TAG = "bedstead-settings"

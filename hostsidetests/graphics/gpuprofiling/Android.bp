@@ -38,6 +38,8 @@ java_library_host {
         "src/**/ClockUtils.kt",
         "src/**/ProfilingDataUtils.kt",
         "src/**/RenderStagesData.kt",
+        "src/**/TraceParser.kt",
+        "src/**/TraceValidator.kt",
     ],
 }
 
@@ -45,7 +47,7 @@ java_test_host {
     name: "CtsGpuProfilingDataTestCases",
     srcs: [
         "src/**/CtsFrameTracerDataSourceTest.java",
-        "src/**/CtsGpuProfilingDataTest.java",
+        "src/**/CtsGpuProfilingDataTest.kt",
     ],
     // tag this module as a cts test artifact
     test_suites: [
@@ -99,8 +101,13 @@ java_test_host {
         "src/**/ProfilingDataUtilsTest.kt",
         "src/**/RenderStagesChecksTest.kt",
         "src/**/RenderStagesDataTest.kt",
+        "src/**/TraceParserTest.kt",
+        "src/**/TraceValidatorTest.kt",
     ],
-    java_resources: ["test_res/data_source/*.textproto"],
+    java_resources: [
+        "test_res/data_source/*.textproto",
+        "test_res/traces/*.textproto",
+    ],
     static_libs: [
         "GpuProfilingDataTestingUtils",
         "GpuProfilingDataUtils",

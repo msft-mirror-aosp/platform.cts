@@ -282,7 +282,9 @@ public class CellInfoTest {
         // Save the initial listener result as a baseline
         List<CellInfo> referenceList = listener.cellInfo;
         assertFalse("CellInfo does not contain valid results", referenceList.isEmpty());
-        assertTrue("Listener Didn't Receive the Right Data",
+        assertTrue("Listener Didn't Receive the Right Data \n"
+                + "referenceList: " + referenceList + "\n"
+                + "resultsCallback.cellInfo: " + resultsCallback.cellInfo,
                 referenceList.containsAll(resultsCallback.cellInfo));
         listener.cellInfo = null;
         resultsCallback.cellInfo = null;

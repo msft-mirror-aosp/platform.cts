@@ -566,15 +566,24 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         String rearId =  CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
         if (rearId == null) {
-            Log.e(TAG, "Primary rear camera not available");
+            Log.i(TAG, "Primary rear camera not available");
             hlgCombinationRequirement.setPrimaryCameraHlgCombinationSupported(false);
             pce.submitAndCheck();
             return;
         }
+        StaticMetadata staticInfo = mAllStaticInfo.get(rearId);
+        // Check for static characteristics advertising HGL10 support
+        Set<Long> dynamicRangeProfiles = staticInfo.getAvailableDynamicRangeProfilesChecked();
+        if (!dynamicRangeProfiles.contains(DynamicRangeProfiles.HLG10)) {
+            Log.i(TAG, "Primary rear camera not supporting HLG10");
+            hlgCombinationRequirement.setPrimaryCameraHlgCombinationSupported(false);
+            pce.submitAndCheck();
+            return;
+        }
+
         // Note: This must match the required stream combinations defined in [7.5/H-1-19]
         MaxStreamSizes maxStreamSizes =
-                new MaxStreamSizes(
-                        mAllStaticInfo.get(rearId), rearId, mContext, /*matchSize*/ true);
+                new MaxStreamSizes(staticInfo, rearId, mContext, /*matchSize*/ true);
         Size maxSize_16_9 = maxStreamSizes.getOutputSizeForFormat(JPEG, MAXIMUM_16_9);
         Size size1080P = maxStreamSizes.getOutputSizeForFormat(PRIV, S1080P);
         Size size720P = maxStreamSizes.getOutputSizeForFormat(PRIV, S720P);
@@ -590,14 +599,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             },
         };
         try {
-            // Check for static characteristics advertising HGL10 support
             openDevice(rearId);
-            Set<Long> dynamicRangeProfiles = mStaticInfo.getAvailableDynamicRangeProfilesChecked();
-            mCollector.expectEquals(
-                    "Primary rear camera does not advertise HLG10 dynamic range profile",
-                    dynamicRangeProfiles.contains(DynamicRangeProfiles.HLG10), true,
-                    /*mpc*/ true);
-
             CameraCharacteristics characteristics = mStaticInfo.getCharacteristics();
             boolean supportSessionConfigurationQuery = characteristics.get(
                     CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION)

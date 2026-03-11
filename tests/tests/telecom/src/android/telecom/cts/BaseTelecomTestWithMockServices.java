@@ -118,6 +118,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             "android.permission.PACKAGE_USAGE_STATS";
 
     public static final String OTT_TEST_EVENT_NAME = "test.oem.event_name";
+    private static final String TEL_CLEAN_STUCK_CALLS_CMD = "telecom cleanup-stuck-calls";
 
     Context mContext;
     TelecomManager mTelecomManager;
@@ -1342,6 +1343,13 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             // cleanup when the assertion causes the method to return early.
             assertNumConferenceCalls(mInCallCallbacks.getService(), 0);
             assertNumCalls(mInCallCallbacks.getService(), 0);
+        }
+        // Make sure to clear any stuck calls in Telecom in the case that the callbacks were already
+        // cleared.
+        try {
+            TestUtils.executeShellCommand(getInstrumentation(), TEL_CLEAN_STUCK_CALLS_CMD);
+        } catch (Exception e) {
+            Log.i(TAG, "Exception thrown while cleaning up stuck calls");
         }
     }
 

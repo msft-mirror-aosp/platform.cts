@@ -22,7 +22,7 @@ import com.android.bedstead.settings.SETTINGS_PACKAGE_NAME
 import com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenerator
 
 /**
- * Mark a [DeviceStateItem] parameter as being parameterised with all available preferences.
+ * Mark a [DeviceStateItem] parameter as being parameterized with all available preferences.
  *
  * You must be using the [BedsteadJUnit4] test runner to use this annotation.
  */

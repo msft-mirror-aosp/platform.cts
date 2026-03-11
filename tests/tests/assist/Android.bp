@@ -29,6 +29,7 @@ android_test {
         "CtsAssistCommon",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
+        "android.app.appfunctions.flags-aconfig-java",
         "androidx.test.ext.junit",
     ],
 

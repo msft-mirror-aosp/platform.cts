@@ -16,6 +16,9 @@
 
 package android.app.cts;
 
+import static android.app.cts.AppExitInfoConstants.EXIT_CODE;
+import static android.app.cts.AppExitInfoConstants.STUB_PACKAGE_NAME;
+
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.CMD_ANR_WARNING_LISTENER;
 import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.KEY_ANR_DESCRIPTION;
@@ -122,6 +125,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * CTS test for {@link android.app.ApplicationExitInfo}.
+ *
+ * <p>Note: Some methods in this class are also used as triggers for host-side statsd atom
+ * verification tests (see {@code android.cts.statsdatom.appexit.AppExitHostTest}).
+ */
 @RunWith(AndroidJUnit4.class)
 public final class ActivityManagerAppExitInfoTest {
     private static final String TAG = ActivityManagerAppExitInfoTest.class.getSimpleName();
@@ -129,14 +138,10 @@ public final class ActivityManagerAppExitInfoTest {
     public static final boolean FIRST_SDK_IS_AT_LEAST_U =
             ApiLevelUtil.isFirstApiAfter(Build.VERSION_CODES.TIRAMISU);
 
-    private static final String STUB_PACKAGE_NAME =
-            "com.android.cts.launcherapps.simpleapp";
     private static final String STUB_SERVICE_NAME =
             "com.android.cts.launcherapps.simpleapp.SimpleService4";
     private static final String STUB_SERVICE_REMOTE_NAME =
             "com.android.cts.launcherapps.simpleapp.SimpleService5";
-    private static final String STUB_SERVICE_ISOLATED_NAME =
-            "com.android.cts.launcherapps.simpleapp.SimpleService6";
     private static final String STUB_ANR_WARNING_SERVICE_NAME =
             "com.android.cts.launcherapps.simpleapp.AnrWarningListenerService";
     private static final String STUB_RECEIVER_NAME =
@@ -176,7 +181,6 @@ public final class ActivityManagerAppExitInfoTest {
     private static final int ACTION_ACQUIRE_STABLE_PROVIDER = 6;
     private static final int ACTION_KILL_PROVIDER = 7;
     private static final int ACTION_UNREGISTER_ANR_LISTENER = 8;
-    private static final int EXIT_CODE = 123;
     private static final int CRASH_SIGNAL = OsConstants.SIGSEGV;
 
     private static final long TOMBSTONE_FETCH_TIMEOUT_MS = 10_000;
@@ -1478,7 +1482,7 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Test
     public void testOther() throws Exception {
-        final String servicePackage = "android.externalservice.service";
+        final String servicePackage = AppExitInfoConstants.HELPER_PKG1;
         final String keyIBinder = "ibinder";
         final CountDownLatch latch = new CountDownLatch(1);
         final Bundle holder = new Bundle();
@@ -2191,7 +2195,7 @@ public final class ActivityManagerAppExitInfoTest {
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
     public void testNativeServiceExit() throws Exception {
-        final String servicePackage = "android.externalservice.service";
+        final String servicePackage = AppExitInfoConstants.HELPER_PKG1;
         final String serviceName = servicePackage + ".ExternalNativeService";
         NativeServiceTestConnection conn = bindNativeService(servicePackage, serviceName);
 
@@ -2242,7 +2246,7 @@ public final class ActivityManagerAppExitInfoTest {
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
     public void testNativeServiceCrash() throws Exception {
-        final String servicePackage = "android.externalservice.service";
+        final String servicePackage = AppExitInfoConstants.HELPER_PKG1;
         final String serviceName = servicePackage + ".ExternalNativeService";
         NativeServiceTestConnection conn = bindNativeService(servicePackage, serviceName);
 

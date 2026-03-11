@@ -51,6 +51,7 @@ import android.net.wifi.WifiManager.ActionListener;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.data.ApnSetting;
@@ -61,6 +62,7 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.ThrowingRunnable;
@@ -146,6 +148,13 @@ public class NetworkPolicyTestUtils {
             mAppStandbySupported = AppStandbyUtils.isAppStandbyEnabled();
         }
         return mAppStandbySupported;
+    }
+
+    public static boolean isAutomotiveMumd() {
+        return FeatureUtil.isAutomotive()
+                && getContext()
+                        .getSystemService(UserManager.class)
+                        .isVisibleBackgroundUsersSupported();
     }
 
     public static boolean isLowRamDevice() {

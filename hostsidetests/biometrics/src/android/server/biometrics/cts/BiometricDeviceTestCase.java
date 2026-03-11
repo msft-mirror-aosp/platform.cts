@@ -29,7 +29,7 @@ import com.google.protobuf.Parser;
 
 /** Base class for hostside biometrics tests that includes common utility methods. */
 abstract class BiometricDeviceTestCase extends DeviceTestCase implements IBuildReceiver {
-
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final String FEATURE_FINGERPRINT = "android.hardware.fingerprint";
     private static final String FEATURE_FACE = "android.hardware.biometrics.face";
     private static final String FEATURE_SECURE_LOCK_SCREEN = "android.software.secure_lock_screen";
@@ -49,6 +49,11 @@ abstract class BiometricDeviceTestCase extends DeviceTestCase implements IBuildR
     /** If secure lockscreen feature is present. */
     protected boolean hasSecureLockscreen() throws Exception {
         return DeviceUtils.hasFeature(getDevice(), FEATURE_SECURE_LOCK_SCREEN);
+    }
+
+    /** {@see PackageManager.FEATURE_AUTOMOTIVE}. */
+    protected boolean isAutomotiveDevice() throws Exception {
+        return DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE);
     }
 
     /** {@see PackageManager.FEATURE_FACE}. */

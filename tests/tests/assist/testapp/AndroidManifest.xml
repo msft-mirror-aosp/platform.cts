@@ -22,6 +22,13 @@
 
     <application>
         <uses-library android:name="android.test.runner"/>
+        <!-- TODO: b/485162305 - Remove XSD and switch to v1. -->
+        <property
+            android:name="android.app.appfunctions.schema"
+            android:value="app_functions_schema.xsd" />
+        <property
+            android:name="android.app.appfunctions.v2"
+            android:value="app_functions.xml" />
 
         <activity android:name=".TestApp"
              android:label="Assist Structure Test Activity"

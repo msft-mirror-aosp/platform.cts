@@ -10,9 +10,4 @@ android_test_helper_app {
     manifest: "AndroidManifest.xml",
     sdk_version: "current",
     installable: true,
-    test_suites: [
-        "cts",
-        "general-tests",
-        "sts",
-    ],
 }

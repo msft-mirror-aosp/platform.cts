@@ -31,5 +31,6 @@
     <test class="com.android.tradefed.testtype.HostTest" >
         <option name="class" value="com.android.tests.privatecompute.host.PccStorageHostTest" />
         <option name="class" value="com.android.tests.privatecompute.host.PccBackupHostTest" />
+        <option name="class" value="com.android.tests.privatecompute.host.PccProcessHostTest" />
     </test>
 </configuration>

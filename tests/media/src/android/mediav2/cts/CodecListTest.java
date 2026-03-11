@@ -119,7 +119,8 @@ public class CodecListTest {
         assumeTrue("Test needs Android 13", CodecTestBase.IS_AT_LEAST_T);
 
         DisplayManager dm = CodecTestBase.getContext().getSystemService(DisplayManager.class);
-        int[] hdrTypes = dm.getDisplay(Display.DEFAULT_DISPLAY).getMode().getSupportedHdrTypes();
+        int[] hdrTypes =
+                dm.getDisplay(Display.DEFAULT_DISPLAY).getHdrCapabilities().getSupportedHdrTypes();
         assumeTrue("Device display has no hdr capabilities", hdrTypes.length > 0);
 
         for (int hdrType : hdrTypes) {

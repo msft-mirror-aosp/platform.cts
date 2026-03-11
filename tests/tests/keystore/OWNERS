@@ -4,9 +4,12 @@
 # Bugs for failures on Cuttlefish should be assigned to cloud-android-devs@
 # Bugs for failures that affect many/all devices should be assigned to android-hardware-security@
 #
-# Please CC android-hardware-security on all bugs.
+# Please CC hwtrust@ on all bugs.
+
+# EMEA
 cvlasov@google.com
-drysdale@google.com
+
+# US
 jbires@google.com
 kwadhera@google.com
 sethmo@google.com

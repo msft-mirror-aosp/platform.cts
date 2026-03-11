@@ -18,8 +18,8 @@ package android.mediapc.cts.common;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
 import android.mediapc.cts.common.Requirements.SequentialWriteRequirement;
+import android.mediapc.cts.common.Requirements.TapToToneLatencyRequirement;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,61 +27,39 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for select {@link Requirement} sub classes generated in {@link Requirements}. */
+/** Tests for select {@link Requirement} subclasses generated in {@link Requirements}. */
 @RunWith(JUnit4.class)
 public class RequirementsTest {
 
     @Rule
     public final TestName mTestName = new TestName();
 
-    // HDRDisplayRequirement has two required measurements.
+    /** Verifies autogeneration of requirements with more than one measurement */
     @Test
-    public void hdrDisplay_noHdr_1000nits() {
+    public void twoMeasurements() {
         var pce = new PerformanceClassEvaluator(mTestName);
-        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
-        req.setIsHdr(false);
-        req.setDisplayLuminanceNits(1000);
-
-        var pc = req.computePerformanceClass();
-        assertThat(pc).isEqualTo(0);
-    }
-
-    @Test
-    public void hdrDisplay_900nits() {
-        var pce = new PerformanceClassEvaluator(mTestName);
-        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
-        req.setIsHdr(true);
-        req.setDisplayLuminanceNits(900);
-
-        var pc = req.computePerformanceClass();
-        assertThat(pc).isEqualTo(0);
-    }
-
-    @Test
-    public void hdrDisplay_1000nits() {
-        var pce = new PerformanceClassEvaluator(mTestName);
-        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
-        req.setIsHdr(true);
-        req.setDisplayLuminanceNits(1000);
+        TapToToneLatencyRequirement req = Requirements.addR5_6__H_1_1().to(pce);
+        req.setJavaLatencyMs(80);
+        req.setNativeLatencyMs(80);
 
         var pc = req.computePerformanceClass();
         assertThat(pc).isEqualTo(35);
     }
 
-
-    // SequentialWriteRequirement has more than one MPC level.
+    /** Verifies autogeneration of requirements with more than MPC level */
     @Test
-    public void sequentialWrite_90mbps() {
+    public void multiMpcLevels_0() {
         var pce = new PerformanceClassEvaluator(mTestName);
         SequentialWriteRequirement req = Requirements.addR8_2__H_1_1().to(pce);
-        req.setFilesystemIoRateMbps(90);
+        req.setFilesystemIoRateMbps(34);
 
         var pc = req.computePerformanceClass();
         assertThat(pc).isEqualTo(0);
     }
 
+    /** Verifies autogeneration of requirements with more than MPC level */
     @Test
-    public void sequentialWrite_100mbps() {
+    public void multiMpcLevels_30() {
         var pce = new PerformanceClassEvaluator(mTestName);
         SequentialWriteRequirement req = Requirements.addR8_2__H_1_1().to(pce);
         req.setFilesystemIoRateMbps(100);
@@ -90,24 +68,15 @@ public class RequirementsTest {
         assertThat(pc).isEqualTo(30);
     }
 
+    /** Verifies autogeneration of requirements with more than MPC level */
     @Test
-    public void sequentialWrite_125mbps() {
+    public void multiMpcLevels_33() {
         var pce = new PerformanceClassEvaluator(mTestName);
         SequentialWriteRequirement req = Requirements.addR8_2__H_1_1().to(pce);
         req.setFilesystemIoRateMbps(125);
 
         var pc = req.computePerformanceClass();
         assertThat(pc).isEqualTo(33);
-    }
-
-    @Test
-    public void sequentialWrite_150mbps() {
-        var pce = new PerformanceClassEvaluator(mTestName);
-        SequentialWriteRequirement req = Requirements.addR8_2__H_1_1().to(pce);
-        req.setFilesystemIoRateMbps(150);
-
-        var pc = req.computePerformanceClass();
-        assertThat(pc).isEqualTo(35);
     }
 
 }
