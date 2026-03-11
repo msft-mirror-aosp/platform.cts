@@ -65,6 +65,7 @@ import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionPlan;
+import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.ims.ImsException;
 import android.telephony.ims.ImsManager;
@@ -72,6 +73,7 @@ import android.telephony.ims.ImsMmTelManager;
 import android.telephony.ims.ImsRcsManager;
 import android.telephony.ims.RcsUceAdapter;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -210,10 +212,71 @@ public class SubscriptionManagerTest {
         }
     }
 
+    /** Listener for Radio Power State changes. */
+    private static class RadioPowerStateListener extends TelephonyCallback
+            implements TelephonyCallback.RadioPowerStateListener {
+        private final CountDownLatch mLatch;
+
+        RadioPowerStateListener(CountDownLatch latch) {
+            mLatch = latch;
+        }
+
+        @Override
+        public void onRadioPowerStateChanged(int state) {
+            Log.d(TAG, "onRadioPowerStateChanged: state=" + state);
+            if (state == TelephonyManager.RADIO_POWER_ON) {
+                mLatch.countDown();
+            }
+        }
+    }
+
+    private static void turnOnRadio() {
+        final TelephonyManager tm =
+                InstrumentationRegistry.getInstrumentation()
+                        .getContext()
+                        .getSystemService(TelephonyManager.class);
+        if (tm == null) {
+            Log.w(TAG, "TelephonyManager is null");
+            return;
+        }
+
+        if (ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        tm, TelephonyManager::getRadioPowerState)
+                == TelephonyManager.RADIO_POWER_ON) {
+            return;
+        }
+
+        Log.d(TAG, "Radio is OFF. Turning it ON now...");
+
+        CountDownLatch latch = new CountDownLatch(1);
+        RadioPowerStateListener listener = new RadioPowerStateListener(latch);
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    tm, t -> t.registerTelephonyCallback(Runnable::run, listener));
+
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    tm, t -> t.setRadioPower(true));
+
+            if (!latch.await(20000, TimeUnit.MILLISECONDS)) {
+                fail("Timeout waiting for Radio Power ON");
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Interrupted while waiting for Radio Power ON", e);
+            Thread.currentThread().interrupt();
+            assumeTrue("Interrupted while waiting for Radio Power ON", false);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    tm, t -> t.unregisterTelephonyCallback(listener));
+        }
+    }
+
     @BeforeClass
     @SuppressWarnings("StaticAssignmentOfThrowable")
     public static void setUpClass() throws Exception {
         if (!isSupported()) return;
+
+        turnOnRadio();
 
         final TestNetworkCallback callback = new TestNetworkCallback();
         final ConnectivityManager cm = InstrumentationRegistry.getContext()
