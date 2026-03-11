@@ -19,6 +19,7 @@ package android.devicepolicy.cts
 import android.app.admin.DevicePolicyManager.POLICY_SCOPE_DEVICE
 import android.app.admin.DevicePolicyManager.POLICY_SCOPE_PARENT_USER
 import android.app.admin.DevicePolicyManager.POLICY_SCOPE_USER
+import android.app.admin.PackageIdentifier
 import android.app.admin.PolicyIdentifier
 import android.app.admin.RemoteDevicePolicyManager
 import android.app.admin.flags.Flags
@@ -26,6 +27,7 @@ import android.app.admin.metadata.EnumPolicyMetadata
 import android.app.admin.metadata.GeneratedPolicyMetadata
 import android.app.admin.metadata.IntegerPolicyMetadata
 import android.app.admin.metadata.LongPolicyMetadata
+import android.app.admin.metadata.PackagePolicyMetadata
 import android.app.admin.metadata.StringPolicyMetadata
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
@@ -299,6 +301,12 @@ public abstract class CommonPolicyTests<T> {
                     scope,
                     value as String?,
                 )
+            is PackagePolicyMetadata ->
+                dpcDpm.setPolicy_package(
+                    policyIdentifier as PolicyIdentifier<PackageIdentifier>,
+                    scope,
+                    value as PackageIdentifier?,
+                )
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }
@@ -317,6 +325,11 @@ public abstract class CommonPolicyTests<T> {
                 dpcDpm.getPolicy_long(policyIdentifier as PolicyIdentifier<Long>, scope) as T?
             is StringPolicyMetadata ->
                 dpcDpm.getPolicy_string(policyIdentifier as PolicyIdentifier<String>, scope) as T?
+            is PackagePolicyMetadata ->
+                dpcDpm.getPolicy_package(
+                    policyIdentifier as PolicyIdentifier<PackageIdentifier>,
+                    scope,
+                ) as T?
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }

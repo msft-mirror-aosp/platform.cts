@@ -114,6 +114,7 @@ class TemplatedMethodExpander(private val originalApi: Api) {
                         ClassName.get(java.util.List::class.java),
                         ClassName.get(String::class.java),
                     ),
+                "package" to ClassName.get("android.app.admin", "PackageIdentifier"),
             )
 
         // Maps supported templated methods to the concrete types that must be generated for this
