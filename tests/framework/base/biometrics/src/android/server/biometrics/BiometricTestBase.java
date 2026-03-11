@@ -90,6 +90,7 @@ import androidx.test.uiautomator.Until;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.server.biometrics.nano.BiometricServiceStateProto;
+import com.android.systemui.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -404,7 +405,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
             } else {
                 mDevice.pressEnter();
             }
-        } else if (isWatch()) {
+        } else if (isWatch() && !Flags.largeScreenBp()) {
             // Watch hides the password field, showing a custom view instead
             Log.d(TAG, "Entering pin digits");
             for (int i = 0; i < LOCK_CREDENTIAL.length(); i++) {
