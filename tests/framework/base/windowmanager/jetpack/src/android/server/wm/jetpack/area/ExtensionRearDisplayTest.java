@@ -39,6 +39,7 @@ import android.content.res.Resources;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
+import android.hardware.devicestate.cts.util.DeviceStateManagerTestRule;
 import android.os.PowerManager;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.DeviceStateUtils;
@@ -123,6 +124,10 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     public final WindowExtensionTestRule mWindowManagerJetpackTestRule =
             new WindowExtensionTestRule(WindowAreaComponent.class);
 
+    @Rule
+    public final DeviceStateManagerTestRule mDeviceStateManagerTestRule =
+            new DeviceStateManagerTestRule();
+
     @Before
     @Override
     public void setUp() throws Exception {
@@ -147,8 +152,6 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         super.tearDown();
         if (mWindowAreaComponent != null) {
             mWindowAreaComponent.removeRearDisplayStatusListener(mStatusListener);
-            DeviceStateUtils.runWithControlDeviceStatePermission(
-                    () -> mDeviceStateManager.cancelStateRequest());
         }
     }
 

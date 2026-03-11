@@ -126,8 +126,10 @@ public class MockModemTestBase {
 
     protected static void createMockModemAndConnectToService() throws Exception {
         sMockModemManager = new MockModemManager();
-        assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService());
+        assertNotNull("MockModemManager should not be null", sMockModemManager);
+        assertTrue(
+                "Failed to connect to MockModemService",
+                sMockModemManager.connectMockModemService());
     }
 
     protected static boolean afterAllTestsBase() throws Exception {
@@ -138,11 +140,13 @@ public class MockModemTestBase {
         }
 
         // Rebind all interfaces which is binding to MockModemService to default.
-        assertNotNull(sMockModemManager);
+        assertNotNull("MockModemManager should not be null", sMockModemManager);
         // Reset the modified error response of RIL_REQUEST_RADIO_POWER to the original behavior
         // and -1 means to disable the modifed mechanism in mock modem
         sMockModemManager.forceErrorResponse(0, RIL_REQUEST_RADIO_POWER, -1);
-        assertTrue(sMockModemManager.disconnectMockModemService());
+        assertTrue(
+                "Failed to disconnect MockModemService",
+                sMockModemManager.disconnectMockModemService());
         sMockModemManager = null;
 
         return true;

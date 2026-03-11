@@ -99,9 +99,12 @@ public class DataServiceTestOnMockModem {
 
         MockModemManager.enforceMockModemDeveloperSetting();
         mMockModemManager = new MockModemManager();
-        assertNotNull(mMockModemManager);
-        assertTrue(mMockModemManager.connectMockModemService());
-        assertTrue(mMockModemManager.insertSimCard(TEST_SLOT, MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertNotNull("MockModemManager is null", mMockModemManager);
+        assertTrue(
+                "Failed to connect MockModemService", mMockModemManager.connectMockModemService());
+        assertTrue(
+                "Failed to insert mock SIM card",
+                mMockModemManager.insertSimCard(TEST_SLOT, MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         int sub = SubscriptionManager.getSubscriptionId(TEST_SLOT);
         if (SubscriptionManager.isValidSubscriptionId(sub)) {
@@ -124,7 +127,9 @@ public class DataServiceTestOnMockModem {
         assertEquals(TelephonyManager.SIM_STATE_READY, simCardState);
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
-        assertTrue(mMockModemManager.changeNetworkService(TEST_SLOT, 310260, true));
+        assertTrue(
+                "Failed to change network service",
+                mMockModemManager.changeNetworkService(TEST_SLOT, 310260, true));
 
         mInitialIsUserDataEnabled =
                 mTelephonyManager.isDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER);
@@ -209,9 +214,13 @@ public class DataServiceTestOnMockModem {
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (mMockModemManager != null) {
-            assertTrue(mMockModemManager.changeNetworkService(TEST_SLOT, 310260, false));
+            assertTrue(
+                    "Failed to change network service",
+                    mMockModemManager.changeNetworkService(TEST_SLOT, 310260, false));
             mMockModemManager.removeSimCard(TEST_SLOT);
-            assertTrue(mMockModemManager.disconnectMockModemService());
+            assertTrue(
+                    "Failed to disconnect MockModemService",
+                    mMockModemManager.disconnectMockModemService());
             mMockModemManager = null;
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         }
@@ -227,7 +236,8 @@ public class DataServiceTestOnMockModem {
         assumeTrue("Device does not support RADIO HAL V2_4", canMakeRequest(RADIO_HAL_VERSION_2_4));
         mTelephonyManager.setDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER, true);
         waitForDataLatchCountdown(LATCH_SET_USER_DATA_ENABLED);
-        assertTrue(mMockModemManager.getIsUserDataEnabled(TEST_SLOT));
+        assertTrue(
+                "User data should be enabled", mMockModemManager.getIsUserDataEnabled(TEST_SLOT));
 
         mMockModemManager.resetDataAllLatchCountdown(TEST_SLOT);
 
@@ -242,7 +252,9 @@ public class DataServiceTestOnMockModem {
         assumeTrue("Device does not support RADIO HAL V2_4", canMakeRequest(RADIO_HAL_VERSION_2_4));
         mTelephonyManager.setDataRoamingEnabled(true);
         waitForDataLatchCountdown(LATCH_SET_USER_DATA_ROAMING_ENABLED);
-        assertTrue(mMockModemManager.getIsUserDataRoamingEnabled(TEST_SLOT));
+        assertTrue(
+                "User data roaming should be enabled",
+                mMockModemManager.getIsUserDataRoamingEnabled(TEST_SLOT));
 
         mMockModemManager.resetDataAllLatchCountdown(TEST_SLOT);
 
@@ -267,7 +279,9 @@ public class DataServiceTestOnMockModem {
         connectivityManager.requestNetwork(builder.build(), mNetworkCallback);
 
         waitForDataLatchCountdown(LATCH_NOTIFY_IMS_DATA_NETWORK);
-        assertTrue(mMockModemManager.getIsImsDataNetworkNotified(TEST_SLOT));
+        assertTrue(
+                "IMS data network should be notified",
+                mMockModemManager.getIsImsDataNetworkNotified(TEST_SLOT));
     }
 
     private static ConnectivityManager.NetworkCallback createSimpleCallback() {

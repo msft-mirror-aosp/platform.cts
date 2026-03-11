@@ -112,6 +112,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Presubmit
 @RunWith(AndroidJUnit4.class)
@@ -1732,11 +1734,38 @@ public final class ServiceTest {
         }
     }
 
+    private boolean kernelIsAtLeast(int major, int minor) {
+        String osVersion = System.getProperty("os.version");
+        if (osVersion == null) {
+            return false;
+        }
+        Matcher m = Pattern.compile("^(\\d+)\\.(\\d+)").matcher(osVersion);
+        if (m.find()) {
+            try {
+                int kMajor = Integer.parseInt(m.group(1));
+                int kMinor = Integer.parseInt(m.group(2));
+                return kMajor > major || (kMajor == major && kMinor >= minor);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
     /** Verify that many isolated services can be bound concurrently. */
     @MediumTest
     @Test
     @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_USE_SAFESETID_UID_POLICY2)
     public void testBindIsolatedServiceLimit() throws Exception {
+        // The safesetid policy file will only exist if the kernel was built with
+        // CONFIG_SECURITY_SAFESETID enabled. Currently only 6.18 kernels are
+        // guaranteed to have safesetid enabled.
+        // TODO(b:489238026) Remove this gate
+        if (!kernelIsAtLeast(6, 18)) {
+            Log.w(TAG, "Safesetid not enabled in the kernel. Skipping safesetid checks.");
+            return;
+        }
+
         assumeTrue("Uid Transition Policy should be enabled", UidTransitionPolicy.isEnabled());
         final int maxServiceCount = 200;
         final CountDownLatch latch = new CountDownLatch(maxServiceCount);

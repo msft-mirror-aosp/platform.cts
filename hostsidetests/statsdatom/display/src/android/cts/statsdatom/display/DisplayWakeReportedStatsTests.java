@@ -17,6 +17,7 @@
 package android.cts.statsdatom.display;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeFalse;
 
@@ -115,7 +116,7 @@ public class DisplayWakeReportedStatsTests extends BaseHostJUnit4Test implements
         assertWakeup(WAKE_REASON_APPLICATION, SYSTEM_UID);
     }
 
-    private void assertWakeup(int reason, int uid) throws Exception {
+    private void assertWakeup(int reason, int expectedAppUid) throws Exception {
         // Assert one DisplayWakeReported event has been collected.
         final List<StatsLog.EventMetricData> data = new ArrayList<>();
         PollingCheck.check(
@@ -132,7 +133,14 @@ public class DisplayWakeReportedStatsTests extends BaseHostJUnit4Test implements
         AtomsProto.DisplayWakeReported displayWakeReported =
                 data.get(0).getAtom().getDisplayWakeReported();
         assertThat(displayWakeReported.getWakeUpReason()).isEqualTo(reason);
-        assertThat(displayWakeReported.getUid()).isEqualTo(uid);
+
+        int actualUid = displayWakeReported.getUid();
+        boolean isWatch = getDevice().hasFeature(DeviceUtils.FEATURE_WATCH);
+        boolean success = actualUid == expectedAppUid;
+        if (isWatch) {
+            success |= DeviceUtils.isSystemUid(getDevice(), actualUid);
+        }
+        assertThat(success).isTrue();
     }
 
     private boolean isAutomotiveWithVisibleBackgroundUser() throws Exception {

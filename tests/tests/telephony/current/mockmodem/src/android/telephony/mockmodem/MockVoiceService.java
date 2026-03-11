@@ -16,6 +16,9 @@
 
 package android.telephony.mockmodem;
 
+import static android.telephony.mockmodem.MockVoiceService.MockCallInfo.CALL_STATE_ACTIVE;
+import static android.telephony.mockmodem.MockVoiceService.MockCallInfo.CALL_STATE_HOLDING;
+
 import android.hardware.radio.voice.CdmaSignalInfoRecord;
 import android.hardware.radio.voice.LastCallFailCause;
 import android.hardware.radio.voice.LastCallFailCauseInfo;
@@ -44,6 +47,7 @@ public class MockVoiceService {
     private static final int MSG_REQUEST_DISCONNECTING_CALL = 5;
     private static final int MSG_REQUEST_INCOMING_CALL = 6;
     private static final int MSG_REQUEST_CALL_END = 7;
+    private static final int MSG_REQUEST_DISCONNECT_FOREGROUND_HANGUP_BACKGROUND_CALL = 8;
 
     private static final int EMERGENCY_TEMP_FAILURE = 325;
     private static final int EMERGENCY_PERM_FAILURE = 326;
@@ -172,6 +176,32 @@ public class MockVoiceService {
             mUusInfo = uusInfo;
             mCallType = callType;
             mCdmaSignalInfoRecord = null;
+            if (callControlInfo == null) {
+                mCallControlInfo = new MockCallControlInfo();
+                Log.w(mTag, "No call control info. Using default instead.");
+            } else {
+                mCallControlInfo = callControlInfo;
+            }
+        }
+
+        public MockCallInfo(
+                boolean isMT,
+                boolean isMultiparty,
+                String address,
+                int clir,
+                UusInfo[] uusInfo,
+                int callType,
+                MockCallControlInfo callControlInfo) {
+            mState = CALL_STATE_INIT;
+            mIndex = generateCallId();
+            mToa = DEFAULT_TOA;
+            mNumber = address;
+            mIsMT = isMT;
+            mClir = clir;
+            mUusInfo = uusInfo;
+            mCallType = callType;
+            mCdmaSignalInfoRecord = null;
+            mIsMpty = isMultiparty;
             if (callControlInfo == null) {
                 mCallControlInfo = new MockCallControlInfo();
                 Log.w(mTag, "No call control info. Using default instead.");
@@ -483,6 +513,23 @@ public class MockVoiceService {
         return callId;
     }
 
+    private ArrayList<MockCallInfo> getCallInfos(int state) {
+        ArrayList<MockCallInfo> callInfos = new ArrayList<>();
+        if (!hasVoiceCalls()) {
+            Log.w(mTag, "No any call in list.");
+        }
+        synchronized (mCallList) {
+            MockCallInfo callInfo = null;
+            for (int idx = 0; idx < mCallList.size(); idx++) {
+                callInfo = mCallList.get(idx);
+                if (callInfo.getCallState() == state) {
+                    callInfos.add(callInfo);
+                }
+            }
+        }
+        return callInfos;
+    }
+
     private MockCallInfo getCallInfo(int callId) {
         MockCallInfo callInfo = null;
         if (callId >= MIN_CALL_ID && callId <= MAX_CALL_ID) {
@@ -579,6 +626,8 @@ public class MockVoiceService {
                 return "MSG_REQUEST_ACTIVATING_CALL";
             case MSG_REQUEST_DISCONNECTING_CALL:
                 return "MSG_REQUEST_DISCONNECTING_CALL";
+            case MSG_REQUEST_DISCONNECT_FOREGROUND_HANGUP_BACKGROUND_CALL:
+                return "MSG_REQUEST_DISCONNECT_FOREGROUND_HANGUP_BACKGROUND_CALL";
             case MSG_REQUEST_INCOMING_CALL:
                 return "MSG_REQUEST_INCOMING_CALL";
             case MSG_REQUEST_CALL_END:
@@ -775,13 +824,13 @@ public class MockVoiceService {
                 long active_duration_in_ms = callInfo.getCallControlInfo().getActiveDurationInMs();
                 int next_event = -1;
 
-                if (callInfo.getCallState() != MockCallInfo.CALL_STATE_ACTIVE) {
+                if (callInfo.getCallState() != CALL_STATE_ACTIVE) {
                     // Ringback tone stop event
                     callInfo.getCallControlInfo().setRingbackToneState(false);
                     next_event = MSG_REQUEST_RINGBACK_TONE;
                     Log.d(mTag, "Start ringback tone task immediately.");
                     scheduleNextEventTimer(callInfo, next_event, 0);
-                    callInfo.setCallState(MockCallInfo.CALL_STATE_ACTIVE);
+                    callInfo.setCallState(CALL_STATE_ACTIVE);
                     isCallStateChanged = true;
                     Log.d(mTag, "call id = " + callId + " call state = CALL_STATE_ACTIVE");
                 }
@@ -802,6 +851,34 @@ public class MockVoiceService {
                 }
             } else {
                 Log.e(mTag, "No found call id = " + callId);
+            }
+        }
+
+        return isCallStateChanged;
+    }
+
+    private boolean handleDisconnectForegroundResumeBackground() {
+        Log.d(mTag, "handleDisconnectForegroundResumeBackground");
+        boolean isCallStateChanged = false;
+
+        synchronized (mCallList) {
+            ArrayList<MockCallInfo> callInfos = getCallInfos(CALL_STATE_ACTIVE);
+            ArrayList<MockCallInfo> heldCallInfos = getCallInfos(CALL_STATE_HOLDING);
+            if (callInfos.isEmpty()) {
+                Log.e(mTag, "handleDisconnectForegroundResumeBackground: none found");
+                return false;
+            }
+            Log.d(mTag, "handleDisconnectForegroundResumeBackground: disconnecting fg calls");
+            for (MockCallInfo info : callInfos) {
+                isCallStateChanged |= handleCallEnd(info.getCallId());
+            }
+
+            if (!heldCallInfos.isEmpty()) {
+                for (MockCallInfo info : heldCallInfos) {
+                    isCallStateChanged |= handleActivatingCall(info.getCallId());
+                }
+            } else {
+                Log.d(mTag, "handleDisconnectForegroundResumeBackground: no bg calls found");
             }
         }
 
@@ -981,6 +1058,9 @@ public class MockVoiceService {
                     case MSG_REQUEST_DISCONNECTING_CALL:
                         isCallStateChanged = handleDisconnectingCall((int) msg.obj);
                         break;
+                    case MSG_REQUEST_DISCONNECT_FOREGROUND_HANGUP_BACKGROUND_CALL:
+                        isCallStateChanged = handleDisconnectForegroundResumeBackground();
+                        break;
                     case MSG_REQUEST_INCOMING_CALL:
                         isCallStateChanged = handleIncomingCall((int) msg.obj);
                         break;
@@ -1118,6 +1198,13 @@ public class MockVoiceService {
         return result;
     }
 
+    /** Send a message to hangup foreground calls and resume any background call. */
+    public void hangupForegroundResumeBackground() {
+        mCallStateHandler
+                .obtainMessage(MSG_REQUEST_DISCONNECT_FOREGROUND_HANGUP_BACKGROUND_CALL)
+                .sendToTarget();
+    }
+
     public boolean rejectVoiceCall() {
         boolean result = false;
         MockCallInfo callInfo = null;
@@ -1190,6 +1277,41 @@ public class MockVoiceService {
         } else {
             Log.e(mTag, "Call info creation failed!");
         }
+
+        return result;
+    }
+
+    /**
+     * Trigger a handover (SRVCC) from IMS -> CS for the provided address.
+     *
+     * @param address The Address of the remote party
+     * @param isMultiparty True if the call is a multiparty call, false otherwise.
+     * @return True if the call is successfully triggered, false otherwise.
+     */
+    public boolean triggerHandoverCall(String address, boolean isMultiparty) {
+        boolean result = false;
+        MockCallControlInfo callControlInfo = new MockCallControlInfo();
+        callControlInfo.setActiveDurationInMs(-1); // Handover calls should stay active
+        MockCallInfo newCall =
+                new MockCallInfo(
+                        false, // isMt = false (handed over MO/MT call)
+                        isMultiparty,
+                        address,
+                        MockCallInfo.CLIR_TYPE_DEFAULT,
+                        new UusInfo[0],
+                        MockCallInfo.CALL_TYPE_VOICE,
+                        callControlInfo);
+
+        // SRVCC handed over call will become active via MSG_REQUEST_ACTIVATING_CALL
+        synchronized (mCallList) {
+            mCallList.add(newCall);
+            newCall.dump();
+        }
+        // Trigger state change through the handler to ensure correct unsolicited responses
+        mCallStateHandler
+                .obtainMessage(MSG_REQUEST_ACTIVATING_CALL, newCall.getCallId())
+                .sendToTarget();
+        result = true;
 
         return result;
     }

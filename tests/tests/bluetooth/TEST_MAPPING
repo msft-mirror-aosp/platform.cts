@@ -45,5 +45,10 @@
         }
       ]
     }
+  ],
+  "platinum-test-bvt":[
+    {
+      "name": "CtsBluetoothTestCases"
+    }
   ]
 }

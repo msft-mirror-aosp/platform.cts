@@ -691,5 +691,13 @@ public final class DeviceUtils {
         device.executeShellCommand("settings put secure doze_always_on " + state);
     }
 
+    public static boolean isSystemUid(ITestDevice device, int uid) throws Exception {
+        // Check if the package is installed in a system partition via 'pm list packages -s'
+        String output = device.executeShellCommand(
+                String.format("pm list packages -s --uid %d", uid)).trim();
+        // If output contains "package:", it means at least one system package exists for this UID
+        return output.contains("package:");
+    }
+
     private DeviceUtils() {}
 }

@@ -35,6 +35,7 @@ import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
+import android.app.appfunctions.cts.AppFunctionUtils.getAllAppFunctionPackages
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.CtsTestUtil.freezeProcess
@@ -47,6 +48,8 @@ import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
+import android.app.appfunctions.testutils.ITestAppFunctionProxyManagerService
+import android.app.appfunctions.testutils.TestAppFunctionProxyManagerService
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -1103,6 +1106,74 @@ class ObserveAppFunctionsTest {
         }
     }
 
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @Ignore("b/481984551 - Fix presubmit failure")
+    fun observeAppFunctions_shouldNotReceiveNotificationWhileFreeze() = doBlocking {
+        val testObserver = TestClientObserver()
+        var testObservation = observeAppFunctions(testObserver)
+        val proxyManagerService = bindToProxyManagerService()
+        proxyManagerService.startTestObserver()
+        freezeProcess(context, CtsApp.PACKAGE_NAME, CtsApp.PROXY_MANAGER_PROCESS_NAME)
+
+        try {
+            installPackage(
+                UpdatableHelperApp.ApkPaths.BASE_APP,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = true,
+            )
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionIdentifier,
+                AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+            )
+            retryAssert {
+                assertFunctionEnabledState(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionIdentifier,
+                    manager,
+                    isEnabled = true,
+                )
+            }
+            retryAssert {
+                assertThat(testObserver.updatedPackagesHistory.flatten())
+                    .contains(UpdatableHelperApp.PACKAGE_NAME)
+                assertThat(testObserver.updatedFunctionStatesHistory.flatten())
+                    .contains(DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT)
+            }
+            testObserver.clearHistory()
+            unfreezeProcess(
+                context,
+                CtsApp.PACKAGE_NAME,
+                CtsApp.PROXY_MANAGER_PROCESS_NAME,
+            )
+            // Since there is no signal available to know whether the unfreeze
+            // notification has been dispatched, we need to wait for a period of
+            // time before start asserting.
+            delay(LONG_DELAY_MS)
+
+            // Observer registered in frozen process should receive notification
+            // that all packages contains AppFunctions have changed.
+            val history = proxyManagerService.getTestObserverHistory()
+            assertThat(history.changedPackageNameHistory).hasSize(1)
+            assertThat(history.changedPackageNameHistory[0]!!)
+                .containsExactlyElementsIn(getAllAppFunctionPackages(context))
+            assertThat(history.changedFunctionNamesHistory).isEmpty()
+            // Observer that was not frozen should not receive any notification.
+            assertThat(testObserver.updatedPackagesHistory).isEmpty()
+            assertThat(testObserver.updatedFunctionStatesHistory).isEmpty()
+        } finally {
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionIdentifier,
+                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+            )
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, testObserver)
+            testObservation.cancel()
+        }
+    }
+
     private fun observeAppFunctions(observer: TestClientObserver): AppFunctionObservation {
         return manager.observeAppFunctions(context.mainExecutor, observer)
     }
@@ -1371,6 +1442,17 @@ class ObserveAppFunctionsTest {
         return ITestAppFunctionRegistrationService.Stub.asInterface(binder)
     }
 
+    private fun bindToProxyManagerService(
+    ): ITestAppFunctionProxyManagerService {
+        val serviceIntent =
+            Intent(
+                context,
+                TestAppFunctionProxyManagerService::class.java
+            )
+        val binder: IBinder = serviceTestRule.bindService(serviceIntent)
+        return ITestAppFunctionProxyManagerService.Stub.asInterface(binder)
+    }
+
     private fun ITestAppFunctionRegistrationService.safeUnregister(functionType: String) {
         try {
             unregisterAppFunction(functionType)
@@ -1399,5 +1481,7 @@ class ObserveAppFunctionsTest {
 
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
+
+        const val LONG_DELAY_MS = 5000L
     }
 }

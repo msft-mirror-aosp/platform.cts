@@ -281,7 +281,7 @@ public final class Policy {
             ANNOTATIONS_MAP = calculateAnnotationsMap(STATE_ANNOTATIONS);
 
     // The following is a set of permissions grantable by the SystemSupervsion role.
-    private static final List<String> SYSTEM_SUPERVISION_ROLE_PERMISSIONS = ImmutableList.of(
+    private static final Set<String> SYSTEM_SUPERVISION_ROLE_PERMISSIONS = ImmutableSet.of(
             CommonPermissions.ACCESS_INSTANT_APPS,
             CommonPermissions.KILL_UID,
             CommonPermissions.MANAGE_DEFAULT_APPLICATIONS,
@@ -968,6 +968,10 @@ public final class Policy {
         }
     }
 
+    private static boolean isSystemSupervisionRoleHolderPresent() {
+        return !TestApis.roles().getRoleHolders(RoleManager.ROLE_SYSTEM_SUPERVISION).isEmpty();
+    }
+
     /**
      * Generate and return the annotations for parameterizing permission tests based on the passed
      * {@code permission}.
@@ -986,13 +990,10 @@ public final class Policy {
         // Check if the set of permissions are grantable by the Supervision role, if not
         // attempt to use Root+Shell to grant the permissions.
         final var isSystemSupervisionPermission =
-                new HashSet<>(SYSTEM_SUPERVISION_ROLE_PERMISSIONS).containsAll(
-                        List.of(permission.appliedWith()));
+                SYSTEM_SUPERVISION_ROLE_PERMISSIONS.containsAll(List.of(permission.appliedWith()));
         // Check if the Supervision role holder is already present, if so do not attempt to assign
         // the role to this test instance.
-        final var systemSupervisionRoleHolder = TestApis.roles().getRoleHolders(
-                RoleManager.ROLE_SYSTEM_SUPERVISION);
-        if (isSystemSupervisionPermission && systemSupervisionRoleHolder.isEmpty()) {
+        if (isSystemSupervisionPermission && !isSystemSupervisionRoleHolderPresent()) {
             replacementPermissionAnnotations.add(
                     ensureHasSystemSupervisionRoleHolder(UserType.INSTRUMENTED_USER, true));
         } else {

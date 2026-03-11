@@ -758,7 +758,7 @@ public class SmsTest {
                         TEST_ADDRESS,
                         message,
                         expiredOtpHidingTime,
-                        SmsOtpTestHelper.CONTAINS_SMS_RETRIEVER_OTP,
+                        OTP_TYPE_NONE,
                         -1);
         try {
             stopBeingDefaultSmsApp();
@@ -915,6 +915,20 @@ public class SmsTest {
 
         mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.RESTRICTED, inserted,
                 String.valueOf(0));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void updateRestrictedSms_toUnrestricted_moreThanOneRowAtOnce_throwsException() {
+        mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY, TEST_THREAD_ID_1,
+                /* isRestricted= */ true);
+        mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY, TEST_THREAD_ID_1,
+                /* isRestricted= */ true);
+
+        ContentValues values = new ContentValues();
+        values.put(ReadRestriction.RESTRICTED, false);
+        assertThrows(UnsupportedOperationException.class,
+               () -> mContentResolver.update(Telephony.Sms.CONTENT_URI, values, null, null));
     }
 
     @Test

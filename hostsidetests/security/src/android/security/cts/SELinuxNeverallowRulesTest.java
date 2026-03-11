@@ -26,8 +26,9 @@ import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized.Parameter;
@@ -55,7 +56,7 @@ import java.util.List;
 @RunWith(DeviceJUnit4Parameterized.class)
 @UseParametersRunnerFactory(DeviceJUnit4ClassRunnerWithParameters.RunnerFactory.class)
 public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
-    private File sepolicyAnalyze;
+    private static File sSepolicyAnalyze;
     private File devicePolicyFile;
     private File deviceSystemPolicyFile;
 
@@ -92,17 +93,20 @@ public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
     @Parameter(1)
     public SELinuxNeverallowRule mRule;
 
+    @BeforeClass
+    public static void copySepolicyAnalyze() throws Exception {
+        if (sSepolicyAnalyze == null) {
+            sSepolicyAnalyze = SELinuxHostTest.copyResourceToTempFile("/sepolicy-analyze");
+            sSepolicyAnalyze.setExecutable(true);
+        }
+    }
+
     @Before
     public void setUp() throws Exception {
         mDevice = getDevice();
         mBuild = getBuild();
 
         assumeTrue("skipping not compatible rule", mRule.isCompatible(mDevice));
-
-        if (sepolicyAnalyze == null) {
-            sepolicyAnalyze = SELinuxHostTest.copyResourceToTempFile("/sepolicy-analyze");
-            sepolicyAnalyze.setExecutable(true);
-        }
 
         devicePolicyFile = SELinuxHostTest.getDevicePolicyFile(mDevice);
 
@@ -122,11 +126,11 @@ public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
         }
     }
 
-    @After
-    public void tearDown() throws Exception {
-        if (sepolicyAnalyze != null) {
-            sepolicyAnalyze.delete();
-            sepolicyAnalyze = null;
+    @AfterClass
+    public static void removeSepolicyAnalyze() throws Exception {
+        if (sSepolicyAnalyze != null) {
+            sSepolicyAnalyze.delete();
+            sSepolicyAnalyze = null;
         }
     }
 
@@ -139,6 +143,6 @@ public class SELinuxNeverallowRulesTest extends BaseHostJUnit4Test {
                         && mVendorSepolicyVersion < mSystemSepolicyVersion)
                 ? deviceSystemPolicyFile : devicePolicyFile;
 
-        mRule.testNeverallowRule(sepolicyAnalyze, policyFile);
+        mRule.testNeverallowRule(sSepolicyAnalyze, policyFile);
     }
 }

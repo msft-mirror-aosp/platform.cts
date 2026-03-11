@@ -18,10 +18,10 @@ package com.android.bedstead.nene.roles;
 
 import static android.app.role.RoleManager.ROLE_BROWSER;
 
+import static com.android.bedstead.nene.utils.Versions.T;
 import static com.android.bedstead.permissions.CommonPermissions.BYPASS_ROLE_QUALIFICATION;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
-import static com.android.bedstead.nene.utils.Versions.T;
 
 import android.annotation.TargetApi;
 import android.app.role.RoleManager;
@@ -32,9 +32,9 @@ import android.os.UserHandle;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -65,6 +65,20 @@ public class Roles {
                 BYPASS_ROLE_QUALIFICATION)) {
             sContext.getSystemService(RoleManager.class)
                     .setBypassingRoleQualification(bypassingRoleQualification);
+        }
+    }
+
+    /**
+     * @see RoleManager#isBypassingRoleQualification()
+     */
+    @Experimental
+    public boolean isBypassingRoleQualification() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(T)) {
+            return false;
+        }
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(BYPASS_ROLE_QUALIFICATION)) {
+            return sContext.getSystemService(RoleManager.class).isBypassingRoleQualification();
         }
     }
 

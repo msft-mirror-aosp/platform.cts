@@ -271,6 +271,10 @@ public class CarrierConfigManagerTest {
             assertTrue(
                     "KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE" + " doesn't match static default.",
                     satelliteConfigsPerPlmnBundle.isEmpty());
+            assertFalse(
+                    "KEY_SATELLITE_SUPPORTED_FREQUENCIES_INT_ARRAY shouldn't be at the root",
+                    config.containsKey(
+                            CarrierConfigManager.KEY_SATELLITE_SUPPORTED_FREQUENCIES_INT_ARRAY));
             assertEquals("KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT "
                             + "doesn't match static default.",
                     config.getInt(

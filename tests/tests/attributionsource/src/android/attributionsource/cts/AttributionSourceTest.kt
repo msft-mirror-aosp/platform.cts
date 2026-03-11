@@ -48,6 +48,9 @@ class AttributionSourceTest {
         val context: Context = ApplicationProvider.getApplicationContext()
 
         val activityIntent = Intent(context, AttributionSourceActivity::class.java)
+        // Assign a unique action to prevent the system from reusing a stale PendingIntent from
+        // a previous test installation with a different UID.
+        activityIntent.action = java.util.UUID.randomUUID().toString()
         activityIntent.putExtra(ATTRIBUTION_SOURCE_KEY, context.getAttributionSource())
 
         // Launch activity from adjacent thread (cannot be launched from main thread)

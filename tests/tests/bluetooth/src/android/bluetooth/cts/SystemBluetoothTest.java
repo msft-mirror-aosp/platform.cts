@@ -49,6 +49,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.ParcelUuid;
+import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
@@ -372,6 +373,7 @@ public class SystemBluetoothTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
+    @PlatinumTest(focusArea = "bluetooth")
     public void bleOnlyMode() {
         assumeTrue(TestUtils.isBleSupported(mContext));
 

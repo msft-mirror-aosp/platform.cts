@@ -141,9 +141,9 @@ object CtsTestUtil {
                 } else {
                     "$packageName:$processName"
                 }
-            ShellCommand.builder("am freeze $targetProcess").execute()
 
             retryAssert {
+                ShellCommand.builder("am freeze $targetProcess").execute()
                 val isFrozenOutput = ShellCommand.builder("am isfrozen $targetProcess").execute()
                 assertThat(isFrozenOutput).isEqualTo("true\n")
             }
@@ -163,9 +163,9 @@ object CtsTestUtil {
                 } else {
                     "$packageName:$processName"
                 }
-            ShellCommand.builder("am unfreeze $targetProcess").execute()
 
             retryAssert {
+                ShellCommand.builder("am unfreeze $targetProcess").execute()
                 val isFrozenOutput = ShellCommand.builder("am isfrozen $targetProcess").execute()
                 assertThat(isFrozenOutput).isEqualTo("false\n")
             }

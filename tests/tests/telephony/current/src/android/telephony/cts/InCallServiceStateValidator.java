@@ -37,7 +37,6 @@ public class InCallServiceStateValidator  extends InCallService {
     private static CountDownLatch sLatch  = new CountDownLatch(1);
 
     private final List<Call> mCalls = Collections.synchronizedList(new ArrayList<>());
-    private final List<Call> mConferenceCalls = Collections.synchronizedList(new ArrayList<>());
     private final Object mLock = new Object();
     private boolean mIsServiceBound = false;
 
@@ -137,16 +136,9 @@ public class InCallServiceStateValidator  extends InCallService {
     @Override
     public void onCallAdded(Call call) {
         super.onCallAdded(call);
-        if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) {
-            if (!mConferenceCalls.contains(call)) {
-                mConferenceCalls.add(call);
-                call.registerCallback(mCallCallback);
-            }
-        } else {
-            if (!mCalls.contains(call)) {
-                mCalls.add(call);
-                call.registerCallback(mCallCallback);
-            }
+        if (!mCalls.contains(call)) {
+            mCalls.add(call);
+            call.registerCallback(mCallCallback);
         }
 
         if (getCallbacks() != null) {
@@ -157,11 +149,7 @@ public class InCallServiceStateValidator  extends InCallService {
     @Override
     public void onCallRemoved(Call call) {
         super.onCallRemoved(call);
-        if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) {
-            mConferenceCalls.remove(call);
-        } else {
-            mCalls.remove(call);
-        }
+        mCalls.remove(call);
 
         if (getCallbacks() != null) {
             getCallbacks().onCallRemoved(call, mCalls.size());
@@ -188,16 +176,29 @@ public class InCallServiceStateValidator  extends InCallService {
      * @return the number of conference calls currently added to the {@code InCallService}.
      */
     public int getConferenceCallCount() {
-        Log.d(LOG_TAG, "getConferenceCallCount = " + mConferenceCalls.size());
-        return mConferenceCalls.size();
+        int count = 0;
+        synchronized (mCalls) {
+            for (Call call : mCalls) {
+                if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) {
+                    count++;
+                }
+            }
+        }
+        Log.d(LOG_TAG, "getConferenceCallCount = " + count);
+        return count;
     }
 
     /**
      * @return the most recently added conference call that exists inside the {@code InCallService}
      */
     public Call getLastConferenceCall() {
-        if (!mConferenceCalls.isEmpty()) {
-            return mConferenceCalls.get(mConferenceCalls.size() - 1);
+        synchronized (mCalls) {
+            for (int i = mCalls.size() - 1; i >= 0; i--) {
+                Call call = mCalls.get(i);
+                if (call.getDetails().hasProperty(Call.Details.PROPERTY_CONFERENCE)) {
+                    return call;
+                }
+            }
         }
         return null;
     }

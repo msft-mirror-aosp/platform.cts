@@ -65,11 +65,9 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -161,7 +159,7 @@ public class SimultaneousCallingRestrictionsTest {
         // associated @Tests.
         try {
             sMockModemManager = new MockModemManager();
-            assertNotNull(sMockModemManager);
+            assertNotNull("MockModemManager should not be null", sMockModemManager);
             assertTrue(
                     "Failed to connect to MockModemService",
                     sMockModemManager.connectMockModemService());
@@ -556,7 +554,7 @@ public class SimultaneousCallingRestrictionsTest {
 
     private static Integer getFeatureState(int testSub) throws Exception {
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
-        assertNotNull(imsManager);
+        assertNotNull("ImsManager should not be null", imsManager);
         ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(testSub);
         LinkedBlockingQueue<Integer> state = new LinkedBlockingQueue<>(1);
         ShellIdentityUtils.invokeThrowableMethodWithShellPermissionsNoReturn(mmTelManager,
@@ -596,7 +594,7 @@ public class SimultaneousCallingRestrictionsTest {
             LinkedBlockingQueue<ImsReasonInfo> deRegQueue) throws Exception {
         registerImsRegistrationCallback(subId, callback);
         ImsReasonInfo deregResult = waitForResult(deRegQueue);
-        assertNotNull(deregResult);
+        assertNotNull("Deregistration result should not be null", deregResult);
         assertEquals(ImsReasonInfo.CODE_LOCAL_NOT_REGISTERED, deregResult.getCode());
     }
 
@@ -608,7 +606,7 @@ public class SimultaneousCallingRestrictionsTest {
     private void registerImsRegistrationCallback(int subId,
             RegistrationManager.RegistrationCallback callback) throws Exception {
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
-        assertNotNull(imsManager);
+        assertNotNull("ImsManager should not be null", imsManager);
         ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(subId);
         try {
             sUiAutomation.adoptShellPermissionIdentity();
@@ -866,7 +864,7 @@ public class SimultaneousCallingRestrictionsTest {
     private void waitForAttributesAndVerify(int tech, LinkedBlockingQueue<ImsRegistrationAttributes>
             attrQueue, int expectedTransport, int expectedAttrFlags) throws Exception {
         ImsRegistrationAttributes attrResult = waitForResult(attrQueue);
-        assertNotNull(attrResult);
+        assertNotNull("ImsRegistrationAttributes result should not be null", attrResult);
         assertEquals(tech, attrResult.getRegistrationTechnology());
         assertEquals(expectedTransport, attrResult.getTransportType());
         assertEquals(expectedAttrFlags, attrResult.getAttributeFlags());

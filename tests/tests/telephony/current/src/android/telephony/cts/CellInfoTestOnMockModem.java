@@ -98,9 +98,12 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
         // Remove the SIM for initial state, don't need to check the result
         sMockModemManager.removeSimCard(TEST_SIM_SLOT_ID);
         // Insert a SIM
-        assertTrue(sMockModemManager.insertSimCard(TEST_SIM_SLOT_ID, MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertTrue(
+                "Failed to insert SIM card",
+                sMockModemManager.insertSimCard(TEST_SIM_SLOT_ID, MOCK_SIM_PROFILE_ID_TWN_CHT));
         // Change service state to be REGISTERED
         assertTrue(
+                "Failed to change network service",
                 sMockModemManager.changeNetworkService(
                         TEST_SIM_SLOT_ID, MOCK_SIM_PROFILE_ID_TWN_CHT, true));
 
@@ -115,6 +118,7 @@ public class CellInfoTestOnMockModem extends CellInfoTest {
 
         // Change service state to be NOT REGISTERED
         assertTrue(
+                "Failed to change network service",
                 sMockModemManager.changeNetworkService(
                         TEST_SIM_SLOT_ID, MOCK_SIM_PROFILE_ID_TWN_CHT, false));
         // Remove the SIM

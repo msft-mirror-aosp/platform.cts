@@ -262,8 +262,10 @@ public class RcsUceAdapterTest {
         ResolveInfo info = packageManager.resolveActivity(
                 new Intent(ImsRcsManager.ACTION_SHOW_CAPABILITY_DISCOVERY_OPT_IN),
                 PackageManager.MATCH_DEFAULT_ONLY);
-        assertNotNull(ImsRcsManager.ACTION_SHOW_CAPABILITY_DISCOVERY_OPT_IN
-                + " Intent action must be handled by an appropriate settings application.", info);
+        assertNotNull(
+                "ACTION_SHOW_CAPABILITY_DISCOVERY_OPT_IN must be handled"
+                        + " Intent action must be handled by an appropriate settings application.",
+                info);
         assertNotEquals(ImsRcsManager.ACTION_SHOW_CAPABILITY_DISCOVERY_OPT_IN
                 + " activity intent filter must have a > 0 priority.", 0, info.priority);
     }
@@ -276,14 +278,17 @@ public class RcsUceAdapterTest {
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter adapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("RcsUceAdapter can not be null!", adapter);
+        assertNotNull("RcsUceAdapter should not be null", adapter);
 
         Boolean isEnabled = null;
         try {
-            isEnabled = ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                    adapter, RcsUceAdapter::isUceSettingEnabled, ImsException.class,
-                    "android.permission.READ_PHONE_STATE");
-            assertNotNull(isEnabled);
+            isEnabled =
+                    ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
+                            adapter,
+                            RcsUceAdapter::isUceSettingEnabled,
+                            ImsException.class,
+                            "android.permission.READ_PHONE_STATE");
+            assertNotNull("isUceSettingEnabled should not return null", isEnabled);
 
             // Ensure the ContentObserver gets the correct callback based on the change.
             LinkedBlockingQueue<Uri> queue = new LinkedBlockingQueue<>(1);
@@ -293,20 +298,25 @@ public class RcsUceAdapterTest {
                     adapter, a -> a.setUceSettingEnabled(!userSetIsEnabled), ImsException.class,
                     "android.permission.MODIFY_PHONE_STATE");
             Uri result = queue.poll(ImsUtils.TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            assertNotNull(result);
+            assertNotNull("Timed out waiting for UCE setting change", result);
             assertTrue("Unexpected URI, should only receive URIs with prefix " + LISTENER_URI,
                     result.isPathPrefixMatch(LISTENER_URI));
             // Verify the subId associated with the Observer is correct.
             List<String> pathSegments = result.getPathSegments();
             String subId = pathSegments.get(pathSegments.size() - 1);
-            assertEquals("Subscription ID contained in ContentObserver URI doesn't match the "
+            assertEquals(
+                    "Subscription ID contained in ContentObserver URI doesn't match the "
                             + "subscription that has changed.",
-                    String.valueOf(sTestSub), subId);
+                    String.valueOf(sTestSub),
+                    subId);
 
-            Boolean setResult = ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
-                    adapter, RcsUceAdapter::isUceSettingEnabled, ImsException.class,
-                    "android.permission.READ_PHONE_STATE");
-            assertNotNull(setResult);
+            Boolean setResult =
+                    ShellIdentityUtils.invokeThrowableMethodWithShellPermissions(
+                            adapter,
+                            RcsUceAdapter::isUceSettingEnabled,
+                            ImsException.class,
+                            "android.permission.READ_PHONE_STATE");
+            assertNotNull("isUceSettingEnabled should not return null after set", setResult);
             assertEquals("Incorrect setting!", !userSetIsEnabled, setResult);
         } catch (ImsException e) {
             if (e.getCode() != ImsException.CODE_ERROR_UNSUPPORTED_OPERATION) {
@@ -331,7 +341,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
         Collection<Uri> numbers = new ArrayList<>(1);
         numbers.add(sTestNumberUri);
 
@@ -638,7 +648,7 @@ public class RcsUceAdapterTest {
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Connect to the TestImsService
         setupTestImsService(uceAdapter, true, true, false);
@@ -733,7 +743,7 @@ public class RcsUceAdapterTest {
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Connect to the TestImsService
         setupTestImsService(uceAdapter, true, true, false);
@@ -809,7 +819,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Connect to the ImsService
         setupTestImsService(uceAdapter, true, true /* presence cap */, false /* options */);
@@ -1025,7 +1035,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1189,11 +1199,11 @@ public class RcsUceAdapterTest {
     }
 
     /**
-     * Tests the case when contact1 has had a successful network query, but a query for contact2
-     * has resulted in the carrier network not responding with a NOTIFY. If contact1 caps are
-     * queried again, the query to the cache for contact1 should not be blocked in a queue behind
-     * the pending network query. Eventually, request for contact2 will timeout with onTimeout
-     * response from vendor, which will result in ERROR_REQUEST_TIMEOUT result back to app.
+     * Tests the case when contact1 has had a successful network query, but a query for contact2 has
+     * resulted in the carrier network not responding with a NOTIFY. If contact1 caps are queried
+     * again, the query to the cache for contact1 should not be blocked in a queue behind the
+     * pending network query. Eventually, request for contact2 will timeout with onTimeout response
+     * from vendor, which will result in ERROR_REQUEST_TIMEOUT result back to app.
      */
     @Test
     public void testCacheQuerySuccessWhenNetworkBlocked() throws Exception {
@@ -1202,7 +1212,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1315,7 +1325,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1415,7 +1425,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1571,7 +1581,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1698,7 +1708,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1834,7 +1844,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1944,7 +1954,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -1999,7 +2009,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -2066,7 +2076,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -2360,7 +2370,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -2460,7 +2470,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -2561,7 +2571,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -2629,7 +2639,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -2809,7 +2819,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -2926,7 +2936,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -3080,7 +3090,7 @@ public class RcsUceAdapterTest {
         }
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Remove the test contact capabilities
         removeTestContactFromEab();
@@ -3254,7 +3264,7 @@ public class RcsUceAdapterTest {
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Prepare the test contact and the callback
         Collection<Uri> numbers = new ArrayList<>(1);
@@ -3297,18 +3307,23 @@ public class RcsUceAdapterTest {
         overrideCarrierConfig(bundle);
 
         // Verify the sip information with 200 OK response.
-        capabilityExchangeImpl.setSubscribeOperation((uris, cb) -> {
-            cb.onNetworkResponse(new SipDetails.Builder(SipDetails.METHOD_SUBSCRIBE)
-                    .setCSeq(1).setSipResponseCode(200, "OK").setCallId("TestCallId").build());
-            cb.onTerminated("", 0L);
-        });
+        capabilityExchangeImpl.setSubscribeOperation(
+                (uris, cb) -> {
+                    cb.onNetworkResponse(
+                            new SipDetails.Builder(SipDetails.METHOD_SUBSCRIBE)
+                                    .setCSeq(1)
+                                    .setSipResponseCode(200, "OK")
+                                    .setCallId("TestCallId")
+                                    .build());
+                    cb.onTerminated("", 0L);
+                });
 
         requestCapabilities(uceAdapter, numbers, callback);
 
         Optional<SipDetails> receivedDetails = waitForResult(completeQueue);
         SipDetails receivedInfo = receivedDetails.orElse(null);
 
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on success", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(1, receivedInfo.getCSeq());
         assertEquals(200, receivedInfo.getResponseCode());
@@ -3322,7 +3337,7 @@ public class RcsUceAdapterTest {
 
         receivedDetails = waitForResult(completeQueue);
         receivedInfo = receivedDetails.orElse(null);
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on success", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(1, receivedInfo.getCSeq());
         assertEquals(200, receivedInfo.getResponseCode());
@@ -3333,18 +3348,22 @@ public class RcsUceAdapterTest {
         removeTestContactFromEab();
 
         // Verify the sip information with 404 NOT FOUND response.
-        capabilityExchangeImpl.setSubscribeOperation((uris, cb) -> {
-            cb.onNetworkResponse(new SipDetails.Builder(SipDetails.METHOD_SUBSCRIBE)
-                    .setCSeq(2).setSipResponseCode(404, "NOT FOUND")
-                    .setCallId("TestCallId1").build());
-        });
+        capabilityExchangeImpl.setSubscribeOperation(
+                (uris, cb) -> {
+                    cb.onNetworkResponse(
+                            new SipDetails.Builder(SipDetails.METHOD_SUBSCRIBE)
+                                    .setCSeq(2)
+                                    .setSipResponseCode(404, "NOT FOUND")
+                                    .setCallId("TestCallId1")
+                                    .build());
+                });
 
         requestCapabilities(uceAdapter, numbers, callback);
 
         receivedDetails = waitForResult(completeQueue);
         receivedInfo = receivedDetails.orElse(null);
 
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on success", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(2, receivedInfo.getCSeq());
         assertEquals(404, receivedInfo.getResponseCode());
@@ -3359,7 +3378,7 @@ public class RcsUceAdapterTest {
         receivedDetails = waitForResult(completeQueue);
         receivedInfo = receivedDetails.orElse(null);
 
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on success", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(2, receivedInfo.getCSeq());
         assertEquals(404, receivedInfo.getResponseCode());
@@ -3370,18 +3389,22 @@ public class RcsUceAdapterTest {
         removeTestContactFromEab();
 
         // Verify the sip information with failure response except 404 NOT FOUND.
-        capabilityExchangeImpl.setSubscribeOperation((uris, cb) -> {
-            cb.onNetworkResponse(new SipDetails.Builder(SipDetails.METHOD_SUBSCRIBE)
-                    .setCSeq(3).setSipResponseCode(500, "Internal Server Error")
-                    .setCallId("TestCallId2").build());
-        });
+        capabilityExchangeImpl.setSubscribeOperation(
+                (uris, cb) -> {
+                    cb.onNetworkResponse(
+                            new SipDetails.Builder(SipDetails.METHOD_SUBSCRIBE)
+                                    .setCSeq(3)
+                                    .setSipResponseCode(500, "Internal Server Error")
+                                    .setCallId("TestCallId2")
+                                    .build());
+                });
 
         requestCapabilities(uceAdapter, numbers, callback);
 
         receivedDetails = waitForResult(errorQueue);
         receivedInfo = receivedDetails.orElse(null);
 
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on error", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(3, receivedInfo.getCSeq());
         assertEquals(500, receivedInfo.getResponseCode());
@@ -3392,16 +3415,17 @@ public class RcsUceAdapterTest {
         errorQueue.clear();
 
         // Verify the sip information when error for a request
-        capabilityExchangeImpl.setSubscribeOperation((uris, cb) -> {
-            cb.onCommandError(COMMAND_CODE_SERVICE_UNKNOWN);
-        });
+        capabilityExchangeImpl.setSubscribeOperation(
+                (uris, cb) -> {
+                    cb.onCommandError(COMMAND_CODE_SERVICE_UNKNOWN);
+                });
 
         requestCapabilities(uceAdapter, numbers, callback);
 
         receivedDetails = waitForResult(errorQueue);
         receivedInfo = receivedDetails.orElse(null);
 
-        assertNull(receivedInfo);
+        assertNull("SipDetails should be null for command error", receivedInfo);
         errorQueue.clear();
         removeUceRequestDisallowedStatus();
         overrideCarrierConfig(null);
@@ -3415,7 +3439,7 @@ public class RcsUceAdapterTest {
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
-        assertNotNull("UCE adapter should not be null!", uceAdapter);
+        assertNotNull("UCE adapter should not be null", uceAdapter);
 
         // Prepare the test contact and the callback
         Collection<Uri> numbers = new ArrayList<>(1);
@@ -3463,7 +3487,7 @@ public class RcsUceAdapterTest {
         requestCapabilities(uceAdapter, numbers, callback);
 
         SipDetails receivedInfo = waitForResult(completeQueue);
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on success", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(200, receivedInfo.getResponseCode());
         assertEquals("OK", receivedInfo.getResponsePhrase());
@@ -3477,7 +3501,7 @@ public class RcsUceAdapterTest {
         requestAvailability(uceAdapter, sTestNumberUri, callback);
 
         receivedInfo = waitForResult(completeQueue);
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on success", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(404, receivedInfo.getResponseCode());
         assertEquals("NOT FOUND", receivedInfo.getResponsePhrase());
@@ -3493,7 +3517,7 @@ public class RcsUceAdapterTest {
         requestCapabilities(uceAdapter, numbers, callback);
 
         receivedInfo = waitForResult(errorQueue);
-        assertNotNull(receivedInfo);
+        assertNotNull("SipDetails should not be null on error", receivedInfo);
         assertEquals(SipDetails.METHOD_SUBSCRIBE, receivedInfo.getMethod());
         assertEquals(500, receivedInfo.getResponseCode());
         assertEquals("Internal Server Error", receivedInfo.getResponsePhrase());

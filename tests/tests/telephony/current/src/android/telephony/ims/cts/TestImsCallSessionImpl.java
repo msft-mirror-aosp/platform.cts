@@ -32,17 +32,21 @@ import android.telephony.ims.ImsStreamMediaProfile;
 import android.telephony.ims.stub.ImsCallSessionImplBase;
 import android.util.Log;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 
 public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
 
     private static final String LOG_TAG = "CtsTestImsCallSessionImpl";
+    public static final String TEST_CONF_HOST_ADDRESS = "5558675309";
 
     // The timeout to wait in current state in milliseconds
     protected static final int WAIT_IN_CURRENT_STATE = 200;
 
     private final String mCallId = String.valueOf(this.hashCode());
-    private final Object mLock = new Object();
 
     private int mState = ImsCallSessionImplBase.State.IDLE;
     private ImsCallProfile mCallProfile;
@@ -74,6 +78,7 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
     private int[] mAnbrValues = new int[3];
 
     private TestImsCallSessionImpl mConfSession = null;
+    private final ImsConferenceState mConfState = new ImsConferenceState();
     private ImsCallProfile mConfCallProfile = null;
     private ConferenceHelper mConferenceHelper = null;
     private String mCallee = null;
@@ -234,6 +239,12 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
     }
 
     @Override
+    public void close() {
+        Log.i(LOG_TAG, "close Call");
+        setState(State.TERMINATED);
+    }
+
+    @Override
     public void accept(int callType, ImsStreamMediaProfile profile) {
         Log.i(LOG_TAG, "Accept Call");
         postAndRunTask(() -> {
@@ -370,24 +381,29 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
     }
 
     public void changeMultipartyState(boolean isMultiParty) {
-        postAndRunTask(() -> {
-            ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
-            mCallProfile.setCallExtraBoolean(ImsCallProfile.EXTRA_CONFERENCE, true);
-            try {
-                if (mListener == null) {
-                    return;
-                }
-                Log.d(LOG_TAG, "changeMultipartyState: isMultiParty = " + isMultiParty + "mCallId = "
-                        + mCallId);
-                mListener.callSessionMultipartyStateChanged(isMultiParty);
-            } catch (Throwable t) {
-                Throwable cause = t.getCause();
-                if (t instanceof DeadObjectException
-                        || (cause != null && cause instanceof DeadObjectException)) {
-                    fail("starting cause Throwable to be thrown: " + t);
-                }
-            }
-        });
+        postAndRunTask(
+                () -> {
+                    ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+                    mCallProfile.setCallExtraBoolean(ImsCallProfile.EXTRA_CONFERENCE, true);
+                    try {
+                        if (mListener == null) {
+                            return;
+                        }
+                        Log.d(
+                                LOG_TAG,
+                                "changeMultipartyState: isMultiParty = "
+                                        + isMultiParty
+                                        + "mCallId = "
+                                        + mCallId);
+                        mListener.callSessionMultipartyStateChanged(isMultiParty);
+                    } catch (Throwable t) {
+                        Throwable cause = t.getCause();
+                        if (t instanceof DeadObjectException
+                                || (cause != null && cause instanceof DeadObjectException)) {
+                            fail("starting cause Throwable to be thrown: " + t);
+                        }
+                    }
+                });
     }
 
     @Override
@@ -579,6 +595,8 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
             mergeExistConference();
         } else {
             createConferenceSession();
+            List<String> participants =
+                    Arrays.asList(mCallee, mConferenceHelper.getBackGroundSession().mCallee);
             mConfSession.setState(ImsCallSessionImplBase.State.ESTABLISHED);
 
             postAndRunTask(() -> {
@@ -599,21 +617,22 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
                 }
             });
 
-            postAndRunTask(() -> {
-                try {
-                    if (mListener == null) {
-                        return;
-                    }
-                    // after the conference call setup, the participant is two.
-                    mConfSession.sendConferenceStateUpdated("connected", 2);
-                } catch (Throwable t) {
-                    Throwable cause = t.getCause();
-                    if (t instanceof DeadObjectException
-                            || (cause != null && cause instanceof DeadObjectException)) {
-                        fail("starting cause Throwable to be thrown: " + t);
-                    }
-                }
-            });
+            postAndRunTask(
+                    () -> {
+                        try {
+                            if (mListener == null) {
+                                return;
+                            }
+                            mConfSession.addConferenceParticipantAddresses(participants);
+                            mConfSession.sendConferenceStateUpdated();
+                        } catch (Throwable t) {
+                            Throwable cause = t.getCause();
+                            if (t instanceof DeadObjectException
+                                    || (cause != null && cause instanceof DeadObjectException)) {
+                                fail("starting cause Throwable to be thrown: " + t);
+                            }
+                        }
+                    });
         }
     }
 
@@ -658,52 +677,64 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
         addExistConferenceSession();
         mConfSession.setState(ImsCallSessionImplBase.State.ESTABLISHED);
 
-        postAndRunTask(() -> {
-            ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
-            try {
-                if (mListener == null) {
-                    return;
-                }
+        postAndRunTask(
+                () -> {
+                    ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
+                    try {
+                        if (mListener == null) {
+                            return;
+                        }
 
-                Log.d(LOG_TAG, "invokeMergeComplete into an existing conference call");
-                TestImsCallSessionImpl newSession = null;
-                mListener.callSessionMergeComplete(newSession);
+                        Log.d(LOG_TAG, "invokeMergeComplete into an existing conference call");
+                        TestImsCallSessionImpl newSession = null;
+                        mListener.callSessionMergeComplete(newSession);
 
-                if (isTestType(TEST_TYPE_MULTI_PARTY_ANCHOR_CONFERENCE)) {
-                    mConferenceHelper.getBackGroundSession().resume(new ImsStreamMediaProfile());
-                }
+                        if (isTestType(TEST_TYPE_MULTI_PARTY_ANCHOR_CONFERENCE)) {
+                            mConferenceHelper
+                                    .getBackGroundSession()
+                                    .resume(new ImsStreamMediaProfile());
+                        }
 
-                if (isTestType(TEST_TYPE_JOIN_EXIST_CONFERENCE_AFTER_SWAP)) {
-                    mConferenceHelper.getBackGroundSession().setState(State.TERMINATED);
-                    mConferenceHelper.getBackGroundSession().invokeTerminatedByRemote();
-                } else {
-                    mConferenceHelper.getForeGroundSession().setState(State.TERMINATED);
-                    mConferenceHelper.getForeGroundSession().invokeTerminatedByRemote();
-                }
-            } catch (Throwable t) {
-                Throwable cause = t.getCause();
-                if (t instanceof DeadObjectException
-                        || (cause != null && cause instanceof DeadObjectException)) {
-                    fail("starting cause Throwable to be thrown: " + t);
-                }
-            }
-        });
+                        if (isTestType(TEST_TYPE_JOIN_EXIST_CONFERENCE_AFTER_SWAP)) {
+                            TestImsCallSessionImpl bgSession =
+                                    mConferenceHelper.getBackGroundSession();
+                            mConfSession.addConferenceParticipantAddresses(
+                                    List.of(bgSession.mCallee));
+                            bgSession.setState(State.TERMINATED);
+                            bgSession.invokeTerminatedByRemote();
+                        } else {
+                            TestImsCallSessionImpl fgSession =
+                                    mConferenceHelper.getForeGroundSession();
+                            mConfSession.addConferenceParticipantAddresses(
+                                    List.of(fgSession.mCallee));
+                            mConferenceHelper.getForeGroundSession().setState(State.TERMINATED);
+                            mConferenceHelper.getForeGroundSession().invokeTerminatedByRemote();
+                        }
+                    } catch (Throwable t) {
+                        Throwable cause = t.getCause();
+                        if (t instanceof DeadObjectException
+                                || (cause != null && cause instanceof DeadObjectException)) {
+                            fail("starting cause Throwable to be thrown: " + t);
+                        }
+                    }
+                });
 
-        postAndRunTask(() -> {
-            try {
-                if (mListener == null) {
-                    return;
-                }
-                // after joining an existing conference call, the participants are three.
-                mConfSession.sendConferenceStateUpdated("connected", 3);
-            } catch (Throwable t) {
-                Throwable cause = t.getCause();
-                if (t instanceof DeadObjectException
-                        || (cause != null && cause instanceof DeadObjectException)) {
-                    fail("starting cause Throwable to be thrown: " + t);
-                }
-            }
-        });
+        postAndRunTask(
+                () -> {
+                    try {
+                        if (mListener == null) {
+                            return;
+                        }
+                        // after joining an existing conference call, the participants are three.
+                        mConfSession.sendConferenceStateUpdated();
+                    } catch (Throwable t) {
+                        Throwable cause = t.getCause();
+                        if (t instanceof DeadObjectException
+                                || (cause != null && cause instanceof DeadObjectException)) {
+                            fail("starting cause Throwable to be thrown: " + t);
+                        }
+                    }
+                });
     }
 
     private void createConferenceSession() {
@@ -722,6 +753,8 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
         mConfCallProfile.setCallExtraBoolean(ImsCallProfile.EXTRA_CONFERENCE, true);
 
         mConfSession = new TestImsCallSessionImpl(mConfCallProfile);
+        mConfSession.addConferenceParticipantAddresses(
+                Collections.singletonList(TEST_CONF_HOST_ADDRESS));
         mConfSession.setConferenceHelper(mConferenceHelper);
         mConferenceHelper.addSession(mConfSession);
         mConferenceHelper.setConferenceSession(mConfSession);
@@ -755,18 +788,22 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
                 ImsReasonInfo.CODE_UNSPECIFIED));
     }
 
-    private void sendConferenceStateUpdated(String state, int count) {
-        ImsConferenceState confState = new ImsConferenceState();
-        int counter = 5553639;
-        for (int i = 0; i < count; ++i) {
-            confState.mParticipants.put((String.valueOf(++counter)),
-                    createConferenceParticipant(("tel:" + String.valueOf(++counter)),
-                    ("tel:" + String.valueOf(++counter)), (String.valueOf(++counter)), state, 200));
+    private void addConferenceParticipantAddresses(List<String> newAddresses) {
+        for (int i = 0; i < newAddresses.size(); ++i) {
+            String remoteUri = "tel:" + newAddresses.get(i);
+            // assume the endpoint is unique
+            String remoteUser = remoteUri + ";index=" + UUID.randomUUID();
+            mConfState.mParticipants.put(
+                    remoteUser,
+                    createConferenceParticipant(
+                            remoteUri, remoteUser, remoteUri, "connected", 200));
         }
+    }
 
+    private void sendConferenceStateUpdated() {
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
-        Log.d(LOG_TAG, "invokeCallSessionConferenceStateUpdated");
-        mListener.callSessionConferenceStateUpdated(confState);
+        Log.d(LOG_TAG, "sendConferenceStateUpdated, participants: " + mConfState);
+        mListener.callSessionConferenceStateUpdated(mConfState);
     }
 
     /**
@@ -912,7 +949,7 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
 
     private void setState(int state) {
         if (mState != state) {
-            Log.d(LOG_TAG, "ImsCallSession :: " + mState + " >> " + state);
+            Log.d(LOG_TAG, "ImsCallSession(" + mCallId + ") :: " + mState + " >> " + state);
             mState = state;
         }
     }
