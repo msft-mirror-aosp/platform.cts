@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.mock;
+import android.bluetooth.BluetoothFrameworkInitializer
+import android.os.BluetoothServiceManager
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.kotlin.mock
 
-import android.bluetooth.BluetoothFrameworkInitializer;
-import android.os.BluetoothServiceManager;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
+@RunWith(AndroidJUnit4::class)
 @SmallTest
-public class BluetoothFrameworkInitializerTest {
+class BluetoothFrameworkInitializerTest {
 
     /**
      * BluetoothFrameworkInitializer.registerServiceWrappers() should only be called by
@@ -38,25 +35,25 @@ public class BluetoothFrameworkInitializerTest {
      * any other time should throw an exception.
      */
     @Test
-    public void registerServiceWrappers_failsWhenCalledOutsideOfSystemServiceRegistry() {
-        assertThrows(
-                IllegalStateException.class,
-                () -> BluetoothFrameworkInitializer.registerServiceWrappers());
+    fun registerServiceWrappers_failsWhenCalledOutsideOfSystemServiceRegistry() {
+        assertThrows(IllegalStateException::class.java) {
+            BluetoothFrameworkInitializer.registerServiceWrappers()
+        }
     }
 
     @Test
-    public void setBluetoothServiceManager() {
-        assertThrows(
-                IllegalStateException.class,
-                () ->
-                        BluetoothFrameworkInitializer.setBluetoothServiceManager(
-                                mock(BluetoothServiceManager.class)));
+    fun setBluetoothServiceManager() {
+        assertThrows(IllegalStateException::class.java) {
+            BluetoothFrameworkInitializer.setBluetoothServiceManager(
+                mock<BluetoothServiceManager>()
+            )
+        }
     }
 
     @Test
-    public void setBinderCallsStatsInitializer() {
-        assertThrows(
-                IllegalStateException.class,
-                () -> BluetoothFrameworkInitializer.setBinderCallsStatsInitializer((ctx) -> {}));
+    fun setBinderCallsStatsInitializer() {
+        assertThrows(IllegalStateException::class.java) {
+            BluetoothFrameworkInitializer.setBinderCallsStatsInitializer { _ -> }
+        }
     }
 }
