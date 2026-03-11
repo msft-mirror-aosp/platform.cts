@@ -122,14 +122,7 @@ public class CommandReceiverActivity extends Activity {
             "clear-maximum-password-attempts";
     public static final String COMMAND_SET_DEFAULT_IME = "set-default-ime";
     public static final String COMMAND_CLEAR_DEFAULT_IME = "clear-default-ime";
-    public static final String COMMAND_CREATE_MANAGED_USER = "create-managed-user";
-    public static final String COMMAND_CREATE_MANAGED_USER_WITHOUT_SETUP =
-            "create-managed-user-without-setup";
     public static final String COMMAND_REMOVE_SECONDARY_USERS = "remove-secondary-users";
-    public static final String COMMAND_WITH_USER_SWITCHER_MESSAGE = "with-user-switcher-message";
-    public static final String COMMAND_WITHOUT_USER_SWITCHER_MESSAGE =
-            "without-user-switcher-message";
-    public static final String COMMAND_ENABLE_LOGOUT = "enable-logout";
     public static final String COMMAND_DISABLE_USB_DATA_SIGNALING = "disable-usb-data-signaling";
     public static final String COMMAND_ENABLE_USB_DATA_SIGNALING = "enable-usb-data-signaling";
     public static final String COMMAND_SET_REQUIRED_PASSWORD_COMPLEXITY =
@@ -533,34 +526,6 @@ public class CommandReceiverActivity extends Activity {
                             + mDpm);
                     mDpm.setSecureSetting(mAdmin, Settings.Secure.DEFAULT_INPUT_METHOD, null);
                 } break;
-                case COMMAND_CREATE_MANAGED_USER:{
-                    if (!mDpm.isDeviceOwnerApp(getPackageName())) {
-                        return;
-                    }
-                    PersistableBundle extras = new PersistableBundle();
-                    extras.putBoolean(DeviceAdminTestReceiver.EXTRA_MANAGED_USER_TEST, true);
-                    UserHandle userHandle = mDpm.createAndManageUser(mAdmin, "managed user", mAdmin,
-                            extras,
-                            SKIP_SETUP_WIZARD | MAKE_USER_EPHEMERAL);
-                    Log.i(TAG, "Created user " + userHandle + "; setting affiliation ids to "
-                            + DeviceAdminTestReceiver.AFFILIATION_ID);
-                    mDpm.setAffiliationIds(mAdmin,
-                            Collections.singleton(DeviceAdminTestReceiver.AFFILIATION_ID));
-                    // TODO(b/204483021): move to helper class / restore after user is logged out
-                    if (UserManager.isHeadlessSystemUserMode()) {
-                        mAm.setStopUserOnSwitch(ActivityManager.STOP_USER_ON_SWITCH_FALSE);
-                    }
-                    Log.d(TAG, "Starting user " + userHandle);
-                    mDpm.startUserInBackground(mAdmin, userHandle);
-                } break;
-                case COMMAND_CREATE_MANAGED_USER_WITHOUT_SETUP:{
-                    if (!mDpm.isDeviceOwnerApp(getPackageName())) {
-                        return;
-                    }
-                    PersistableBundle extras = new PersistableBundle();
-                    extras.putBoolean(DeviceAdminTestReceiver.EXTRA_MANAGED_USER_TEST, true);
-                    mDpm.createAndManageUser(mAdmin, "managed user", mAdmin, extras, /* flags */ 0);
-                } break;
                 case COMMAND_REMOVE_SECONDARY_USERS: {
                     if (!mDpm.isDeviceOwnerApp(getPackageName())) {
                         return;
@@ -568,22 +533,6 @@ public class CommandReceiverActivity extends Activity {
                     for (UserHandle secondaryUser : mDpm.getSecondaryUsers(mAdmin)) {
                         mDpm.removeUser(mAdmin, secondaryUser);
                     }
-                } break;
-                case COMMAND_WITH_USER_SWITCHER_MESSAGE: {
-                    createAndSwitchUserWithMessage("Start user session", "End user session");
-                } break;
-                case COMMAND_WITHOUT_USER_SWITCHER_MESSAGE: {
-                    createAndSwitchUserWithMessage(null, null);
-                } break;
-                case COMMAND_ENABLE_LOGOUT: {
-                    if (!mDpm.isDeviceOwnerApp(getPackageName())) {
-                        return;
-                    }
-                    mDpm.addUserRestriction(mAdmin, UserManager.DISALLOW_USER_SWITCH);
-                    mDpm.setLogoutEnabled(mAdmin, true);
-                    UserHandle userHandle = mDpm.createAndManageUser(mAdmin, "managed user", mAdmin,
-                            null, SKIP_SETUP_WIZARD | MAKE_USER_EPHEMERAL);
-                    mDpm.switchUser(mAdmin, userHandle);
                 } break;
                 case COMMAND_DISABLE_USB_DATA_SIGNALING: {
                     mDpm.setUsbDataSignalingEnabled(false);
@@ -835,28 +784,6 @@ public class CommandReceiverActivity extends Activity {
         return (applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
     }
 
-    private void createAndSwitchUserWithMessage(String startUserSessionMessage,
-            String endUserSessionMessage) {
-        if (!mDpm.isDeviceOwnerApp(getPackageName())) {
-            return;
-        }
-        mDpm.setStartUserSessionMessage(mAdmin, startUserSessionMessage);
-        mDpm.setEndUserSessionMessage(mAdmin, endUserSessionMessage);
-        mDpm.setAffiliationIds(mAdmin,
-                Collections.singleton(DeviceAdminTestReceiver.AFFILIATION_ID));
-
-        PersistableBundle extras = new PersistableBundle();
-        extras.putBoolean(DeviceAdminTestReceiver.EXTRA_LOGOUT_ON_START, true);
-        UserHandle userHandle = mDpm.createAndManageUser(mAdmin, "managed user", mAdmin,
-                extras,
-                SKIP_SETUP_WIZARD | MAKE_USER_EPHEMERAL);
-        // TODO(b/204483021): move to helper class / restore after user is logged out
-        if (UserManager.isHeadlessSystemUserMode()) {
-            mAm.setStopUserOnSwitch(ActivityManager.STOP_USER_ON_SWITCH_FALSE);
-        }
-        Log.d(TAG, "Switching to user " + userHandle);
-        mDpm.switchUser(mAdmin, userHandle);
-    }
 
     private String getCurrentLauncherPackage() {
         ResolveInfo resolveInfo = getPackageManager()
