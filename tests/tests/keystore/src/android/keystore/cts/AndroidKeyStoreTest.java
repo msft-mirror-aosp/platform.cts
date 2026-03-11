@@ -789,10 +789,6 @@ public class AndroidKeyStoreTest {
         FAKE_USER.put("EC", FAKE_EC_USER_1);
     }
 
-    private static final String[] getAlgorithmsRsaOnly() {
-        return new String[] {"RSA"};
-    }
-
     private static final String[] getAlgorithms() {
         return new String[] {"RSA", "EC"};
     }
@@ -895,7 +891,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_Aliases_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void aliases_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -919,7 +915,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_ContainsAliases_PrivateAndCA_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void containsAlias_privateKeyAndCA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -934,7 +930,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_ContainsAliases_CAOnly_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void containsAlias_CA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -952,7 +948,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_DeleteEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void deleteEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -980,7 +976,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_DeleteEntry_NonExistent_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void deleteEntry_nonExistent_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -990,7 +986,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificate_Single_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCertificate_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1020,7 +1016,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_CAEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCertificateAlias_CAEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1034,7 +1030,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_PrivateKeyEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCertificateAlias_privateKeyEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1051,7 +1047,7 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_GetCertificateAlias_CAEntry_WithPrivateKeyUsingCA_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCertificateAlias_CAEntryAndPrivateKeyEntryUsingCA_success(String algorithm)
             throws Exception {
@@ -1072,7 +1068,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_NonExist_Empty_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCertificateAlias_emptyKeystore_returnsNull(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1086,7 +1082,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_NonExist_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCertificateAlias_nonExistent_returnsNull(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1105,7 +1101,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateChain_SingleLength_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCertificateChain_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1142,7 +1138,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCreationDate_PrivateKeyEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCreationDate_privateKey_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1162,7 +1158,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCreationDate_CAEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getCreationDate_CA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1318,7 +1314,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetKey_Certificate_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void getKey_certificate_returnsNull(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1349,7 +1345,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_IsCertificateEntry_CA_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void isCertificateEntry_CA_returnsTrue(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1361,7 +1357,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_IsCertificateEntry_PrivateKey_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void isCertificateEntry_privateKey_returnsFalse(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1382,7 +1378,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_IsKeyEntry_PrivateKey_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void isKeyEntry_privateKey_returnsTrue(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1392,7 +1388,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_IsKeyEntry_CA_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void isKeyEntry_CA_returnsFalse(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1412,7 +1408,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetCertificate_CA_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setCertificateEntry_CA_success(String algorithm) throws Exception {
         final Certificate actual = generateCaCertificate(algorithm);
@@ -1427,7 +1423,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetCertificate_CAExists_Overwrite_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setCertificateEntry_overwriteCAWithCA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1442,7 +1438,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetCertificate_PrivateKeyExists_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setCertificateEntry_overwritePrivateKeyWithCA_throwsException(String algorithm)
             throws Exception {
@@ -1459,7 +1455,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetEntry_PrivateKeyEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setEntry_privateKeyEntry(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1494,7 +1490,7 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setEntry_overwritePrivateKeyWithPrivateKey_success(String algorithm)
             throws Exception {
@@ -1564,7 +1560,7 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_SetEntry_CAEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setEntry_overwriteCAEntryWithPrivateKey_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1623,7 +1619,7 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_CAEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setEntry_overwritePrivateKeyWithCA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1680,7 +1676,7 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_ShortPrivateKeyEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setEntry_overwritePrivateKeyWithPrivateKeyWithoutChain_success(String algorithm)
             throws Exception {
@@ -1747,7 +1743,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetEntry_CAEntry_Overwrites_CAEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setEntry_overwriteCAEntryWithCAEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1796,7 +1792,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_ProtectedKey_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setKeyEntry_protectedKey_throwsException(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1819,7 +1815,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setKeyEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -1855,7 +1851,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_Replaced_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setKeyEntry_replaceExistingEntryWithSameAlias_success(String algorithm)
             throws Exception {
@@ -1919,7 +1915,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_ReplacedChain_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setKeyEntry_replaceKeyWithCertificateChain_success(String algorithm)
             throws Exception {
@@ -1960,7 +1956,7 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_SetKeyEntry_ReplacedChain_DifferentPrivateKey_Unencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setKeyEntry_replaceChainForDifferentPrivateKey_throwsException(String algorithm)
             throws Exception {
@@ -1985,7 +1981,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_ReplacedWithSame_UnencryptedToUnencrypted_Failure
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void setEntry_replaceWithSameEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
@@ -2035,7 +2031,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_Size_Unencrypted_Success
     @Test
-    @Parameters(method = "getAlgorithmsRsaOnly")
+    @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
     public void size_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
