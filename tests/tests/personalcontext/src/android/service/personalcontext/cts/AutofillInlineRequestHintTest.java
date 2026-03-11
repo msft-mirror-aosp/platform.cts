@@ -152,8 +152,7 @@ public class AutofillInlineRequestHintTest {
         assertThat(outputAutofillHint.getAutofillValue()).isEqualTo(autofillValue);
         assertThat(outputAutofillHint.getInlineSuggestionsRequest())
                 .isEqualTo(inlineSuggestionsRequest);
-        assertThat(outputAutofillHint.getFillEventHistory().getClientState())
-                .isEqualTo(fillEventHistory.getClientState());
+        assertThat(outputAutofillHint.getFillEventHistory()).isEqualTo(fillEventHistory);
         assertThat(outputAutofillHint.getTokens()).containsExactly(mToken);
 
         assertThat(outputAutofillHint).isEqualTo(hint);
