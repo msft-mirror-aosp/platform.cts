@@ -237,6 +237,9 @@ public final class Processor extends AbstractProcessor {
     private static final ClassName PARCELABLE_POLICY_IDENTIFIER =
             ClassName.get(
                     "com.android.bedstead.remoteframeworkclasses", "ParcelablePolicyIdentifier");
+    private static final ClassName PARCELABLE_PACKAGE_IDENTIFIER =
+            ClassName.get(
+                    "com.android.bedstead.remoteframeworkclasses", "ParcelablePackageIdentifier");
 
     private static final ClassName COMPONENT_NAME_CLASSNAME =
             ClassName.get("android.content", "ComponentName");
@@ -280,6 +283,7 @@ public final class Processor extends AbstractProcessor {
         generateWrapper(NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME);
         generateWrapper(NULL_HANDLER_CALLBACK_CLASSNAME);
         generateWrapper(PARCELABLE_POLICY_IDENTIFIER);
+        generateWrapper(PARCELABLE_PACKAGE_IDENTIFIER);
     }
 
     private void generateWrapper(ClassName className) {
@@ -436,14 +440,15 @@ public final class Processor extends AbstractProcessor {
                                 .addMember(
                                         "parcelableWrappers",
                                         "{$T.class, $T.class, $T.class, $T.class, $T.class,"
-                                                + " $T.class, $T.class}",
+                                                + " $T.class, $T.class, $T.class}",
                                         NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
                                         NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
                                         NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
                                         NULL_PARCELABLE_ACTIVITY_CLASSNAME,
                                         NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
                                         NULL_HANDLER_CALLBACK_CLASSNAME,
-                                        PARCELABLE_POLICY_IDENTIFIER)
+                                        PARCELABLE_POLICY_IDENTIFIER,
+                                        PARCELABLE_PACKAGE_IDENTIFIER)
                                 .addMember(
                                         "futureWrappers",
                                         "$T.class",
@@ -497,14 +502,15 @@ public final class Processor extends AbstractProcessor {
                         .addMember(
                                 "parcelableWrappers",
                                 "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class,"
-                                        + " $T.class}",
+                                        + " $T.class, $T.class}",
                                 NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
                                 NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
                                 NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
                                 NULL_PARCELABLE_ACTIVITY_CLASSNAME,
                                 NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
                                 NULL_HANDLER_CALLBACK_CLASSNAME,
-                                PARCELABLE_POLICY_IDENTIFIER)
+                                PARCELABLE_POLICY_IDENTIFIER,
+                                PARCELABLE_PACKAGE_IDENTIFIER)
                         .build());
 
         classBuilder.addField(
