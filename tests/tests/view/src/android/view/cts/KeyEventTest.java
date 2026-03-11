@@ -36,6 +36,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.method.MetaKeyKeyListener;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
@@ -76,7 +78,9 @@ public class KeyEventTest {
     private static native KeyEvent obtainKeyEventCopyFromNative(KeyEvent event);
 
     static {
-        System.loadLibrary("ctsview_jni");
+        if (!RavenwoodRule.isOnRavenwood()) {
+            System.loadLibrary("ctsview_jni");
+        }
     }
 
     @Before
@@ -836,6 +840,7 @@ public class KeyEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testNativeConverter() {
         mKeyEvent = new KeyEvent(mDownTime, mEventTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A,
                 1, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_TOUCHSCREEN);
@@ -843,6 +848,7 @@ public class KeyEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testNativeToJavaConverter() {
         KeyEvent javaKeyEvent = new KeyEvent(mDownTime, mEventTime,
                 KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 1, 0,
@@ -864,6 +870,7 @@ public class KeyEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testNativeToJavaConverterMemoryLeak() {
         final KeyEvent javaKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
 
@@ -875,6 +882,7 @@ public class KeyEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testJavaToNativeConverterMemoryLeak() {
         final KeyEvent javaKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
 

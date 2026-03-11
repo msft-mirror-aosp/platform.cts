@@ -48,6 +48,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.TextUtils;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -109,7 +111,9 @@ public class MotionEventTest {
     private static native MotionEvent obtainMotionEventCopyFromNative(MotionEvent event);
 
     static {
-        System.loadLibrary("ctsview_jni");
+        if (!RavenwoodRule.isOnRavenwood()) {
+            System.loadLibrary("ctsview_jni");
+        }
     }
 
     @Before
@@ -1097,6 +1101,7 @@ public class MotionEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testNativeConverter() {
         final MotionEvent event = MotionEvent.obtain(mDownTime, mEventTime,
                 MotionEvent.ACTION_BUTTON_PRESS, X_3F, Y_4F, META_STATE);
@@ -1105,6 +1110,7 @@ public class MotionEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testNativeToJavaConverter() {
         final MotionEvent javaMotionEvent = MotionEvent.obtain(mDownTime, mEventTime,
                 MotionEvent.ACTION_DOWN, X_3F, Y_4F, PRESSURE_1F, SIZE_1F, META_STATE,
@@ -1139,6 +1145,7 @@ public class MotionEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testNativeToJavaConverterMemoryLeak() {
         final MotionEvent javaMotionEvent =
                 MotionEvent.obtain(
@@ -1152,6 +1159,7 @@ public class MotionEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testNativeToJavaConverterMemoryLeakRecylingObjects() {
         final MotionEvent javaMotionEvent =
                 MotionEvent.obtain(
@@ -1165,6 +1173,7 @@ public class MotionEventTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Native NDK APIs are not supported yet")
     public void testJavaToNativeConverterMemoryLeak() {
         final MotionEvent event =
                 MotionEvent.obtain(
