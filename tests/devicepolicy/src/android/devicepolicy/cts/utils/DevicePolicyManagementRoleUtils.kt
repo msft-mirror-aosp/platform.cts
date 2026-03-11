@@ -45,7 +45,14 @@ class DevicePolicyManagementRoleUtils {
             }
         }
 
-        private fun getDefaultRoleHolderPackageName(context: Context): String? {
+        /**
+         * Returns the [packageName] of the default Device Policy Management Role Holder,
+         * as set in the device's configs.
+         *
+         * @return The package name, or `null` if no default DMRH is set.
+         */
+        @JvmStatic
+        public fun getDefaultRoleHolderPackageName(context: Context): String? {
             val resId = Resources.getSystem().getIdentifier(
                 "config_devicePolicyManagement",
                 "string",
