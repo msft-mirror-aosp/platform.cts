@@ -866,178 +866,148 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_Aliases_Unencrypted_Success
     @Test
-    public void testKeyStore_Aliases_Unencrypted_Success() throws Exception {
+    public void aliases_success() throws Exception {
         mKeyStore.load(null, null);
-
         assertAliases(new String[] {});
 
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
         assertAliases(new String[] {getTestAlias1()});
 
         mKeyStore.setEntry(getTestAlias2(), makeCa1(), null);
-
         assertAliases(new String[] {getTestAlias1(), getTestAlias2()});
     }
 
+    // Previously called testKeyStore_Aliases_NotInitialized_Unencrypted_Failure
     @Test
-    public void testKeyStore_Aliases_NotInitialized_Unencrypted_Failure() throws Exception {
+    public void aliases_keystoreNotInitialized_throwsException() throws Exception {
         assertThrows(
-                "KeyStore should throw exception when not initialized",
+                "KeyStore should throw an exception when not initialized",
                 KeyStoreException.class,
                 () -> mKeyStore.aliases());
     }
 
+    // Previously called testKeyStore_ContainsAliases_PrivateAndCA_Unencrypted_Success
     @Test
-    public void testKeyStore_ContainsAliases_PrivateAndCA_Unencrypted_Success() throws Exception {
+    public void containsAlias_privateKeyAndCA_success() throws Exception {
         mKeyStore.load(null, null);
-
         assertAliases(new String[] {});
 
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
-        assertTrue(
-                "Should contain generated private key", mKeyStore.containsAlias(getTestAlias1()));
+        assertTrue("Should contain added private key", mKeyStore.containsAlias(getTestAlias1()));
 
         mKeyStore.setEntry(getTestAlias2(), makeCa1(), null);
-
-        assertTrue("Should contain added CA certificate", mKeyStore.containsAlias(getTestAlias2()));
-
-        assertFalse(
-                "Should not contain unadded certificate alias",
-                mKeyStore.containsAlias(getTestAlias3()));
-    }
-
-    @Test
-    public void testKeyStore_ContainsAliases_CAOnly_Unencrypted_Success() throws Exception {
-        mKeyStore.load(null, null);
-
-        mKeyStore.setEntry(getTestAlias2(), makeCa1(), null);
-
         assertTrue("Should contain added CA certificate", mKeyStore.containsAlias(getTestAlias2()));
     }
 
+    // Previously called testKeyStore_ContainsAliases_CAOnly_Unencrypted_Success
     @Test
-    public void testKeyStore_ContainsAliases_NonExistent_Unencrypted_Failure() throws Exception {
+    public void containsAlias_CA_success() throws Exception {
         mKeyStore.load(null, null);
-
-        assertFalse(
-                "Should contain added CA certificate", mKeyStore.containsAlias(getTestAlias1()));
+        mKeyStore.setEntry(getTestAlias1(), makeCa1(), null);
+        assertTrue("Should contain added CA certificate", mKeyStore.containsAlias(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_ContainsAliases_NonExistent_Unencrypted_Failure
     @Test
-    public void testKeyStore_DeleteEntry_Unencrypted_Success() throws Exception {
+    public void containsAlias_nonExistent_returnsFalse() throws Exception {
         mKeyStore.load(null, null);
+        assertFalse(
+                "Should not contain non-existent alias", mKeyStore.containsAlias(getTestAlias1()));
+    }
 
-        // getTestAlias1()
+    // Previously called testKeyStore_DeleteEntry_Unencrypted_Success
+    @Test
+    public void deleteEntry_success() throws Exception {
+        mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
-        // getTestAlias2()
         mKeyStore.setCertificateEntry(getTestAlias2(), generateCertificate(FAKE_RSA_CA_1));
-
-        // getTestAlias3()
         mKeyStore.setCertificateEntry(getTestAlias3(), generateCertificate(FAKE_RSA_CA_1));
-
         assertAliases(new String[] {getTestAlias1(), getTestAlias2(), getTestAlias3()});
 
         mKeyStore.deleteEntry(getTestAlias1());
-
         assertAliases(new String[] {getTestAlias2(), getTestAlias3()});
 
         mKeyStore.deleteEntry(getTestAlias3());
-
         assertAliases(new String[] {getTestAlias2()});
 
         mKeyStore.deleteEntry(getTestAlias2());
-
         assertAliases(new String[] {});
     }
 
+    // Previously called testKeyStore_DeleteEntry_EmptyStore_Unencrypted_Success
     @Test
-    public void testKeyStore_DeleteEntry_EmptyStore_Unencrypted_Success() throws Exception {
+    public void deleteEntry_emptyKeystore_success() throws Exception {
         mKeyStore.load(null, null);
-
-        // Should not throw when a non-existent entry is requested for delete.
-        mKeyStore.deleteEntry(getTestAlias1());
+        mKeyStore.deleteEntry(getTestAlias1()); // Should not throw.
     }
 
+    // Previously called testKeyStore_DeleteEntry_NonExistent_Unencrypted_Success
     @Test
-    public void testKeyStore_DeleteEntry_NonExistent_Unencrypted_Success() throws Exception {
+    public void deleteEntry_nonExistent_success() throws Exception {
         mKeyStore.load(null, null);
-
-        // getTestAlias1()
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
-        // Should not throw when a non-existent entry is requested for delete.
-        mKeyStore.deleteEntry(getTestAlias2());
+        mKeyStore.deleteEntry(getTestAlias2()); // Should not throw.
     }
 
+    // Previously called testKeyStore_GetCertificate_Single_Unencrypted_Success
     @Test
-    public void testKeyStore_GetCertificate_Single_Unencrypted_Success() throws Exception {
+    public void getCertificate_success() throws Exception {
         mKeyStore.load(null, null);
-
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
-
         assertAliases(new String[] {getTestAlias1()});
-
         assertNull(
                 "Certificate should not exist in keystore",
                 mKeyStore.getCertificate(getTestAlias2()));
 
         Certificate retrieved = mKeyStore.getCertificate(getTestAlias1());
-
         assertNotNull("Retrieved certificate should not be null", retrieved);
 
         CertificateFactory f = CertificateFactory.getInstance("X.509");
         Certificate actual = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
-
         assertEquals("Actual and retrieved certificates should be the same", actual, retrieved);
     }
 
+    // Previously called testKeyStore_GetCertificate_NonExist_Unencrypted_Failure
     @Test
-    public void testKeyStore_GetCertificate_NonExist_Unencrypted_Failure() throws Exception {
+    public void getCertificate_nonExistent_returnsNull() throws Exception {
         mKeyStore.load(null, null);
-
         assertNull(
                 "Certificate should not exist in keystore",
                 mKeyStore.getCertificate(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_GetCertificateAlias_CAEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_GetCertificateAlias_CAEntry_Unencrypted_Success() throws Exception {
+    public void getCertificateAlias_CAEntry_success() throws Exception {
         mKeyStore.load(null, null);
-
         Certificate cert = generateCertificate(FAKE_RSA_CA_1);
         mKeyStore.setCertificateEntry(getTestAlias1(), cert);
-
         assertEquals(
                 "Stored certificate alias should be found",
                 getTestAlias1(),
                 mKeyStore.getCertificateAlias(cert));
     }
 
+    // Previously called testKeyStore_GetCertificateAlias_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_GetCertificateAlias_PrivateKeyEntry_Unencrypted_Success()
-            throws Exception {
+    public void getCertificateAlias_privateKeyEntry_success() throws Exception {
         mKeyStore.load(null, null);
-
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
         CertificateFactory f = CertificateFactory.getInstance("X.509");
         Certificate actual = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
-
         assertEquals(
                 "Stored certificate alias should be found",
                 getTestAlias1(),
                 mKeyStore.getCertificateAlias(actual));
     }
 
+    // Previously called
+    // testKeyStore_GetCertificateAlias_CAEntry_WithPrivateKeyUsingCA_Unencrypted_Success
     @Test
-    public void testKeyStore_GetCertificateAlias_CAEntry_WithPrivateKeyUsingCA_Unencrypted_Success()
-            throws Exception {
+    public void getCertificateAlias_CAEntryAndPrivateKeyEntryUsingCA_success() throws Exception {
         mKeyStore.load(null, null);
-
         Certificate actual = generateCertificate(FAKE_RSA_CA_1);
 
         // Insert TrustedCertificateEntry with CA name
@@ -1052,41 +1022,38 @@ public class AndroidKeyStoreTest {
                 mKeyStore.getCertificateAlias(actual));
     }
 
+    // Previously called testKeyStore_GetCertificateAlias_NonExist_Empty_Unencrypted_Failure
     @Test
-    public void testKeyStore_GetCertificateAlias_NonExist_Empty_Unencrypted_Failure()
-            throws Exception {
+    public void getCertificateAlias_emptyKeystore_returnsNull() throws Exception {
         mKeyStore.load(null, null);
-
         CertificateFactory f = CertificateFactory.getInstance("X.509");
         Certificate actual = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
-
         assertNull(
-                "Stored certificate alias should not be found",
+                "Non-existent certificate alias should not be found",
                 mKeyStore.getCertificateAlias(actual));
     }
 
+    // Previously called testKeyStore_GetCertificateAlias_NonExist_Unencrypted_Failure
     @Test
-    public void testKeyStore_GetCertificateAlias_NonExist_Unencrypted_Failure() throws Exception {
+    public void getCertificateAlias_nonExistent_returnsNull() throws Exception {
         mKeyStore.load(null, null);
 
-        Certificate ca = generateCertificate(FAKE_RSA_CA_1);
-
         // Insert TrustedCertificateEntry with CA name
+        Certificate ca = generateCertificate(FAKE_RSA_CA_1);
         mKeyStore.setCertificateEntry(getTestAlias1(), ca);
 
+        // Generate a certificate but don't insert it in the KeyStore.
         Certificate userCert = generateCertificate(FAKE_RSA_USER_1);
 
         assertNull(
-                "Stored certificate alias should be found",
+                "Non-existent certificate alias should not be found",
                 mKeyStore.getCertificateAlias(userCert));
     }
 
+    // Previously called testKeyStore_GetCertificateChain_SingleLength_Unencrypted_Success
     @Test
-    public void testKeyStore_GetCertificateChain_SingleLength_Unencrypted_Success()
-            throws Exception {
+    public void getCertificateChain_success() throws Exception {
         mKeyStore.load(null, null);
-
-        // getTestAlias1()
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
 
         Certificate[] expected = new Certificate[2];
@@ -1109,18 +1076,18 @@ public class AndroidKeyStoreTest {
                 mKeyStore.getCertificateChain(getTestAlias2()));
     }
 
+    // Previously called testKeyStore_GetCertificateChain_NonExist_Unencrypted_Failure
     @Test
-    public void testKeyStore_GetCertificateChain_NonExist_Unencrypted_Failure() throws Exception {
+    public void getCertificateChain_nonExistent_returnsNull() throws Exception {
         mKeyStore.load(null, null);
-
         assertNull(
                 "Stored certificate alias should not be found",
                 mKeyStore.getCertificateChain(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_GetCreationDate_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_GetCreationDate_PrivateKeyEntry_Unencrypted_Success()
-            throws Exception {
+    public void getCreationDate_privateKey_success() throws Exception {
         mKeyStore.load(null, null);
 
         // getTestAlias1()
@@ -1136,8 +1103,9 @@ public class AndroidKeyStoreTest {
         assertTrue("Time should be close to current time", actual.after(expectedAfter));
     }
 
+    // Previously called testKeyStore_GetCreationDate_CAEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_GetCreationDate_CAEntry_Unencrypted_Success() throws Exception {
+    public void getCreationDate_CA_success() throws Exception {
         mKeyStore.load(null, null);
 
         // Insert TrustedCertificateEntry with CA name
@@ -1154,55 +1122,33 @@ public class AndroidKeyStoreTest {
         assertTrue("Time should be close to current time", actual.after(expectedAfter));
     }
 
+    // Previously called testKeyStore_GetEntry_EC_NullParams_Unencrypted_Success
     @Test
-    public void testKeyStore_GetEntry_NullParams_Unencrypted_Success() throws Exception {
+    public void getEntry_ECKeyWithNullParams_success() throws Exception {
         mKeyStore.load(null, null);
-
-        // getTestAlias1()
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
-        Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
-        assertNotNull("Entry should exist", entry);
-
-        assertTrue("Should be a PrivateKeyEntry", entry instanceof PrivateKeyEntry);
-
-        PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
-
-        assertPrivateKeyEntryEquals(
-                keyEntry, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
-    }
-
-    @Test
-    public void testKeyStore_GetEntry_EC_NullParams_Unencrypted_Success() throws Exception {
-        mKeyStore.load(null, null);
-
-        // getTestAlias1()
         mKeyStore.setEntry(getTestAlias1(), makeUserEcKey1(), null);
 
         Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
         assertNotNull("Entry should exist", entry);
-
         assertTrue("Should be a PrivateKeyEntry", entry instanceof PrivateKeyEntry);
 
         PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
-
         assertPrivateKeyEntryEquals(keyEntry, "EC", FAKE_EC_KEY_1, FAKE_EC_USER_1, FAKE_EC_CA_1);
     }
 
+    // Previously called testKeyStore_GetEntry_RSA_NullParams_Unencrypted_Success
+    // Redundant test testKeyStore_GetEntry_NullParams_Unencrypted_Success deleted in favour of this
+    // one.
     @Test
-    public void testKeyStore_GetEntry_RSA_NullParams_Unencrypted_Success() throws Exception {
+    public void getEntry_RSAKeyWithNullParams_success() throws Exception {
         mKeyStore.load(null, null);
-
-        // getTestAlias1()
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
 
         Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
         assertNotNull("Entry should exist", entry);
-
         assertTrue("Should be a PrivateKeyEntry", entry instanceof PrivateKeyEntry);
 
         PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
-
         assertPrivateKeyEntryEquals(
                 keyEntry, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
     }
@@ -1288,215 +1234,189 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_GetEntry_Nonexistent_NullParams_Unencrypted_Failure
     @Test
-    public void testKeyStore_GetEntry_Nonexistent_NullParams_Unencrypted_Failure()
-            throws Exception {
+    public void getEntry_nonExistent_returnsNull() throws Exception {
         mKeyStore.load(null, null);
-
         assertNull(
-                "A non-existent entry should return null",
+                "Should return null for a non-existent entry",
                 mKeyStore.getEntry(getTestAlias1(), null));
     }
 
+    // Previously called testKeyStore_GetKey_NoPassword_Unencrypted_Success
     @Test
-    public void testKeyStore_GetKey_NoPassword_Unencrypted_Success() throws Exception {
+    public void getKey_noPassword_success() throws Exception {
         mKeyStore.load(null, null);
-
-        // getTestAlias1()
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
 
         Key key = mKeyStore.getKey(getTestAlias1(), null);
         assertNotNull("Key should exist", key);
-
         assertTrue("Should be a PrivateKey", key instanceof PrivateKey);
         assertTrue("Should be a RSAKey", key instanceof RSAKey);
 
         RSAKey actualKey = (RSAKey) key;
-
         KeyFactory keyFact = KeyFactory.getInstance("RSA");
         PrivateKey expectedKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
-
         assertEquals(
                 "Inserted key should be same as retrieved key",
                 ((RSAKey) expectedKey).getModulus(),
                 actualKey.getModulus());
     }
 
+    // Previously called testKeyStore_GetKey_Certificate_Unencrypted_Failure
     @Test
-    public void testKeyStore_GetKey_Certificate_Unencrypted_Failure() throws Exception {
+    public void getKey_certificate_returnsNull() throws Exception {
         mKeyStore.load(null, null);
-
-        // Insert TrustedCertificateEntry with CA name
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
-
         assertNull(
                 "Certificate entries should return null", mKeyStore.getKey(getTestAlias1(), null));
     }
 
+    // Previously called testKeyStore_GetKey_NonExistent_Unencrypted_Failure
     @Test
-    public void testKeyStore_GetKey_NonExistent_Unencrypted_Failure() throws Exception {
+    public void getKey_nonExistent_returnsNull() throws Exception {
         mKeyStore.load(null, null);
-
         assertNull(
                 "A non-existent entry should return null", mKeyStore.getKey(getTestAlias1(), null));
     }
 
+    // Previously called testKeyStore_GetProvider_Unencrypted_Success
     @Test
-    public void testKeyStore_GetProvider_Unencrypted_Success() throws Exception {
+    public void getProvider() throws Exception {
         assertEquals("AndroidKeyStore", mKeyStore.getProvider().getName());
     }
 
+    // Previously called testKeyStore_GetType_Unencrypted_Success
     @Test
-    public void testKeyStore_GetType_Unencrypted_Success() throws Exception {
+    public void getType() throws Exception {
         assertEquals("AndroidKeyStore", mKeyStore.getType());
     }
 
+    // Previously called testKeyStore_IsCertificateEntry_CA_Unencrypted_Success
     @Test
-    public void testKeyStore_IsCertificateEntry_CA_Unencrypted_Success() throws Exception {
+    public void isCertificateEntry_CA_returnsTrue() throws Exception {
         mKeyStore.load(null, null);
-
-        // Insert TrustedCertificateEntry with CA name
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
-
         assertTrue(
                 "Should return true for CA certificate",
                 mKeyStore.isCertificateEntry(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_IsCertificateEntry_PrivateKey_Unencrypted_Failure
     @Test
-    public void testKeyStore_IsCertificateEntry_PrivateKey_Unencrypted_Failure() throws Exception {
+    public void isCertificateEntry_privateKey_returnsFalse() throws Exception {
         mKeyStore.load(null, null);
-
-        // getTestAlias1()
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
         assertFalse(
                 "Should return false for PrivateKeyEntry",
                 mKeyStore.isCertificateEntry(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_IsCertificateEntry_NonExist_Unencrypted_Failure
     @Test
-    public void testKeyStore_IsCertificateEntry_NonExist_Unencrypted_Failure() throws Exception {
+    public void isCertificateEntry_nonExistent_returnsFalse() throws Exception {
         mKeyStore.load(null, null);
-
         assertFalse(
                 "Should return false for non-existent entry",
                 mKeyStore.isCertificateEntry(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_IsKeyEntry_PrivateKey_Unencrypted_Success
     @Test
-    public void testKeyStore_IsKeyEntry_PrivateKey_Unencrypted_Success() throws Exception {
+    public void isKeyEntry_privateKey_returnsTrue() throws Exception {
         mKeyStore.load(null, null);
-
-        // getTestAlias1()
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
         assertTrue("Should return true for PrivateKeyEntry", mKeyStore.isKeyEntry(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_IsKeyEntry_CA_Unencrypted_Failure
     @Test
-    public void testKeyStore_IsKeyEntry_CA_Unencrypted_Failure() throws Exception {
+    public void isKeyEntry_CA_returnsFalse() throws Exception {
         mKeyStore.load(null, null);
-
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
-
         assertFalse(
                 "Should return false for CA certificate", mKeyStore.isKeyEntry(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_IsKeyEntry_NonExist_Unencrypted_Failure
     @Test
-    public void testKeyStore_IsKeyEntry_NonExist_Unencrypted_Failure() throws Exception {
+    public void isKeyEntry_nonExistent_returnsFalse() throws Exception {
         mKeyStore.load(null, null);
-
         assertFalse(
                 "Should return false for non-existent entry",
                 mKeyStore.isKeyEntry(getTestAlias1()));
     }
 
+    // Previously called testKeyStore_SetCertificate_CA_Unencrypted_Success
     @Test
-    public void testKeyStore_SetCertificate_CA_Unencrypted_Success() throws Exception {
+    public void setCertificateEntry_CA_success() throws Exception {
         final Certificate actual = generateCertificate(FAKE_RSA_CA_1);
-
         mKeyStore.load(null, null);
-
         mKeyStore.setCertificateEntry(getTestAlias1(), actual);
         assertAliases(new String[] {getTestAlias1()});
 
         Certificate retrieved = mKeyStore.getCertificate(getTestAlias1());
-
         assertEquals(
                 "Retrieved certificate should be the same as the one inserted", actual, retrieved);
     }
 
+    // Previously called testKeyStore_SetCertificate_CAExists_Overwrite_Unencrypted_Success
     @Test
-    public void testKeyStore_SetCertificate_CAExists_Overwrite_Unencrypted_Success()
-            throws Exception {
+    public void setCertificateEntry_overwriteCAWithCA_success() throws Exception {
         mKeyStore.load(null, null);
-
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
-
         assertAliases(new String[] {getTestAlias1()});
 
+        // TODO(b/491452429): Use different test vector for the overwrite
         final Certificate cert = generateCertificate(FAKE_RSA_CA_1);
-
-        // TODO have separate FAKE_CA for second test
         mKeyStore.setCertificateEntry(getTestAlias1(), cert);
-
         assertAliases(new String[] {getTestAlias1()});
     }
 
+    // Previously called testKeyStore_SetCertificate_PrivateKeyExists_Unencrypted_Failure
     @Test
-    public void testKeyStore_SetCertificate_PrivateKeyExists_Unencrypted_Failure()
-            throws Exception {
+    public void setCertificateEntry_overwritePrivateKeyWithCA_throwsException() throws Exception {
         mKeyStore.load(null, null);
-
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
         assertAliases(new String[] {getTestAlias1()});
 
         final Certificate cert = generateCertificate(FAKE_RSA_CA_1);
-
         assertThrows(
                 "Should throw when trying to overwrite a PrivateKey entry with a Certificate",
                 KeyStoreException.class,
                 () -> mKeyStore.setCertificateEntry(getTestAlias1(), cert));
     }
 
+    // Previously called testKeyStore_SetEntry_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_SetEntry_PrivateKeyEntry_Unencrypted_Success() throws Exception {
+    public void setEntry_privateKeyEntry() throws Exception {
         mKeyStore.load(null, null);
-
         KeyFactory keyFact = KeyFactory.getInstance("RSA");
         PrivateKey expectedKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
 
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-
         final Certificate[] expectedChain = new Certificate[2];
         expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
         expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
         PrivateKeyEntry expected = new PrivateKeyEntry(expectedKey, expectedChain);
-
         mKeyStore.setEntry(getTestAlias1(), expected, null);
 
         Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
         assertNotNull("Retrieved entry should exist", actualEntry);
-
         assertTrue(
                 "Retrieved entry should be of type PrivateKeyEntry",
                 actualEntry instanceof PrivateKeyEntry);
 
         PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
-
         assertPrivateKeyEntryEquals(actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
     }
 
+    // Previously called
+    // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void
-            testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success()
-                    throws Exception {
+    public void setEntry_overwritePrivateKeyWithPrivateKey_success() throws Exception {
         mKeyStore.load(null, null);
-
         final KeyFactory keyFact = KeyFactory.getInstance("RSA");
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
@@ -1510,55 +1430,48 @@ public class AndroidKeyStoreTest {
             expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
             PrivateKeyEntry expected = new PrivateKeyEntry(expectedKey, expectedChain);
-
             mKeyStore.setEntry(getTestAlias1(), expected, null);
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
             assertNotNull("Retrieved entry should exist", actualEntry);
-
             assertTrue(
                     "Retrieved entry should be of type PrivateKeyEntry",
                     actualEntry instanceof PrivateKeyEntry);
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
-
             assertPrivateKeyEntryEquals(
                     actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
         }
 
-        // TODO make entirely new test vector for the overwrite
+        // TODO(b/491452429): Use different test vectors for the overwrite
         // Replace with PrivateKeyEntry
         {
             PrivateKey expectedKey =
                     keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
-
             final Certificate[] expectedChain = new Certificate[2];
             expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
             expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
             PrivateKeyEntry expected = new PrivateKeyEntry(expectedKey, expectedChain);
-
             mKeyStore.setEntry(getTestAlias1(), expected, null);
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
             assertNotNull("Retrieved entry should exist", actualEntry);
-
             assertTrue(
                     "Retrieved entry should be of type PrivateKeyEntry",
                     actualEntry instanceof PrivateKeyEntry);
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
-
             assertPrivateKeyEntryEquals(
                     actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
         }
     }
 
+    // Previously called
+    // testKeyStore_SetEntry_CAEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_SetEntry_CAEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success()
-            throws Exception {
+    public void setEntry_overwriteCAEntryWithPrivateKey_success() throws Exception {
         mKeyStore.load(null, null);
-
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
         // Start with TrustedCertificateEntry
@@ -1591,7 +1504,6 @@ public class AndroidKeyStoreTest {
             expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
-
             mKeyStore.setEntry(getTestAlias1(), expectedPrivEntry, null);
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
@@ -1606,9 +1518,10 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called
+    // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_CAEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_CAEntry_Unencrypted_Success()
-            throws Exception {
+    public void setEntry_overwritePrivateKeyWithCA_success() throws Exception {
         mKeyStore.load(null, null);
 
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
@@ -1625,7 +1538,6 @@ public class AndroidKeyStoreTest {
             expectedChain[1] = caCert;
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
-
             mKeyStore.setEntry(getTestAlias1(), expectedPrivEntry, null);
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
@@ -1657,14 +1569,12 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called
+    // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_ShortPrivateKeyEntry_Unencrypted_Success
     @Test
-    public void
-            testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_ShortPrivateKeyEntry_Unencrypted_Success()
-                    throws Exception {
+    public void setEntry_overwritePrivateKeyWithPrivateKeyWithoutChain_success() throws Exception {
         mKeyStore.load(null, null);
-
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-
         final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
         // Start with PrivateKeyEntry
@@ -1677,7 +1587,6 @@ public class AndroidKeyStoreTest {
             expectedChain[1] = caCert;
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
-
             mKeyStore.setEntry(getTestAlias1(), expectedPrivEntry, null);
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
@@ -1700,7 +1609,6 @@ public class AndroidKeyStoreTest {
             expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
-
             mKeyStore.setEntry(getTestAlias1(), expectedPrivEntry, null);
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
@@ -1715,11 +1623,10 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_SetEntry_CAEntry_Overwrites_CAEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_SetEntry_CAEntry_Overwrites_CAEntry_Unencrypted_Success()
-            throws Exception {
+    public void setEntry_overwriteCAEntryWithCAEntry_success() throws Exception {
         mKeyStore.load(null, null);
-
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
         // Insert TrustedCertificateEntry
@@ -1763,12 +1670,11 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_SetKeyEntry_ProtectedKey_Unencrypted_Failure
     @Test
-    public void testKeyStore_SetKeyEntry_ProtectedKey_Unencrypted_Failure() throws Exception {
+    public void setKeyEntry_ProtectedKey_throwsException() throws Exception {
         mKeyStore.load(null, null);
-
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-
         final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
         KeyFactory keyFact = KeyFactory.getInstance("RSA");
@@ -1783,12 +1689,11 @@ public class AndroidKeyStoreTest {
                 () -> mKeyStore.setKeyEntry(getTestAlias1(), privKey, "foo".toCharArray(), chain));
     }
 
+    // Previously called testKeyStore_SetKeyEntry_Unencrypted_Success
     @Test
-    public void testKeyStore_SetKeyEntry_Unencrypted_Success() throws Exception {
+    public void setKeyEntry_success() throws Exception {
         mKeyStore.load(null, null);
-
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-
         final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
         KeyFactory keyFact = KeyFactory.getInstance("RSA");
@@ -1811,12 +1716,11 @@ public class AndroidKeyStoreTest {
         assertPrivateKeyEntryEquals(actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
     }
 
+    // Previously called testKeyStore_SetKeyEntry_Replaced_Unencrypted_Success
     @Test
-    public void testKeyStore_SetKeyEntry_Replaced_Unencrypted_Success() throws Exception {
+    public void setKeyEntry_replaceExistingEntryWithSameAlias_success() throws Exception {
         mKeyStore.load(null, null);
-
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-
         final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
 
         // Insert initial key
@@ -1831,89 +1735,78 @@ public class AndroidKeyStoreTest {
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
             assertNotNull("Retrieved entry should exist", actualEntry);
-
             assertTrue(
                     "Retrieved entry should be of type PrivateKeyEntry",
                     actualEntry instanceof PrivateKeyEntry);
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
-
             assertPrivateKeyEntryEquals(
                     actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
         }
 
-        // TODO make a separate key
-        // Replace key
+        // TODO(b/491452429): Use different test vectors for the overwrite
+        // Replace key by using the existing key's alias
         {
             KeyFactory keyFact = KeyFactory.getInstance("RSA");
             PrivateKey privKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
             final Certificate[] chain = new Certificate[2];
             chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
             chain[1] = caCert;
-
             mKeyStore.setKeyEntry(getTestAlias1(), privKey, null, chain);
 
             Entry actualEntry = mKeyStore.getEntry(getTestAlias1(), null);
             assertNotNull("Retrieved entry should exist", actualEntry);
-
             assertTrue(
                     "Retrieved entry should be of type PrivateKeyEntry",
                     actualEntry instanceof PrivateKeyEntry);
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
-
             assertPrivateKeyEntryEquals(
                     actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
         }
     }
 
+    // Previously called testKeyStore_SetKeyEntry_ReplacedChain_Unencrypted_Success
     @Test
-    public void testKeyStore_SetKeyEntry_ReplacedChain_Unencrypted_Success() throws Exception {
+    public void setKeyEntry_replaceKeyWithCertificateChain_success() throws Exception {
         mKeyStore.load(null, null);
 
-        // Create key #1
+        // Add key to the keystore with setEntry.
         {
             KeyStore.PrivateKeyEntry privEntry = makeUserRsaKey1();
             mKeyStore.setEntry(getTestAlias1(), privEntry, null);
-
             Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
-
             assertTrue(entry instanceof PrivateKeyEntry);
 
             PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
-
             ArrayList<Certificate> chain = new ArrayList<Certificate>();
             chain.add(generateCertificate(FAKE_RSA_CA_1));
             assertPrivateKeyEntryEquals(
                     keyEntry, privEntry.getPrivateKey(), privEntry.getCertificate(), chain);
         }
 
-        // Replace key #1 with new chain
+        // Add a certificate chain to the keystore with setKeyEntry, using the same alias as the
+        // existing key.
         {
             Key key = mKeyStore.getKey(getTestAlias1(), null);
-
             assertTrue(key instanceof PrivateKey);
 
             PrivateKey expectedKey = (PrivateKey) key;
-
             Certificate expectedCert = generateCertificate(FAKE_RSA_USER_1);
-
             mKeyStore.setKeyEntry(
                     getTestAlias1(), expectedKey, null, new Certificate[] {expectedCert});
-
             Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
-
             assertTrue(entry instanceof PrivateKeyEntry);
 
             PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
-
             assertPrivateKeyEntryEquals(keyEntry, expectedKey, expectedCert, null);
         }
     }
 
+    // Previously called
+    // testKeyStore_SetKeyEntry_ReplacedChain_DifferentPrivateKey_Unencrypted_Failure
     @Test
-    public void testKeyStore_SetKeyEntry_ReplacedChain_DifferentPrivateKey_Unencrypted_Failure()
-            throws Exception {
+    public void setKeyEntry_replaceChainForDifferentPrivateKey_throwsException() throws Exception {
         mKeyStore.load(null, null);
 
         // Create key #1
@@ -1922,39 +1815,29 @@ public class AndroidKeyStoreTest {
         // Create key #2
         mKeyStore.setEntry(getTestAlias2(), makeUserRsaKey1(), null);
 
-        // Replace key #1 with key #2
-        {
-            Key key1 = mKeyStore.getKey(getTestAlias2(), null);
-
-            Certificate cert = generateCertificate(FAKE_RSA_USER_1);
-
-            assertThrows(
-                    "Should not allow setting of KeyEntry with wrong PrivaetKey",
-                    KeyStoreException.class,
-                    () ->
-                            mKeyStore.setKeyEntry(
-                                    getTestAlias1(), key1, null, new Certificate[] {cert}));
-        }
+        // Try to replace key #1 with key #2 by using key #2's alias
+        Key key2 = mKeyStore.getKey(getTestAlias2(), null);
+        Certificate key1Cert = generateCertificate(FAKE_RSA_USER_1);
+        assertThrows(
+                "Should not allow setting of KeyEntry with wrong PrivateKey",
+                KeyStoreException.class,
+                () ->
+                        mKeyStore.setKeyEntry(
+                                getTestAlias1(), key2, null, new Certificate[] {key1Cert}));
     }
 
+    // Previously called testKeyStore_SetKeyEntry_ReplacedWithSame_UnencryptedToUnencrypted_Failure
     @Test
-    public void testKeyStore_SetKeyEntry_ReplacedWithSame_UnencryptedToUnencrypted_Failure()
-            throws Exception {
+    public void setEntry_replaceWithSameEntry_success() throws Exception {
         mKeyStore.load(null, null);
-
-        // Create key #1
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-
-        // Replace with same
         Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
         mKeyStore.setEntry(getTestAlias1(), entry, null);
     }
 
-    /*
-     * Replacing an existing secret key with itself should be a no-op.
-     */
+    // Previously called testKeyStore_SetKeyEntry_ReplacedWithSameGeneratedSecretKey
     @Test
-    public void testKeyStore_SetKeyEntry_ReplacedWithSameGeneratedSecretKey() throws Exception {
+    public void setKeyEntry_replacedWithSameGeneratedSecretKey_success() throws Exception {
         final String plaintext = "My awesome plaintext message!";
         final String algorithm = "AES/GCM/NoPadding";
 
@@ -1991,85 +1874,82 @@ public class AndroidKeyStoreTest {
                 plaintext.getBytes());
     }
 
+    // Previously called testKeyStore_Size_Unencrypted_Success
     @Test
-    public void testKeyStore_Size_Unencrypted_Success() throws Exception {
+    public void size_success() throws Exception {
         mKeyStore.load(null, null);
-
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
-
         assertEquals("The keystore size should match expected", 1, mKeyStore.size());
         assertAliases(new String[] {getTestAlias1()});
 
         mKeyStore.setCertificateEntry(getTestAlias2(), generateCertificate(FAKE_RSA_CA_1));
-
         assertEquals("The keystore size should match expected", 2, mKeyStore.size());
         assertAliases(new String[] {getTestAlias1(), getTestAlias2()});
 
         mKeyStore.setEntry(getTestAlias3(), makeUserRsaKey1(), null);
-
         assertEquals("The keystore size should match expected", 3, mKeyStore.size());
         assertAliases(new String[] {getTestAlias1(), getTestAlias2(), getTestAlias3()});
 
         mKeyStore.deleteEntry(getTestAlias1());
-
         assertEquals("The keystore size should match expected", 2, mKeyStore.size());
         assertAliases(new String[] {getTestAlias2(), getTestAlias3()});
 
         mKeyStore.deleteEntry(getTestAlias3());
-
         assertEquals("The keystore size should match expected", 1, mKeyStore.size());
         assertAliases(new String[] {getTestAlias2()});
     }
 
+    // Previously called testKeyStore_Store_LoadStoreParam_Unencrypted_Failure
     @Test
-    public void testKeyStore_Store_LoadStoreParam_Unencrypted_Failure() throws Exception {
+    public void store_nullLoadStoreParameter_throwsException() throws Exception {
         mKeyStore.load(null, null);
-
         assertThrows(
                 "Should throw UnsupportedOperationException when trying to store",
                 UnsupportedOperationException.class,
-                () -> mKeyStore.store(null));
+                () -> mKeyStore.store(/* param= */ null));
     }
 
+    // Previously called testKeyStore_Load_InputStreamSupplied_Unencrypted_Failure
     @Test
-    public void testKeyStore_Load_InputStreamSupplied_Unencrypted_Failure() throws Exception {
+    public void load_nonNullInputStream_throwsException() throws Exception {
         byte[] buf = "FAKE KEYSTORE".getBytes();
         ByteArrayInputStream is = new ByteArrayInputStream(buf);
-
         assertThrows(
                 "Should throw IllegalArgumentException when InputStream is supplied",
                 IllegalArgumentException.class,
-                () -> mKeyStore.load(is, null));
+                () -> mKeyStore.load(/* stream= */ is, /* password= */ null));
     }
 
+    // Previously called testKeyStore_Load_PasswordSupplied_Unencrypted_Failure
     @Test
-    public void testKeyStore_Load_PasswordSupplied_Unencrypted_Failure() throws Exception {
+    public void load_nonNullPassword_throwsException() throws Exception {
         assertThrows(
                 "Should throw IllegalArgumentException when password is supplied",
                 IllegalArgumentException.class,
-                () -> mKeyStore.load(null, "password".toCharArray()));
+                () -> mKeyStore.load(/* stream= */ null, /* password= */ "password".toCharArray()));
     }
 
+    // Previously called testKeyStore_Store_OutputStream_Unencrypted_Failure
     @Test
-    public void testKeyStore_Store_OutputStream_Unencrypted_Failure() throws Exception {
+    public void store_nonNullArguments_throwsException() throws Exception {
         mKeyStore.load(null, null);
 
         OutputStream sink = new ByteArrayOutputStream();
         assertThrows(
                 "Should throw UnsupportedOperationException when trying to store",
                 UnsupportedOperationException.class,
-                () -> mKeyStore.store(sink, null));
+                () -> mKeyStore.store(/* stream= */ sink, /* password= */ null));
 
         assertThrows(
                 "Should throw UnsupportedOperationException when trying to store",
                 UnsupportedOperationException.class,
-                () -> mKeyStore.store(sink, "blah".toCharArray()));
+                () -> mKeyStore.store(/* stream= */ sink, /* password= */ "blah".toCharArray()));
     }
 
+    // Previously called testKeyStore_KeyOperations_Wrap_Unencrypted_Success
     @Test
-    public void testKeyStore_KeyOperations_Wrap_Unencrypted_Success() throws Exception {
+    public void cipherWrap_success() throws Exception {
         mKeyStore.load(null, null);
-
         mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
 
         // Test key usage
@@ -2082,15 +1962,12 @@ public class AndroidKeyStoreTest {
         assertNotNull(privKey);
 
         PublicKey pubKey = privEntry.getCertificate().getPublicKey();
-
         Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         c.init(Cipher.WRAP_MODE, pubKey);
 
         byte[] expectedKey =
                 new byte[] {0x00, 0x05, (byte) 0xAA, (byte) 0x0A5, (byte) 0xFF, 0x55, 0x0A};
-
         SecretKey expectedSecret = new TransparentSecretKey(expectedKey, "AES");
-
         byte[] wrappedExpected = c.wrap(expectedSecret);
 
         c.init(Cipher.UNWRAP_MODE, privKey);
@@ -2101,9 +1978,9 @@ public class AndroidKeyStoreTest {
                 Arrays.toString(actualSecret.getEncoded()));
     }
 
+    // Previously called testKeyStore_Encrypting_RSA_NONE_NOPADDING
     @Test
-    public void testKeyStore_Encrypting_RSA_NONE_NOPADDING() throws Exception {
-
+    public void cipherEncrypt_RSA_NONE_NOPADDING_success() throws Exception {
         String alias = "MyKey";
         KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
         assertNotNull(ks);
@@ -2155,8 +2032,9 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_PrivateKeyEntry_RSA_PublicKeyWorksWithCrypto
     @Test
-    public void testKeyStore_PrivateKeyEntry_RSA_PublicKeyWorksWithCrypto() throws Exception {
+    public void setKeyEntry_RSAPublicKeyCryptoUsage_success() throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setKeyEntry(
                 getTestAlias2(),
@@ -2176,8 +2054,9 @@ public class AndroidKeyStoreTest {
         Cipher.getInstance("RSA/ECB/OAEPPadding").init(Cipher.ENCRYPT_MODE, publicKey);
     }
 
+    // Previously called testKeyStore_PrivateKeyEntry_EC_PublicKeyWorksWithCrypto
     @Test
-    public void testKeyStore_PrivateKeyEntry_EC_PublicKeyWorksWithCrypto() throws Exception {
+    public void setKeyEntry_ECPublicKeyCryptoUsage_success() throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setKeyEntry(
                 getTestAlias1(),
@@ -2192,9 +2071,9 @@ public class AndroidKeyStoreTest {
         Signature.getInstance("NONEwithECDSA").initVerify(publicKey);
     }
 
+    // Previously called testKeyStore_TrustedCertificateEntry_RSA_PublicKeyWorksWithCrypto
     @Test
-    public void testKeyStore_TrustedCertificateEntry_RSA_PublicKeyWorksWithCrypto()
-            throws Exception {
+    public void setCertificateEntry_RSAPublicKeyCryptoUsage_success() throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias2(), generateCertificate(FAKE_RSA_USER_1));
         PublicKey publicKey = mKeyStore.getCertificate(getTestAlias2()).getPublicKey();
@@ -2207,9 +2086,9 @@ public class AndroidKeyStoreTest {
         Cipher.getInstance("RSA/ECB/NoPadding").init(Cipher.ENCRYPT_MODE, publicKey);
     }
 
+    // Previously called testKeyStore_TrustedCertificateEntry_EC_PublicKeyWorksWithCrypto
     @Test
-    public void testKeyStore_TrustedCertificateEntry_EC_PublicKeyWorksWithCrypto()
-            throws Exception {
+    public void setCertificateEntry_ECPublicKeyCryptoUsage_success() throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_EC_USER_1));
         PublicKey publicKey = mKeyStore.getCertificate(getTestAlias1()).getPublicKey();
@@ -2246,9 +2125,10 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_LargeNumberOfKeysSupported_RSA
     @LargeTest
     @Test
-    public void testKeyStore_LargeNumberOfKeysSupported_RSA() throws Exception {
+    public void importLargeNumberOfKeys_RSA_success() throws Exception {
         // This test imports key1, then lots of other keys, then key2, and then confirms that
         // key1 and key2 backed by Android Keystore work fine. The assumption is that if the
         // underlying implementation has a limit on the number of keys, it'll either delete the
@@ -2327,9 +2207,10 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_LargeNumberOfKeysSupported_EC
     @LargeTest
     @Test
-    public void testKeyStore_LargeNumberOfKeysSupported_EC() throws Exception {
+    public void importLargeNumberOfKeys_EC_success() throws Exception {
         // This test imports key1, then lots of other keys, then key2, and then confirms that
         // key1 and key2 backed by Android Keystore work fine. The assumption is that if the
         // underlying implementation has a limit on the number of keys, it'll either delete the
@@ -2409,9 +2290,10 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_LargeNumberOfKeysSupported_AES
     @LargeTest
     @Test
-    public void testKeyStore_LargeNumberOfKeysSupported_AES() throws Exception {
+    public void importLargeNumberOfKeys_AES_success() throws Exception {
         // This test imports key1, then lots of other keys, then key2, and then confirms that
         // key1 and key2 backed by Android Keystore work fine. The assumption is that if the
         // underlying implementation has a limit on the number of keys, it'll either delete the
@@ -2484,9 +2366,10 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_LargeNumberOfKeysSupported_HMAC
     @LargeTest
     @Test
-    public void testKeyStore_LargeNumberOfKeysSupported_HMAC() throws Exception {
+    public void importLargeNumberOfKeys_HMAC_success() throws Exception {
         // This test imports key1, then lots of other keys, then key2, and then confirms that
         // key1 and key2 backed by Android Keystore work fine. The assumption is that if the
         // underlying implementation has a limit on the number of keys, it'll either delete the
@@ -2556,8 +2439,9 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_OnlyOneDigestCanBeAuthorized_HMAC
     @Test
-    public void testKeyStore_OnlyOneDigestCanBeAuthorized_HMAC() throws Exception {
+    public void onlyOneDigestCanBeAuthorized_HMAC() throws Exception {
         mKeyStore.load(null);
 
         for (String algorithm : KeyGeneratorTest.EXPECTED_ALGORITHMS) {
@@ -2626,8 +2510,9 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_ImportSupportedSizes_AES
     @Test
-    public void testKeyStore_ImportSupportedSizes_AES() throws Exception {
+    public void import_AES_success() throws Exception {
         mKeyStore.load(null);
 
         KeyProtection params =
@@ -2664,8 +2549,9 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_ImportSupportedSizes_HMAC
     @Test
-    public void testKeyStore_ImportSupportedSizes_HMAC() throws Exception {
+    public void import_HMAC_success() throws Exception {
         mKeyStore.load(null);
 
         KeyProtection params = new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN).build();
@@ -2701,8 +2587,9 @@ public class AndroidKeyStoreTest {
         }
     }
 
+    // Previously called testKeyStore_ImportSupportedSizes_EC
     @Test
-    public void testKeyStore_ImportSupportedSizes_EC() throws Exception {
+    public void import_EC_success() throws Exception {
         mKeyStore.load(null);
         KeyProtection params =
                 TestUtils.getMinimalWorkingImportParametersForSigningWith("SHA256withECDSA");
@@ -2716,8 +2603,9 @@ public class AndroidKeyStoreTest {
                 "secp512r1", R.raw.ec_key6_secp521r1_pkcs8, R.raw.ec_key6_secp521r1_cert, params);
     }
 
+    // Previously called testKeyStore_ImportSupportedSizes_RSA
     @Test
-    public void testKeyStore_ImportSupportedSizes_RSA() throws Exception {
+    public void import_RSA_success() throws Exception {
         mKeyStore.load(null);
         KeyProtection params =
                 TestUtils.getMinimalWorkingImportParametersForSigningWith("SHA256withRSA");
@@ -2772,10 +2660,11 @@ public class AndroidKeyStoreTest {
         return TestUtils.importIntoAndroidKeyStore(alias, cert, publicKey, privateKey, params);
     }
 
+    // Previously called testKeyStore_ImportSupported_MlDsa
     @Test
     @CddTest(requirements = {"9.11/C-1-2"})
     @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
-    public void testKeyStore_ImportSupported_MlDsa() throws Exception {
+    public void import_MLDSA_success() throws Exception {
         TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
         mKeyStore.load(null);
         String alias = "import-mldsa";
@@ -2933,7 +2822,7 @@ public class AndroidKeyStoreTest {
         Log.i(TAG, "Deleted " + numberOfKeys + " keys");
     }
 
-    private Set<String> createLargeNumberOfKeyStoreEntryAliases(
+    private Set<String> createLargeNumberOfRsaKeyStoreEntryAliases(
             int numberOfKeys, StringBuilder aliasPrefix) throws Exception {
         Certificate cert = generateCertificate(FAKE_RSA_USER_1);
         PrivateKey privateKey = generatePrivateKey("RSA", FAKE_RSA_KEY_1);
@@ -2962,10 +2851,10 @@ public class AndroidKeyStoreTest {
         return expectedAliases;
     }
 
-    private void importLargeNumberOfKeysValidateAliases(int numberOfKeys, StringBuilder aliasPrefix)
-            throws Exception {
+    private void importLargeNumberOfRsaKeysAndValidateAliases(
+            int numberOfKeys, StringBuilder aliasPrefix) throws Exception {
         Set<String> importedKeyAliases =
-                createLargeNumberOfKeyStoreEntryAliases(numberOfKeys, aliasPrefix);
+                createLargeNumberOfRsaKeyStoreEntryAliases(numberOfKeys, aliasPrefix);
         assertThat(importedKeyAliases.size()).isEqualTo(numberOfKeys);
 
         try {
@@ -3013,23 +2902,24 @@ public class AndroidKeyStoreTest {
      * Create large number of Keystore entries with long aliases and try to list aliases of all the
      * entries in the keystore.
      */
+    // Previously called testKeyStore_LargeNumberOfLongAliases
     @ApiTest(apis = {"java.security.KeyStore#aliases"})
     @Test
-    public void testKeyStore_LargeNumberOfLongAliases() throws Exception {
+    public void importLargeNumberOfLongAliases_RSA_success() throws Exception {
         final int maxNumberOfKeys = 100;
-
-        importLargeNumberOfKeysValidateAliases(maxNumberOfKeys, createLongAliasPrefix());
+        importLargeNumberOfRsaKeysAndValidateAliases(maxNumberOfKeys, createLongAliasPrefix());
     }
 
     /**
      * Create limited number of Keystore entries with long aliases and try to list aliases of all
      * the entries in the keystore. Test should successfully list all the Keystore entries aliases.
      */
+    // Previously called testKeyStore_LimitedNumberOfLongAliasesSuccess
     @ApiTest(apis = {"java.security.KeyStore#aliases"})
     @Test
-    public void testKeyStore_LimitedNumberOfLongAliasesSuccess() throws Exception {
+    public void importLimitedNumberOfLongAliases_RSA_success() throws Exception {
         final int maxNumberOfKeys = 10;
-        importLargeNumberOfKeysValidateAliases(maxNumberOfKeys, createLongAliasPrefix());
+        importLargeNumberOfRsaKeysAndValidateAliases(maxNumberOfKeys, createLongAliasPrefix());
     }
 
     /**
@@ -3037,13 +2927,13 @@ public class AndroidKeyStoreTest {
      * all the entries in the keystore. Test should successfully list all the Keystore entries
      * aliases.
      */
+    // Previously called testKeyStore_LargeNumberShortAliasesSuccess
     @ApiTest(apis = {"java.security.KeyStore#aliases"})
     @Test
-    public void testKeyStore_LargeNumberShortAliasesSuccess() throws Exception {
+    public void importLargeNumberOfShortAliases_RSA_success() throws Exception {
         final int maxNumberOfKeys = 2500;
         final StringBuilder aliasPrefix = new StringBuilder("test_short_key_alias_");
-
-        importLargeNumberOfKeysValidateAliases(maxNumberOfKeys, aliasPrefix);
+        importLargeNumberOfRsaKeysAndValidateAliases(maxNumberOfKeys, aliasPrefix);
     }
 
     /**
