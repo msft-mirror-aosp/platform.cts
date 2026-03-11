@@ -334,12 +334,20 @@ class ComputerControlInteractionTest {
 
         // Insert " text3" as composing text, don't replace, don't commit.
         testAppAgent.insertText(
-            " text3", replaceExisting = false, commitText = false, waitForStable = false)
+            " text3",
+            replaceExisting = false,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("text1 text2 text3", "")
 
         // Insert " text4" to append to composing text, don't replace, don't commit.
         testAppAgent.insertText(
-            " text4", replaceExisting = false, commitText = false, waitForStable = false)
+            " text4",
+            replaceExisting = false,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("text1 text2 text3 text4", "")
 
         // Commit the composing text by inserting an empty string, then append.
@@ -354,12 +362,20 @@ class ComputerControlInteractionTest {
 
         // Replace text with composing text, don't commit.
         testAppAgent.insertText(
-            "new composing", replaceExisting = true, commitText = false, waitForStable = false)
+            "new composing",
+            replaceExisting = true,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("new composing", "")
 
         // Append to the new composing text, don't commit.
         testAppAgent.insertText(
-            " more", replaceExisting = false, commitText = false, waitForStable = false)
+            " more",
+            replaceExisting = false,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("new composing more", "")
 
         // Commit the current composing text, then append.
@@ -379,7 +395,11 @@ class ComputerControlInteractionTest {
             // Insert text without focusing on any text field.
             testAppAgent.insertText("should not appear", replaceExisting = false, commitText = true)
             testAppAgent.insertText("should not appear", replaceExisting = true, commitText = true)
-            testAppAgent.insertText("should not appear", replaceExisting = false, commitText = false)
+            testAppAgent.insertText(
+                "should not appear",
+                replaceExisting = false,
+                commitText = false
+            )
 
             // Expect no text field value change action to be received.
             testAppInteractions.assertNoAction<Action.TextFieldValueChange>()

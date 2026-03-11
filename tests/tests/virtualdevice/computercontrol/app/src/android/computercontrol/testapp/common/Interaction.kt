@@ -69,7 +69,8 @@ sealed interface Action : Parcelable {
         val uncommittedText: String?,
     ) : Action {
         override fun toString(): String {
-            return "TextFieldValueChange(id=$textFieldId, value=$text, uncommittedText=$uncommittedText)"
+            return "TextFieldValueChange(id=$textFieldId, value=$text, " +
+                    "uncommittedText=$uncommittedText)"
         }
     }
 }

@@ -16,10 +16,6 @@
 
 package android.virtualdevice.cts.computercontrol
 
-import android.computercontrol.testapp.common.Action
-import android.computercontrol.testapp.common.Interaction
-import android.computercontrol.testapp.common.TestAppInteractionReceiver
-import android.computercontrol.testapp.common.TestAppFocusRequester
 import android.content.ComponentName
 import android.content.Context
 import android.media.Image
@@ -33,9 +29,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
 
 class TestAppAgent(private val context: Context, private val session: ComputerControlSession) :
     AutoCloseable {
