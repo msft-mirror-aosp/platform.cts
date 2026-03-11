@@ -44,8 +44,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertThrows
-import org.junit.Assume.assumeNotNull
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -74,12 +72,10 @@ class ComputerControlExtensionsTest {
                     override fun onClosed(reason: Int) {
                         closeFuture.complete(null)
                     }
-                }
+                },
             )
 
-            session.use {
-                block?.invoke(session)
-            }
+            session.use { block?.invoke(session) }
 
             // Wait for the session to be closed.
             closeFuture.get(TestAppAgent.SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -120,14 +116,10 @@ class ComputerControlExtensionsTest {
 
     @get:Rule val testName = TestName()
 
+    @get:Rule val computerControlRule = ComputerControlRule()
+
     private val context = getInstrumentation().context
     private var extension: ComputerControlExtensions? = null
-
-    @Before
-    fun setUp() {
-        extension = ComputerControlExtensions.getInstance(context)
-        assumeNotNull(extension)
-    }
 
     @Test
     fun testGetInstance_nullContext() {
