@@ -16,8 +16,6 @@
 
 package com.android.cts.devicepolicy;
 
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
-
 import org.junit.Test;
 
 import java.util.Collections;
@@ -44,7 +42,7 @@ public final class LauncherAppsMultiUserTest extends BaseLauncherAppsTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mInitialUser = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mInitialUser = getInitialCurrentUserId();
 
         removeTestUsers();
         uninstallTestApps();

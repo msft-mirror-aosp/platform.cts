@@ -38,6 +38,7 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.truth.Expect;
 
@@ -215,7 +216,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
         // Gets the value of the initial user running these tests - it will be switched to (in
         // a few lines) and won't be removed
-        mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mInitialUserId = getInitialCurrentUserId();
 
         mNonTestUserIds.add(USER_SYSTEM);
         mNonTestUserIds.add(mInitialUserId);
@@ -228,7 +229,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
                 getDevice().getCurrentUser(),
                 getDevice().getMainUserId(),
                 mNonTestUserIds,
-                DevicePolicyUsersPreparer.getPreExistingUserIds());
+                getPreExistingUserIds());
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
 
@@ -828,7 +829,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
                 userId, expectFailure);
         // TODO(b/35372278): temporary workaround until flag is ramped up
-        if (isAutomotive() && !DevicePolicyUsersPreparer.isDeviceOwnerSupportedOnAnyFullUsers()) {
+        if (isAutomotive() && !isDeviceOwnerSupportedOnAnyFullUsers()) {
             throw new AssumptionViolatedException("Cannot set device owner on automotive build");
         }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
@@ -1211,6 +1212,36 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             // need to check that it's not null
             expect.withMessage("Cleanup task#%s failed", i).that(cleanupFailure).isNull();
         }
+    }
+
+    /** Abstraction for {@link UsersOracle#getInitialCurrentUserId()} */
+    protected final int getInitialCurrentUserId() {
+        return DevicePolicyUsersPreparer.getInitialCurrentUserId();
+    }
+
+    /** Abstraction for {@link UsersOracle#getPreExistingUserIds(ImmutableSet)} */
+    protected final ImmutableSet<Integer> getPreExistingUserIds() {
+        return DevicePolicyUsersPreparer.getPreExistingUserIds();
+    }
+
+    /** Abstraction for {@link UsersOracle#getInitialCurrentUserId()} */
+    protected final int getDeviceOwnerUserId() {
+        return DevicePolicyUsersPreparer.getDeviceOwnerUserId();
+    }
+
+    /** Abstraction for {@link UsersOracle#getProfileOwnerUserId()} */
+    protected final int getProfileOwnerUserId() {
+        return DevicePolicyUsersPreparer.getProfileOwnerUserId();
+    }
+
+    /** Abstraction for {@link UsersOracle#getInitialCurrentUserId()} */
+    protected final boolean isDeviceOwnerSupportedOnAnyFullUsers() {
+        return DevicePolicyUsersPreparer.isDeviceOwnerSupportedOnAnyFullUsers();
+    }
+
+    /** Abstraction for {@link UsersOracle#getProfileParentUserId()} */
+    protected final int getProfileParentUserId() {
+        return DevicePolicyUsersPreparer.getProfileParentUserId();
     }
 
     /**

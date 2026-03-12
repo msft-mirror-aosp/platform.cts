@@ -27,7 +27,6 @@ import static org.junit.Assert.fail;
 import android.platform.test.annotations.LargeTest;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -75,7 +74,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
+        mParentUserId = getProfileParentUserId();
 
         removeTestUsers();
         createManagedProfile();
@@ -109,7 +108,7 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
 
     @Test
     public void testCanRelinquishControlOverDevice() throws Exception {
-        int deviceOwnerUserId = DevicePolicyUsersPreparer.getDeviceOwnerUserId();
+        int deviceOwnerUserId = getDeviceOwnerUserId();
         CLog.d("testCanRelinquishControlOverDevice(): mUserId=%d, currentUser=%d, "
                 + "deviceOwnerUserId=%d", mUserId, getDevice().getCurrentUser(), deviceOwnerUserId);
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".LockScreenInfoTest", "testSetAndGetLockInfo",

@@ -22,7 +22,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -58,7 +57,7 @@ public final class UserRestrictionsTest extends BaseDeviceOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mInitialUser = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mInitialUser = getInitialCurrentUserId();
     }
 
     @Override

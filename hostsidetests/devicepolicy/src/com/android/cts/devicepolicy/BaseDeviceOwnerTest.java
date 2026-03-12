@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
 
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -44,7 +43,7 @@ public abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mDeviceOwnerUserId = DevicePolicyUsersPreparer.getDeviceOwnerUserId();
+        mDeviceOwnerUserId = getDeviceOwnerUserId();
     }
 
     protected final void installDeviceOwnerApp(String apk) throws Exception {
