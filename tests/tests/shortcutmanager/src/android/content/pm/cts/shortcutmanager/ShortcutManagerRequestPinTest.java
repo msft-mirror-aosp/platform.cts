@@ -15,6 +15,7 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static android.Manifest.permission.TEST_LOCK_APPS;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -23,6 +24,8 @@ import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -41,16 +44,25 @@ import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.content.pm.cts.shortcutmanager.common.Constants;
 import android.content.pm.cts.shortcutmanager.common.ReplyUtil;
+import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.sts.common.LockSettingsUtil;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,6 +72,12 @@ import java.util.List;
 @CddTest(requirement="3.8.1/C-4-1")
 @RunWith(AndroidJUnit4.class)
 public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
+    @Rule
+    public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "ShortcutMRPT";
 
     private static final String SHORTCUT_ID = "s12345";
@@ -491,5 +509,62 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
         });
         boolean result = mWmState.waitForFocusedActivity(targetActivity);
         assertFalse("Should not able to launch background activity", result);
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_APP_LOCK_APIS,
+        android.content.pm.Flags.FLAG_APP_LOCK_SHORTCUT_REMOVAL
+    })
+    @ApiTest(apis = { "android.content.pm.ShortcutManager#isRequestPinShortcutSupported" })
+    public void testIsRequestPinShortcutSupported_whenAppLockIsEnabled_returnsFalse()
+            throws Exception {
+        // Launcher1 supports request pin shortcut.
+        setDefaultLauncher(getInstrumentation(), mLauncherContext1);
+        runWithCaller(mPackageContext1, () -> {
+            assertThat(getManager().isRequestPinShortcutSupported()).isTrue();
+        });
+
+        try (AutoCloseable withLockScreen = new LockSettingsUtil(getTestContext()).withLockScreen();
+                AutoCloseable withAppLockEnabled = setPackageAppLockEnabledScoped(
+                        mPackageContext1.getPackageName(), getTestContext().getPackageManager())) {
+            runWithCaller(mPackageContext1, () -> {
+                assertThat(getManager().isRequestPinShortcutSupported()).isFalse();
+            });
+        }
+    }
+
+    /**
+     * Enables App Lock for the specified package and returns an {@link AutoCloseable} that
+     * automatically disables it upon closing. Using {@link PackageManager#setPackageAppLockEnabled}
+     * requires either {@link TEST_LOCK_APPS} or {@link android.Manifest.permission#LOCK_APPS}
+     * permission. This method uses {@link TEST_LOCK_APPS} by adopting shell permission identity.
+     *
+     * <p>This method asserts that the operation to enable App Lock is successful. The returned
+     * {@link AutoCloseable} also asserts that the operation to disable App Lock is successful
+     * when closed.
+     *
+     * <p><b>Preconditions:</b>
+     * <ul>
+     *   <li>A screen lock must be set up on the device. See {@link setLskfScoped}</li>
+     *   <li>The package must support the App Lock feature.</li>
+     * </ul>
+     *
+     * @param packageName the name of the package for which App Lock should be enabled.
+     * @param pm the {@link PackageManager} instance to use for the operation.
+     * @return an {@link AutoCloseable} that disables App Lock for the package when closed.
+     */
+    private AutoCloseable setPackageAppLockEnabledScoped(String packageName, PackageManager pm) {
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ true)).isTrue();
+        }, TEST_LOCK_APPS);
+
+        return () -> {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ false)).isTrue();
+            }, TEST_LOCK_APPS);
+        };
     }
 }
