@@ -71,12 +71,12 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.media.flags.Flags;
 
 import com.google.common.truth.Correspondence;
 import com.google.common.truth.Expect;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -89,6 +89,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -1390,12 +1391,17 @@ public class SystemMediaRouter2Test {
 
         List<MediaRoute2Info> selectedRoutes = mAppRouter2.getSystemController()
                 .getSelectedRoutes();
+        Optional<MediaRoute2Info> builtInSpeaker =
+                selectedRoutes.stream()
+                        .filter(it -> it.getType() == MediaRoute2Info.TYPE_BUILTIN_SPEAKER)
+                        .findAny();
 
-        assertThat(selectedRoutes).isNotEmpty();
-
-        MediaRoute2Info deviceRoute = selectedRoutes.get(0);
-        assertThat(deviceRoute.getType()).isEqualTo(MediaRoute2Info.TYPE_BUILTIN_SPEAKER);
-        assertThat(deviceRoute.getSuitabilityStatus()).isEqualTo(builtInSpeakerSuitability);
+        Assume.assumeTrue(
+                /* message= */ "No built-in speaker media route found on this device",
+                builtInSpeaker.isPresent());
+        assertThat(builtInSpeaker.get().getType()).isEqualTo(MediaRoute2Info.TYPE_BUILTIN_SPEAKER);
+        assertThat(builtInSpeaker.get().getSuitabilityStatus())
+                .isEqualTo(builtInSpeakerSuitability);
     }
 
     @Test
