@@ -39,7 +39,8 @@ import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -54,34 +55,28 @@ import javax.annotation.Nullable;
  */
 public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPreparer {
 
-    private static @Nullable UsersOracle sOracle;
+    // Singleton - set once, never reset
+    private static final AtomicReference<UsersOracle> sOracle = new AtomicReference<>();
+
+    private @Nullable UsersOracle mOracle;
 
     @Override
     public void setUp(TestInformation testInformation)
             throws TargetSetupError, BuildError, DeviceNotAvailableException {
         super.setUp(testInformation);
-        sOracle = new UsersOracle(testInformation.getDevice(), getPreparedUserId());
-        try {
-            // Log what it will return...
-            logAndDisplay(
-                    "preview: getInitialCurrentUserId()=%s, getDeviceOwnerUserId()=%s, "
-                            + "getProfileParentUserId()=%s, getPreExistingUserIds()=%s,"
-                            + "isDeviceOwnerSupportedOnAnyFullUsers()=%s",
-                    safeToString(DevicePolicyUsersPreparer::getInitialCurrentUserId),
-                    safeToString(DevicePolicyUsersPreparer::getDeviceOwnerUserId),
-                    safeToString(DevicePolicyUsersPreparer::getProfileParentUserId),
-                    safeToString(DevicePolicyUsersPreparer::getPreExistingUserIds),
-                    safeToString(DevicePolicyUsersPreparer::isDeviceOwnerSupportedOnAnyFullUsers));
-        } catch (Exception e) {
-            // ... but don't fail
-            CLog.e("Failed to log initial state: %s", e);
+        mOracle = sOracle.get();
+        if (mOracle != null) {
+            CLog.w("sOracle singleton already set, using it instead: %s", mOracle);
+        } else {
+            mOracle = createAndSetOracleSingleton(testInformation.getDevice(), getPreparedUserId());
         }
     }
 
     @Override
     public void tearDown(TestInformation testInformation, Throwable e)
             throws DeviceNotAvailableException {
-        sOracle = null;
+        CLog.d("Resetting mOracle (but sOracle will remain)");
+        mOracle = null;
         super.tearDown(testInformation, e);
     }
 
@@ -128,24 +123,36 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
         CLog.logAndDisplay(LogLevel.INFO, msgFmt, msgArgs);
     }
 
-    private static String safeToString(Supplier<Object> supplier) {
-        try {
-            return supplier.get().toString();
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-    }
-
     private static UsersOracle getOracle() {
+        var oracle = sOracle.get();
         Preconditions.checkState(
-                sOracle != null,
+                oracle != null,
                 "Not initialized yet - did you include "
                         + "DevicePolicyUsersTargetPreparer in your AndroidTest.xml?");
-        return sOracle;
+        return oracle;
+    }
+
+    private static UsersOracle createAndSetOracleSingleton(ITestDevice device, int preparedUserId)
+            throws DeviceNotAvailableException {
+        var oracle = new UsersOracle(device, preparedUserId);
+        if (sOracle.compareAndSet(null, oracle)) {
+            logAndDisplay("Set sOracle singleton to %s", oracle);
+        } else {
+            // Not a big deal, but better log it..
+            CLog.w(
+                    "sOracle (%s) was set by another thread in parallel after a new one (%s) was"
+                            + " created",
+                    sOracle, oracle);
+        }
+        return oracle;
     }
 
     private static final class UsersOracle {
 
+        private static final AtomicInteger sNextId = new AtomicInteger();
+
+        private final int mId = sNextId.incrementAndGet();
+        private final FlagsUtil mFlagsUtil;
         private final boolean mIsHsum;
         private final int mInitialCurrentUserId;
         private final Set<Integer> mPreExistingUserIds;
@@ -163,23 +170,8 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
             mMainUserId = device.getMainUserId();
             mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
             mIsAutomotive = device.hasFeature("android.hardware.type.automotive");
-            FlagsUtil flagsUtil = new FlagsUtil(device);
-            mSupportsDeviceOwnerForAll = flagsUtil.getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
-            logAndDisplay(
-                    "setUp(): mIsHsum=%b, mInitialCurrentUserId=%d, mMainUserId=%s, "
-                            + "mSupportsProfilesForAll(flag %s=%b)=%B, "
-                            + "mSupportsDeviceOwnerForAll(flag %s)=%B, "
-                            + "mIsAutomotive=%b, mPreExistingUserIds=%s",
-                    mIsHsum,
-                    mInitialCurrentUserId,
-                    mMainUserId,
-                    FLAG_PROFILES_FOR_ALL,
-                    flagsUtil.getBooleanFlag(FLAG_PROFILES_FOR_ALL),
-                    mSupportsProfilesForAll,
-                    FLAG_DEVICE_OWNER_FOR_ALL,
-                    mSupportsDeviceOwnerForAll,
-                    mIsAutomotive,
-                    mPreExistingUserIds);
+            mFlagsUtil = new FlagsUtil(device);
+            mSupportsDeviceOwnerForAll = mFlagsUtil.getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
         }
 
         private boolean isDeviceOwnerSupportedOnAnyFullUsers() {
@@ -233,6 +225,34 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                     FLAG_PROFILES_FOR_ALL,
                     CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
             return mInitialCurrentUserId;
+        }
+
+        private String getFlagValueForDebuggingPurposes(String flag) {
+            try {
+                return Boolean.toString(mFlagsUtil.getBooleanFlag(flag));
+            } catch (Exception e) {
+                return e.toString();
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format(
+                    "UsersOracle[mId=%d, mIsHsum=%b, mInitialCurrentUserId=%d, "
+                            + "mMainUserId=%s, mSupportsProfilesForAll(flag %s=%b)=%B, "
+                            + "mSupportsDeviceOwnerForAll(flag %s)=%B, mIsAutomotive=%b, "
+                            + "mPreExistingUserIds=%s]",
+                    mId,
+                    mIsHsum,
+                    mInitialCurrentUserId,
+                    mMainUserId,
+                    FLAG_PROFILES_FOR_ALL,
+                    getFlagValueForDebuggingPurposes(FLAG_PROFILES_FOR_ALL),
+                    mSupportsProfilesForAll,
+                    FLAG_DEVICE_OWNER_FOR_ALL,
+                    mSupportsDeviceOwnerForAll,
+                    mIsAutomotive,
+                    mPreExistingUserIds);
         }
     }
 }
