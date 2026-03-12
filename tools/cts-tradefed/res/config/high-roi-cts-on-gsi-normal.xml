@@ -478,6 +478,10 @@
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerUiAutomationTestCases android.companion.cts.uiautomation.SystemDataTransferTest#test_receivePermissionRestore"/>
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerUiAutomationTestCases android.companion.cts.uiautomation.SystemDataTransferTest#test_userConsent_cancel"/>
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerUiAutomationTestCases android.companion.cts.uiautomation.SystemDataTransferTest#test_userConsent_disallow"/>
+    <!-- CtsConscryptTestCases -->
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases android.net.ssl.SSLEnginesTest#useSessionTickets_ValidEngine"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_beginHandshake_noKeyStore[1: TLSv1.2 client, TLSv1.3 server]"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_beginHandshake_noKeyStore[2: TLSv1.3 client, TLSv1.2 server]"/>
     <!-- CtsContentProviderMultiUserTest -->
     <option name="compatibility:include-filter" value="CtsContentProviderMultiUserTest android.packageinstaller.contentprovider.cts.multiuser.ContentProviderMultiUserTests#testResolveForUid_CrossUserPermissionHolder_None"/>
     <option name="compatibility:include-filter" value="CtsContentProviderMultiUserTest android.packageinstaller.contentprovider.cts.multiuser.ContentProviderMultiUserTests#testResolveForUid_CrossUserPermissionHolder_TestAppOnly"/>
@@ -815,9 +819,6 @@
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.invoke.ClassValueTest#testRemoveStale"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.invoke.ClassValueTest#testSingletonWinner"/>
     <!-- CtsLibcoreTestCases -->
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases android.net.ssl.SSLEnginesTest#useSessionTickets_ValidEngine"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_beginHandshake_noKeyStore[1: TLSv1.2 client, TLSv1.3 server]"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_beginHandshake_noKeyStore[2: TLSv1.3 client, TLSv1.2 server]"/>
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.lang.invoke.MethodHandlesTest#testfindSpecial_invokeSuperInterfaceBehaviour"/>
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.time.chrono.ChronologyTest#test_isIsoBased"/>
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.util.logging.OldLogRecordTest#testGetSetTimeCheck"/>
