@@ -19,6 +19,7 @@ import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.result.CollectingTestListener;
 import com.android.tradefed.result.TestDescription;
@@ -26,6 +27,7 @@ import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.ITestInformationReceiver;
 
 import java.io.FileNotFoundException;
 import java.util.Map;
@@ -35,7 +37,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** Base class for host-side tests for media APIs. */
-public class BaseMediaHostSideTest extends DeviceTestCase implements IBuildReceiver {
+public class BaseMediaHostSideTest extends DeviceTestCase
+        implements IBuildReceiver, ITestInformationReceiver {
     private static final String RUNNER = "androidx.test.runner.AndroidJUnitRunner";
 
     /**
@@ -54,11 +57,22 @@ public class BaseMediaHostSideTest extends DeviceTestCase implements IBuildRecei
      */
     private static final long DEFAULT_TEST_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
 
+    private TestInformation mTestInformation;
     protected IBuildInfo mCtsBuild;
 
     @Override
-    public void setBuild(IBuildInfo buildInfo) {
+    public final void setBuild(IBuildInfo buildInfo) {
         mCtsBuild = buildInfo;
+    }
+
+    @Override
+    public final void setTestInformation(TestInformation testInformation) {
+        mTestInformation = testInformation;
+    }
+
+    @Override
+    public final TestInformation getTestInformation() {
+        return mTestInformation;
     }
 
     /**

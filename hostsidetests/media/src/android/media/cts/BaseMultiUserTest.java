@@ -79,7 +79,9 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
                 "0",
                 USER_ALL);
 
-        mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mInitialUserId =
+                DevicePolicyUsersPreparer.getUsersOracleInstance(getTestInformation())
+                        .getInitialCurrentUserId();
         mExistingUsers = getDevice().listUsers();
         executeShellCommand("wm dismiss-keyguard");
     }
