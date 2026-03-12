@@ -105,6 +105,50 @@ android_test {
     ],
 }
 
+android_test {
+    name: "CtsPowerManagerPccTestCases",
+    team: "trendy_team_framework_bpm",
+    defaults: [
+        "cts_defaults",
+    ],
+    // Explicitly compile ONLY the PowerManager tests
+    srcs: [
+        "src/android/os/cts/PowerManagerTest.java",
+    ],
+    test_config: "AndroidTest-pcc.xml",
+    manifest: "AndroidManifest-pcc.xml",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+        "sts",
+        "mts-documentsui",
+        "mcts-documentsui",
+    ],
+    sdk_version: "test_current",
+    // Do not compress minijail policy files.
+    aaptflags: ["-0 .policy"],
+    min_sdk_version: "29",
+    per_testcase_directory: true,
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "junit",
+        "guava-android-testlib",
+        "flag-junit",
+        "power_flags_lib",
+        "android.os.flags-aconfig-java",
+        "android.sdk.flags-aconfig-java",
+    ],
+    libs: [
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
+    ],
+}
+
 android_ravenwood_test {
     name: "CtsOsTestCasesRavenwood",
     defaults: [

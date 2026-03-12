@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2026 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<configuration description="Configuration for OS PCC Tests">
+    <option name="test-suite-tag" value="cts" />
+    <option name="config-descriptor:metadata" key="component" value="framework" />
+    <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
+    <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_work_profile" />
+    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.permission.apex" />
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk30ModuleController" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
+
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="mkdir -p /data/local/tmp/cts/os" />
+        <option name="run-command" value="am wait-for-broadcast-idle" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package android.os.cts.pcc" />
+        <option name="teardown-command" value="am force-stop android.os.cts.pcc" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package android.os.cts.pcc" />
+        <option name="teardown-command" value="rm -rf /data/local/tmp/cts/os" />
+    </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <option name="test-file-name" value="CtsPowerManagerPccTestCases.apk" />
+    </target_preparer>
+
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+        <option name="package" value="android.os.cts.pcc" />
+        <option name="class" value="android.os.cts.PowerManagerTest" />
+        <option name="instrument-in-pcc" value="true" />
+        <option name="runtime-hint" value="3m15s" />
+        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
+        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-filter" value="com.google.common.collect.testing" />
+        <!-- Do not disable hidden-api-checks for this test. This test includes
+             StrictModeTest which relies on hidden API checks being enabled in
+             order to function properly. Any APIs used by this test should be
+             added to the light grey list, or made @TestApi instead.
+        <option name="hidden-api-checks" value="false" />
+        -->
+    </test>
+</configuration>
