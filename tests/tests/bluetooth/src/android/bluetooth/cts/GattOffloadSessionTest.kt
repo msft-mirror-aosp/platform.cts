@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,59 +14,47 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static com.google.common.truth.Truth.assertThat;
+import android.bluetooth.GattOffloadSession
+import android.bluetooth.test_utils.BlockingBluetoothAdapter
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bluetooth.flags.Flags
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.Mock
+import org.mockito.junit.MockitoJUnit
 
-import android.bluetooth.GattOffloadSession;
-import android.bluetooth.test_utils.BlockingBluetoothAdapter;
-import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+@RunWith(AndroidJUnit4::class)
+class GattOffloadSessionTest {
+    @get:Rule val mockitoRule = MockitoJUnit.rule()
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
+    @Mock private lateinit var gattOffloadSession: GattOffloadSession
 
-import com.android.bluetooth.flags.Flags;
-
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
-
-@RunWith(AndroidJUnit4.class)
-public class GattOffloadSessionTest {
-
-    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
-    @Mock private GattOffloadSession mGattOffloadSession;
-
-    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    private val context = InstrumentationRegistry.getInstrumentation().context
 
     @Before
-    public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+    fun setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(context))
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue()
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
-    @SuppressWarnings("DirectInvocationOnMock")
-    public void fakeGattOffloadSessionCoverage() {
-        mGattOffloadSession.getSessionId();
-        mGattOffloadSession.getGattService();
-        mGattOffloadSession.getGattCharacteristics();
-        mGattOffloadSession.getEndpointId();
-        mGattOffloadSession.getHubId();
-        mGattOffloadSession.close();
+    fun fakeGattOffloadSessionCoverage() {
+        gattOffloadSession.sessionId
+        gattOffloadSession.gattService
+        gattOffloadSession.gattCharacteristics
+        gattOffloadSession.endpointId
+        gattOffloadSession.hubId
+        gattOffloadSession.close()
     }
 }
