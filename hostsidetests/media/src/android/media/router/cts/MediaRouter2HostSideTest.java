@@ -462,7 +462,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
     @Test
     public void testRestrictLocalNetworkCompatChange_notEnabled_routeIsFound() throws Exception {
         revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
@@ -478,7 +477,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
     @Test
     public void testRestrictLocalNetworkCompatChange_enabled_routeNotFound() throws Exception {
         revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
@@ -494,7 +492,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
     @Test
     public void testRestrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld()
             throws Exception {
@@ -516,7 +513,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
     @Test
     public void permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
             throws Exception {
@@ -534,7 +530,6 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_COMPAT_FIXES)
     @Test
     public void visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer()
             throws Exception {
