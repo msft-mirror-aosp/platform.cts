@@ -32,7 +32,6 @@ import android.media.UnsupportedSchemeException;
 import android.media.performanceclass.MediaPerformanceClass;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.PerformanceClassTestRule;
-import android.mediapc.cts.common.Preconditions;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.Android11MemoryRequirement;
 import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
@@ -74,8 +73,7 @@ public class PerformanceClassTest {
     static ArrayList<String> mMediaTypeSecureSupport = new ArrayList<>();
 
     @Rule
-    public final PerformanceClassTestRule pcRule =
-            PerformanceClassTestRule.with(Preconditions.EMPTY);
+    public final PerformanceClassTestRule pcRule = PerformanceClassTestRule.withNoPreconditions();
 
     static {
         mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AVC);

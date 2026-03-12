@@ -22,7 +22,6 @@
 package android.mediapc.cts.common
 
 import android.mediapc.cts.common.Precondition.Companion.create
-import android.util.DisplayMetrics
 import com.android.compatibility.common.util.MediaUtils
 
 /**
@@ -37,36 +36,50 @@ val IS_HANDHELD = Precondition.create(
 )
 
 /**
- * Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
- *
- * As of 2025 Q1 this is about 80% of daily active devices.
+ * MPC 10 memory threshold (80% of 3.2GB)
  */
-private val AT_LEAST_2_5GB_MEMORY = Precondition.create(
-    "At least 2.5Gb of memory",
-    { Utils.getTotalMemoryMb() > (2.5 * 1024L).toLong() }
+private val MPC_10_BASELINE_MEMORY = Precondition.create(
+    "At least 80% of MPC 10 memory",
+    { Utils.getTotalMemoryMb() >=
+            PreconditionConstants.R7_6_1__H_2_1_PHYSICAL_MEMORY_MB_MPC_10 * 8 / 10 }
 )
 
 /**
- * MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
- * "mid tier" devices
- *
- * As of 2025 Q1 this is about 85% of daily active devices.
+ * MPC 10 DPI threshold (80% of 240 DPI)
  */
-private val DISPLAY_DPI = Precondition.create(
-   "Requires default display DPI greater than ${DisplayMetrics.DENSITY_HIGH}",
-    { Utils.getDisplayDpi() > DisplayMetrics.DENSITY_HIGH }
+private val MPC_10_BASELINE_DPI = Precondition.create(
+    "At least 80% of MPC 10 DPI",
+    { Utils.getDisplayDpi() >=
+            PreconditionConstants.R7_1_1_3__H_2_1_DISPLAY_DENSITY_DPI_MPC_10 * 8 / 10 }
 )
 
 /**
- *  Require resolution of at least 1280x720
- *
- *  MPC requires 1920x1080 lowering to 1280x720 to report statistics on "mid tier" devices
- *  As of 2025 Q1 this is about 99% of daily active devices.
+ * MPC 10 resolution threshold (80% of 1280x720)
  */
-private val LARGEST_DISPLAY_RESOLUTION = Precondition.create(
-    "Largest display resolution must at least HD",
-    { Utils.getMaxDisplayDim() >= 1280 && Utils.getMinDisplayDim() >= 720 }
+private val MPC_10_BASELINE_RESOLUTION = Precondition.create(
+    "At least 80% of MPC 10 resolution",
+    {
+        Utils.getMaxDisplayDim() >=
+            PreconditionConstants.R7_1_1_1__H_2_1_LONG_RESOLUTION_PIXELS_MPC_10 * 8 / 10 &&
+            Utils.getMinDisplayDim() >=
+            PreconditionConstants.R7_1_1_1__H_2_1_SHORT_RESOLUTION_PIXELS_MPC_10 * 8 / 10
+    }
 )
+
+/**
+ * The baseline set of preconditions for MPC 10.
+ */
+@JvmField
+val MPC_10_BASELINE =
+    Precondition.lazy(
+        Precondition.group(
+            "mpc_10_baseline",
+            IS_HANDHELD,
+            MPC_10_BASELINE_MEMORY,
+            MPC_10_BASELINE_DPI,
+            MPC_10_BASELINE_RESOLUTION,
+        )
+    )
 
 /**
  * The baseline set of preconditions for MPC.
@@ -82,16 +95,7 @@ private val LARGEST_DISPLAY_RESOLUTION = Precondition.create(
  * will increase CTS runtime for those devices.
  */
 @JvmField
-val BASELINE =
-    Precondition.lazy( // BASELINE is called often enough to use lazy and cache the results.
-        Precondition.group(
-    "baseline",
-    IS_HANDHELD,
-            AT_LEAST_2_5GB_MEMORY,
-            DISPLAY_DPI,
-            LARGEST_DISPLAY_RESOLUTION,
-    )
-)
+val BASELINE = MPC_10_BASELINE
 
 @JvmField
 val EMPTY = create("No preconditions", true)
