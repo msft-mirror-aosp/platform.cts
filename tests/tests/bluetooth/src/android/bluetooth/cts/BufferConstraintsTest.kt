@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,68 +14,58 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static com.google.common.truth.Truth.assertThat;
+import android.bluetooth.BufferConstraint
+import android.bluetooth.BufferConstraints
+import android.content.pm.PackageManager
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assume.assumeTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static org.junit.Assume.assumeTrue;
+@RunWith(AndroidJUnit4::class)
+class BufferConstraintsTest {
 
-import android.bluetooth.BufferConstraint;
-import android.bluetooth.BufferConstraints;
-import android.content.Context;
-import android.content.pm.PackageManager;
+    private lateinit var bufferConstraints: BufferConstraints
+    private lateinit var bufferConstraintList: MutableList<BufferConstraint>
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.List;
-
-@RunWith(AndroidJUnit4.class)
-public class BufferConstraintsTest {
-    private BufferConstraints mBufferConstraints;
-    private List<BufferConstraint> mBufferConstraintList;
-    private boolean mHasBluetooth;
-    private static final int DEFAULT_BUFFER_TIME = 1;
-    private static final int MAXIMUM_BUFFER_TIME = 2;
-    private static final int MINIMUM_BUFFER_TIME = 3;
+    private var hasBluetooth = false
 
     @Before
-    public void setUp() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        mHasBluetooth =
-                context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
+    fun setUp() {
+        val context = InstrumentationRegistry.getInstrumentation().context
+        hasBluetooth = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)
     }
 
     @Test
     @SmallTest
-    public void forCodec() {
+    fun forCodec() {
         // Skip the test if bluetooth is not present.
-        assumeTrue(mHasBluetooth);
+        assumeTrue(hasBluetooth)
 
-        mBufferConstraintList = new ArrayList<BufferConstraint>();
-        for (int i = 0; i < BufferConstraints.BUFFER_CODEC_MAX_NUM; i++) {
-            int defaultBufferTime = DEFAULT_BUFFER_TIME;
-            int maximumBufferTime = MAXIMUM_BUFFER_TIME;
-            int minimumBufferTime = MINIMUM_BUFFER_TIME;
-            BufferConstraint bufferConstraint =
-                    new BufferConstraint(defaultBufferTime, maximumBufferTime, minimumBufferTime);
-            mBufferConstraintList.add(bufferConstraint);
+        bufferConstraintList = mutableListOf()
+        for (i in 0 until BufferConstraints.BUFFER_CODEC_MAX_NUM) {
+            val bufferConstraint =
+                BufferConstraint(DEFAULT_BUFFER_TIME, MAXIMUM_BUFFER_TIME, MINIMUM_BUFFER_TIME)
+            bufferConstraintList.add(bufferConstraint)
         }
-        mBufferConstraints = new BufferConstraints(mBufferConstraintList);
+        bufferConstraints = BufferConstraints(bufferConstraintList)
 
-        for (int i = 0; i < 6; i++) {
-            assertThat(mBufferConstraints.forCodec(i).getDefaultMillis())
-                    .isEqualTo(DEFAULT_BUFFER_TIME);
-            assertThat(mBufferConstraints.forCodec(i).getMaxMillis())
-                    .isEqualTo(MAXIMUM_BUFFER_TIME);
-            assertThat(mBufferConstraints.forCodec(i).getMinMillis())
-                    .isEqualTo(MINIMUM_BUFFER_TIME);
+        for (i in 0 until 6) {
+            assertThat(bufferConstraints.forCodec(i)?.defaultMillis).isEqualTo(DEFAULT_BUFFER_TIME)
+            assertThat(bufferConstraints.forCodec(i)?.maxMillis).isEqualTo(MAXIMUM_BUFFER_TIME)
+            assertThat(bufferConstraints.forCodec(i)?.minMillis).isEqualTo(MINIMUM_BUFFER_TIME)
         }
+    }
+
+    companion object {
+        private const val DEFAULT_BUFFER_TIME = 1
+        private const val MAXIMUM_BUFFER_TIME = 2
+        private const val MINIMUM_BUFFER_TIME = 3
     }
 }
