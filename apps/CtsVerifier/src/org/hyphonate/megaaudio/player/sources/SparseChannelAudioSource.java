@@ -55,16 +55,7 @@ public class SparseChannelAudioSource extends WaveTableSource {
         final float phaseIncr = mFreq * mFNInverse;
         int outIndex = 0;
         for (int frameIndex = 0; frameIndex < numFrames; frameIndex++) {
-            // 'mod' back into the waveTable
-            while (mSrcPhase >= (float) mNumWaveTblSamples) {
-                mSrcPhase -= (float) mNumWaveTblSamples;
-            }
-
-            // linear-interpolate
-            int srcIndex = (int) mSrcPhase;
-            float delta0 = mSrcPhase - (float) srcIndex;
-            float delta1 = 1.0f - delta0;
-            float value = ((mWaveTbl[srcIndex] * delta0) + (mWaveTbl[srcIndex + 1] * delta1));
+            float value = getInterpolatedValue();
 
             // Put the same value in all channels.
             // This is inefficient and should be pulled out of this loop
