@@ -5866,9 +5866,10 @@ You should be prompted to select credentials; choose the ones you just installed
         This panel allows you to set levels for loopback signals
         The process is as follows:
         &#8226;Select the input and output devices on which the loopback is executing.
-        &#8226;Click "Left" to play a sine wave on the left channel of the selected output device.
+        &#8226;Select a channel from the Channel selection spinner.
+        &#8226;Click \"Start\" to play a sine wave on the selected channel of the selected output device.
         &#8226;Use the volume control on the DUT and/or external peripheral to set an appropriate signal level.
-        &#8226;Repeat the process for the right channel.
+        &#8226;Repeat the process for other channels. Note: You must stop the audio before selecting a different channel.
     </string>
 
     <!-- Audio Data Paths Test-->
@@ -6033,6 +6034,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
 
     <string name="audio_loopback_calibrate_default">Default</string>
+    <string name="audio_loopback_calibrate_channel">Channel:</string>
+    <string name="audio_loopback_starting">Starting&#8230;</string>
+    <string name="audio_loopback_playing">Playing&#8230;</string>
+    <string name="audio_loopback_stopping">Stopping&#8230;</string>
     <string name="audio_loopback_running">Running&#8230;</string>
 
     <!-- USB Device Warning Dialog -->
