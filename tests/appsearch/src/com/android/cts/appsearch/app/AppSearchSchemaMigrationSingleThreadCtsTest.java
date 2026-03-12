@@ -20,12 +20,9 @@ import android.app.appsearch.AppSearchSessionShim;
 import android.app.appsearch.testutil.AppSearchSessionShimImpl;
 import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
-
-import com.android.appsearch.flags.Flags;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -35,7 +32,6 @@ import org.junit.rules.RuleChain;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_MIGRATION_EXECUTOR_DEAD_LOCK_FIX)
 public class AppSearchSchemaMigrationSingleThreadCtsTest
         extends AppSearchSchemaMigrationCtsTestBase {
 
