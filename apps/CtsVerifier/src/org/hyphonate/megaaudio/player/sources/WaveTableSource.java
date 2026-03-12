@@ -102,6 +102,25 @@ public class WaveTableSource extends AudioSource {
     }
 
     /**
+     * Calculates the interpolated value at the current phase. This is used by pull() and also
+     * subclasses that might need to do custom channel mapping.
+     *
+     * @return The interpolated value.
+     */
+    protected float getInterpolatedValue() {
+        // 'mod' back into the waveTable
+        while (mSrcPhase >= (float) mNumWaveTblSamples) {
+            mSrcPhase -= (float) mNumWaveTblSamples;
+        }
+
+        // linear-interpolate
+        int srcIndex = (int) mSrcPhase;
+        float delta0 = mSrcPhase - (float) srcIndex;
+        float delta1 = 1.0f - delta0;
+        return ((mWaveTbl[srcIndex] * delta1) + (mWaveTbl[srcIndex + 1] * delta0));
+    }
+
+    /**
      * Fills the specified buffer with values generated from the wave table which will playback
      * at the specified frequency.
      *
@@ -116,16 +135,7 @@ public class WaveTableSource extends AudioSource {
         final float phaseIncr = mFreq * mFNInverse;
         int outIndex = 0;
         for (int frameIndex = 0; frameIndex < numFrames; frameIndex++) {
-            // 'mod' back into the waveTable
-            while (mSrcPhase >= (float)mNumWaveTblSamples) {
-                mSrcPhase -= (float)mNumWaveTblSamples;
-            }
-
-            // linear-interpolate
-            int srcIndex = (int)mSrcPhase;
-            float delta0 = mSrcPhase - (float)srcIndex;
-            float delta1 = 1.0f - delta0;
-            float value = ((mWaveTbl[srcIndex] * delta0) + (mWaveTbl[srcIndex + 1] * delta1));
+            float value = getInterpolatedValue();
 
             // Put the same value in all channels.
             // This is inefficient and should be pulled out of this loop
