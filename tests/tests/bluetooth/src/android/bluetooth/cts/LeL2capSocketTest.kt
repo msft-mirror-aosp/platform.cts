@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,69 +14,58 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static android.Manifest.permission.BLUETOOTH_CONNECT;
-import static android.bluetooth.test_utils.TestUtils.isBleSupported;
+import android.Manifest.permission.BLUETOOTH_CONNECT
+import android.bluetooth.test_utils.BlockingBluetoothAdapter
+import android.bluetooth.test_utils.Permissions
+import android.bluetooth.test_utils.TestUtils.isBleSupported
+import android.os.Build
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.MediumTest
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.ApiLevelUtil
+import com.android.compatibility.common.util.CddTest
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertThrows
+import org.junit.Assume.assumeTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static com.google.common.truth.Truth.assertThat;
-
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeTrue;
-
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.test_utils.BlockingBluetoothAdapter;
-import android.bluetooth.test_utils.Permissions;
-import android.os.Build;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.MediumTest;
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.compatibility.common.util.ApiLevelUtil;
-import com.android.compatibility.common.util.CddTest;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.io.IOException;
-
-@RunWith(AndroidJUnit4.class)
+@RunWith(AndroidJUnit4::class)
 @MediumTest
-public class LeL2capSocketTest {
-    private static final BluetoothAdapter sAdapter = BlockingBluetoothAdapter.getAdapter();
+class LeL2capSocketTest {
+
+    private val adapter = BlockingBluetoothAdapter.adapter
 
     @Before
-    public void setUp() throws Exception {
-        assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
-        assumeTrue(isBleSupported(InstrumentationRegistry.getInstrumentation().getContext()));
+    fun setUp() {
+        assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU))
+        assumeTrue(isBleSupported(InstrumentationRegistry.getInstrumentation().context))
 
-        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue()
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @Test
-    public void openInsecureLeL2capServerSocket() throws IOException {
-        assertThrows(SecurityException.class, () -> sAdapter.listenUsingInsecureL2capChannel());
-        final BluetoothServerSocket serverSocket;
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
-            serverSocket = sAdapter.listenUsingInsecureL2capChannel();
-        }
-        assertThat(serverSocket).isNotNull();
-        serverSocket.close();
+    fun openInsecureLeL2capServerSocket() {
+        assertThrows(SecurityException::class.java) { adapter.listenUsingInsecureL2capChannel() }
+        val serverSocket =
+            Permissions.withPermissions(BLUETOOTH_CONNECT).use {
+                adapter.listenUsingInsecureL2capChannel()
+            }
+        assertThat(serverSocket).isNotNull()
+        serverSocket.close()
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @Test
-    public void openSecureLeL2capServerSocket() throws IOException {
-        assertThrows(SecurityException.class, () -> sAdapter.listenUsingL2capChannel());
-        final BluetoothServerSocket serverSocket;
-        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
-            serverSocket = sAdapter.listenUsingL2capChannel();
-        }
-        assertThat(serverSocket).isNotNull();
-        serverSocket.close();
+    fun openSecureLeL2capServerSocket() {
+        assertThrows(SecurityException::class.java) { adapter.listenUsingL2capChannel() }
+        val serverSocket =
+            Permissions.withPermissions(BLUETOOTH_CONNECT).use { adapter.listenUsingL2capChannel() }
+        assertThat(serverSocket).isNotNull()
+        serverSocket.close()
     }
 }
