@@ -68,6 +68,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /** Class for testing {@link AccessibilityEvent}. */
 // TODO(b/263942937) Re-enable @Presubmit
@@ -548,7 +549,75 @@ public class AccessibilityEventTest {
         sendEventFromParentAndAssertOnChildPresence(/* shouldBePresent= */ false);
     }
 
-    private void sendEventFromParentAndAssertOnChildPresence(boolean shouldBePresent)
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_VIEWGROUP_ACCESSIBILITY_EVENT_POPULATION)
+    public void testViewGroupDispatchAccessibilityEvent_intermediateViewGroupNotImportant_childPopulated()
+            throws Throwable {
+        final LinearLayout intermediateGroup = new LinearLayout(mParentView.getContext());
+        final CassowaryView childView = new CassowaryView(mParentView.getContext());
+        final String intermediateDescription = "Intermediate Group Description";
+
+        sInstrumentation.runOnMainSync(
+                () -> {
+                    intermediateGroup.setImportantForAccessibility(
+                            View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                    // Add a content description to the intermediate group to ensure it's skipped
+                    intermediateGroup.setContentDescription(intermediateDescription);
+
+                    childView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+
+                    intermediateGroup.addView(childView);
+                    mParentView.addView(intermediateGroup, 0);
+                });
+        sUiAutomation.waitForIdle(IDLE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+
+        // Child should be present
+        AccessibilityEvent event =
+                sendEventFromParentAndAssertOnChildPresence(/* shouldBePresent= */ true);
+
+        // Intermediate group should NOT be present in the text
+        List<String> eventText =
+                event.getText().stream().map(CharSequence::toString).collect(Collectors.toList());
+        assertThat(eventText).doesNotContain(intermediateDescription);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_VIEWGROUP_ACCESSIBILITY_EVENT_POPULATION)
+    public void testViewGroupDispatchAccessibilityEvent_intermediateViewGroupSensitive_childPopulated()
+            throws Throwable {
+        final LinearLayout intermediateGroup = new LinearLayout(mParentView.getContext());
+        final CassowaryView childView = new CassowaryView(mParentView.getContext());
+        final String intermediateDescription = "Intermediate Group Description";
+
+        sInstrumentation.runOnMainSync(
+                () -> {
+                    intermediateGroup.setAccessibilityDataSensitive(
+                            View.ACCESSIBILITY_DATA_SENSITIVE_YES);
+                    // Add a content description to the intermediate group to ensure it's skipped
+                    intermediateGroup.setContentDescription(intermediateDescription);
+
+                    childView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+                    childView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_NO);
+
+                    intermediateGroup.addView(childView);
+                    mParentView.addView(intermediateGroup, 0);
+                });
+        sUiAutomation.waitForIdle(IDLE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+
+        // Child should be present
+        AccessibilityEvent event =
+                sendEventFromParentAndAssertOnChildPresence(/* shouldBePresent= */ true);
+
+        // Intermediate group should NOT be present in the text
+        List<String> eventText =
+                event.getText().stream().map(CharSequence::toString).collect(Collectors.toList());
+        assertThat(eventText).doesNotContain(intermediateDescription);
+    }
+
+    /**
+     * @return the received AccessibilityEvent if {@code shouldBePresent} is true, null otherwise.
+     */
+    private AccessibilityEvent sendEventFromParentAndAssertOnChildPresence(boolean shouldBePresent)
             throws TimeoutException {
         final Runnable sendFocusEventAction =
                 () ->
@@ -574,6 +643,7 @@ public class AccessibilityEventTest {
                     sUiAutomation.executeAndWaitForEvent(
                             sendFocusEventAction, childDescriptionFilter, DEFAULT_TIMEOUT_MS);
             assertThat(event).isNotNull();
+            return event;
         } else {
             // Assert that an event with the child's description is NOT received (times out).
             assertThrows(
@@ -583,6 +653,7 @@ public class AccessibilityEventTest {
                                     sendFocusEventAction,
                                     childDescriptionFilter,
                                     DEFAULT_TIMEOUT_MS));
+            return null;
         }
     }
 
