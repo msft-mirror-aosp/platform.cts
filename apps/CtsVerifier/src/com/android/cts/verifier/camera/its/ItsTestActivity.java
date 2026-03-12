@@ -132,7 +132,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private static final String PERF_METRICS = "perf_metrics";
     private static final String CAM_ID_KEY = "camera_id";
     private static final String TABLET_NAME_KEY = "tablet_name";
-    private static final int PERF_METRICS_PERMANENT_KEY_COUNT = 2; // CAM_ID_KEY, TABLET_NAME_KEY
+    private static final String FOLDED_STATE_KEY = "folded_state";
+    private static final int PERF_METRICS_PERMANENT_KEY_COUNT = 3; // CAM_ID_KEY, TABLET_NAME_KEY, FOLDED_STATE_KEY
 
     private static final String PERF_METRICS_VERSION = "version";
     private static final String CURRENT_PERF_METRICS_VERSION = "16.0";
@@ -304,6 +305,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private static final ImmutableMap<String, Integer> mPerfMetricsTypeMap =
             ImmutableMap.<String, Integer>builder()
                     .put("camera_id", TYPE_STRING)
+                    .put("folded_state", TYPE_STRING)
                     .put("yuv_plus_jpeg_rms_diff", TYPE_DOUBLE)
                     .put("yuv_plus_raw_rms_diff", TYPE_DOUBLE)
                     .put("imu_drift_duration_seconds", TYPE_DOUBLE)
@@ -513,9 +515,15 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                     // permanent keys.
                     camJsonObj.put(CAM_ID_KEY, cameraId);
                     camJsonObj.put(TABLET_NAME_KEY, tabletName);
+                    if (mIsFoldableDevice) {
+                        camJsonObj.put(FOLDED_STATE_KEY, mIsDeviceFolded ? "folded" : "unfolded");
+                    }
                     // Update test execution results
                     for (String scene : scenes) {
                         JSONObject sceneResult = jsonResults.getJSONObject(scene);
+                        if (sceneResult.has(FOLDED_STATE_KEY)) {
+                            camJsonObj.put(FOLDED_STATE_KEY, sceneResult.getString(FOLDED_STATE_KEY));
+                        }
                         Log.v(TAG, sceneResult.toString());
                         String result = sceneResult.getString("result");
                         if (result == null) {
@@ -674,17 +682,19 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
         private void appendJsonObjToMetrics(JSONObject newObj) throws JSONException {
             String cameraId = newObj.getString(CAM_ID_KEY);
             String tabletName = newObj.getString(TABLET_NAME_KEY);
+            String foldedState = newObj.optString(FOLDED_STATE_KEY, "");
 
             boolean foundCameraIdAndTablet = false;
             for (int i = mFinalPerfMetricsArr.length() - 1; i >= 0; i--) {
                 JSONObject obj = mFinalPerfMetricsArr.getJSONObject(i);
                 if (!obj.getString(CAM_ID_KEY).equals(cameraId)
-                        || !obj.getString(TABLET_NAME_KEY).equals(tabletName)) {
+                        || !obj.getString(TABLET_NAME_KEY).equals(tabletName)
+                        || !obj.optString(FOLDED_STATE_KEY, "").equals(foldedState)) {
                     continue;
                 }
 
                 // Merge the new JSON object with existing object of the same camera
-                // ID and tablet.
+                // ID, tablet and folded state.
                 Iterator<String> keys = newObj.keys();
                 while (keys.hasNext()) {
                     String key = keys.next();

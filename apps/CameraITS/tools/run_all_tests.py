@@ -51,6 +51,7 @@ RESULT_FAIL = 'FAIL'
 RESULT_NOT_EXECUTED = 'NOT_EXECUTED'
 RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
+FOLDED_STATE_KEY = 'folded_state'
 PERFORMANCE_KEY = 'performance_metrics'
 FEATURE_QUERY_KEY = 'feature_query_proto'
 FEATURE_QUERY_PATH_KEY = 'feature_query_proto_path'
@@ -990,6 +991,10 @@ def main():
         if not device_folded:
           raise AssertionError('Device should be folded during'
                                ' testing scenes with suffix "folded"')
+      if testing_folded_front_camera:
+        results[s][FOLDED_STATE_KEY] = 'folded'
+      else:
+        results[s][FOLDED_STATE_KEY] = 'unfolded'
 
     # A subdir in topdir will be created for each camera_id. All scene test
     # output logs for each camera id will be stored in this subdir.
