@@ -44,6 +44,10 @@ public class AlarmReceiver extends BroadcastReceiver {
     private static final PersistableEventHistory sCompatHistory = new PersistableEventHistory(
             new File(sContext.getFilesDir(), "alarm-compat-history.xml"));
 
+    private static final PersistableEventHistory sListenerAwiHistory =
+            new PersistableEventHistory(
+                    new File(sContext.getFilesDir(), "alarm-listener-awi-history.xml"));
+
     private static Object sWaitLock = new Object();
     @GuardedBy("sWaitLock")
     private static int sLastAlarmId;
@@ -58,8 +62,29 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
     }
 
-    static AlarmManager.OnAlarmListener createListener(int id, boolean quotaed) {
-        return () -> onAlarm(id, quotaed ? sCompatHistory::recordLatestEvent : (t -> {}));
+    /**
+     * Creates an {@link AlarmManager.OnAlarmListener} that records its trigger time in the
+     * appropriate history bucket for quota verification.
+     *
+     * @param id The unique identifier for this alarm.
+     * @param isRelaxedQuota If true, the alarm trigger is recorded in the dedicated 'relaxed'
+     *     history bucket (72/hr). If false, it uses the legacy compat bucket (7/hr).
+     * @param quotaed If false, the alarm is treated as unrestricted and not recorded in any
+     *     history.
+     * @return A listener that logs delivery and notifies any threads waiting on the alarm ID.
+     */
+    static AlarmManager.OnAlarmListener createListener(
+            int id, boolean isRelaxedQuota, boolean quotaed) {
+        final LongConsumer historyRecorder;
+        if (quotaed) {
+            historyRecorder =
+                    isRelaxedQuota
+                            ? sListenerAwiHistory::recordLatestEvent
+                            : sCompatHistory::recordLatestEvent;
+        } else {
+            historyRecorder = (t -> {});
+        }
+        return () -> onAlarm(id, historyRecorder);
     }
 
     static PendingIntent getAlarmSender(int id, boolean quotaed) {
@@ -89,6 +114,18 @@ public class AlarmReceiver extends BroadcastReceiver {
         return sCompatHistory.getNthLastEventTime(n);
     }
 
+    /**
+     * Returns the trigger time of the n-th last listener-based Allow-While-Idle (Awi) alarm. This
+     * method queries the history bucket for relaxed listener alarms to help calculate quota
+     * replenishment windows.
+     *
+     * @param n The 1-based index of the historical alarm event to retrieve (1 is the latest).
+     * @return The elapsed realtime in milliseconds when the alarm was received by the app.
+     */
+    static long getNthLastListenerAwiAlarmTime(int n) {
+        return sListenerAwiHistory.getNthLastEventTime(n);
+    }
+
     static boolean waitForAlarm(int alarmId, long timeOut) throws InterruptedException {
         final long deadline = SystemClock.elapsedRealtime() + timeOut;
         synchronized (sWaitLock) {
@@ -108,5 +145,6 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
         sHistory.dump("History of quotaed alarms");
         sCompatHistory.dump("History of quotaed compat alarms");
+        sListenerAwiHistory.dump("History of quotaed listener alarms");
     }
 }

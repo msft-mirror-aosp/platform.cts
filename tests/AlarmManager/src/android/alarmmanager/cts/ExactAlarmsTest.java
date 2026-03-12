@@ -50,6 +50,7 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -105,6 +106,8 @@ public class ExactAlarmsTest {
     private static final long ALLOW_WHILE_IDLE_WINDOW = 10_000;
     private static final int ALLOW_WHILE_IDLE_COMPAT_QUOTA = 3;
     private static final long ALLOW_WHILE_IDLE_COMPAT_WINDOW = 10_000;
+    private static final int ALLOW_WHILE_IDLE_LISTENER_QUOTA = 10;
+    private static final long ALLOW_WHILE_IDLE_LISTENER_WINDOW = 10_000;
 
     /**
      * Waiting generously long for success because the system can sometimes be slow to
@@ -150,8 +153,10 @@ public class ExactAlarmsTest {
                 .with("min_futurity", 0L)
                 .with("allow_while_idle_quota", ALLOW_WHILE_IDLE_QUOTA)
                 .with("allow_while_idle_compat_quota", ALLOW_WHILE_IDLE_COMPAT_QUOTA)
+                .with("allow_while_idle_listener_quota", ALLOW_WHILE_IDLE_LISTENER_QUOTA)
                 .with("allow_while_idle_window", ALLOW_WHILE_IDLE_WINDOW)
                 .with("allow_while_idle_compat_window", ALLOW_WHILE_IDLE_COMPAT_WINDOW)
+                .with("allow_while_idle_listener_window", ALLOW_WHILE_IDLE_LISTENER_WINDOW)
                 .commitAndAwaitPropagation();
     }
 
@@ -408,47 +413,77 @@ public class ExactAlarmsTest {
         SystemUtil.runShellCommand("cmd deviceidle force-idle deep");
     }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE)
-    public void setExactAwiCallbackQuota() throws Exception {
+    private void runExactAwiCallbackQuotaTest(int quota, boolean useRelaxedHistory)
+            throws Exception {
         assumeTrue(isDeviceIdleEnabled());
         putDeviceToIdle();
 
-        sleepUninterruptiblyUntil(getNextEligibleAwiCompatTime(ALLOW_WHILE_IDLE_COMPAT_QUOTA));
+        final long startEligibleTime =
+                useRelaxedHistory
+                        ? getNextEligibleAwiListenerTime(quota)
+                        : getNextEligibleAwiCompatTime(quota);
+        sleepUninterruptiblyUntil(startEligibleTime);
 
         int alarmId;
-        for (int i = 0; i < ALLOW_WHILE_IDLE_COMPAT_QUOTA; i++) {
+        for (int i = 0; i < quota; i++) {
             final long trigger = SystemClock.elapsedRealtime() + 500;
             alarmId = mIdGenerator.nextInt();
             mAlarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.ELAPSED_REALTIME_WAKEUP,
                     trigger,
-                    "test-tag",
+                    "test-tag-" + i,
                     Runnable::run,
-                    AlarmReceiver.createListener(alarmId, true));
-            Thread.sleep(500);
-            assertTrue("Alarm " + alarmId + " not received",
+                    AlarmReceiver.createListener(alarmId, useRelaxedHistory, true));
+            assertTrue(
+                    "Alarm " + alarmId + " failed to fire within quota",
                     AlarmReceiver.waitForAlarm(alarmId, DEFAULT_WAIT_FOR_SUCCESS));
         }
 
         final long nextSet = SystemClock.elapsedRealtime();
-        final long nextTrigger = getNextEligibleAwiCompatTime(1);
-        assertTrue("Not enough margin to test reliably", nextTrigger > nextSet + 5000);
+        final long nextTrigger =
+                useRelaxedHistory
+                        ? getNextEligibleAwiListenerTime(1)
+                        : getNextEligibleAwiCompatTime(1);
+
+        assertTrue(
+                "Not enough margin to test replenishment reliably", nextTrigger > nextSet + 5000);
 
         alarmId = mIdGenerator.nextInt();
         mAlarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 nextSet,
-                "test-tag",
+                "test-tag-deferred",
                 Runnable::run,
-                AlarmReceiver.createListener(alarmId, true));
-        assertFalse("Alarm received when no quota", AlarmReceiver.waitForAlarm(alarmId, 5000));
+                AlarmReceiver.createListener(alarmId, useRelaxedHistory, true));
+        assertFalse(
+                "Alarm should have been deferred after exhausting the quota of " + quota,
+                AlarmReceiver.waitForAlarm(alarmId, 5000));
 
         sleepUninterruptiblyUntil(nextTrigger);
-        assertTrue("Alarm " + alarmId + " not received when back in quota",
+        assertTrue(
+                "Alarm " + alarmId + " not received after quota replenished",
                 AlarmReceiver.waitForAlarm(alarmId, DEFAULT_WAIT_FOR_SUCCESS));
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE)
+    @RequiresFlagsDisabled(Flags.FLAG_ALLOW_ALARMS_WITH_RELAXED_QUOTA)
+    public void setExactAwiCallbackQuota() throws Exception {
+        // Legacy behavior: Enforces the compat quota(7/hr in production, 3 per 10s for this test)
+        runExactAwiCallbackQuotaTest(ALLOW_WHILE_IDLE_COMPAT_QUOTA, /* useRelaxedHistory= */ false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE,
+        Flags.FLAG_ALLOW_ALARMS_WITH_RELAXED_QUOTA
+    })
+    public void setExactAwiCallbackWithRelaxedDozeQuota() throws Exception {
+        // New behavior: Enforces the relaxed listener quota (72/hr in production, 10 per 10s for
+        // this test)
+        runExactAwiCallbackQuotaTest(
+                ALLOW_WHILE_IDLE_LISTENER_QUOTA, /* useRelaxedHistory= */ true);
+    }
 
     @Test
     public void setExactAwiWithPermissionAndWhitelist() throws Exception {
@@ -473,8 +508,13 @@ public class ExactAlarmsTest {
         final int numAlarms = 100;   // Number much higher than any quota.
         for (int i = 0; i < numAlarms; i++) {
             final int id = mIdGenerator.nextInt();
-            mAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, now,
-                    "test-tag", Runnable::run, null, AlarmReceiver.createListener(id, false));
+            mAlarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    now,
+                    "test-tag",
+                    Runnable::run,
+                    null,
+                    AlarmReceiver.createListener(id, true, false));
             assertTrue("Alarm " + id + " not received",
                     AlarmReceiver.waitForAlarm(id, DEFAULT_WAIT_FOR_SUCCESS));
         }
@@ -491,6 +531,19 @@ public class ExactAlarmsTest {
         final long t = AlarmReceiver.getNthLastCompatAlarmTime(
                 ALLOW_WHILE_IDLE_COMPAT_QUOTA - alarmsNeeded + 1);
         return t + ALLOW_WHILE_IDLE_COMPAT_WINDOW;
+    }
+
+    /**
+     * Calculates the earliest time when the test app will be eligible to fire the requested number
+     * of listener-based Allow-While-Idle (Awi) alarms.
+     */
+    private static long getNextEligibleAwiListenerTime(int alarmsNeeded) {
+        assertTrue(
+                "Alarms needed exceed max quota", alarmsNeeded <= ALLOW_WHILE_IDLE_LISTENER_QUOTA);
+        final long t =
+                AlarmReceiver.getNthLastListenerAwiAlarmTime(
+                        ALLOW_WHILE_IDLE_LISTENER_QUOTA - alarmsNeeded + 1);
+        return t + ALLOW_WHILE_IDLE_LISTENER_WINDOW;
     }
 
     private static void sleepUninterruptiblyUntil(long untilElapsed) {
