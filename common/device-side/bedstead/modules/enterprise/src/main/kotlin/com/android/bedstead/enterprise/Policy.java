@@ -121,6 +121,7 @@ import com.google.common.collect.ImmutableSet;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -130,6 +131,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Utility class for enterprise policy tests.
@@ -863,109 +865,70 @@ public final class Policy {
         return true;
     }
 
+    private static final Map<Class<? extends Annotation>, Set<Class<? extends Annotation>>>
+            sTransitiveShadowsCache = new HashMap<>();
+
+    private static Stream<Class<? extends Annotation>> getDirectShadowAnnotations(
+            Class<? extends Annotation> annotationClass) {
+        ParameterizedAnnotation parameterizedAnnotation =
+                annotationClass.getAnnotation(ParameterizedAnnotation.class);
+
+        if (parameterizedAnnotation != null) {
+            return Stream.of(parameterizedAnnotation.shadows());
+        } else {
+            return Stream.of();
+        }
+    }
+
+    private static Set<Class<? extends Annotation>> getTransitiveShadowAnnotations(
+            Class<? extends Annotation> annotationClass) {
+        if (sTransitiveShadowsCache.containsKey(annotationClass)) {
+            return sTransitiveShadowsCache.get(annotationClass);
+        }
+
+        Set<Class<? extends Annotation>> transitiveShadows =
+                getDirectShadowAnnotations(annotationClass)
+                        .flatMap(
+                                shadow ->
+                                        Stream.concat(
+                                                Stream.of(shadow),
+                                                getTransitiveShadowAnnotations(shadow).stream()))
+                        .collect(Collectors.toSet());
+
+        sTransitiveShadowsCache.put(annotationClass, transitiveShadows);
+        return transitiveShadows;
+    }
+
     /**
      * Remove entries from {@code annotations} which are shadowed by another entry
      * in {@code annotations} (directly or indirectly).
      */
     private static void removeShadowedAnnotations(Set<Annotation> annotations) {
-        Set<Class<? extends Annotation>> shadowedAnnotations = new HashSet<>();
-        for (Annotation annotation : annotations) {
-            if (annotation instanceof DynamicParameterizedAnnotation) {
-                continue; // Doesn't shadow anything
-            }
-
-            ParameterizedAnnotation parameterizedAnnotation =
-                    annotation.annotationType().getAnnotation(ParameterizedAnnotation.class);
-
-            if (parameterizedAnnotation == null) {
-                continue; // Not parameterized
-            }
-
-            for (Class<? extends Annotation> shadowedAnnotationClass
-                    : parameterizedAnnotation.shadows()) {
-                addShadowed(shadowedAnnotations, shadowedAnnotationClass);
-            }
-        }
-        annotations.removeIf(a -> shadowedAnnotations.contains(a.annotationType()));
+                Set<Class<? extends Annotation>> allShadowed =
+        annotations.stream().filter(a -> !(a instanceof DynamicParameterizedAnnotation))
+                .flatMap(a -> getTransitiveShadowAnnotations(a.annotationType()).stream())
+                .collect(Collectors.toSet());
+        annotations.removeIf(a -> allShadowed.contains(a.annotationType()));
     }
-
-    private static void addShadowed(Set<Class<? extends Annotation>> shadowedAnnotations,
-            Class<? extends Annotation> annotationClass) {
-        shadowedAnnotations.add(annotationClass);
-        ParameterizedAnnotation parameterizedAnnotation =
-                annotationClass.getAnnotation(ParameterizedAnnotation.class);
-
-        if (parameterizedAnnotation == null) {
-            return;
-        }
-
-        for (Class<? extends Annotation> shadowedAnnotationClass
-                : parameterizedAnnotation.shadows()) {
-            addShadowed(shadowedAnnotations, shadowedAnnotationClass);
-        }
-    }
-
-    // This maps classes to classes which shadow them - we just need to ensure it contains all
-    // annotation classes we encounter
-    private static Map<Class<? extends Annotation>, Set<Class<? extends Annotation>>>
-            sReverseShadowMap = new HashMap<>();
 
     /**
      * Remove entries from {@code annotations} which are shadowing another entry
      * in {@code annotatipns} (directly or indirectly).
      */
     private static void removeShadowingAnnotations(Set<Annotation> annotations) {
-        for (Annotation annotation : annotations) {
-            recordInReverseShadowMap(annotation);
-        }
+        Set<Class<? extends Annotation>> annotationTypes =
+                annotations.stream()
+                        .filter(a -> !(a instanceof DynamicParameterizedAnnotation))
+                        .map(Annotation::annotationType)
+                        .collect(Collectors.toSet());
 
-        Set<Class<? extends Annotation>> shadowingAnnotations = new HashSet<>();
-
-        for (Annotation annotation : annotations) {
-            shadowingAnnotations.addAll(
-                    sReverseShadowMap.getOrDefault(annotation.annotationType(), new HashSet<>()));
-        }
-
-        annotations.removeIf(a -> shadowingAnnotations.contains(a.annotationType()));
-    }
-
-    private static void recordInReverseShadowMap(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return; // Not shadowed by anything
-        }
-
-        ParameterizedAnnotation parameterizedAnnotation =
-                annotation.annotationType().getAnnotation(ParameterizedAnnotation.class);
-
-        if (parameterizedAnnotation == null) {
-            return; // Not parameterized
-        }
-
-        if (parameterizedAnnotation.shadows().length == 0) {
-            return; // Doesn't shadow anything
-        }
-
-        recordShadowedInReverseShadowMap(annotation.annotationType(), parameterizedAnnotation);
-    }
-
-    private static void recordShadowedInReverseShadowMap(Class<? extends Annotation> annotation,
-            ParameterizedAnnotation parameterizedAnnotation) {
-        for (Class<? extends Annotation> shadowedAnnotation : parameterizedAnnotation.shadows()) {
-            ParameterizedAnnotation shadowedParameterizedAnnotation =
-                    shadowedAnnotation.getAnnotation(ParameterizedAnnotation.class);
-
-            if (shadowedParameterizedAnnotation == null) {
-                continue; // Not parameterized
-            }
-
-            if (!sReverseShadowMap.containsKey(shadowedAnnotation)) {
-                sReverseShadowMap.put(shadowedAnnotation, new HashSet<>());
-            }
-
-            sReverseShadowMap.get(shadowedAnnotation).add(annotation);
-
-            recordShadowedInReverseShadowMap(annotation, shadowedParameterizedAnnotation);
-        }
+        annotations.removeIf(
+                // Check if any of a's transitive shadows are present in the list of annotations.
+                a ->
+                        !(a instanceof DynamicParameterizedAnnotation)
+                                && !Collections.disjoint(
+                                        annotationTypes,
+                                        getTransitiveShadowAnnotations(a.annotationType())));
     }
 
     private static boolean isSystemSupervisionRoleHolderPresent() {
