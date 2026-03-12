@@ -36,7 +36,6 @@ import android.app.UiAutomation;
 import android.car.Car;
 import android.car.PlatformVersion;
 import android.car.cts.permissiontest.AbstractCarManagerPermissionTest;
-import android.car.feature.Flags;
 import android.car.media.CarAudioManager;
 import android.car.media.CarVolumeGroupInfo;
 import android.car.test.util.CarAudioManagerTestUtils;
@@ -333,7 +332,6 @@ public final class CarAudioManagerPermissionTest extends AbstractCarManagerPermi
     @ApiTest(apis = {"android.car.media.CarAudioManager#registerCarVolumeGroupEventCallback"})
     public void registerCarVolumeGroupEventCallback_secondCallbacksWithoutPermission_throws()
             throws Exception {
-        assumePermissionEnforcementIsEnabled();
         assumeDynamicRoutingIsEnabled();
         assumeVolumeGroupEventsIsEnabled();
         Executor executor = Executors.newFixedThreadPool(1);
@@ -395,7 +393,6 @@ public final class CarAudioManagerPermissionTest extends AbstractCarManagerPermi
     @ApiTest(apis = {"android.car.media.CarAudioManager#unregisterCarVolumeGroupEventCallback"})
     public void unregisterCarVolumeGroupEventCallback_multipleCallbacksWithoutPermission_throws()
             throws Exception {
-        assumePermissionEnforcementIsEnabled();
         assumeDynamicRoutingIsEnabled();
         assumeVolumeGroupEventsIsEnabled();
         Executor executor = Executors.newFixedThreadPool(1);
@@ -436,12 +433,6 @@ public final class CarAudioManagerPermissionTest extends AbstractCarManagerPermi
                 .that(exception2)
                 .hasMessageThat()
                 .contains(PERMISSION_CAR_CONTROL_AUDIO_VOLUME);
-    }
-
-    private void assumePermissionEnforcementIsEnabled() {
-        assumeTrue(
-                "Requires volume callback permission enforcement enabled",
-                Flags.carAudioVolumeCallbackRegistrationPermissionEnforced());
     }
 
     private void assumeDynamicRoutingIsEnabled() {
