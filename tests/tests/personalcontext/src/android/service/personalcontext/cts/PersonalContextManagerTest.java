@@ -33,8 +33,6 @@ import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
 import android.service.personalcontext.hint.PublishedContextHint;
-import android.util.Size;
-import android.widget.inline.InlinePresentationSpec;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -64,9 +62,6 @@ import java.util.UUID;
 @RunWith(BedsteadJUnit4.class)
 public class PersonalContextManagerTest {
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
-
-    private static final InlinePresentationSpec INLINE_PRESENTATION_SPEC =
-            new InlinePresentationSpec.Builder(new Size(100, 100), new Size(100, 100)).build();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -203,6 +198,7 @@ public class PersonalContextManagerTest {
     @Test
     public void testPersonalContextMode_defaultValue() {
         try (TestAppInstance testApp = testApp(sDeviceState)) {
+            // TODO(b/481494584): flip the default to disabled (0).
             // Default value is enabled.
             assertThat(mPersonalContextManager.isPersonalContextModeEnabled(testApp.packageName()))
                     .isEqualTo(true);
@@ -219,6 +215,7 @@ public class PersonalContextManagerTest {
     @EnsureTestAppInstalled
     @Test
     public void testPersonalContextMode_noPermissions_fails() {
+        // TODO(b/481494584): flip the default to disabled (0).
         try (TestAppInstance testApp = testApp(sDeviceState)) {
             assertThrows(
                     SecurityException.class,
@@ -244,7 +241,7 @@ public class PersonalContextManagerTest {
     @Test
     public void testPersonalContextMode_setPersonalContextModeEnabled_succeeds() {
         try (TestAppInstance testApp = testApp(sDeviceState)) {
-            boolean updatedValue = false;
+            boolean updatedValue = true;
             mPersonalContextManager.setPersonalContextModeEnabled(
                     testApp.packageName(), updatedValue);
 
