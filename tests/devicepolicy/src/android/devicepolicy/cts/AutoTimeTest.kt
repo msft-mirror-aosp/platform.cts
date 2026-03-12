@@ -29,6 +29,7 @@ import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.IntTestParameter
+import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
@@ -92,15 +93,13 @@ class AutoTimeTest {
     annotation class AutoTimePolicyDisabled
 
     @Test
+    @Postsubmit(reason = "new test")
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
     fun scopeDevice_setPolicy_enabledValues_shouldSetGlobalSetting(
         @AutoTimePolicyEnabled policyValue: Int
     ) {
-        // If the original setting is 1, we need to disable auto time first to see
-        // the effect of the policy.
-        if (originalSetting == 1) {
-            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME, 0)
-        }
+        // To test the effect of the policy the auto time setting must be set to 0.
+        TestApis.settings().global().putInt(Settings.Global.AUTO_TIME, 0)
 
         setPolicy(POLICY_SCOPE_DEVICE, policyValue)
 
@@ -108,15 +107,13 @@ class AutoTimeTest {
     }
 
     @Test
+    @Postsubmit(reason = "new test")
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
     fun scopeDevice_setPolicy_disabledValues_shouldSetGlobalSetting(
         @AutoTimePolicyDisabled policyValue: Int
     ) {
-        // If the original setting is 0, we need to enable auto time first to see
-        // the effect of the policy.
-        if (originalSetting == 0) {
-            TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 1)
-        }
+        // To test the effect of the policy the auto time setting must be set to 1.
+        TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 1)
 
         setPolicy(POLICY_SCOPE_DEVICE, policyValue)
 
@@ -124,6 +121,7 @@ class AutoTimeTest {
     }
 
     @Test
+    @Postsubmit(reason = "new test")
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
     fun scopeDevice_setPolicy_userChoice_shouldNotChangeGlobalSetting() {
         setPolicy(POLICY_SCOPE_DEVICE, PolicyIdentifier.AUTO_TIME_USER_CHOICE)
@@ -133,6 +131,7 @@ class AutoTimeTest {
     }
 
     @Test
+    @Postsubmit(reason = "new test")
     @RequireFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
     @ApiTest(apis = ["android.app.manager.DevicePolicyManager#getAutoTimePolicy"])
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
@@ -145,6 +144,7 @@ class AutoTimeTest {
     }
 
     @Test
+    @Postsubmit(reason = "new test")
     @RequireFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
     @ApiTest(apis = ["android.app.manager.DevicePolicyManager#getAutoTimePolicy"])
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
