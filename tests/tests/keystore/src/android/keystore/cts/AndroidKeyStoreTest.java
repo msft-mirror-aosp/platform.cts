@@ -32,6 +32,9 @@ import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.keystore.cts.util.AndroidKeyStoreTestInputs.EcInputs;
+import android.keystore.cts.util.AndroidKeyStoreTestInputs.Ed25519Inputs;
+import android.keystore.cts.util.AndroidKeyStoreTestInputs.RsaInputs;
 import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.TestUtils;
 import android.security.KeyPairGeneratorSpec;
@@ -135,163 +138,6 @@ public class AndroidKeyStoreTest {
     // to run the tests.
     private Duration mMaxImportDuration;
 
-    /*
-     * The hex strings hard-coded in the variables below were produced by running
-     * cts/tests/tests/keystore/src/android/keystore/cts/util/gen_test_vectors.sh for each
-     * algorithm.
-     */
-    private static final String FAKE_RSA_CA_HEX =
-            """
-            3082023c308201a5a00302010202145e55e9246709bfd2cb3e91b571baad\
-            b5e3061305300d06092a864886f70d01010b05003030310b300906035504\
-            06130255533110300e060355040a0c07416e64726f6964310f300d060355\
-            04030c06546573744341301e170d3236303331323133343931335a170d33\
-            36303330393133343931335a3030310b3009060355040613025553311030\
-            0e060355040a0c07416e64726f6964310f300d06035504030c0654657374\
-            434130819f300d06092a864886f70d010101050003818d00308189028181\
-            00abf7f35c863037940b5532cc88d6da6065e861c6509d4ddf9ffcdee4a0\
-            1f40edba3361b894584e7797f16fb4a0904fef2cadb7f624b75a32f1a218\
-            902cec6df98f830d575192d07d6d33cda6f3729d68e66a8f1d416fee340b\
-            d058660af9798c3bf8c4704656bbab04706589433330df373a2edc3a0c08\
-            64e19a2df6029094fd0203010001a3533051301d0603551d0e041604148d\
-            39f4cad33ed2bae982d1b8f95a2bdfe99d4aba301f0603551d2304183016\
-            80148d39f4cad33ed2bae982d1b8f95a2bdfe99d4aba300f0603551d1301\
-            01ff040530030101ff300d06092a864886f70d01010b05000381810091b2\
-            eedb5ec49e596a03c8b37634bba7a4bf601edb9b7ec7954a241ae3e0e1eb\
-            8f2cfe50512f0f3acdeb2b063a83eadb5f9bd79e6ff0069ce155c2c989e6\
-            efcc66787dc7a2917653efd061bb210dbc21991fc98e68fb0c6c41b65ead\
-            fd80c6445630a7f648eb862491cbdf10e964838af7ea0352b622a5b053b2\
-            9b1af1b9c7f9\
-            """;
-    private static final String FAKE_RSA_KEY_HEX =
-            """
-            30820277020100300d06092a864886f70d0101010500048202613082025d\
-            02010002818100bb2299314ead143a05ede7b6da4087c2b1e99349350130\
-            73d84538fb5b2f58d50541fd564386856b086f89c572165aa55872ea6f96\
-            18588a1bb6d56bf2f490cb78396bc9ff14119875db9a646aee14144f65e0\
-            d19fea6efbc7a248d2a0a82d7cad886b6b18a8a8fbf8a81d3d956f7d6385\
-            7a6fca312a185da756f0690199d4e9020301000102818100b0071091080f\
-            d8d9e79fecf9dc7d1cf73041a5b11431e530e33be228d69247fe412edcad\
-            db60db795dfb055e7c3db8d095cdaae6820aaea663016dea58246359d4eb\
-            6c9db3ac676f39fceb6bcfae701a1a0bf1620fa8976fb09871456c7fc289\
-            12d09efdade3799997035078038701fa3a34f47eb35ff93455b2339b3d37\
-            6701024100ec27b7f4e52e588d8d736d479021c90e1cccb427a3f0eae798\
-            74b3becb784fb8585a45eb292e54229e6e64f6688ba2cd737f9de518154e\
-            c3cef4808eb1edf621024100cadc569ef62693204587b39e76a26b1b04bf\
-            9b0f07fa336314b22614c6c06336beecde029bb37db1c990317295524acb\
-            708d52c97ee4c9d94d7ded275e76f5c902406639773ef22a12b90b9f0891\
-            eec9412ff3b584d297fbc4a385f21690a3a12bd91f9dcc20548e326b5deb\
-            6996e4807573bbe8651ff341ddfb92cd720cd2e6b0210241009a248ed53e\
-            e8d4c6a2ce98578281abacde10d1bbbc2e0bb9efd1e649c7340caf5ea811\
-            921dc9676b1e63a88f0e93772dda9a281bdf85ed326745965c61d536b102\
-            401ea478353021479d3dcb309317996bdf7e760e59e09c585566c30edc13\
-            129bb27950fe873c13ae88947e8ed2858a5cc0ef23ad6f58309948d01419\
-            406f3711ac\
-            """;
-    private static final String FAKE_RSA_USER_HEX =
-            """
-            308202253082018ea003020102020101300d06092a864886f70d01010b05\
-            003030310b30090603550406130255533110300e060355040a0c07416e64\
-            726f6964310f300d06035504030c06546573744341301e170d3236303331\
-            323133343931335a170d3336303330393133343931335a3032310b300906\
-            03550406130255533110300e060355040a0c07416e64726f69643111300f\
-            06035504030c08546573745573657230819f300d06092a864886f70d0101\
-            01050003818d0030818902818100bb2299314ead143a05ede7b6da4087c2\
-            b1e9934935013073d84538fb5b2f58d50541fd564386856b086f89c57216\
-            5aa55872ea6f9618588a1bb6d56bf2f490cb78396bc9ff14119875db9a64\
-            6aee14144f65e0d19fea6efbc7a248d2a0a82d7cad886b6b18a8a8fbf8a8\
-            1d3d956f7d63857a6fca312a185da756f0690199d4e90203010001a34d30\
-            4b30090603551d1304023000301d0603551d0e04160414cc888b5689c067\
-            8d298ef679587ff3b44a841891301f0603551d230418301680148d39f4ca\
-            d33ed2bae982d1b8f95a2bdfe99d4aba300d06092a864886f70d01010b05\
-            00038181009deb311d57ab531033bf6afb571ba9bfb0d965102d81ed09a7\
-            af5294c8b57a14aabf5de57ad5007d4424b9e585c7c4791d2580b629c6ec\
-            fc99d7eff27d05a82f1d481280d10977ab35df779ae9a773261716c0786d\
-            b6d39749a08940d96b4aa6742c69a7321187d7fe769990233d266456fb56\
-            187b41fa0d900f2c5af744d374\
-            """;
-    private static final String FAKE_EC_CA_HEX =
-            """
-            308201b53082015ba003020102021453ff41839c9c33b832d802ee91d0f3\
-            84c24acebb300a06082a8648ce3d0403023030310b300906035504061302\
-            55533110300e060355040a0c07416e64726f6964310f300d06035504030c\
-            06546573744341301e170d3236303331323133353032365a170d33363033\
-            30393133353032365a3030310b30090603550406130255533110300e0603\
-            55040a0c07416e64726f6964310f300d06035504030c0654657374434130\
-            59301306072a8648ce3d020106082a8648ce3d0301070342000437cc6c89\
-            386ba583092503e40941578bd8c8825ba1727a5ce35f83aba00d54e2a12d\
-            41c74c5c0837d76c81d2eb9623a247d00c51d353da9717b87055d89a72cf\
-            a3533051301d0603551d0e041604146c20de7ab265402052d713666438c9\
-            e6b2172e5b301f0603551d230418301680146c20de7ab265402052d71366\
-            6438c9e6b2172e5b300f0603551d130101ff040530030101ff300a06082a\
-            8648ce3d0403020348003045022062dc11d6a1b44d08ddb212714be79baa\
-            c666beeb7f9d5ec5b5281f24ee0aec83022100a42d3c0154767e82fc5474\
-            2db3bcb91fa8ea4d3ac56bf5bdfab685529d3cecb1\
-            """;
-    private static final String FAKE_EC_KEY_HEX =
-            """
-            308187020100301306072a8648ce3d020106082a8648ce3d030107046d30\
-            6b0201010420fae83f2590415251c0c4dcadcdb662ee460dfd7374e18daa\
-            328cbc1b173fafffa14403420004dc197e9f5ba267809d4e36aeea12abf1\
-            57fe6325081ad95b2731609003ab1cbca6a814969e2d4aaba98e9b36938e\
-            5a43da0f38538ccb139b5d1941f29c658c8a\
-            """;
-    private static final String FAKE_EC_USER_HEX =
-            """
-            3082019e30820144a003020102020101300a06082a8648ce3d0403023030\
-            310b30090603550406130255533110300e060355040a0c07416e64726f69\
-            64310f300d06035504030c06546573744341301e170d3236303331323133\
-            353032365a170d3336303330393133353032365a3032310b300906035504\
-            06130255533110300e060355040a0c07416e64726f69643111300f060355\
-            04030c0854657374557365723059301306072a8648ce3d020106082a8648\
-            ce3d03010703420004dc197e9f5ba267809d4e36aeea12abf157fe632508\
-            1ad95b2731609003ab1cbca6a814969e2d4aaba98e9b36938e5a43da0f38\
-            538ccb139b5d1941f29c658c8aa34d304b30090603551d1304023000301d\
-            0603551d0e04160414d6d87228d0aee58eebc784f71ddb8421655636a430\
-            1f0603551d230418301680146c20de7ab265402052d713666438c9e6b217\
-            2e5b300a06082a8648ce3d040302034800304502205ef868d3026076a75f\
-            2f0c96b2edcf107732a31233f50ac40303c0f3da96cc320221009b5e14e8\
-            5ce67cd0cda272e984bad78e56f63da6247571c3d5b92fb5167570bc\
-            """;
-    private static final String FAKE_ED25519_CA_HEX =
-            """
-            3082018730820139a003020102021458a60f1a378e266c446f3fbd0aa5eb\
-            319b7c9bdc300506032b65703039310b3009060355040613025553311030\
-            0e060355040a0c07416e64726f69643118301606035504030c0f54657374\
-            2045643235353139204341301e170d3236303331313136313833365a170d\
-            3336303330383136313833365a3039310b30090603550406130255533110\
-            300e060355040a0c07416e64726f69643118301606035504030c0f546573\
-            742045643235353139204341302a300506032b6570032100baa3f0d1869c\
-            5915d12a3ac52054cb58b1f6f8dde0bf7ed5a1860ebe37c11595a3533051\
-            301d0603551d0e041604143f4ea8efc75265ec15566d0a6488e6c123225c\
-            63301f0603551d230418301680143f4ea8efc75265ec15566d0a6488e6c1\
-            23225c63300f0603551d130101ff040530030101ff300506032b65700341\
-            0027221eed6ef2ae0be11c05bac4cb7d3bde9c1a984d58616c59aecc81c9\
-            6eeac493c2d920fefef918825c17e46d8bd2146e6f4a13a5a51454a4bc08\
-            5484e4460f\
-            """;
-    private static final String FAKE_ED25519_KEY_HEX =
-            """
-            302e020100300506032b6570042204209bfb5b5d40741c4e86d8cd4c758f\
-            0c022c6b4f9b7464cd928c8e200074698ecf\
-            """;
-    private static final String FAKE_ED25519_USER_HEX =
-            """
-            3082017030820122a003020102020101300506032b65703039310b300906\
-            03550406130255533110300e060355040a0c07416e64726f696431183016\
-            06035504030c0f546573742045643235353139204341301e170d32363033\
-            31313136323131335a170d3336303330383136323131335a303b310b3009\
-            0603550406130255533110300e060355040a0c07416e64726f6964311a30\
-            1806035504030c115465737420456432353531392055736572302a300506\
-            032b6570032100112e00af5a26376efb2a6e79daff8d08fe4f82ea1876a1\
-            241c2aec9e941e4240a34d304b30090603551d1304023000301d0603551d\
-            0e041604145eaa555fb20bde8f7b7f52d9b47689779a883f2d301f060355\
-            1d230418301680143f4ea8efc75265ec15566d0a6488e6c123225c633005\
-            06032b6570034100016aad99d99b170ef3e8c8ffefe2902582feb378eb62\
-            9e4205bd352cf036555ac80e9887a687ee9d71007c1650aa70ccf7a75420\
-            87ab21de86ed0aa74ae91604\
-            """;
-
     private static final Map<String, byte[]> FAKE_CA = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private static final Map<String, byte[]> FAKE_KEY =
             new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -299,17 +145,17 @@ public class AndroidKeyStoreTest {
             new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     static {
-        FAKE_CA.put("RSA", HexEncoding.decode(FAKE_RSA_CA_HEX));
-        FAKE_CA.put("EC", HexEncoding.decode(FAKE_EC_CA_HEX));
-        FAKE_CA.put("ED25519", HexEncoding.decode(FAKE_ED25519_CA_HEX));
+        FAKE_CA.put("RSA", HexEncoding.decode(RsaInputs.FAKE_CA_HEX));
+        FAKE_CA.put("EC", HexEncoding.decode(EcInputs.FAKE_CA_HEX));
+        FAKE_CA.put("ED25519", HexEncoding.decode(Ed25519Inputs.FAKE_CA_HEX));
 
-        FAKE_KEY.put("RSA", HexEncoding.decode(FAKE_RSA_KEY_HEX));
-        FAKE_KEY.put("EC", HexEncoding.decode(FAKE_EC_KEY_HEX));
-        FAKE_KEY.put("ED25519", HexEncoding.decode(FAKE_ED25519_KEY_HEX));
+        FAKE_KEY.put("RSA", HexEncoding.decode(RsaInputs.FAKE_KEY_HEX));
+        FAKE_KEY.put("EC", HexEncoding.decode(EcInputs.FAKE_KEY_HEX));
+        FAKE_KEY.put("ED25519", HexEncoding.decode(Ed25519Inputs.FAKE_KEY_HEX));
 
-        FAKE_USER.put("RSA", HexEncoding.decode(FAKE_RSA_USER_HEX));
-        FAKE_USER.put("EC", HexEncoding.decode(FAKE_EC_USER_HEX));
-        FAKE_USER.put("ED25519", HexEncoding.decode(FAKE_ED25519_USER_HEX));
+        FAKE_USER.put("RSA", HexEncoding.decode(RsaInputs.FAKE_USER_HEX));
+        FAKE_USER.put("EC", HexEncoding.decode(EcInputs.FAKE_USER_HEX));
+        FAKE_USER.put("ED25519", HexEncoding.decode(Ed25519Inputs.FAKE_USER_HEX));
     }
 
     private static final String[] getAlgorithms() {
