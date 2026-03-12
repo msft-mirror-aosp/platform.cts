@@ -30,6 +30,7 @@ import android.hardware.SensorPrivacyManager;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.UserManager;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.ListView;
 
@@ -157,6 +158,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
     private static final String CONFIG_CHANGEABLE_VOLUME = "config_changeable_volume";
 
     private static final String CONFIG_SUPPORTS_BUBBLE = "config_supports_bubble";
+
+    private static final String CONFIG_VOICE_CAPABLE = "config_voice_capable";
 
     /**
      * The config to represent that a test is only needed to run in the main display mode (i.e.
@@ -541,6 +544,21 @@ public class ManifestTestListAdapter extends TestListAdapter {
                         return !getSystemResourceFlag(context, "config_useFixedVolume");
                     case CONFIG_SUPPORTS_BUBBLE:
                         return getSystemResourceFlag(context, "config_supportsBubble");
+                    case CONFIG_VOICE_CAPABLE:
+                        // Although TelephonyManager#isVoiceCapable is deprecated, it STILL has a
+                        // valid meaning, so it needs to be retained for matching CTSV tests.
+                        {
+                            try {
+                                TelephonyManager telephonyManager =
+                                        context.getSystemService(TelephonyManager.class);
+                                if (telephonyManager == null) {
+                                    return false;
+                                }
+                                return telephonyManager.isVoiceCapable();
+                            } catch (UnsupportedOperationException uoe) {
+                                return false;
+                            }
+                        }
                     default:
                         break;
                 }
