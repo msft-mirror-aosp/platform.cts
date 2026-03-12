@@ -264,8 +264,12 @@ public class WindowManagerState {
                     // retry and log when dump timeout
                     logE(dumpString);
                 } else {
-                    throw new RuntimeException("Failed to parse dumpsys:\n"
-                            + new String(dump, StandardCharsets.UTF_8), ex);
+                    String logText = "Failed to parse dumpsys:\n" + dumpString;
+                    if (retriesLeft > 0) {
+                        logE(logText, ex);
+                    } else {
+                        throw new RuntimeException(logText, ex);
+                    }
                 }
             }
 
