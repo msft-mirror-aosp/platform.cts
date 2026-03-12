@@ -55,18 +55,58 @@ open class PackageSchemeTestBase {
     var mPackageInstallerPackageName: String? = null
 
     class TestActivity : Activity() {
-        val mLatch: CountDownLatch = CountDownLatch(1)
-        var mResultCode = RESULT_OK
+
+        companion object {
+            private const val TAG = "TestActivity"
+            var mLatch: CountDownLatch = CountDownLatch(1)
+            var mResultCode = RESULT_OK
+        }
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
+            Log.i(TAG, "CREATED: ${javaClass.simpleName} -- TASK ID: $taskId")
 
-            val appInstallIntent: Intent? = intent.getExtra(Intent.EXTRA_INTENT) as Intent?
-            startActivityForResult(appInstallIntent, 1)
+            if (savedInstanceState == null) {
+                val appInstallIntent: Intent? = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+                startActivityForResult(appInstallIntent, 1)
+            } else {
+                Log.i(TAG, "RECREATED: ${javaClass.simpleName} -- TASK ID: $taskId")
+            }
+        }
+
+        override fun onStart() {
+            super.onStart()
+            Log.i(TAG, "STARTED: ${javaClass.simpleName} -- TASK ID: $taskId")
+        }
+
+        override fun onResume() {
+            super.onResume()
+            Log.i(TAG, "RESUMED: ${javaClass.simpleName} -- TASK ID: $taskId")
+        }
+
+        override fun onPause() {
+            super.onPause()
+            Log.i(TAG, "PAUSED: ${javaClass.simpleName} -- TASK ID: $taskId")
+        }
+
+        override fun onStop() {
+            super.onStop()
+            Log.i(TAG, "STOPPED: ${javaClass.simpleName} -- TASK ID: $taskId")
+        }
+
+        override fun onDestroy() {
+            super.onDestroy()
+            Log.i(TAG, "DESTROYED: ${javaClass.simpleName} -- TASK ID: $taskId")
+        }
+
+        override fun onNewIntent(intent: Intent?) {
+            super.onNewIntent(intent)
+            Log.i(TAG, "NEW INTENT: ${javaClass.simpleName} -- TASK ID: $taskId")
         }
 
         override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
             super.onActivityResult(requestCode, resultCode, data)
+            Log.i(TAG, "ON ACTIVITY RESULT: ${javaClass.simpleName} -- TASK ID: $taskId")
             mResultCode = resultCode
             mLatch.countDown()
         }
@@ -93,7 +133,9 @@ open class PackageSchemeTestBase {
         val intent = Intent(ApplicationProvider.getApplicationContext(), TestActivity::class.java)
         intent.putExtra(Intent.EXTRA_INTENT, getAppInstallIntent())
 
-        var latch: CountDownLatch? = null
+        TestActivity.mLatch = CountDownLatch(1)
+        TestActivity.mResultCode = Activity.RESULT_CANCELED
+
         mScenario = ActivityScenario.launch(intent)
         mScenario!!.onActivity {
             var button: UiObject2?
@@ -127,16 +169,17 @@ open class PackageSchemeTestBase {
             }
             assertWithMessage("$btnName not found").that(button).isNotNull()
             button?.click()
-            latch = it.mLatch
         }
-        latch!!.await()
-        mScenario!!.onActivity {
-            val resultCode: Int = it.mResultCode
-            if (packageHasVisibility && needTargetApp) {
-                assertThat(resultCode).isNotEqualTo(Activity.RESULT_FIRST_USER)
-            } else {
-                assertThat(resultCode).isEqualTo(Activity.RESULT_FIRST_USER)
-            }
+        val success = TestActivity.mLatch.await(
+            DEFAULT_TIMEOUT, java.util.concurrent.TimeUnit.MILLISECONDS)
+        assertWithMessage("TestActivity did not receive result within ${DEFAULT_TIMEOUT}ms")
+            .that(success).isTrue()
+
+        val resultCode: Int = TestActivity.mResultCode
+        if (packageHasVisibility && needTargetApp) {
+            assertThat(resultCode).isNotEqualTo(Activity.RESULT_FIRST_USER)
+        } else {
+            assertThat(resultCode).isEqualTo(Activity.RESULT_FIRST_USER)
         }
         mScenario!!.close()
     }
