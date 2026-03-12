@@ -34,6 +34,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.keystore.cts.util.AndroidKeyStoreTestInputs.EcInputs;
 import android.keystore.cts.util.AndroidKeyStoreTestInputs.Ed25519Inputs;
+import android.keystore.cts.util.AndroidKeyStoreTestInputs.MlDsa65Inputs;
 import android.keystore.cts.util.AndroidKeyStoreTestInputs.RsaInputs;
 import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.TestUtils;
@@ -148,18 +149,32 @@ public class AndroidKeyStoreTest {
         FAKE_CA.put("RSA", HexEncoding.decode(RsaInputs.FAKE_CA_HEX));
         FAKE_CA.put("EC", HexEncoding.decode(EcInputs.FAKE_CA_HEX));
         FAKE_CA.put("ED25519", HexEncoding.decode(Ed25519Inputs.FAKE_CA_HEX));
+        FAKE_CA.put("ML-DSA-65", HexEncoding.decode(MlDsa65Inputs.FAKE_CA_HEX));
 
         FAKE_KEY.put("RSA", HexEncoding.decode(RsaInputs.FAKE_KEY_HEX));
         FAKE_KEY.put("EC", HexEncoding.decode(EcInputs.FAKE_KEY_HEX));
         FAKE_KEY.put("ED25519", HexEncoding.decode(Ed25519Inputs.FAKE_KEY_HEX));
+        FAKE_KEY.put("ML-DSA-65", HexEncoding.decode(MlDsa65Inputs.FAKE_KEY_HEX));
 
         FAKE_USER.put("RSA", HexEncoding.decode(RsaInputs.FAKE_USER_HEX));
         FAKE_USER.put("EC", HexEncoding.decode(EcInputs.FAKE_USER_HEX));
         FAKE_USER.put("ED25519", HexEncoding.decode(Ed25519Inputs.FAKE_USER_HEX));
+        FAKE_USER.put("ML-DSA-65", HexEncoding.decode(MlDsa65Inputs.FAKE_USER_HEX));
     }
 
-    private static final String[] getAlgorithms() {
-        return new String[] {"RSA", "EC", "ED25519"};
+    // The parameters used in parameterized test names must match a regex that doesn't allow dashes.
+    // This means algorithm names like "ML-DSA-65" can't be used and we add a third parameter that's
+    // only used to generate the test name.
+    private static Object[] getAlgorithms() {
+        // In each nested array:
+        //   - First element is the string to include in the test name.
+        //   - Second element is the Java Security Standard Algorithm Name (not case sensitive)
+        return new Object[][] {
+            {"RSA", "RSA"},
+            {"EC", "EC"},
+            {"ED25519", "Ed25519"},
+            {"MLDSA65", "ML-DSA-65"},
+        };
     }
 
     /** The amount of time to allow before and after expected time for variance in timing tests. */
@@ -262,7 +277,7 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void aliases_success(String algorithm) throws Exception {
+    public void aliases_success(String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         assertAliases(new String[] {});
 
@@ -286,7 +301,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void containsAlias_privateKeyAndCA_success(String algorithm) throws Exception {
+    public void containsAlias_privateKeyAndCA_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         assertAliases(new String[] {});
 
@@ -301,7 +317,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void containsAlias_CA_success(String algorithm) throws Exception {
+    public void containsAlias_CA_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeCa(algorithm), null);
         assertTrue("Should contain added CA certificate", mKeyStore.containsAlias(getTestAlias1()));
@@ -319,7 +336,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void deleteEntry_success(String algorithm) throws Exception {
+    public void deleteEntry_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         mKeyStore.setCertificateEntry(getTestAlias2(), generateCaCertificate(algorithm));
@@ -347,7 +365,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void deleteEntry_nonExistent_success(String algorithm) throws Exception {
+    public void deleteEntry_nonExistent_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         mKeyStore.deleteEntry(getTestAlias2()); // Should not throw.
@@ -357,7 +376,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCertificate_success(String algorithm) throws Exception {
+    public void getCertificate_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertAliases(new String[] {getTestAlias1()});
@@ -387,7 +407,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCertificateAlias_CAEntry_success(String algorithm) throws Exception {
+    public void getCertificateAlias_CAEntry_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         Certificate cert = generateCaCertificate(algorithm);
         mKeyStore.setCertificateEntry(getTestAlias1(), cert);
@@ -401,7 +422,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCertificateAlias_privateKeyEntry_success(String algorithm) throws Exception {
+    public void getCertificateAlias_privateKeyEntry_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         CertificateFactory f = CertificateFactory.getInstance("X.509");
@@ -418,8 +440,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCertificateAlias_CAEntryAndPrivateKeyEntryUsingCA_success(String algorithm)
-            throws Exception {
+    public void getCertificateAlias_CAEntryAndPrivateKeyEntryUsingCA_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         Certificate actual = generateCaCertificate(algorithm);
 
@@ -439,7 +461,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCertificateAlias_emptyKeystore_returnsNull(String algorithm) throws Exception {
+    public void getCertificateAlias_emptyKeystore_returnsNull(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         CertificateFactory f = CertificateFactory.getInstance("X.509");
         Certificate actual =
@@ -453,7 +476,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCertificateAlias_nonExistent_returnsNull(String algorithm) throws Exception {
+    public void getCertificateAlias_nonExistent_returnsNull(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
 
         // Insert TrustedCertificateEntry with CA name
@@ -472,7 +496,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCertificateChain_success(String algorithm) throws Exception {
+    public void getCertificateChain_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
 
@@ -509,7 +534,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCreationDate_privateKey_success(String algorithm) throws Exception {
+    public void getCreationDate_privateKey_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
 
         // getTestAlias1()
@@ -529,7 +555,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getCreationDate_CA_success(String algorithm) throws Exception {
+    public void getCreationDate_CA_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
 
         // Insert TrustedCertificateEntry with CA name
@@ -553,7 +580,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getEntry_nullParams_success(String algorithm) throws Exception {
+    public void getEntry_nullParams_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
 
@@ -685,7 +713,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void getKey_certificate_returnsNull(String algorithm) throws Exception {
+    public void getKey_certificate_returnsNull(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertNull(
@@ -716,7 +745,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void isCertificateEntry_CA_returnsTrue(String algorithm) throws Exception {
+    public void isCertificateEntry_CA_returnsTrue(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertTrue(
@@ -728,7 +758,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void isCertificateEntry_privateKey_returnsFalse(String algorithm) throws Exception {
+    public void isCertificateEntry_privateKey_returnsFalse(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertFalse(
@@ -749,7 +780,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void isKeyEntry_privateKey_returnsTrue(String algorithm) throws Exception {
+    public void isKeyEntry_privateKey_returnsTrue(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertTrue("Should return true for PrivateKeyEntry", mKeyStore.isKeyEntry(getTestAlias1()));
@@ -759,7 +791,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void isKeyEntry_CA_returnsFalse(String algorithm) throws Exception {
+    public void isKeyEntry_CA_returnsFalse(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertFalse(
@@ -779,7 +812,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setCertificateEntry_CA_success(String algorithm) throws Exception {
+    public void setCertificateEntry_CA_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         final Certificate actual = generateCaCertificate(algorithm);
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), actual);
@@ -794,7 +828,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setCertificateEntry_overwriteCAWithCA_success(String algorithm) throws Exception {
+    public void setCertificateEntry_overwriteCAWithCA_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertAliases(new String[] {getTestAlias1()});
@@ -809,8 +844,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setCertificateEntry_overwritePrivateKeyWithCA_throwsException(String algorithm)
-            throws Exception {
+    public void setCertificateEntry_overwritePrivateKeyWithCA_throwsException(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertAliases(new String[] {getTestAlias1()});
@@ -826,7 +861,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setEntry_privateKeyEntry(String algorithm) throws Exception {
+    public void setEntry_privateKeyEntry(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         KeyFactory keyFact = KeyFactory.getInstance(algorithm);
         PrivateKey expectedKey =
@@ -861,8 +897,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setEntry_overwritePrivateKeyWithPrivateKey_success(String algorithm)
-            throws Exception {
+    public void setEntry_overwritePrivateKeyWithPrivateKey_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final KeyFactory keyFact = KeyFactory.getInstance(algorithm);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
@@ -931,7 +967,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setEntry_overwriteCAEntryWithPrivateKey_success(String algorithm) throws Exception {
+    public void setEntry_overwriteCAEntryWithPrivateKey_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
@@ -990,7 +1027,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setEntry_overwritePrivateKeyWithCA_success(String algorithm) throws Exception {
+    public void setEntry_overwritePrivateKeyWithCA_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
         final Certificate caCert =
@@ -1047,8 +1085,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setEntry_overwritePrivateKeyWithPrivateKeyWithoutChain_success(String algorithm)
-            throws Exception {
+    public void setEntry_overwritePrivateKeyWithPrivateKeyWithoutChain_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
         final Certificate caCert =
@@ -1114,7 +1152,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setEntry_overwriteCAEntryWithCAEntry_success(String algorithm) throws Exception {
+    public void setEntry_overwriteCAEntryWithCAEntry_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
@@ -1163,7 +1202,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setKeyEntry_protectedKey_throwsException(String algorithm) throws Exception {
+    public void setKeyEntry_protectedKey_throwsException(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
         final Certificate caCert =
@@ -1186,7 +1226,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setKeyEntry_success(String algorithm) throws Exception {
+    public void setKeyEntry_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
         final Certificate caCert =
@@ -1222,8 +1263,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setKeyEntry_replaceExistingEntryWithSameAlias_success(String algorithm)
-            throws Exception {
+    public void setKeyEntry_replaceExistingEntryWithSameAlias_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
         final Certificate caCert =
@@ -1286,8 +1327,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setKeyEntry_replaceKeyWithCertificateChain_success(String algorithm)
-            throws Exception {
+    public void setKeyEntry_replaceKeyWithCertificateChain_success(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
 
         // Add key to the keystore with setEntry.
@@ -1327,8 +1368,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setKeyEntry_replaceChainForDifferentPrivateKey_throwsException(String algorithm)
-            throws Exception {
+    public void setKeyEntry_replaceChainForDifferentPrivateKey_throwsException(
+            String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
 
         // Create key #1
@@ -1352,7 +1393,8 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void setEntry_replaceWithSameEntry_success(String algorithm) throws Exception {
+    public void setEntry_replaceWithSameEntry_success(String algorithmNameForTest, String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
@@ -1402,7 +1444,7 @@ public class AndroidKeyStoreTest {
     @Test
     @Parameters(method = "getAlgorithms")
     @TestCaseName(value = "{method}_{0}")
-    public void size_success(String algorithm) throws Exception {
+    public void size_success(String algorithmNameForTest, String algorithm) throws Exception {
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertEquals("The keystore size should match expected", 1, mKeyStore.size());

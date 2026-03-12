@@ -6,11 +6,11 @@
 #
 # The hex strings can be copied into test files (e.g. AndroidKeyStoreTest.java).
 
-# Usage: ./gen_test_vectors.sh [rsa|ec|ed25519]
+# Usage: ./gen_test_vectors.sh [rsa|ec|ed25519|mldsa65|mldsa87]
 ALGO=$1
 
 if [[ -z "$ALGO" ]]; then
-    echo "Usage: $0 [rsa|ec|ed25519]"
+    echo "Usage: $0 [rsa|ec|ed25519|mldsa65|mldsa87]"
     exit 1
 fi
 
@@ -35,8 +35,28 @@ case $ALGO in
     ed25519)
         KEYGEN_OPTIONS="ed25519"
         ;;
+    mldsa65)
+        KEYGEN_OPTIONS="mldsa65"
+        # Private key in seed format from RFC 9881 section C.1.2.1
+        cat <<EOF > userkey.pem
+-----BEGIN PRIVATE KEY-----
+MDQCAQAwCwYJYIZIAWUDBAMSBCKAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
+GhscHR4f
+-----END PRIVATE KEY-----
+EOF
+        ;;
+    mldsa87)
+        KEYGEN_OPTIONS="mldsa87"
+        # Private key in seed format from RFC 9881 section C.1.2.1
+        cat <<EOF > userkey.pem
+-----BEGIN PRIVATE KEY-----
+MDQCAQAwCwYJYIZIAWUDBAMTBCKAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
+GhscHR4f
+-----END PRIVATE KEY-----
+EOF
+        ;;
     *)
-        echo "Usage: $0 [rsa|ec|ed25519]"
+        echo "Usage: $0 [rsa|ec|ed25519|mldsa65|mldsa87]"
         cd "$ORIGINAL_DIR"
         rm -rf "$WORK_DIR"
         exit 1
@@ -51,9 +71,18 @@ openssl req -new -x509 -newkey $KEYGEN_OPTIONS -nodes -days 3650 \
     -keyout cakey.pem -out cacert.pem 2>/dev/null
 
 echo "Generating user key and CSR..."
-openssl req -new -newkey $KEYGEN_OPTIONS -nodes \
-    -subj "/C=US/O=Android/CN=TestUser" \
-    -keyout userkey.pem -out userkey.req 2>/dev/null
+# We can't use `openssl` to generate the ML-DSA user key since it uses the
+# expanded seed format, which Conscrypt does not support. Instead, we use the
+# private keys in seed format from RFC 9881.
+if [[ "$ALGO" == "mldsa65" || "$ALGO" == "mldsa87" ]]; then
+    openssl req -new -key userkey.pem -nodes \
+        -subj "/C=US/O=Android/CN=TestUser" \
+        -out userkey.req 2>/dev/null
+else
+    openssl req -new -newkey $KEYGEN_OPTIONS -nodes \
+        -subj "/C=US/O=Android/CN=TestUser" \
+        -keyout userkey.pem -out userkey.req 2>/dev/null
+fi
 
 echo "Signing user certificate with CA..."
 # -batch
@@ -66,9 +95,19 @@ openssl ca -batch -policy policy_anything -out usercert.pem \
     -notext 2>/dev/null
 
 echo "Exporting to DER format..."
+
 openssl x509 -in cacert.pem -outform der -out cacert.der
+
+# Again, we can't use `openssl` for ML-DSA since it uses the expanded seed
+# format, which Conscrypt does not support.
+if [[ "$ALGO" == "mldsa65" || "$ALGO" == "mldsa87" ]]; then
+    der2ascii -pem < userkey.pem > userkey_schema.txt
+    ascii2der < userkey_schema.txt > userkey.der
+else
 openssl pkcs8 -topk8 -inform pem -outform der -in userkey.pem -nocrypt \
     -out userkey.der
+fi
+
 openssl x509 -in usercert.pem -outform der -out usercert.der
 
 echo "##### CA certificate hex string #####"
