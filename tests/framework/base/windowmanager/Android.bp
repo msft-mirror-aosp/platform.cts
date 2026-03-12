@@ -113,6 +113,8 @@ java_defaults {
         ":CtsPropertyCompatAllowDisplayOrientationOverrideApp",
         ":CtsPropertyCompatAllowMinAspectRatioOverrideOptInApp",
         ":CtsPropertyCompatAllowMinAspectRatioOverrideOptOutApp",
+        ":CtsPropertyCompatAllowVirtualGamepadOverrideOptInApp",
+        ":CtsPropertyCompatAllowVirtualGamepadOverrideOptOutApp",
         ":CtsPropertyCompatAllowIgnoringOrientationRequestWhenLoopDetectedOptInApp",
         ":CtsPropertyCompatAllowIgnoringOrientationRequestWhenLoopDetectedOptOutApp",
         ":CtsPropertyCompatAllowIgnoringOrientationRequestWhenLoopDetectedUnsetApp",
