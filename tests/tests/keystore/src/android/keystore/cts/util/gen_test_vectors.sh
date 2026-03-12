@@ -6,11 +6,11 @@
 #
 # The hex strings can be copied into test files (e.g. AndroidKeyStoreTest.java).
 
-# Usage: ./gen_test_vectors.sh [rsa|ec]
+# Usage: ./gen_test_vectors.sh [rsa|ec|ed25519]
 ALGO=$1
 
 if [[ -z "$ALGO" ]]; then
-    echo "Usage: $0 [rsa|ec]"
+    echo "Usage: $0 [rsa|ec|ed25519]"
     exit 1
 fi
 
@@ -32,8 +32,11 @@ case $ALGO in
         openssl ecparam -name prime256v1 -out ecparam.pem
         KEYGEN_OPTIONS="ec:ecparam.pem"
         ;;
+    ed25519)
+        KEYGEN_OPTIONS="ed25519"
+        ;;
     *)
-        echo "Usage: $0 [rsa|ec]"
+        echo "Usage: $0 [rsa|ec|ed25519]"
         cd "$ORIGINAL_DIR"
         rm -rf "$WORK_DIR"
         exit 1

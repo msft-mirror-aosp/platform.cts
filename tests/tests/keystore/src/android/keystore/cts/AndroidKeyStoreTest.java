@@ -253,6 +253,44 @@ public class AndroidKeyStoreTest {
             2f0c96b2edcf107732a31233f50ac40303c0f3da96cc320221009b5e14e8\
             5ce67cd0cda272e984bad78e56f63da6247571c3d5b92fb5167570bc\
             """;
+    private static final String FAKE_ED25519_CA_HEX =
+            """
+            3082018730820139a003020102021458a60f1a378e266c446f3fbd0aa5eb\
+            319b7c9bdc300506032b65703039310b3009060355040613025553311030\
+            0e060355040a0c07416e64726f69643118301606035504030c0f54657374\
+            2045643235353139204341301e170d3236303331313136313833365a170d\
+            3336303330383136313833365a3039310b30090603550406130255533110\
+            300e060355040a0c07416e64726f69643118301606035504030c0f546573\
+            742045643235353139204341302a300506032b6570032100baa3f0d1869c\
+            5915d12a3ac52054cb58b1f6f8dde0bf7ed5a1860ebe37c11595a3533051\
+            301d0603551d0e041604143f4ea8efc75265ec15566d0a6488e6c123225c\
+            63301f0603551d230418301680143f4ea8efc75265ec15566d0a6488e6c1\
+            23225c63300f0603551d130101ff040530030101ff300506032b65700341\
+            0027221eed6ef2ae0be11c05bac4cb7d3bde9c1a984d58616c59aecc81c9\
+            6eeac493c2d920fefef918825c17e46d8bd2146e6f4a13a5a51454a4bc08\
+            5484e4460f\
+            """;
+    private static final String FAKE_ED25519_KEY_HEX =
+            """
+            302e020100300506032b6570042204209bfb5b5d40741c4e86d8cd4c758f\
+            0c022c6b4f9b7464cd928c8e200074698ecf\
+            """;
+    private static final String FAKE_ED25519_USER_HEX =
+            """
+            3082017030820122a003020102020101300506032b65703039310b300906\
+            03550406130255533110300e060355040a0c07416e64726f696431183016\
+            06035504030c0f546573742045643235353139204341301e170d32363033\
+            31313136323131335a170d3336303330383136323131335a303b310b3009\
+            0603550406130255533110300e060355040a0c07416e64726f6964311a30\
+            1806035504030c115465737420456432353531392055736572302a300506\
+            032b6570032100112e00af5a26376efb2a6e79daff8d08fe4f82ea1876a1\
+            241c2aec9e941e4240a34d304b30090603551d1304023000301d0603551d\
+            0e041604145eaa555fb20bde8f7b7f52d9b47689779a883f2d301f060355\
+            1d230418301680143f4ea8efc75265ec15566d0a6488e6c123225c633005\
+            06032b6570034100016aad99d99b170ef3e8c8ffefe2902582feb378eb62\
+            9e4205bd352cf036555ac80e9887a687ee9d71007c1650aa70ccf7a75420\
+            87ab21de86ed0aa74ae91604\
+            """;
 
     private static final Map<String, byte[]> FAKE_CA = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private static final Map<String, byte[]> FAKE_KEY =
@@ -263,16 +301,19 @@ public class AndroidKeyStoreTest {
     static {
         FAKE_CA.put("RSA", HexEncoding.decode(FAKE_RSA_CA_HEX));
         FAKE_CA.put("EC", HexEncoding.decode(FAKE_EC_CA_HEX));
+        FAKE_CA.put("ED25519", HexEncoding.decode(FAKE_ED25519_CA_HEX));
 
         FAKE_KEY.put("RSA", HexEncoding.decode(FAKE_RSA_KEY_HEX));
         FAKE_KEY.put("EC", HexEncoding.decode(FAKE_EC_KEY_HEX));
+        FAKE_KEY.put("ED25519", HexEncoding.decode(FAKE_ED25519_KEY_HEX));
 
         FAKE_USER.put("RSA", HexEncoding.decode(FAKE_RSA_USER_HEX));
         FAKE_USER.put("EC", HexEncoding.decode(FAKE_EC_USER_HEX));
+        FAKE_USER.put("ED25519", HexEncoding.decode(FAKE_ED25519_USER_HEX));
     }
 
     private static final String[] getAlgorithms() {
-        return new String[] {"RSA", "EC"};
+        return new String[] {"RSA", "EC", "ED25519"};
     }
 
     /** The amount of time to allow before and after expected time for variance in timing tests. */
