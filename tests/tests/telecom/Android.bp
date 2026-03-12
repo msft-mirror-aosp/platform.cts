@@ -171,41 +171,6 @@ android_library {
     min_sdk_version: "24",
 }
 
-android_test {
-    name: "CtsTelecomTestCases",
-    defaults: ["cts_defaults"],
-    static_libs: [
-        "CtsTelecomTestLib",
-    ],
-    sdk_version: "test_current",
-    min_sdk_version: "24",
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    data: [
-        ":NonUiInCallServiceWoExport",
-        ":ThirdPtyInCallServiceTestApp",
-        ":CarModeTestAppTwo",
-        ":SelfManagedCSTestAppOne",
-        ":Api29InCallServiceTestApp",
-        ":CallRedirectionServiceTestApp",
-        ":CallRedirectionServiceTestApp2",
-        ":ThirdPtyDialerTestAppTwo",
-        ":ThirdPtyDialerTestApp",
-        ":CarModeTestApp",
-        ":CarModeTestAppSelfManaged",
-        ":CallScreeningServiceTestApp",
-        ":CallStreamingServiceTestApp",
-        ":ThirdPartyCallIntentTestApp",
-    ],
-    per_testcase_directory: true,
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
-}
-
 java_library {
     name: "CtsTelecomMockLib",
     srcs: [
@@ -251,11 +216,4 @@ java_library {
         "//cts/tests/tests/telephony:__subpackages__",
         "//packages/modules/Telephony:__subpackages__",
     ],
-}
-
-test_module_config {
-    name: "CtsTelecomTestCases_PlatinumTest",
-    base: "CtsTelecomTestCases",
-    test_suites: ["general-tests"],
-    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
 }
