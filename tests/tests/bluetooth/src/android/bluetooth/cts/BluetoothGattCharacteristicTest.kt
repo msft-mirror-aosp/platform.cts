@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,64 +14,57 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static com.google.common.truth.Truth.assertThat;
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattService
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.CddTest
+import com.google.common.truth.Truth.assertThat
+import java.util.UUID
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
+@RunWith(AndroidJUnit4::class)
+class BluetoothGattCharacteristicTest {
+    private val TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb")
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.compatibility.common.util.CddTest;
-
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.UUID;
-
-@RunWith(AndroidJUnit4.class)
-public class BluetoothGattCharacteristicTest {
-    private final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
-    private BluetoothGattCharacteristic mBluetoothGattCharacteristic;
+    private lateinit var bluetoothGattCharacteristic: BluetoothGattCharacteristic
 
     @Before
-    public void setUp() throws Exception {
-        Assume.assumeTrue(
-                TestUtils.isBleSupported(
-                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
-
-        mBluetoothGattCharacteristic = new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
+    fun setUp() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        Assume.assumeTrue(TestUtils.isBleSupported(context))
+        bluetoothGattCharacteristic = BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @CddTest(requirements = ["7.4.3/C-2-1", "7.4.3/C-3-2"])
     @Test
-    public void getInstanceId() {
-        assertThat(mBluetoothGattCharacteristic.getInstanceId()).isEqualTo(0);
+    fun getInstanceId() {
+        assertThat(bluetoothGattCharacteristic.instanceId).isEqualTo(0)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @CddTest(requirements = ["7.4.3/C-2-1", "7.4.3/C-3-2"])
     @Test
-    public void getService() {
+    fun getService() {
         // Service is null after initialization with public constructor
-        assertThat(mBluetoothGattCharacteristic.getService()).isNull();
-        BluetoothGattService service =
-                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        assertThat(bluetoothGattCharacteristic.service).isNull()
+        val service = BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
 
-        service.addCharacteristic(mBluetoothGattCharacteristic);
+        service.addCharacteristic(bluetoothGattCharacteristic)
 
-        assertThat(mBluetoothGattCharacteristic.getService()).isEqualTo(service);
+        assertThat(bluetoothGattCharacteristic.service).isEqualTo(service)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @CddTest(requirements = ["7.4.3/C-2-1", "7.4.3/C-3-2"])
     @Test
-    public void setWriteType() {
-        mBluetoothGattCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_SIGNED);
+    fun setWriteType() {
+        bluetoothGattCharacteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_SIGNED
 
-        assertThat(mBluetoothGattCharacteristic.getWriteType())
-                .isEqualTo(BluetoothGattCharacteristic.WRITE_TYPE_SIGNED);
+        assertThat(bluetoothGattCharacteristic.writeType)
+            .isEqualTo(BluetoothGattCharacteristic.WRITE_TYPE_SIGNED)
     }
 }
