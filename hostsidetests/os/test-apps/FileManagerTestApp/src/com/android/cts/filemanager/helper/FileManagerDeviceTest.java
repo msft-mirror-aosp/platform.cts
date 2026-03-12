@@ -28,7 +28,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.ResultReceiver;
 import android.os.storage.FileManager;
 import android.os.storage.operations.FileOperationEnqueueResult;
 import android.os.storage.operations.FileOperationRequest;
@@ -48,6 +50,13 @@ import java.io.FileOutputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Device-side helper for {@code FileManagerHostTest}.
+ *
+ * <p>This test app triggers file operations via {@link android.os.storage.FileManager} and then
+ * binds to a {@link PccTestService} running in an isolated PCC process to verify that the
+ * operations were successful.
+ */
 @RunWith(AndroidJUnit4.class)
 public class FileManagerDeviceTest {
     private static final String TAG = "FileManagerDeviceTest";
@@ -386,18 +395,27 @@ public class FileManagerDeviceTest {
 
     private void sendActionToPcc(String action, Bundle data) throws Exception {
         CountDownLatch pccLatch = new CountDownLatch(1);
+        final int[] pccResult = new int[] {-1};
+
+        ResultReceiver receiver =
+                new ResultReceiver(new Handler(android.os.Looper.getMainLooper())) {
+                    @Override
+                    protected void onReceiveResult(int resultCode, Bundle resultData) {
+                        pccResult[0] = resultCode;
+                        pccLatch.countDown();
+                    }
+                };
+
         Intent bindIntent = new Intent(mContext, PccTestService.class);
         data.putString("action", action);
+        data.putParcelable("result_receiver", receiver);
+
         ServiceConnection connection =
                 new ServiceConnection() {
                     @Override
                     public void onServiceConnected(ComponentName name, IBinder service) {
                         PccClient client = PccClient.createInstance(mContext, service);
-                        try {
-                            client.sendData(data);
-                        } finally {
-                            pccLatch.countDown();
-                        }
+                        client.sendData(data);
                     }
 
                     @Override
@@ -405,9 +423,15 @@ public class FileManagerDeviceTest {
                 };
 
         mContext.bindService(bindIntent, connection, Context.BIND_AUTO_CREATE);
-        if (!pccLatch.await(5, TimeUnit.SECONDS)) {
-            fail("Failed to connect to PCC service for action: " + action);
+        if (!pccLatch.await(10, TimeUnit.SECONDS)) {
+            mContext.unbindService(connection);
+            fail(
+                    "Failed to receive response from PCC service for action: "
+                            + action
+                            + " within timeout");
         }
         mContext.unbindService(connection);
+        assertEquals(
+                "PCC action " + action + " failed", PccTestService.RESULT_SUCCESS, pccResult[0]);
     }
 }
