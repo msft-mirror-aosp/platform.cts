@@ -411,8 +411,12 @@ object BedsteadAnnotationGenerator {
      * @return cartesian product of the annotation sets
      */
     private fun Collection<List<Annotation>>.cartesianProduct(): List<List<Annotation>> {
-        return fold(listOf(emptyList())) { acc, set ->
-            acc.flatMap { combination -> set.map { element -> combination + element } }
+        return if (isEmpty()) {
+            emptyList()
+        } else {
+            fold(listOf(emptyList())) { acc, set ->
+                acc.flatMap { combination -> set.map { element -> combination + element } }
+            }
         }
     }
 
