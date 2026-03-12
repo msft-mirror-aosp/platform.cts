@@ -163,13 +163,7 @@ public abstract class BuilderBase {
      * setChannelCount() method. 0 if using positional channel-masks.
      */
     public int getChannelCount() {
-        if (mChannelCount != 0) {
-            return mChannelCount;
-        } else if (mChannelIndexMask != 0) {
-            return Integer.bitCount(mChannelIndexMask);
-        } else {
-            return Integer.bitCount(mChannelMask);
-        }
+        return mChannelCount;
     }
 
     /**
