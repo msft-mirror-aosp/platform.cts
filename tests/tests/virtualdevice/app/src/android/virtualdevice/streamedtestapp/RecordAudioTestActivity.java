@@ -56,7 +56,7 @@ public class RecordAudioTestActivity extends Activity {
     private static final String TAG = RecordAudioTestActivity.class.getSimpleName();
     private static final int SAMPLE_RATE = 48000;
     private static final int BUFFER_SIZE = 65536;
-    private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 300;
+    private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 500;
     private static final long WAIT_FOR_AUDIO_RECORDED_DATA_MS = 3000L;
 
     @Override

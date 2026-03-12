@@ -26,6 +26,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.interactive.Step
@@ -43,6 +44,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@RequireNotAutomotive(reason = "Power menu is not supported on automotive devices")
 class ShowPowerMenuInteractiveTest {
 
     companion object {

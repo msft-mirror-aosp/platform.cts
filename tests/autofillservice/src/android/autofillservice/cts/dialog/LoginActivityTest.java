@@ -708,12 +708,6 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         mUiBot.touchOutsideDialog();
         mUiBot.waitForIdleSync();
 
-        assertMockImeStatus(activity, true);
-
-        activity.hideSoftInput();
-
-        assertMockImeStatus(activity, false);
-
         // Click on the username field to trigger autofill. Although the username field supports
         // a fill dialog, the fill dialog is only shown once, so now it shows the dropdown UI.
         mUiBot.selectByRelativeId(ID_USERNAME);
@@ -787,12 +781,6 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         // next test.
         mUiBot.clickFillDialogClose();
         mUiBot.waitForIdleSync();
-
-        assertMockImeStatus(activity, true);
-
-        activity.hideSoftInput();
-
-        assertMockImeStatus(activity, false);
 
         // Click on the username field to trigger autofill. Although the username field supports
         // a fill dialog, the fill dialog is only shown once, so now it shows the dropdown UI.

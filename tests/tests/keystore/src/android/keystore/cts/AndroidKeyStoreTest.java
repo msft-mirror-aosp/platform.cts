@@ -42,11 +42,14 @@ import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.nene.annotations.Nullable;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
@@ -86,7 +89,9 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.crypto.BadPaddingException;
@@ -97,7 +102,7 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.security.auth.x500.X500Principal;
 
-@RunWith(AndroidJUnit4.class)
+@RunWith(JUnitParamsRunner.class)
 public class AndroidKeyStoreTest {
     private static final String TAG = AndroidKeyStoreTest.class.getSimpleName();
 
@@ -131,641 +136,185 @@ public class AndroidKeyStoreTest {
     private Duration mMaxImportDuration;
 
     /*
-     * The keys and certificates below are generated with:
-     *
-     * openssl req -new -x509 -days 3650 -extensions v3_ca -keyout cakey.pem -out cacert.pem
-     * openssl req -newkey rsa:1024 -keyout userkey.pem -nodes -days 3650 -out userkey.req
-     * mkdir -p demoCA/newcerts
-     * touch demoCA/index.txt
-     * echo "01" > demoCA/serial
-     * openssl ca -out usercert.pem -in userkey.req -cert cacert.pem -keyfile cakey.pem -days 3650
+     * The hex strings hard-coded in the variables below were produced by running
+     * cts/tests/tests/keystore/src/android/keystore/cts/util/gen_test_vectors.sh for each
+     * algorithm.
      */
+    private static final String FAKE_RSA_CA_HEX =
+            """
+            3082023c308201a5a00302010202145e55e9246709bfd2cb3e91b571baad\
+            b5e3061305300d06092a864886f70d01010b05003030310b300906035504\
+            06130255533110300e060355040a0c07416e64726f6964310f300d060355\
+            04030c06546573744341301e170d3236303331323133343931335a170d33\
+            36303330393133343931335a3030310b3009060355040613025553311030\
+            0e060355040a0c07416e64726f6964310f300d06035504030c0654657374\
+            434130819f300d06092a864886f70d010101050003818d00308189028181\
+            00abf7f35c863037940b5532cc88d6da6065e861c6509d4ddf9ffcdee4a0\
+            1f40edba3361b894584e7797f16fb4a0904fef2cadb7f624b75a32f1a218\
+            902cec6df98f830d575192d07d6d33cda6f3729d68e66a8f1d416fee340b\
+            d058660af9798c3bf8c4704656bbab04706589433330df373a2edc3a0c08\
+            64e19a2df6029094fd0203010001a3533051301d0603551d0e041604148d\
+            39f4cad33ed2bae982d1b8f95a2bdfe99d4aba301f0603551d2304183016\
+            80148d39f4cad33ed2bae982d1b8f95a2bdfe99d4aba300f0603551d1301\
+            01ff040530030101ff300d06092a864886f70d01010b05000381810091b2\
+            eedb5ec49e596a03c8b37634bba7a4bf601edb9b7ec7954a241ae3e0e1eb\
+            8f2cfe50512f0f3acdeb2b063a83eadb5f9bd79e6ff0069ce155c2c989e6\
+            efcc66787dc7a2917653efd061bb210dbc21991fc98e68fb0c6c41b65ead\
+            fd80c6445630a7f648eb862491cbdf10e964838af7ea0352b622a5b053b2\
+            9b1af1b9c7f9\
+            """;
+    private static final String FAKE_RSA_KEY_HEX =
+            """
+            30820277020100300d06092a864886f70d0101010500048202613082025d\
+            02010002818100bb2299314ead143a05ede7b6da4087c2b1e99349350130\
+            73d84538fb5b2f58d50541fd564386856b086f89c572165aa55872ea6f96\
+            18588a1bb6d56bf2f490cb78396bc9ff14119875db9a646aee14144f65e0\
+            d19fea6efbc7a248d2a0a82d7cad886b6b18a8a8fbf8a81d3d956f7d6385\
+            7a6fca312a185da756f0690199d4e9020301000102818100b0071091080f\
+            d8d9e79fecf9dc7d1cf73041a5b11431e530e33be228d69247fe412edcad\
+            db60db795dfb055e7c3db8d095cdaae6820aaea663016dea58246359d4eb\
+            6c9db3ac676f39fceb6bcfae701a1a0bf1620fa8976fb09871456c7fc289\
+            12d09efdade3799997035078038701fa3a34f47eb35ff93455b2339b3d37\
+            6701024100ec27b7f4e52e588d8d736d479021c90e1cccb427a3f0eae798\
+            74b3becb784fb8585a45eb292e54229e6e64f6688ba2cd737f9de518154e\
+            c3cef4808eb1edf621024100cadc569ef62693204587b39e76a26b1b04bf\
+            9b0f07fa336314b22614c6c06336beecde029bb37db1c990317295524acb\
+            708d52c97ee4c9d94d7ded275e76f5c902406639773ef22a12b90b9f0891\
+            eec9412ff3b584d297fbc4a385f21690a3a12bd91f9dcc20548e326b5deb\
+            6996e4807573bbe8651ff341ddfb92cd720cd2e6b0210241009a248ed53e\
+            e8d4c6a2ce98578281abacde10d1bbbc2e0bb9efd1e649c7340caf5ea811\
+            921dc9676b1e63a88f0e93772dda9a281bdf85ed326745965c61d536b102\
+            401ea478353021479d3dcb309317996bdf7e760e59e09c585566c30edc13\
+            129bb27950fe873c13ae88947e8ed2858a5cc0ef23ad6f58309948d01419\
+            406f3711ac\
+            """;
+    private static final String FAKE_RSA_USER_HEX =
+            """
+            308202253082018ea003020102020101300d06092a864886f70d01010b05\
+            003030310b30090603550406130255533110300e060355040a0c07416e64\
+            726f6964310f300d06035504030c06546573744341301e170d3236303331\
+            323133343931335a170d3336303330393133343931335a3032310b300906\
+            03550406130255533110300e060355040a0c07416e64726f69643111300f\
+            06035504030c08546573745573657230819f300d06092a864886f70d0101\
+            01050003818d0030818902818100bb2299314ead143a05ede7b6da4087c2\
+            b1e9934935013073d84538fb5b2f58d50541fd564386856b086f89c57216\
+            5aa55872ea6f9618588a1bb6d56bf2f490cb78396bc9ff14119875db9a64\
+            6aee14144f65e0d19fea6efbc7a248d2a0a82d7cad886b6b18a8a8fbf8a8\
+            1d3d956f7d63857a6fca312a185da756f0690199d4e90203010001a34d30\
+            4b30090603551d1304023000301d0603551d0e04160414cc888b5689c067\
+            8d298ef679587ff3b44a841891301f0603551d230418301680148d39f4ca\
+            d33ed2bae982d1b8f95a2bdfe99d4aba300d06092a864886f70d01010b05\
+            00038181009deb311d57ab531033bf6afb571ba9bfb0d965102d81ed09a7\
+            af5294c8b57a14aabf5de57ad5007d4424b9e585c7c4791d2580b629c6ec\
+            fc99d7eff27d05a82f1d481280d10977ab35df779ae9a773261716c0786d\
+            b6d39749a08940d96b4aa6742c69a7321187d7fe769990233d266456fb56\
+            187b41fa0d900f2c5af744d374\
+            """;
+    private static final String FAKE_EC_CA_HEX =
+            """
+            308201b53082015ba003020102021453ff41839c9c33b832d802ee91d0f3\
+            84c24acebb300a06082a8648ce3d0403023030310b300906035504061302\
+            55533110300e060355040a0c07416e64726f6964310f300d06035504030c\
+            06546573744341301e170d3236303331323133353032365a170d33363033\
+            30393133353032365a3030310b30090603550406130255533110300e0603\
+            55040a0c07416e64726f6964310f300d06035504030c0654657374434130\
+            59301306072a8648ce3d020106082a8648ce3d0301070342000437cc6c89\
+            386ba583092503e40941578bd8c8825ba1727a5ce35f83aba00d54e2a12d\
+            41c74c5c0837d76c81d2eb9623a247d00c51d353da9717b87055d89a72cf\
+            a3533051301d0603551d0e041604146c20de7ab265402052d713666438c9\
+            e6b2172e5b301f0603551d230418301680146c20de7ab265402052d71366\
+            6438c9e6b2172e5b300f0603551d130101ff040530030101ff300a06082a\
+            8648ce3d0403020348003045022062dc11d6a1b44d08ddb212714be79baa\
+            c666beeb7f9d5ec5b5281f24ee0aec83022100a42d3c0154767e82fc5474\
+            2db3bcb91fa8ea4d3ac56bf5bdfab685529d3cecb1\
+            """;
+    private static final String FAKE_EC_KEY_HEX =
+            """
+            308187020100301306072a8648ce3d020106082a8648ce3d030107046d30\
+            6b0201010420fae83f2590415251c0c4dcadcdb662ee460dfd7374e18daa\
+            328cbc1b173fafffa14403420004dc197e9f5ba267809d4e36aeea12abf1\
+            57fe6325081ad95b2731609003ab1cbca6a814969e2d4aaba98e9b36938e\
+            5a43da0f38538ccb139b5d1941f29c658c8a\
+            """;
+    private static final String FAKE_EC_USER_HEX =
+            """
+            3082019e30820144a003020102020101300a06082a8648ce3d0403023030\
+            310b30090603550406130255533110300e060355040a0c07416e64726f69\
+            64310f300d06035504030c06546573744341301e170d3236303331323133\
+            353032365a170d3336303330393133353032365a3032310b300906035504\
+            06130255533110300e060355040a0c07416e64726f69643111300f060355\
+            04030c0854657374557365723059301306072a8648ce3d020106082a8648\
+            ce3d03010703420004dc197e9f5ba267809d4e36aeea12abf157fe632508\
+            1ad95b2731609003ab1cbca6a814969e2d4aaba98e9b36938e5a43da0f38\
+            538ccb139b5d1941f29c658c8aa34d304b30090603551d1304023000301d\
+            0603551d0e04160414d6d87228d0aee58eebc784f71ddb8421655636a430\
+            1f0603551d230418301680146c20de7ab265402052d713666438c9e6b217\
+            2e5b300a06082a8648ce3d040302034800304502205ef868d3026076a75f\
+            2f0c96b2edcf107732a31233f50ac40303c0f3da96cc320221009b5e14e8\
+            5ce67cd0cda272e984bad78e56f63da6247571c3d5b92fb5167570bc\
+            """;
+    private static final String FAKE_ED25519_CA_HEX =
+            """
+            3082018730820139a003020102021458a60f1a378e266c446f3fbd0aa5eb\
+            319b7c9bdc300506032b65703039310b3009060355040613025553311030\
+            0e060355040a0c07416e64726f69643118301606035504030c0f54657374\
+            2045643235353139204341301e170d3236303331313136313833365a170d\
+            3336303330383136313833365a3039310b30090603550406130255533110\
+            300e060355040a0c07416e64726f69643118301606035504030c0f546573\
+            742045643235353139204341302a300506032b6570032100baa3f0d1869c\
+            5915d12a3ac52054cb58b1f6f8dde0bf7ed5a1860ebe37c11595a3533051\
+            301d0603551d0e041604143f4ea8efc75265ec15566d0a6488e6c123225c\
+            63301f0603551d230418301680143f4ea8efc75265ec15566d0a6488e6c1\
+            23225c63300f0603551d130101ff040530030101ff300506032b65700341\
+            0027221eed6ef2ae0be11c05bac4cb7d3bde9c1a984d58616c59aecc81c9\
+            6eeac493c2d920fefef918825c17e46d8bd2146e6f4a13a5a51454a4bc08\
+            5484e4460f\
+            """;
+    private static final String FAKE_ED25519_KEY_HEX =
+            """
+            302e020100300506032b6570042204209bfb5b5d40741c4e86d8cd4c758f\
+            0c022c6b4f9b7464cd928c8e200074698ecf\
+            """;
+    private static final String FAKE_ED25519_USER_HEX =
+            """
+            3082017030820122a003020102020101300506032b65703039310b300906\
+            03550406130255533110300e060355040a0c07416e64726f696431183016\
+            06035504030c0f546573742045643235353139204341301e170d32363033\
+            31313136323131335a170d3336303330383136323131335a303b310b3009\
+            0603550406130255533110300e060355040a0c07416e64726f6964311a30\
+            1806035504030c115465737420456432353531392055736572302a300506\
+            032b6570032100112e00af5a26376efb2a6e79daff8d08fe4f82ea1876a1\
+            241c2aec9e941e4240a34d304b30090603551d1304023000301d0603551d\
+            0e041604145eaa555fb20bde8f7b7f52d9b47689779a883f2d301f060355\
+            1d230418301680143f4ea8efc75265ec15566d0a6488e6c123225c633005\
+            06032b6570034100016aad99d99b170ef3e8c8ffefe2902582feb378eb62\
+            9e4205bd352cf036555ac80e9887a687ee9d71007c1650aa70ccf7a75420\
+            87ab21de86ed0aa74ae91604\
+            """;
 
-    /**
-     * Generated from above and converted with:
-     *
-     * <p>openssl x509 -outform d -in cacert.pem | xxd -i | sed 's/0x/(byte) 0x/g'
-     */
-    private static final byte[] FAKE_RSA_CA_1 = {
-        (byte) 0x30, (byte) 0x82, (byte) 0x02, (byte) 0xce, (byte) 0x30, (byte) 0x82,
-        (byte) 0x02, (byte) 0x37, (byte) 0xa0, (byte) 0x03, (byte) 0x02, (byte) 0x01,
-        (byte) 0x02, (byte) 0x02, (byte) 0x09, (byte) 0x00, (byte) 0xe1, (byte) 0x6a,
-        (byte) 0xa2, (byte) 0xf4, (byte) 0x2e, (byte) 0x55, (byte) 0x48, (byte) 0x0a,
-        (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86,
-        (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01,
-        (byte) 0x05, (byte) 0x05, (byte) 0x00, (byte) 0x30, (byte) 0x4f, (byte) 0x31,
-        (byte) 0x0b, (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-        (byte) 0x04, (byte) 0x06, (byte) 0x13, (byte) 0x02, (byte) 0x55, (byte) 0x53,
-        (byte) 0x31, (byte) 0x0b, (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03,
-        (byte) 0x55, (byte) 0x04, (byte) 0x08, (byte) 0x13, (byte) 0x02, (byte) 0x43,
-        (byte) 0x41, (byte) 0x31, (byte) 0x16, (byte) 0x30, (byte) 0x14, (byte) 0x06,
-        (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x07, (byte) 0x13, (byte) 0x0d,
-        (byte) 0x4d, (byte) 0x6f, (byte) 0x75, (byte) 0x6e, (byte) 0x74, (byte) 0x61,
-        (byte) 0x69, (byte) 0x6e, (byte) 0x20, (byte) 0x56, (byte) 0x69, (byte) 0x65,
-        (byte) 0x77, (byte) 0x31, (byte) 0x1b, (byte) 0x30, (byte) 0x19, (byte) 0x06,
-        (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x0a, (byte) 0x13, (byte) 0x12,
-        (byte) 0x41, (byte) 0x6e, (byte) 0x64, (byte) 0x72, (byte) 0x6f, (byte) 0x69,
-        (byte) 0x64, (byte) 0x20, (byte) 0x54, (byte) 0x65, (byte) 0x73, (byte) 0x74,
-        (byte) 0x20, (byte) 0x43, (byte) 0x61, (byte) 0x73, (byte) 0x65, (byte) 0x73,
-        (byte) 0x30, (byte) 0x1e, (byte) 0x17, (byte) 0x0d, (byte) 0x31, (byte) 0x32,
-        (byte) 0x30, (byte) 0x38, (byte) 0x31, (byte) 0x34, (byte) 0x31, (byte) 0x36,
-        (byte) 0x35, (byte) 0x35, (byte) 0x34, (byte) 0x34, (byte) 0x5a, (byte) 0x17,
-        (byte) 0x0d, (byte) 0x32, (byte) 0x32, (byte) 0x30, (byte) 0x38, (byte) 0x31,
-        (byte) 0x32, (byte) 0x31, (byte) 0x36, (byte) 0x35, (byte) 0x35, (byte) 0x34,
-        (byte) 0x34, (byte) 0x5a, (byte) 0x30, (byte) 0x4f, (byte) 0x31, (byte) 0x0b,
-        (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04,
-        (byte) 0x06, (byte) 0x13, (byte) 0x02, (byte) 0x55, (byte) 0x53, (byte) 0x31,
-        (byte) 0x0b, (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-        (byte) 0x04, (byte) 0x08, (byte) 0x13, (byte) 0x02, (byte) 0x43, (byte) 0x41,
-        (byte) 0x31, (byte) 0x16, (byte) 0x30, (byte) 0x14, (byte) 0x06, (byte) 0x03,
-        (byte) 0x55, (byte) 0x04, (byte) 0x07, (byte) 0x13, (byte) 0x0d, (byte) 0x4d,
-        (byte) 0x6f, (byte) 0x75, (byte) 0x6e, (byte) 0x74, (byte) 0x61, (byte) 0x69,
-        (byte) 0x6e, (byte) 0x20, (byte) 0x56, (byte) 0x69, (byte) 0x65, (byte) 0x77,
-        (byte) 0x31, (byte) 0x1b, (byte) 0x30, (byte) 0x19, (byte) 0x06, (byte) 0x03,
-        (byte) 0x55, (byte) 0x04, (byte) 0x0a, (byte) 0x13, (byte) 0x12, (byte) 0x41,
-        (byte) 0x6e, (byte) 0x64, (byte) 0x72, (byte) 0x6f, (byte) 0x69, (byte) 0x64,
-        (byte) 0x20, (byte) 0x54, (byte) 0x65, (byte) 0x73, (byte) 0x74, (byte) 0x20,
-        (byte) 0x43, (byte) 0x61, (byte) 0x73, (byte) 0x65, (byte) 0x73, (byte) 0x30,
-        (byte) 0x81, (byte) 0x9f, (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09,
-        (byte) 0x2a, (byte) 0x86, (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d,
-        (byte) 0x01, (byte) 0x01, (byte) 0x01, (byte) 0x05, (byte) 0x00, (byte) 0x03,
-        (byte) 0x81, (byte) 0x8d, (byte) 0x00, (byte) 0x30, (byte) 0x81, (byte) 0x89,
-        (byte) 0x02, (byte) 0x81, (byte) 0x81, (byte) 0x00, (byte) 0xa3, (byte) 0x72,
-        (byte) 0xab, (byte) 0xd0, (byte) 0xe4, (byte) 0xad, (byte) 0x2f, (byte) 0xe7,
-        (byte) 0xe2, (byte) 0x79, (byte) 0x07, (byte) 0x36, (byte) 0x3d, (byte) 0x0c,
-        (byte) 0x8d, (byte) 0x42, (byte) 0x9a, (byte) 0x0a, (byte) 0x33, (byte) 0x64,
-        (byte) 0xb3, (byte) 0xcd, (byte) 0xb2, (byte) 0xd7, (byte) 0x3a, (byte) 0x42,
-        (byte) 0x06, (byte) 0x77, (byte) 0x45, (byte) 0x29, (byte) 0xe9, (byte) 0xcb,
-        (byte) 0xb7, (byte) 0x4a, (byte) 0xd6, (byte) 0xee, (byte) 0xad, (byte) 0x01,
-        (byte) 0x91, (byte) 0x9b, (byte) 0x0c, (byte) 0x59, (byte) 0xa1, (byte) 0x03,
-        (byte) 0xfa, (byte) 0xf0, (byte) 0x5a, (byte) 0x7c, (byte) 0x4f, (byte) 0xf7,
-        (byte) 0x8d, (byte) 0x36, (byte) 0x0f, (byte) 0x1f, (byte) 0x45, (byte) 0x7d,
-        (byte) 0x1b, (byte) 0x31, (byte) 0xa1, (byte) 0x35, (byte) 0x0b, (byte) 0x00,
-        (byte) 0xed, (byte) 0x7a, (byte) 0xb6, (byte) 0xc8, (byte) 0x4e, (byte) 0xa9,
-        (byte) 0x86, (byte) 0x4c, (byte) 0x7b, (byte) 0x99, (byte) 0x57, (byte) 0x41,
-        (byte) 0x12, (byte) 0xef, (byte) 0x6b, (byte) 0xbc, (byte) 0x3d, (byte) 0x60,
-        (byte) 0xf2, (byte) 0x99, (byte) 0x1a, (byte) 0xcd, (byte) 0xed, (byte) 0x56,
-        (byte) 0xa4, (byte) 0xe5, (byte) 0x36, (byte) 0x9f, (byte) 0x24, (byte) 0x1f,
-        (byte) 0xdc, (byte) 0x89, (byte) 0x40, (byte) 0xc8, (byte) 0x99, (byte) 0x92,
-        (byte) 0xab, (byte) 0x4a, (byte) 0xb5, (byte) 0x61, (byte) 0x45, (byte) 0x62,
-        (byte) 0xff, (byte) 0xa3, (byte) 0x45, (byte) 0x65, (byte) 0xaf, (byte) 0xf6,
-        (byte) 0x27, (byte) 0x30, (byte) 0x51, (byte) 0x0e, (byte) 0x0e, (byte) 0xeb,
-        (byte) 0x79, (byte) 0x0c, (byte) 0xbe, (byte) 0xb3, (byte) 0x0a, (byte) 0x6f,
-        (byte) 0x29, (byte) 0x06, (byte) 0xdc, (byte) 0x2f, (byte) 0x6b, (byte) 0x51,
-        (byte) 0x02, (byte) 0x03, (byte) 0x01, (byte) 0x00, (byte) 0x01, (byte) 0xa3,
-        (byte) 0x81, (byte) 0xb1, (byte) 0x30, (byte) 0x81, (byte) 0xae, (byte) 0x30,
-        (byte) 0x1d, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x1d, (byte) 0x0e,
-        (byte) 0x04, (byte) 0x16, (byte) 0x04, (byte) 0x14, (byte) 0x33, (byte) 0x05,
-        (byte) 0xee, (byte) 0xfe, (byte) 0x6f, (byte) 0x60, (byte) 0xc7, (byte) 0xf9,
-        (byte) 0xa9, (byte) 0xd2, (byte) 0x73, (byte) 0x5c, (byte) 0x8f, (byte) 0x6d,
-        (byte) 0xa2, (byte) 0x2f, (byte) 0x97, (byte) 0x8e, (byte) 0x5d, (byte) 0x51,
-        (byte) 0x30, (byte) 0x7f, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x1d,
-        (byte) 0x23, (byte) 0x04, (byte) 0x78, (byte) 0x30, (byte) 0x76, (byte) 0x80,
-        (byte) 0x14, (byte) 0x33, (byte) 0x05, (byte) 0xee, (byte) 0xfe, (byte) 0x6f,
-        (byte) 0x60, (byte) 0xc7, (byte) 0xf9, (byte) 0xa9, (byte) 0xd2, (byte) 0x73,
-        (byte) 0x5c, (byte) 0x8f, (byte) 0x6d, (byte) 0xa2, (byte) 0x2f, (byte) 0x97,
-        (byte) 0x8e, (byte) 0x5d, (byte) 0x51, (byte) 0xa1, (byte) 0x53, (byte) 0xa4,
-        (byte) 0x51, (byte) 0x30, (byte) 0x4f, (byte) 0x31, (byte) 0x0b, (byte) 0x30,
-        (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x06,
-        (byte) 0x13, (byte) 0x02, (byte) 0x55, (byte) 0x53, (byte) 0x31, (byte) 0x0b,
-        (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04,
-        (byte) 0x08, (byte) 0x13, (byte) 0x02, (byte) 0x43, (byte) 0x41, (byte) 0x31,
-        (byte) 0x16, (byte) 0x30, (byte) 0x14, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-        (byte) 0x04, (byte) 0x07, (byte) 0x13, (byte) 0x0d, (byte) 0x4d, (byte) 0x6f,
-        (byte) 0x75, (byte) 0x6e, (byte) 0x74, (byte) 0x61, (byte) 0x69, (byte) 0x6e,
-        (byte) 0x20, (byte) 0x56, (byte) 0x69, (byte) 0x65, (byte) 0x77, (byte) 0x31,
-        (byte) 0x1b, (byte) 0x30, (byte) 0x19, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-        (byte) 0x04, (byte) 0x0a, (byte) 0x13, (byte) 0x12, (byte) 0x41, (byte) 0x6e,
-        (byte) 0x64, (byte) 0x72, (byte) 0x6f, (byte) 0x69, (byte) 0x64, (byte) 0x20,
-        (byte) 0x54, (byte) 0x65, (byte) 0x73, (byte) 0x74, (byte) 0x20, (byte) 0x43,
-        (byte) 0x61, (byte) 0x73, (byte) 0x65, (byte) 0x73, (byte) 0x82, (byte) 0x09,
-        (byte) 0x00, (byte) 0xe1, (byte) 0x6a, (byte) 0xa2, (byte) 0xf4, (byte) 0x2e,
-        (byte) 0x55, (byte) 0x48, (byte) 0x0a, (byte) 0x30, (byte) 0x0c, (byte) 0x06,
-        (byte) 0x03, (byte) 0x55, (byte) 0x1d, (byte) 0x13, (byte) 0x04, (byte) 0x05,
-        (byte) 0x30, (byte) 0x03, (byte) 0x01, (byte) 0x01, (byte) 0xff, (byte) 0x30,
-        (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86, (byte) 0x48,
-        (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01, (byte) 0x05,
-        (byte) 0x05, (byte) 0x00, (byte) 0x03, (byte) 0x81, (byte) 0x81, (byte) 0x00,
-        (byte) 0x8c, (byte) 0x30, (byte) 0x42, (byte) 0xfa, (byte) 0xeb, (byte) 0x1a,
-        (byte) 0x26, (byte) 0xeb, (byte) 0xda, (byte) 0x56, (byte) 0x32, (byte) 0xf2,
-        (byte) 0x9d, (byte) 0xa5, (byte) 0x24, (byte) 0xd8, (byte) 0x3a, (byte) 0xda,
-        (byte) 0x30, (byte) 0xa6, (byte) 0x8b, (byte) 0x46, (byte) 0xfe, (byte) 0xfe,
-        (byte) 0xdb, (byte) 0xf1, (byte) 0xe6, (byte) 0xe1, (byte) 0x7c, (byte) 0x1b,
-        (byte) 0xe7, (byte) 0x77, (byte) 0x00, (byte) 0xa1, (byte) 0x1c, (byte) 0x19,
-        (byte) 0x17, (byte) 0x73, (byte) 0xb0, (byte) 0xf0, (byte) 0x9d, (byte) 0xf3,
-        (byte) 0x4f, (byte) 0xb6, (byte) 0xbc, (byte) 0xc7, (byte) 0x47, (byte) 0x85,
-        (byte) 0x2a, (byte) 0x4a, (byte) 0xa1, (byte) 0xa5, (byte) 0x58, (byte) 0xf5,
-        (byte) 0xc5, (byte) 0x1a, (byte) 0x51, (byte) 0xb1, (byte) 0x04, (byte) 0x80,
-        (byte) 0xee, (byte) 0x3a, (byte) 0xec, (byte) 0x2f, (byte) 0xe1, (byte) 0xfd,
-        (byte) 0x58, (byte) 0xeb, (byte) 0xed, (byte) 0x82, (byte) 0x9e, (byte) 0x38,
-        (byte) 0xa3, (byte) 0x24, (byte) 0x75, (byte) 0xf7, (byte) 0x3e, (byte) 0xc2,
-        (byte) 0xc5, (byte) 0x27, (byte) 0xeb, (byte) 0x6f, (byte) 0x7b, (byte) 0x50,
-        (byte) 0xda, (byte) 0x43, (byte) 0xdc, (byte) 0x3b, (byte) 0x0b, (byte) 0x6f,
-        (byte) 0x78, (byte) 0x8f, (byte) 0xb0, (byte) 0x66, (byte) 0xe1, (byte) 0x12,
-        (byte) 0x87, (byte) 0x5f, (byte) 0x97, (byte) 0x7b, (byte) 0xca, (byte) 0x14,
-        (byte) 0x79, (byte) 0xf7, (byte) 0xe8, (byte) 0x6c, (byte) 0x72, (byte) 0xdb,
-        (byte) 0x91, (byte) 0x65, (byte) 0x17, (byte) 0x54, (byte) 0xe0, (byte) 0x74,
-        (byte) 0x1d, (byte) 0xac, (byte) 0x47, (byte) 0x04, (byte) 0x12, (byte) 0xe0,
-        (byte) 0xc3, (byte) 0x66, (byte) 0x19, (byte) 0x05, (byte) 0x2e, (byte) 0x7e,
-        (byte) 0xf1, (byte) 0x61
-    };
+    private static final Map<String, byte[]> FAKE_CA = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, byte[]> FAKE_KEY =
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, byte[]> FAKE_USER =
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    /**
-     * Generated from above and converted with:
-     *
-     * <p>openssl pkcs8 -topk8 -outform d -in userkey.pem -nocrypt | xxd -i | sed 's/0x/(byte) 0x/g'
-     */
-    private static final byte[] FAKE_RSA_KEY_1 =
-            new byte[] {
-                (byte) 0x30, (byte) 0x82, (byte) 0x02, (byte) 0x78, (byte) 0x02, (byte) 0x01,
-                (byte) 0x00, (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a,
-                (byte) 0x86, (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01,
-                (byte) 0x01, (byte) 0x01, (byte) 0x05, (byte) 0x00, (byte) 0x04, (byte) 0x82,
-                (byte) 0x02, (byte) 0x62, (byte) 0x30, (byte) 0x82, (byte) 0x02, (byte) 0x5e,
-                (byte) 0x02, (byte) 0x01, (byte) 0x00, (byte) 0x02, (byte) 0x81, (byte) 0x81,
-                (byte) 0x00, (byte) 0xce, (byte) 0x29, (byte) 0xeb, (byte) 0xf6, (byte) 0x5b,
-                (byte) 0x25, (byte) 0xdc, (byte) 0xa1, (byte) 0xa6, (byte) 0x2c, (byte) 0x66,
-                (byte) 0xcb, (byte) 0x20, (byte) 0x90, (byte) 0x27, (byte) 0x86, (byte) 0x8a,
-                (byte) 0x44, (byte) 0x71, (byte) 0x50, (byte) 0xda, (byte) 0xd3, (byte) 0x02,
-                (byte) 0x77, (byte) 0x55, (byte) 0xe9, (byte) 0xe8, (byte) 0x08, (byte) 0xf3,
-                (byte) 0x36, (byte) 0x9a, (byte) 0xae, (byte) 0xab, (byte) 0x04, (byte) 0x6d,
-                (byte) 0x00, (byte) 0x99, (byte) 0xbf, (byte) 0x7d, (byte) 0x0f, (byte) 0x67,
-                (byte) 0x8b, (byte) 0x1d, (byte) 0xd4, (byte) 0x2b, (byte) 0x7c, (byte) 0xcb,
-                (byte) 0xcd, (byte) 0x33, (byte) 0xc7, (byte) 0x84, (byte) 0x30, (byte) 0xe2,
-                (byte) 0x45, (byte) 0x21, (byte) 0xb3, (byte) 0x75, (byte) 0xf5, (byte) 0x79,
-                (byte) 0x02, (byte) 0xda, (byte) 0x50, (byte) 0xa3, (byte) 0x8b, (byte) 0xce,
-                (byte) 0xc3, (byte) 0x8e, (byte) 0x0f, (byte) 0x25, (byte) 0xeb, (byte) 0x08,
-                (byte) 0x2c, (byte) 0xdd, (byte) 0x1c, (byte) 0xcf, (byte) 0xff, (byte) 0x3b,
-                (byte) 0xde, (byte) 0xb6, (byte) 0xaa, (byte) 0x2a, (byte) 0xa9, (byte) 0xc4,
-                (byte) 0x8a, (byte) 0x24, (byte) 0x24, (byte) 0xe6, (byte) 0x29, (byte) 0x0d,
-                (byte) 0x98, (byte) 0x4c, (byte) 0x32, (byte) 0xa1, (byte) 0x7b, (byte) 0x23,
-                (byte) 0x2b, (byte) 0x42, (byte) 0x30, (byte) 0xee, (byte) 0x78, (byte) 0x08,
-                (byte) 0x47, (byte) 0xad, (byte) 0xf2, (byte) 0x96, (byte) 0xd5, (byte) 0xf1,
-                (byte) 0x62, (byte) 0x42, (byte) 0x2d, (byte) 0x35, (byte) 0x19, (byte) 0xb4,
-                (byte) 0x3c, (byte) 0xc9, (byte) 0xc3, (byte) 0x5f, (byte) 0x03, (byte) 0x16,
-                (byte) 0x3a, (byte) 0x23, (byte) 0xac, (byte) 0xcb, (byte) 0xce, (byte) 0x9e,
-                (byte) 0x51, (byte) 0x2e, (byte) 0x6d, (byte) 0x02, (byte) 0x03, (byte) 0x01,
-                (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x81, (byte) 0x80, (byte) 0x16,
-                (byte) 0x59, (byte) 0xc3, (byte) 0x24, (byte) 0x1d, (byte) 0x33, (byte) 0x98,
-                (byte) 0x9c, (byte) 0xc9, (byte) 0xc8, (byte) 0x2c, (byte) 0x88, (byte) 0xbf,
-                (byte) 0x0a, (byte) 0x01, (byte) 0xce, (byte) 0xfb, (byte) 0x34, (byte) 0x7a,
-                (byte) 0x58, (byte) 0x7a, (byte) 0xb0, (byte) 0xbf, (byte) 0xa6, (byte) 0xb2,
-                (byte) 0x60, (byte) 0xbe, (byte) 0x70, (byte) 0x21, (byte) 0xf5, (byte) 0xfc,
-                (byte) 0x85, (byte) 0x0d, (byte) 0x33, (byte) 0x58, (byte) 0xa1, (byte) 0xe5,
-                (byte) 0x09, (byte) 0x36, (byte) 0x84, (byte) 0xb2, (byte) 0x04, (byte) 0x0a,
-                (byte) 0x02, (byte) 0xd3, (byte) 0x88, (byte) 0x1f, (byte) 0x0c, (byte) 0x2b,
-                (byte) 0x1d, (byte) 0xe9, (byte) 0x3d, (byte) 0xe7, (byte) 0x79, (byte) 0xf9,
-                (byte) 0x32, (byte) 0x5c, (byte) 0x8a, (byte) 0x75, (byte) 0x49, (byte) 0x12,
-                (byte) 0xe4, (byte) 0x05, (byte) 0x26, (byte) 0xd4, (byte) 0x2e, (byte) 0x9e,
-                (byte) 0x1f, (byte) 0xcc, (byte) 0x54, (byte) 0xad, (byte) 0x33, (byte) 0x8d,
-                (byte) 0x99, (byte) 0x00, (byte) 0xdc, (byte) 0xf5, (byte) 0xb4, (byte) 0xa2,
-                (byte) 0x2f, (byte) 0xba, (byte) 0xe5, (byte) 0x62, (byte) 0x30, (byte) 0x6d,
-                (byte) 0xe6, (byte) 0x3d, (byte) 0xeb, (byte) 0x24, (byte) 0xc2, (byte) 0xdc,
-                (byte) 0x5f, (byte) 0xb7, (byte) 0x16, (byte) 0x35, (byte) 0xa3, (byte) 0x98,
-                (byte) 0x98, (byte) 0xa8, (byte) 0xef, (byte) 0xe8, (byte) 0xc4, (byte) 0x96,
-                (byte) 0x6d, (byte) 0x38, (byte) 0xab, (byte) 0x26, (byte) 0x6d, (byte) 0x30,
-                (byte) 0xc2, (byte) 0xa0, (byte) 0x44, (byte) 0xe4, (byte) 0xff, (byte) 0x7e,
-                (byte) 0xbe, (byte) 0x7c, (byte) 0x33, (byte) 0xa5, (byte) 0x10, (byte) 0xad,
-                (byte) 0xd7, (byte) 0x1e, (byte) 0x13, (byte) 0x20, (byte) 0xb3, (byte) 0x1f,
-                (byte) 0x41, (byte) 0x02, (byte) 0x41, (byte) 0x00, (byte) 0xf1, (byte) 0x89,
-                (byte) 0x07, (byte) 0x0f, (byte) 0xe8, (byte) 0xcf, (byte) 0xab, (byte) 0x13,
-                (byte) 0x2a, (byte) 0x8f, (byte) 0x88, (byte) 0x80, (byte) 0x11, (byte) 0x9a,
-                (byte) 0x79, (byte) 0xb6, (byte) 0x59, (byte) 0x3a, (byte) 0x50, (byte) 0x6e,
-                (byte) 0x57, (byte) 0x37, (byte) 0xab, (byte) 0x2a, (byte) 0xd2, (byte) 0xaa,
-                (byte) 0xd9, (byte) 0x72, (byte) 0x73, (byte) 0xff, (byte) 0x8b, (byte) 0x47,
-                (byte) 0x76, (byte) 0xdd, (byte) 0xdc, (byte) 0xf5, (byte) 0x97, (byte) 0x44,
-                (byte) 0x3a, (byte) 0x78, (byte) 0xbe, (byte) 0x17, (byte) 0xb4, (byte) 0x22,
-                (byte) 0x6f, (byte) 0xe5, (byte) 0x23, (byte) 0x70, (byte) 0x1d, (byte) 0x10,
-                (byte) 0x5d, (byte) 0xba, (byte) 0x16, (byte) 0x81, (byte) 0xf1, (byte) 0x45,
-                (byte) 0xce, (byte) 0x30, (byte) 0xb4, (byte) 0xab, (byte) 0x80, (byte) 0xe4,
-                (byte) 0x98, (byte) 0x31, (byte) 0x02, (byte) 0x41, (byte) 0x00, (byte) 0xda,
-                (byte) 0x82, (byte) 0x9d, (byte) 0x3f, (byte) 0xca, (byte) 0x2f, (byte) 0xe1,
-                (byte) 0xd4, (byte) 0x86, (byte) 0x77, (byte) 0x48, (byte) 0xa6, (byte) 0xab,
-                (byte) 0xab, (byte) 0x1c, (byte) 0x42, (byte) 0x5c, (byte) 0xd5, (byte) 0xc7,
-                (byte) 0x46, (byte) 0x59, (byte) 0x91, (byte) 0x3f, (byte) 0xfc, (byte) 0xcc,
-                (byte) 0xec, (byte) 0xc2, (byte) 0x40, (byte) 0x12, (byte) 0x2c, (byte) 0x8d,
-                (byte) 0x1f, (byte) 0xa2, (byte) 0x18, (byte) 0x88, (byte) 0xee, (byte) 0x82,
-                (byte) 0x4a, (byte) 0x5a, (byte) 0x5e, (byte) 0x88, (byte) 0x20, (byte) 0xe3,
-                (byte) 0x7b, (byte) 0xe0, (byte) 0xd8, (byte) 0x3a, (byte) 0x52, (byte) 0x9a,
-                (byte) 0x26, (byte) 0x6a, (byte) 0x04, (byte) 0xec, (byte) 0xe8, (byte) 0xb9,
-                (byte) 0x48, (byte) 0x40, (byte) 0xe1, (byte) 0xe1, (byte) 0x83, (byte) 0xa6,
-                (byte) 0x67, (byte) 0xa6, (byte) 0xfd, (byte) 0x02, (byte) 0x41, (byte) 0x00,
-                (byte) 0x89, (byte) 0x72, (byte) 0x3e, (byte) 0xb0, (byte) 0x90, (byte) 0xfd,
-                (byte) 0x4c, (byte) 0x0e, (byte) 0xd6, (byte) 0x13, (byte) 0x63, (byte) 0xcb,
-                (byte) 0xed, (byte) 0x38, (byte) 0x88, (byte) 0xb6, (byte) 0x79, (byte) 0xc4,
-                (byte) 0x33, (byte) 0x6c, (byte) 0xf6, (byte) 0xf8, (byte) 0xd8, (byte) 0xd0,
-                (byte) 0xbf, (byte) 0x9d, (byte) 0x35, (byte) 0xac, (byte) 0x69, (byte) 0xd2,
-                (byte) 0x2b, (byte) 0xc1, (byte) 0xf9, (byte) 0x24, (byte) 0x7b, (byte) 0xce,
-                (byte) 0xcd, (byte) 0xcb, (byte) 0xa7, (byte) 0xb2, (byte) 0x7a, (byte) 0x0a,
-                (byte) 0x27, (byte) 0x19, (byte) 0xc9, (byte) 0xaf, (byte) 0x0d, (byte) 0x21,
-                (byte) 0x89, (byte) 0x88, (byte) 0x7c, (byte) 0xad, (byte) 0x9e, (byte) 0x8d,
-                (byte) 0x47, (byte) 0x6d, (byte) 0x3f, (byte) 0xce, (byte) 0x7b, (byte) 0xa1,
-                (byte) 0x74, (byte) 0xf1, (byte) 0xa0, (byte) 0xa1, (byte) 0x02, (byte) 0x41,
-                (byte) 0x00, (byte) 0xd9, (byte) 0xa8, (byte) 0xf5, (byte) 0xfe, (byte) 0xce,
-                (byte) 0xe6, (byte) 0x77, (byte) 0x6b, (byte) 0xfe, (byte) 0x2d, (byte) 0xe0,
-                (byte) 0x1e, (byte) 0xb6, (byte) 0x2e, (byte) 0x12, (byte) 0x4e, (byte) 0x40,
-                (byte) 0xaf, (byte) 0x6a, (byte) 0x7b, (byte) 0x37, (byte) 0x49, (byte) 0x2a,
-                (byte) 0x96, (byte) 0x25, (byte) 0x83, (byte) 0x49, (byte) 0xd4, (byte) 0x0c,
-                (byte) 0xc6, (byte) 0x78, (byte) 0x25, (byte) 0x24, (byte) 0x90, (byte) 0x90,
-                (byte) 0x06, (byte) 0x15, (byte) 0x9e, (byte) 0xfe, (byte) 0xf9, (byte) 0xdf,
-                (byte) 0x5b, (byte) 0xf3, (byte) 0x7e, (byte) 0x38, (byte) 0x70, (byte) 0xeb,
-                (byte) 0x57, (byte) 0xd0, (byte) 0xd9, (byte) 0xa7, (byte) 0x0e, (byte) 0x14,
-                (byte) 0xf7, (byte) 0x95, (byte) 0x68, (byte) 0xd5, (byte) 0xc8, (byte) 0xab,
-                (byte) 0x9d, (byte) 0x3a, (byte) 0x2b, (byte) 0x51, (byte) 0xf9, (byte) 0x02,
-                (byte) 0x41, (byte) 0x00, (byte) 0x96, (byte) 0xdf, (byte) 0xe9, (byte) 0x67,
-                (byte) 0x6c, (byte) 0xdc, (byte) 0x90, (byte) 0x14, (byte) 0xb4, (byte) 0x1d,
-                (byte) 0x22, (byte) 0x33, (byte) 0x4a, (byte) 0x31, (byte) 0xc1, (byte) 0x9d,
-                (byte) 0x2e, (byte) 0xff, (byte) 0x9a, (byte) 0x2a, (byte) 0x95, (byte) 0x4b,
-                (byte) 0x27, (byte) 0x74, (byte) 0xcb, (byte) 0x21, (byte) 0xc3, (byte) 0xd2,
-                (byte) 0x0b, (byte) 0xb2, (byte) 0x46, (byte) 0x87, (byte) 0xf8, (byte) 0x28,
-                (byte) 0x01, (byte) 0x8b, (byte) 0xd8, (byte) 0xb9, (byte) 0x4b, (byte) 0xcd,
-                (byte) 0x9a, (byte) 0x96, (byte) 0x41, (byte) 0x0e, (byte) 0x36, (byte) 0x6d,
-                (byte) 0x40, (byte) 0x42, (byte) 0xbc, (byte) 0xd9, (byte) 0xd3, (byte) 0x7b,
-                (byte) 0xbc, (byte) 0xa7, (byte) 0x92, (byte) 0x90, (byte) 0xdd, (byte) 0xa1,
-                (byte) 0x9c, (byte) 0xce, (byte) 0xa1, (byte) 0x87, (byte) 0x11, (byte) 0x51
-            };
+    static {
+        FAKE_CA.put("RSA", HexEncoding.decode(FAKE_RSA_CA_HEX));
+        FAKE_CA.put("EC", HexEncoding.decode(FAKE_EC_CA_HEX));
+        FAKE_CA.put("ED25519", HexEncoding.decode(FAKE_ED25519_CA_HEX));
 
-    /**
-     * Generated from above and converted with:
-     *
-     * <p>openssl x509 -outform d -in usercert.pem | xxd -i | sed 's/0x/(byte) 0x/g'
-     */
-    private static final byte[] FAKE_RSA_USER_1 =
-            new byte[] {
-                (byte) 0x30, (byte) 0x82, (byte) 0x02, (byte) 0x95, (byte) 0x30, (byte) 0x82,
-                (byte) 0x01, (byte) 0xfe, (byte) 0xa0, (byte) 0x03, (byte) 0x02, (byte) 0x01,
-                (byte) 0x02, (byte) 0x02, (byte) 0x01, (byte) 0x01, (byte) 0x30, (byte) 0x0d,
-                (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86, (byte) 0x48, (byte) 0x86,
-                (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01, (byte) 0x05, (byte) 0x05,
-                (byte) 0x00, (byte) 0x30, (byte) 0x4f, (byte) 0x31, (byte) 0x0b, (byte) 0x30,
-                (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x06,
-                (byte) 0x13, (byte) 0x02, (byte) 0x55, (byte) 0x53, (byte) 0x31, (byte) 0x0b,
-                (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04,
-                (byte) 0x08, (byte) 0x13, (byte) 0x02, (byte) 0x43, (byte) 0x41, (byte) 0x31,
-                (byte) 0x16, (byte) 0x30, (byte) 0x14, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-                (byte) 0x04, (byte) 0x07, (byte) 0x13, (byte) 0x0d, (byte) 0x4d, (byte) 0x6f,
-                (byte) 0x75, (byte) 0x6e, (byte) 0x74, (byte) 0x61, (byte) 0x69, (byte) 0x6e,
-                (byte) 0x20, (byte) 0x56, (byte) 0x69, (byte) 0x65, (byte) 0x77, (byte) 0x31,
-                (byte) 0x1b, (byte) 0x30, (byte) 0x19, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-                (byte) 0x04, (byte) 0x0a, (byte) 0x13, (byte) 0x12, (byte) 0x41, (byte) 0x6e,
-                (byte) 0x64, (byte) 0x72, (byte) 0x6f, (byte) 0x69, (byte) 0x64, (byte) 0x20,
-                (byte) 0x54, (byte) 0x65, (byte) 0x73, (byte) 0x74, (byte) 0x20, (byte) 0x43,
-                (byte) 0x61, (byte) 0x73, (byte) 0x65, (byte) 0x73, (byte) 0x30, (byte) 0x1e,
-                (byte) 0x17, (byte) 0x0d, (byte) 0x31, (byte) 0x32, (byte) 0x30, (byte) 0x38,
-                (byte) 0x31, (byte) 0x34, (byte) 0x32, (byte) 0x33, (byte) 0x32, (byte) 0x35,
-                (byte) 0x34, (byte) 0x38, (byte) 0x5a, (byte) 0x17, (byte) 0x0d, (byte) 0x32,
-                (byte) 0x32, (byte) 0x30, (byte) 0x38, (byte) 0x31, (byte) 0x32, (byte) 0x32,
-                (byte) 0x33, (byte) 0x32, (byte) 0x35, (byte) 0x34, (byte) 0x38, (byte) 0x5a,
-                (byte) 0x30, (byte) 0x55, (byte) 0x31, (byte) 0x0b, (byte) 0x30, (byte) 0x09,
-                (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x06, (byte) 0x13,
-                (byte) 0x02, (byte) 0x55, (byte) 0x53, (byte) 0x31, (byte) 0x0b, (byte) 0x30,
-                (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x08,
-                (byte) 0x13, (byte) 0x02, (byte) 0x43, (byte) 0x41, (byte) 0x31, (byte) 0x1b,
-                (byte) 0x30, (byte) 0x19, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04,
-                (byte) 0x0a, (byte) 0x13, (byte) 0x12, (byte) 0x41, (byte) 0x6e, (byte) 0x64,
-                (byte) 0x72, (byte) 0x6f, (byte) 0x69, (byte) 0x64, (byte) 0x20, (byte) 0x54,
-                (byte) 0x65, (byte) 0x73, (byte) 0x74, (byte) 0x20, (byte) 0x43, (byte) 0x61,
-                (byte) 0x73, (byte) 0x65, (byte) 0x73, (byte) 0x31, (byte) 0x1c, (byte) 0x30,
-                (byte) 0x1a, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x03,
-                (byte) 0x13, (byte) 0x13, (byte) 0x73, (byte) 0x65, (byte) 0x72, (byte) 0x76,
-                (byte) 0x65, (byte) 0x72, (byte) 0x31, (byte) 0x2e, (byte) 0x65, (byte) 0x78,
-                (byte) 0x61, (byte) 0x6d, (byte) 0x70, (byte) 0x6c, (byte) 0x65, (byte) 0x2e,
-                (byte) 0x63, (byte) 0x6f, (byte) 0x6d, (byte) 0x30, (byte) 0x81, (byte) 0x9f,
-                (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86,
-                (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01,
-                (byte) 0x01, (byte) 0x05, (byte) 0x00, (byte) 0x03, (byte) 0x81, (byte) 0x8d,
-                (byte) 0x00, (byte) 0x30, (byte) 0x81, (byte) 0x89, (byte) 0x02, (byte) 0x81,
-                (byte) 0x81, (byte) 0x00, (byte) 0xce, (byte) 0x29, (byte) 0xeb, (byte) 0xf6,
-                (byte) 0x5b, (byte) 0x25, (byte) 0xdc, (byte) 0xa1, (byte) 0xa6, (byte) 0x2c,
-                (byte) 0x66, (byte) 0xcb, (byte) 0x20, (byte) 0x90, (byte) 0x27, (byte) 0x86,
-                (byte) 0x8a, (byte) 0x44, (byte) 0x71, (byte) 0x50, (byte) 0xda, (byte) 0xd3,
-                (byte) 0x02, (byte) 0x77, (byte) 0x55, (byte) 0xe9, (byte) 0xe8, (byte) 0x08,
-                (byte) 0xf3, (byte) 0x36, (byte) 0x9a, (byte) 0xae, (byte) 0xab, (byte) 0x04,
-                (byte) 0x6d, (byte) 0x00, (byte) 0x99, (byte) 0xbf, (byte) 0x7d, (byte) 0x0f,
-                (byte) 0x67, (byte) 0x8b, (byte) 0x1d, (byte) 0xd4, (byte) 0x2b, (byte) 0x7c,
-                (byte) 0xcb, (byte) 0xcd, (byte) 0x33, (byte) 0xc7, (byte) 0x84, (byte) 0x30,
-                (byte) 0xe2, (byte) 0x45, (byte) 0x21, (byte) 0xb3, (byte) 0x75, (byte) 0xf5,
-                (byte) 0x79, (byte) 0x02, (byte) 0xda, (byte) 0x50, (byte) 0xa3, (byte) 0x8b,
-                (byte) 0xce, (byte) 0xc3, (byte) 0x8e, (byte) 0x0f, (byte) 0x25, (byte) 0xeb,
-                (byte) 0x08, (byte) 0x2c, (byte) 0xdd, (byte) 0x1c, (byte) 0xcf, (byte) 0xff,
-                (byte) 0x3b, (byte) 0xde, (byte) 0xb6, (byte) 0xaa, (byte) 0x2a, (byte) 0xa9,
-                (byte) 0xc4, (byte) 0x8a, (byte) 0x24, (byte) 0x24, (byte) 0xe6, (byte) 0x29,
-                (byte) 0x0d, (byte) 0x98, (byte) 0x4c, (byte) 0x32, (byte) 0xa1, (byte) 0x7b,
-                (byte) 0x23, (byte) 0x2b, (byte) 0x42, (byte) 0x30, (byte) 0xee, (byte) 0x78,
-                (byte) 0x08, (byte) 0x47, (byte) 0xad, (byte) 0xf2, (byte) 0x96, (byte) 0xd5,
-                (byte) 0xf1, (byte) 0x62, (byte) 0x42, (byte) 0x2d, (byte) 0x35, (byte) 0x19,
-                (byte) 0xb4, (byte) 0x3c, (byte) 0xc9, (byte) 0xc3, (byte) 0x5f, (byte) 0x03,
-                (byte) 0x16, (byte) 0x3a, (byte) 0x23, (byte) 0xac, (byte) 0xcb, (byte) 0xce,
-                (byte) 0x9e, (byte) 0x51, (byte) 0x2e, (byte) 0x6d, (byte) 0x02, (byte) 0x03,
-                (byte) 0x01, (byte) 0x00, (byte) 0x01, (byte) 0xa3, (byte) 0x7b, (byte) 0x30,
-                (byte) 0x79, (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-                (byte) 0x1d, (byte) 0x13, (byte) 0x04, (byte) 0x02, (byte) 0x30, (byte) 0x00,
-                (byte) 0x30, (byte) 0x2c, (byte) 0x06, (byte) 0x09, (byte) 0x60, (byte) 0x86,
-                (byte) 0x48, (byte) 0x01, (byte) 0x86, (byte) 0xf8, (byte) 0x42, (byte) 0x01,
-                (byte) 0x0d, (byte) 0x04, (byte) 0x1f, (byte) 0x16, (byte) 0x1d, (byte) 0x4f,
-                (byte) 0x70, (byte) 0x65, (byte) 0x6e, (byte) 0x53, (byte) 0x53, (byte) 0x4c,
-                (byte) 0x20, (byte) 0x47, (byte) 0x65, (byte) 0x6e, (byte) 0x65, (byte) 0x72,
-                (byte) 0x61, (byte) 0x74, (byte) 0x65, (byte) 0x64, (byte) 0x20, (byte) 0x43,
-                (byte) 0x65, (byte) 0x72, (byte) 0x74, (byte) 0x69, (byte) 0x66, (byte) 0x69,
-                (byte) 0x63, (byte) 0x61, (byte) 0x74, (byte) 0x65, (byte) 0x30, (byte) 0x1d,
-                (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x1d, (byte) 0x0e, (byte) 0x04,
-                (byte) 0x16, (byte) 0x04, (byte) 0x14, (byte) 0x32, (byte) 0xa1, (byte) 0x1e,
-                (byte) 0x6b, (byte) 0x69, (byte) 0x04, (byte) 0xfe, (byte) 0xb3, (byte) 0xcd,
-                (byte) 0xf8, (byte) 0xbb, (byte) 0x14, (byte) 0xcd, (byte) 0xff, (byte) 0xd4,
-                (byte) 0x16, (byte) 0xc3, (byte) 0xab, (byte) 0x44, (byte) 0x2f, (byte) 0x30,
-                (byte) 0x1f, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x1d, (byte) 0x23,
-                (byte) 0x04, (byte) 0x18, (byte) 0x30, (byte) 0x16, (byte) 0x80, (byte) 0x14,
-                (byte) 0x33, (byte) 0x05, (byte) 0xee, (byte) 0xfe, (byte) 0x6f, (byte) 0x60,
-                (byte) 0xc7, (byte) 0xf9, (byte) 0xa9, (byte) 0xd2, (byte) 0x73, (byte) 0x5c,
-                (byte) 0x8f, (byte) 0x6d, (byte) 0xa2, (byte) 0x2f, (byte) 0x97, (byte) 0x8e,
-                (byte) 0x5d, (byte) 0x51, (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09,
-                (byte) 0x2a, (byte) 0x86, (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d,
-                (byte) 0x01, (byte) 0x01, (byte) 0x05, (byte) 0x05, (byte) 0x00, (byte) 0x03,
-                (byte) 0x81, (byte) 0x81, (byte) 0x00, (byte) 0x46, (byte) 0x42, (byte) 0xef,
-                (byte) 0x56, (byte) 0x89, (byte) 0x78, (byte) 0x90, (byte) 0x38, (byte) 0x24,
-                (byte) 0x9f, (byte) 0x8c, (byte) 0x7a, (byte) 0xce, (byte) 0x7a, (byte) 0xa5,
-                (byte) 0xb5, (byte) 0x1e, (byte) 0x74, (byte) 0x96, (byte) 0x34, (byte) 0x49,
-                (byte) 0x8b, (byte) 0xed, (byte) 0x44, (byte) 0xb3, (byte) 0xc9, (byte) 0x05,
-                (byte) 0xd7, (byte) 0x48, (byte) 0x55, (byte) 0x52, (byte) 0x59, (byte) 0x15,
-                (byte) 0x0b, (byte) 0xaa, (byte) 0x16, (byte) 0x86, (byte) 0xd2, (byte) 0x8e,
-                (byte) 0x16, (byte) 0x99, (byte) 0xe8, (byte) 0x5f, (byte) 0x11, (byte) 0x71,
-                (byte) 0x42, (byte) 0x55, (byte) 0xd1, (byte) 0xc4, (byte) 0x6f, (byte) 0x2e,
-                (byte) 0xa9, (byte) 0x64, (byte) 0x6f, (byte) 0xd8, (byte) 0xfd, (byte) 0x43,
-                (byte) 0x13, (byte) 0x24, (byte) 0xaa, (byte) 0x67, (byte) 0xe6, (byte) 0xf5,
-                (byte) 0xca, (byte) 0x80, (byte) 0x5e, (byte) 0x3a, (byte) 0x3e, (byte) 0xcc,
-                (byte) 0x4f, (byte) 0xba, (byte) 0x87, (byte) 0xe6, (byte) 0xae, (byte) 0xbf,
-                (byte) 0x8f, (byte) 0xd5, (byte) 0x28, (byte) 0x38, (byte) 0x58, (byte) 0x30,
-                (byte) 0x24, (byte) 0xf6, (byte) 0x53, (byte) 0x5b, (byte) 0x41, (byte) 0x53,
-                (byte) 0xe6, (byte) 0x45, (byte) 0xbc, (byte) 0xbe, (byte) 0xe6, (byte) 0xbb,
-                (byte) 0x5d, (byte) 0xd8, (byte) 0xa7, (byte) 0xf9, (byte) 0x64, (byte) 0x99,
-                (byte) 0x04, (byte) 0x43, (byte) 0x75, (byte) 0xd7, (byte) 0x2d, (byte) 0x32,
-                (byte) 0x0a, (byte) 0x94, (byte) 0xaf, (byte) 0x06, (byte) 0x34, (byte) 0xae,
-                (byte) 0x46, (byte) 0xbd, (byte) 0xda, (byte) 0x00, (byte) 0x0e, (byte) 0x25,
-                (byte) 0xc2, (byte) 0xf7, (byte) 0xc9, (byte) 0xc3, (byte) 0x65, (byte) 0xd2,
-                (byte) 0x08, (byte) 0x41, (byte) 0x0a, (byte) 0xf3, (byte) 0x72
-            };
+        FAKE_KEY.put("RSA", HexEncoding.decode(FAKE_RSA_KEY_HEX));
+        FAKE_KEY.put("EC", HexEncoding.decode(FAKE_EC_KEY_HEX));
+        FAKE_KEY.put("ED25519", HexEncoding.decode(FAKE_ED25519_KEY_HEX));
 
-    /*
-     * The keys and certificates below are generated with:
-     *
-     * openssl req -new -x509 -days 3650 -extensions v3_ca -keyout cakey.pem -out cacert.pem
-     * openssl ecparam -name prime256v1 -out ecparam.pem
-     * openssl req -newkey ec:ecparam.pem -keyout userkey.pem -nodes -days 3650 -out userkey.req
-     * mkdir -p demoCA/newcerts
-     * touch demoCA/index.txt
-     * echo "01" > demoCA/serial
-     * openssl ca -out usercert.pem -in userkey.req -cert cacert.pem -keyfile cakey.pem -days 3650
-     */
+        FAKE_USER.put("RSA", HexEncoding.decode(FAKE_RSA_USER_HEX));
+        FAKE_USER.put("EC", HexEncoding.decode(FAKE_EC_USER_HEX));
+        FAKE_USER.put("ED25519", HexEncoding.decode(FAKE_ED25519_USER_HEX));
+    }
 
-    /**
-     * Generated from above and converted with:
-     *
-     * <p>openssl x509 -outform d -in cacert.pem | xxd -i | sed 's/0x/(byte) 0x/g'
-     */
-    private static final byte[] FAKE_EC_CA_1 = {
-        (byte) 0x30, (byte) 0x82, (byte) 0x02, (byte) 0x58, (byte) 0x30, (byte) 0x82,
-        (byte) 0x01, (byte) 0xc1, (byte) 0xa0, (byte) 0x03, (byte) 0x02, (byte) 0x01,
-        (byte) 0x02, (byte) 0x02, (byte) 0x09, (byte) 0x00, (byte) 0xe1, (byte) 0xb2,
-        (byte) 0x8c, (byte) 0x04, (byte) 0x95, (byte) 0xeb, (byte) 0x10, (byte) 0xcb,
-        (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86,
-        (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01,
-        (byte) 0x05, (byte) 0x05, (byte) 0x00, (byte) 0x30, (byte) 0x45, (byte) 0x31,
-        (byte) 0x0b, (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-        (byte) 0x04, (byte) 0x06, (byte) 0x13, (byte) 0x02, (byte) 0x41, (byte) 0x55,
-        (byte) 0x31, (byte) 0x13, (byte) 0x30, (byte) 0x11, (byte) 0x06, (byte) 0x03,
-        (byte) 0x55, (byte) 0x04, (byte) 0x08, (byte) 0x0c, (byte) 0x0a, (byte) 0x53,
-        (byte) 0x6f, (byte) 0x6d, (byte) 0x65, (byte) 0x2d, (byte) 0x53, (byte) 0x74,
-        (byte) 0x61, (byte) 0x74, (byte) 0x65, (byte) 0x31, (byte) 0x21, (byte) 0x30,
-        (byte) 0x1f, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x0a,
-        (byte) 0x0c, (byte) 0x18, (byte) 0x49, (byte) 0x6e, (byte) 0x74, (byte) 0x65,
-        (byte) 0x72, (byte) 0x6e, (byte) 0x65, (byte) 0x74, (byte) 0x20, (byte) 0x57,
-        (byte) 0x69, (byte) 0x64, (byte) 0x67, (byte) 0x69, (byte) 0x74, (byte) 0x73,
-        (byte) 0x20, (byte) 0x50, (byte) 0x74, (byte) 0x79, (byte) 0x20, (byte) 0x4c,
-        (byte) 0x74, (byte) 0x64, (byte) 0x30, (byte) 0x1e, (byte) 0x17, (byte) 0x0d,
-        (byte) 0x31, (byte) 0x33, (byte) 0x30, (byte) 0x38, (byte) 0x32, (byte) 0x37,
-        (byte) 0x31, (byte) 0x36, (byte) 0x32, (byte) 0x38, (byte) 0x32, (byte) 0x38,
-        (byte) 0x5a, (byte) 0x17, (byte) 0x0d, (byte) 0x32, (byte) 0x33, (byte) 0x30,
-        (byte) 0x38, (byte) 0x32, (byte) 0x35, (byte) 0x31, (byte) 0x36, (byte) 0x32,
-        (byte) 0x38, (byte) 0x32, (byte) 0x38, (byte) 0x5a, (byte) 0x30, (byte) 0x45,
-        (byte) 0x31, (byte) 0x0b, (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03,
-        (byte) 0x55, (byte) 0x04, (byte) 0x06, (byte) 0x13, (byte) 0x02, (byte) 0x41,
-        (byte) 0x55, (byte) 0x31, (byte) 0x13, (byte) 0x30, (byte) 0x11, (byte) 0x06,
-        (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x08, (byte) 0x0c, (byte) 0x0a,
-        (byte) 0x53, (byte) 0x6f, (byte) 0x6d, (byte) 0x65, (byte) 0x2d, (byte) 0x53,
-        (byte) 0x74, (byte) 0x61, (byte) 0x74, (byte) 0x65, (byte) 0x31, (byte) 0x21,
-        (byte) 0x30, (byte) 0x1f, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04,
-        (byte) 0x0a, (byte) 0x0c, (byte) 0x18, (byte) 0x49, (byte) 0x6e, (byte) 0x74,
-        (byte) 0x65, (byte) 0x72, (byte) 0x6e, (byte) 0x65, (byte) 0x74, (byte) 0x20,
-        (byte) 0x57, (byte) 0x69, (byte) 0x64, (byte) 0x67, (byte) 0x69, (byte) 0x74,
-        (byte) 0x73, (byte) 0x20, (byte) 0x50, (byte) 0x74, (byte) 0x79, (byte) 0x20,
-        (byte) 0x4c, (byte) 0x74, (byte) 0x64, (byte) 0x30, (byte) 0x81, (byte) 0x9f,
-        (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86,
-        (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01,
-        (byte) 0x01, (byte) 0x05, (byte) 0x00, (byte) 0x03, (byte) 0x81, (byte) 0x8d,
-        (byte) 0x00, (byte) 0x30, (byte) 0x81, (byte) 0x89, (byte) 0x02, (byte) 0x81,
-        (byte) 0x81, (byte) 0x00, (byte) 0xb5, (byte) 0xf6, (byte) 0x08, (byte) 0x0f,
-        (byte) 0xc4, (byte) 0x4d, (byte) 0xe4, (byte) 0x0d, (byte) 0x34, (byte) 0x1d,
-        (byte) 0xe2, (byte) 0x23, (byte) 0x18, (byte) 0x63, (byte) 0x03, (byte) 0xf7,
-        (byte) 0x14, (byte) 0x0e, (byte) 0x98, (byte) 0xcd, (byte) 0x45, (byte) 0x1f,
-        (byte) 0xfe, (byte) 0xfb, (byte) 0x09, (byte) 0x3f, (byte) 0x5d, (byte) 0x36,
-        (byte) 0x3b, (byte) 0x0f, (byte) 0xf9, (byte) 0x5e, (byte) 0x86, (byte) 0x56,
-        (byte) 0x64, (byte) 0xd7, (byte) 0x3f, (byte) 0xae, (byte) 0x33, (byte) 0x09,
-        (byte) 0xd3, (byte) 0xdd, (byte) 0x06, (byte) 0x17, (byte) 0x26, (byte) 0xdc,
-        (byte) 0xa2, (byte) 0x8c, (byte) 0x3c, (byte) 0x65, (byte) 0xed, (byte) 0x03,
-        (byte) 0x82, (byte) 0x78, (byte) 0x9b, (byte) 0xee, (byte) 0xe3, (byte) 0x98,
-        (byte) 0x58, (byte) 0xe1, (byte) 0xf1, (byte) 0xa0, (byte) 0x85, (byte) 0xae,
-        (byte) 0x63, (byte) 0x84, (byte) 0x41, (byte) 0x46, (byte) 0xa7, (byte) 0x4f,
-        (byte) 0xdc, (byte) 0xbb, (byte) 0x1c, (byte) 0x6e, (byte) 0xec, (byte) 0x7b,
-        (byte) 0xd5, (byte) 0xab, (byte) 0x3d, (byte) 0x6a, (byte) 0x05, (byte) 0x58,
-        (byte) 0x0f, (byte) 0x9b, (byte) 0x6a, (byte) 0x67, (byte) 0x4b, (byte) 0xe9,
-        (byte) 0x2a, (byte) 0x6d, (byte) 0x96, (byte) 0x11, (byte) 0x53, (byte) 0x95,
-        (byte) 0x78, (byte) 0xaa, (byte) 0xd1, (byte) 0x91, (byte) 0x4a, (byte) 0xf8,
-        (byte) 0x54, (byte) 0x52, (byte) 0x6d, (byte) 0xb9, (byte) 0xca, (byte) 0x74,
-        (byte) 0x81, (byte) 0xf8, (byte) 0x99, (byte) 0x64, (byte) 0xd1, (byte) 0x4f,
-        (byte) 0x01, (byte) 0x38, (byte) 0x4f, (byte) 0x08, (byte) 0x5c, (byte) 0x31,
-        (byte) 0xcb, (byte) 0x7c, (byte) 0x5c, (byte) 0x78, (byte) 0x5d, (byte) 0x47,
-        (byte) 0xd9, (byte) 0xf0, (byte) 0x1a, (byte) 0xeb, (byte) 0x02, (byte) 0x03,
-        (byte) 0x01, (byte) 0x00, (byte) 0x01, (byte) 0xa3, (byte) 0x50, (byte) 0x30,
-        (byte) 0x4e, (byte) 0x30, (byte) 0x1d, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-        (byte) 0x1d, (byte) 0x0e, (byte) 0x04, (byte) 0x16, (byte) 0x04, (byte) 0x14,
-        (byte) 0x5f, (byte) 0x5b, (byte) 0x5e, (byte) 0xac, (byte) 0x29, (byte) 0xfa,
-        (byte) 0xa1, (byte) 0x9f, (byte) 0x9e, (byte) 0xad, (byte) 0x46, (byte) 0xe1,
-        (byte) 0xbc, (byte) 0x20, (byte) 0x72, (byte) 0xcf, (byte) 0x4a, (byte) 0xd4,
-        (byte) 0xfa, (byte) 0xe3, (byte) 0x30, (byte) 0x1f, (byte) 0x06, (byte) 0x03,
-        (byte) 0x55, (byte) 0x1d, (byte) 0x23, (byte) 0x04, (byte) 0x18, (byte) 0x30,
-        (byte) 0x16, (byte) 0x80, (byte) 0x14, (byte) 0x5f, (byte) 0x5b, (byte) 0x5e,
-        (byte) 0xac, (byte) 0x29, (byte) 0xfa, (byte) 0xa1, (byte) 0x9f, (byte) 0x9e,
-        (byte) 0xad, (byte) 0x46, (byte) 0xe1, (byte) 0xbc, (byte) 0x20, (byte) 0x72,
-        (byte) 0xcf, (byte) 0x4a, (byte) 0xd4, (byte) 0xfa, (byte) 0xe3, (byte) 0x30,
-        (byte) 0x0c, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x1d, (byte) 0x13,
-        (byte) 0x04, (byte) 0x05, (byte) 0x30, (byte) 0x03, (byte) 0x01, (byte) 0x01,
-        (byte) 0xff, (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a,
-        (byte) 0x86, (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01,
-        (byte) 0x01, (byte) 0x05, (byte) 0x05, (byte) 0x00, (byte) 0x03, (byte) 0x81,
-        (byte) 0x81, (byte) 0x00, (byte) 0xa1, (byte) 0x4a, (byte) 0xe6, (byte) 0xfc,
-        (byte) 0x7f, (byte) 0x17, (byte) 0xaa, (byte) 0x65, (byte) 0x4a, (byte) 0x34,
-        (byte) 0xde, (byte) 0x69, (byte) 0x67, (byte) 0x54, (byte) 0x4d, (byte) 0xa2,
-        (byte) 0xc2, (byte) 0x98, (byte) 0x02, (byte) 0x43, (byte) 0x6a, (byte) 0x0e,
-        (byte) 0x0b, (byte) 0x7f, (byte) 0xa4, (byte) 0x46, (byte) 0xaf, (byte) 0xa4,
-        (byte) 0x65, (byte) 0xa0, (byte) 0xdb, (byte) 0xf1, (byte) 0x5b, (byte) 0xd5,
-        (byte) 0x09, (byte) 0xbc, (byte) 0xee, (byte) 0x37, (byte) 0x51, (byte) 0x19,
-        (byte) 0x36, (byte) 0xc0, (byte) 0x90, (byte) 0xd3, (byte) 0x5f, (byte) 0xf3,
-        (byte) 0x4f, (byte) 0xb9, (byte) 0x08, (byte) 0x45, (byte) 0x0e, (byte) 0x01,
-        (byte) 0x8a, (byte) 0x95, (byte) 0xef, (byte) 0x92, (byte) 0x95, (byte) 0x33,
-        (byte) 0x78, (byte) 0xdd, (byte) 0x90, (byte) 0xbb, (byte) 0xf3, (byte) 0x06,
-        (byte) 0x75, (byte) 0xd0, (byte) 0x66, (byte) 0xe6, (byte) 0xd0, (byte) 0x18,
-        (byte) 0x6e, (byte) 0xeb, (byte) 0x1c, (byte) 0x52, (byte) 0xc3, (byte) 0x2e,
-        (byte) 0x57, (byte) 0x7d, (byte) 0xa9, (byte) 0x03, (byte) 0xdb, (byte) 0xf4,
-        (byte) 0x57, (byte) 0x5f, (byte) 0x6c, (byte) 0x7e, (byte) 0x00, (byte) 0x0d,
-        (byte) 0x8f, (byte) 0xe8, (byte) 0x91, (byte) 0xf7, (byte) 0xae, (byte) 0x24,
-        (byte) 0x35, (byte) 0x07, (byte) 0xb5, (byte) 0x48, (byte) 0x2d, (byte) 0x36,
-        (byte) 0x30, (byte) 0x5d, (byte) 0xe9, (byte) 0x49, (byte) 0x2d, (byte) 0xd1,
-        (byte) 0x5d, (byte) 0xc5, (byte) 0xf4, (byte) 0x33, (byte) 0x77, (byte) 0x3c,
-        (byte) 0x71, (byte) 0xad, (byte) 0x90, (byte) 0x65, (byte) 0xa9, (byte) 0xc1,
-        (byte) 0x0b, (byte) 0x5c, (byte) 0x62, (byte) 0x55, (byte) 0x50, (byte) 0x6f,
-        (byte) 0x9b, (byte) 0xc9, (byte) 0x0d, (byte) 0xee
-    };
-
-    /**
-     * Generated from above and converted with:
-     *
-     * <p>openssl pkcs8 -topk8 -outform d -in userkey.pem -nocrypt | xxd -i | sed 's/0x/(byte) 0x/g'
-     */
-    private static final byte[] FAKE_EC_KEY_1 =
-            new byte[] {
-                (byte) 0x30, (byte) 0x81, (byte) 0x87, (byte) 0x02, (byte) 0x01, (byte) 0x00,
-                (byte) 0x30, (byte) 0x13, (byte) 0x06, (byte) 0x07, (byte) 0x2a, (byte) 0x86,
-                (byte) 0x48, (byte) 0xce, (byte) 0x3d, (byte) 0x02, (byte) 0x01, (byte) 0x06,
-                (byte) 0x08, (byte) 0x2a, (byte) 0x86, (byte) 0x48, (byte) 0xce, (byte) 0x3d,
-                (byte) 0x03, (byte) 0x01, (byte) 0x07, (byte) 0x04, (byte) 0x6d, (byte) 0x30,
-                (byte) 0x6b, (byte) 0x02, (byte) 0x01, (byte) 0x01, (byte) 0x04, (byte) 0x20,
-                (byte) 0x3a, (byte) 0x8a, (byte) 0x02, (byte) 0xdc, (byte) 0xde, (byte) 0x70,
-                (byte) 0x84, (byte) 0x45, (byte) 0x34, (byte) 0xaf, (byte) 0xbd, (byte) 0xd5,
-                (byte) 0x02, (byte) 0x17, (byte) 0x69, (byte) 0x90, (byte) 0x65, (byte) 0x1e,
-                (byte) 0x87, (byte) 0xf1, (byte) 0x3d, (byte) 0x17, (byte) 0xb6, (byte) 0xf4,
-                (byte) 0x31, (byte) 0x94, (byte) 0x86, (byte) 0x76, (byte) 0x55, (byte) 0xf7,
-                (byte) 0xcc, (byte) 0xba, (byte) 0xa1, (byte) 0x44, (byte) 0x03, (byte) 0x42,
-                (byte) 0x00, (byte) 0x04, (byte) 0xd9, (byte) 0xcf, (byte) 0xe7, (byte) 0x9b,
-                (byte) 0x23, (byte) 0xc8, (byte) 0xa3, (byte) 0xb8, (byte) 0x33, (byte) 0x14,
-                (byte) 0xa4, (byte) 0x4d, (byte) 0x75, (byte) 0x90, (byte) 0xf3, (byte) 0xcd,
-                (byte) 0x43, (byte) 0xe5, (byte) 0x1b, (byte) 0x05, (byte) 0x1d, (byte) 0xf3,
-                (byte) 0xd0, (byte) 0xa3, (byte) 0xb7, (byte) 0x32, (byte) 0x5f, (byte) 0x79,
-                (byte) 0xdc, (byte) 0x88, (byte) 0xb8, (byte) 0x4d, (byte) 0xb3, (byte) 0xd1,
-                (byte) 0x6d, (byte) 0xf7, (byte) 0x75, (byte) 0xf3, (byte) 0xbf, (byte) 0x50,
-                (byte) 0xa1, (byte) 0xbc, (byte) 0x03, (byte) 0x64, (byte) 0x22, (byte) 0xe6,
-                (byte) 0x1a, (byte) 0xa1, (byte) 0xe1, (byte) 0x06, (byte) 0x68, (byte) 0x3b,
-                (byte) 0xbc, (byte) 0x9f, (byte) 0xd3, (byte) 0xae, (byte) 0x77, (byte) 0x5e,
-                (byte) 0x88, (byte) 0x0c, (byte) 0x5e, (byte) 0x0c, (byte) 0xb2, (byte) 0x38
-            };
-
-    /**
-     * Generated from above and converted with:
-     *
-     * <p>openssl x509 -outform d -in usercert.pem | xxd -i | sed 's/0x/(byte) 0x/g'
-     */
-    private static final byte[] FAKE_EC_USER_1 =
-            new byte[] {
-                (byte) 0x30, (byte) 0x82, (byte) 0x02, (byte) 0x51, (byte) 0x30, (byte) 0x82,
-                (byte) 0x01, (byte) 0xba, (byte) 0xa0, (byte) 0x03, (byte) 0x02, (byte) 0x01,
-                (byte) 0x02, (byte) 0x02, (byte) 0x01, (byte) 0x01, (byte) 0x30, (byte) 0x0d,
-                (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86, (byte) 0x48, (byte) 0x86,
-                (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01, (byte) 0x05, (byte) 0x05,
-                (byte) 0x00, (byte) 0x30, (byte) 0x45, (byte) 0x31, (byte) 0x0b, (byte) 0x30,
-                (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x06,
-                (byte) 0x13, (byte) 0x02, (byte) 0x41, (byte) 0x55, (byte) 0x31, (byte) 0x13,
-                (byte) 0x30, (byte) 0x11, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04,
-                (byte) 0x08, (byte) 0x0c, (byte) 0x0a, (byte) 0x53, (byte) 0x6f, (byte) 0x6d,
-                (byte) 0x65, (byte) 0x2d, (byte) 0x53, (byte) 0x74, (byte) 0x61, (byte) 0x74,
-                (byte) 0x65, (byte) 0x31, (byte) 0x21, (byte) 0x30, (byte) 0x1f, (byte) 0x06,
-                (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x0a, (byte) 0x0c, (byte) 0x18,
-                (byte) 0x49, (byte) 0x6e, (byte) 0x74, (byte) 0x65, (byte) 0x72, (byte) 0x6e,
-                (byte) 0x65, (byte) 0x74, (byte) 0x20, (byte) 0x57, (byte) 0x69, (byte) 0x64,
-                (byte) 0x67, (byte) 0x69, (byte) 0x74, (byte) 0x73, (byte) 0x20, (byte) 0x50,
-                (byte) 0x74, (byte) 0x79, (byte) 0x20, (byte) 0x4c, (byte) 0x74, (byte) 0x64,
-                (byte) 0x30, (byte) 0x1e, (byte) 0x17, (byte) 0x0d, (byte) 0x31, (byte) 0x33,
-                (byte) 0x30, (byte) 0x38, (byte) 0x32, (byte) 0x37, (byte) 0x31, (byte) 0x36,
-                (byte) 0x33, (byte) 0x30, (byte) 0x30, (byte) 0x38, (byte) 0x5a, (byte) 0x17,
-                (byte) 0x0d, (byte) 0x32, (byte) 0x33, (byte) 0x30, (byte) 0x38, (byte) 0x32,
-                (byte) 0x35, (byte) 0x31, (byte) 0x36, (byte) 0x33, (byte) 0x30, (byte) 0x30,
-                (byte) 0x38, (byte) 0x5a, (byte) 0x30, (byte) 0x62, (byte) 0x31, (byte) 0x0b,
-                (byte) 0x30, (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04,
-                (byte) 0x06, (byte) 0x13, (byte) 0x02, (byte) 0x41, (byte) 0x55, (byte) 0x31,
-                (byte) 0x13, (byte) 0x30, (byte) 0x11, (byte) 0x06, (byte) 0x03, (byte) 0x55,
-                (byte) 0x04, (byte) 0x08, (byte) 0x0c, (byte) 0x0a, (byte) 0x53, (byte) 0x6f,
-                (byte) 0x6d, (byte) 0x65, (byte) 0x2d, (byte) 0x53, (byte) 0x74, (byte) 0x61,
-                (byte) 0x74, (byte) 0x65, (byte) 0x31, (byte) 0x21, (byte) 0x30, (byte) 0x1f,
-                (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x0a, (byte) 0x0c,
-                (byte) 0x18, (byte) 0x49, (byte) 0x6e, (byte) 0x74, (byte) 0x65, (byte) 0x72,
-                (byte) 0x6e, (byte) 0x65, (byte) 0x74, (byte) 0x20, (byte) 0x57, (byte) 0x69,
-                (byte) 0x64, (byte) 0x67, (byte) 0x69, (byte) 0x74, (byte) 0x73, (byte) 0x20,
-                (byte) 0x50, (byte) 0x74, (byte) 0x79, (byte) 0x20, (byte) 0x4c, (byte) 0x74,
-                (byte) 0x64, (byte) 0x31, (byte) 0x1b, (byte) 0x30, (byte) 0x19, (byte) 0x06,
-                (byte) 0x03, (byte) 0x55, (byte) 0x04, (byte) 0x03, (byte) 0x0c, (byte) 0x12,
-                (byte) 0x73, (byte) 0x65, (byte) 0x72, (byte) 0x76, (byte) 0x65, (byte) 0x72,
-                (byte) 0x2e, (byte) 0x65, (byte) 0x78, (byte) 0x61, (byte) 0x6d, (byte) 0x70,
-                (byte) 0x6c, (byte) 0x65, (byte) 0x2e, (byte) 0x63, (byte) 0x6f, (byte) 0x6d,
-                (byte) 0x30, (byte) 0x59, (byte) 0x30, (byte) 0x13, (byte) 0x06, (byte) 0x07,
-                (byte) 0x2a, (byte) 0x86, (byte) 0x48, (byte) 0xce, (byte) 0x3d, (byte) 0x02,
-                (byte) 0x01, (byte) 0x06, (byte) 0x08, (byte) 0x2a, (byte) 0x86, (byte) 0x48,
-                (byte) 0xce, (byte) 0x3d, (byte) 0x03, (byte) 0x01, (byte) 0x07, (byte) 0x03,
-                (byte) 0x42, (byte) 0x00, (byte) 0x04, (byte) 0xd9, (byte) 0xcf, (byte) 0xe7,
-                (byte) 0x9b, (byte) 0x23, (byte) 0xc8, (byte) 0xa3, (byte) 0xb8, (byte) 0x33,
-                (byte) 0x14, (byte) 0xa4, (byte) 0x4d, (byte) 0x75, (byte) 0x90, (byte) 0xf3,
-                (byte) 0xcd, (byte) 0x43, (byte) 0xe5, (byte) 0x1b, (byte) 0x05, (byte) 0x1d,
-                (byte) 0xf3, (byte) 0xd0, (byte) 0xa3, (byte) 0xb7, (byte) 0x32, (byte) 0x5f,
-                (byte) 0x79, (byte) 0xdc, (byte) 0x88, (byte) 0xb8, (byte) 0x4d, (byte) 0xb3,
-                (byte) 0xd1, (byte) 0x6d, (byte) 0xf7, (byte) 0x75, (byte) 0xf3, (byte) 0xbf,
-                (byte) 0x50, (byte) 0xa1, (byte) 0xbc, (byte) 0x03, (byte) 0x64, (byte) 0x22,
-                (byte) 0xe6, (byte) 0x1a, (byte) 0xa1, (byte) 0xe1, (byte) 0x06, (byte) 0x68,
-                (byte) 0x3b, (byte) 0xbc, (byte) 0x9f, (byte) 0xd3, (byte) 0xae, (byte) 0x77,
-                (byte) 0x5e, (byte) 0x88, (byte) 0x0c, (byte) 0x5e, (byte) 0x0c, (byte) 0xb2,
-                (byte) 0x38, (byte) 0xa3, (byte) 0x7b, (byte) 0x30, (byte) 0x79, (byte) 0x30,
-                (byte) 0x09, (byte) 0x06, (byte) 0x03, (byte) 0x55, (byte) 0x1d, (byte) 0x13,
-                (byte) 0x04, (byte) 0x02, (byte) 0x30, (byte) 0x00, (byte) 0x30, (byte) 0x2c,
-                (byte) 0x06, (byte) 0x09, (byte) 0x60, (byte) 0x86, (byte) 0x48, (byte) 0x01,
-                (byte) 0x86, (byte) 0xf8, (byte) 0x42, (byte) 0x01, (byte) 0x0d, (byte) 0x04,
-                (byte) 0x1f, (byte) 0x16, (byte) 0x1d, (byte) 0x4f, (byte) 0x70, (byte) 0x65,
-                (byte) 0x6e, (byte) 0x53, (byte) 0x53, (byte) 0x4c, (byte) 0x20, (byte) 0x47,
-                (byte) 0x65, (byte) 0x6e, (byte) 0x65, (byte) 0x72, (byte) 0x61, (byte) 0x74,
-                (byte) 0x65, (byte) 0x64, (byte) 0x20, (byte) 0x43, (byte) 0x65, (byte) 0x72,
-                (byte) 0x74, (byte) 0x69, (byte) 0x66, (byte) 0x69, (byte) 0x63, (byte) 0x61,
-                (byte) 0x74, (byte) 0x65, (byte) 0x30, (byte) 0x1d, (byte) 0x06, (byte) 0x03,
-                (byte) 0x55, (byte) 0x1d, (byte) 0x0e, (byte) 0x04, (byte) 0x16, (byte) 0x04,
-                (byte) 0x14, (byte) 0xd5, (byte) 0xc4, (byte) 0x72, (byte) 0xbd, (byte) 0xd2,
-                (byte) 0x4e, (byte) 0x90, (byte) 0x1b, (byte) 0x14, (byte) 0x32, (byte) 0xdb,
-                (byte) 0x03, (byte) 0xae, (byte) 0xfa, (byte) 0x27, (byte) 0x7d, (byte) 0x8d,
-                (byte) 0xe4, (byte) 0x80, (byte) 0x58, (byte) 0x30, (byte) 0x1f, (byte) 0x06,
-                (byte) 0x03, (byte) 0x55, (byte) 0x1d, (byte) 0x23, (byte) 0x04, (byte) 0x18,
-                (byte) 0x30, (byte) 0x16, (byte) 0x80, (byte) 0x14, (byte) 0x5f, (byte) 0x5b,
-                (byte) 0x5e, (byte) 0xac, (byte) 0x29, (byte) 0xfa, (byte) 0xa1, (byte) 0x9f,
-                (byte) 0x9e, (byte) 0xad, (byte) 0x46, (byte) 0xe1, (byte) 0xbc, (byte) 0x20,
-                (byte) 0x72, (byte) 0xcf, (byte) 0x4a, (byte) 0xd4, (byte) 0xfa, (byte) 0xe3,
-                (byte) 0x30, (byte) 0x0d, (byte) 0x06, (byte) 0x09, (byte) 0x2a, (byte) 0x86,
-                (byte) 0x48, (byte) 0x86, (byte) 0xf7, (byte) 0x0d, (byte) 0x01, (byte) 0x01,
-                (byte) 0x05, (byte) 0x05, (byte) 0x00, (byte) 0x03, (byte) 0x81, (byte) 0x81,
-                (byte) 0x00, (byte) 0x43, (byte) 0x99, (byte) 0x9f, (byte) 0x67, (byte) 0x08,
-                (byte) 0x43, (byte) 0xd5, (byte) 0x6b, (byte) 0x6f, (byte) 0xd7, (byte) 0x05,
-                (byte) 0xd6, (byte) 0x75, (byte) 0x34, (byte) 0x30, (byte) 0xca, (byte) 0x20,
-                (byte) 0x47, (byte) 0x61, (byte) 0xa1, (byte) 0x89, (byte) 0xb6, (byte) 0xf1,
-                (byte) 0x49, (byte) 0x7b, (byte) 0xd9, (byte) 0xb9, (byte) 0xe8, (byte) 0x1e,
-                (byte) 0x29, (byte) 0x74, (byte) 0x0a, (byte) 0x67, (byte) 0xc0, (byte) 0x7d,
-                (byte) 0xb8, (byte) 0xe6, (byte) 0x39, (byte) 0xa8, (byte) 0x5e, (byte) 0xc3,
-                (byte) 0xb0, (byte) 0xa1, (byte) 0x30, (byte) 0x6a, (byte) 0x1f, (byte) 0x1d,
-                (byte) 0xfc, (byte) 0x11, (byte) 0x59, (byte) 0x0b, (byte) 0xb9, (byte) 0xad,
-                (byte) 0x3a, (byte) 0x4e, (byte) 0x50, (byte) 0x0a, (byte) 0x61, (byte) 0xdb,
-                (byte) 0x75, (byte) 0x6b, (byte) 0xe5, (byte) 0x3f, (byte) 0x8d, (byte) 0xde,
-                (byte) 0x28, (byte) 0x68, (byte) 0xb1, (byte) 0x29, (byte) 0x9a, (byte) 0x18,
-                (byte) 0x8a, (byte) 0xfc, (byte) 0x3f, (byte) 0x13, (byte) 0x93, (byte) 0x29,
-                (byte) 0xed, (byte) 0x22, (byte) 0x7c, (byte) 0xb4, (byte) 0x50, (byte) 0xd5,
-                (byte) 0x4d, (byte) 0x32, (byte) 0x4d, (byte) 0x42, (byte) 0x2b, (byte) 0x29,
-                (byte) 0x97, (byte) 0x86, (byte) 0xc0, (byte) 0x01, (byte) 0x00, (byte) 0x25,
-                (byte) 0xf6, (byte) 0xd3, (byte) 0x2a, (byte) 0xd8, (byte) 0xda, (byte) 0x13,
-                (byte) 0x94, (byte) 0x12, (byte) 0x78, (byte) 0x14, (byte) 0x0b, (byte) 0x51,
-                (byte) 0xc0, (byte) 0x45, (byte) 0xb4, (byte) 0x02, (byte) 0x37, (byte) 0x98,
-                (byte) 0x42, (byte) 0x3c, (byte) 0xcb, (byte) 0x2e, (byte) 0xe4, (byte) 0x38,
-                (byte) 0x69, (byte) 0x1b, (byte) 0x72, (byte) 0xf0, (byte) 0xaa, (byte) 0x89,
-                (byte) 0x7e, (byte) 0xde, (byte) 0xb2
-            };
+    private static final String[] getAlgorithms() {
+        return new String[] {"RSA", "EC", "ED25519"};
+    }
 
     /** The amount of time to allow before and after expected time for variance in timing tests. */
     private static final long SLOP_TIME_MILLIS = 15000L;
@@ -809,34 +358,31 @@ public class AndroidKeyStoreTest {
         }
     }
 
-    private PrivateKey generatePrivateKey(String keyType, byte[] fakeKey1) throws Exception {
-        KeyFactory kf = KeyFactory.getInstance(keyType);
-        return kf.generatePrivate(new PKCS8EncodedKeySpec(fakeKey1));
+    private PrivateKey generatePrivateKey(String algorithm) throws Exception {
+        KeyFactory kf = KeyFactory.getInstance(algorithm);
+        return kf.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
     }
 
-    private Certificate generateCertificate(byte[] fakeUser1) throws Exception {
+    private Certificate generateUserCertificate(String algorithm) throws Exception {
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        return cf.generateCertificate(new ByteArrayInputStream(fakeUser1));
+        return cf.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
     }
 
-    private PrivateKeyEntry makeUserEcKey1() throws Exception {
+    private Certificate generateCaCertificate(String algorithm) throws Exception {
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        return cf.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
+    }
+
+    private PrivateKeyEntry makeUserKey(String algorithm) throws Exception {
         return new KeyStore.PrivateKeyEntry(
-                generatePrivateKey("EC", FAKE_EC_KEY_1),
+                generatePrivateKey(algorithm),
                 new Certificate[] {
-                    generateCertificate(FAKE_EC_USER_1), generateCertificate(FAKE_EC_CA_1)
+                    generateUserCertificate(algorithm), generateCaCertificate(algorithm)
                 });
     }
 
-    private PrivateKeyEntry makeUserRsaKey1() throws Exception {
-        return new KeyStore.PrivateKeyEntry(
-                generatePrivateKey("RSA", FAKE_RSA_KEY_1),
-                new Certificate[] {
-                    generateCertificate(FAKE_RSA_USER_1), generateCertificate(FAKE_RSA_CA_1)
-                });
-    }
-
-    private Entry makeCa1() throws Exception {
-        return new KeyStore.TrustedCertificateEntry(generateCertificate(FAKE_RSA_CA_1));
+    private Entry makeCa(String algorithm) throws Exception {
+        return new KeyStore.TrustedCertificateEntry(generateCaCertificate(algorithm));
     }
 
     private void assertAliases(final String[] expectedAliases) throws KeyStoreException {
@@ -868,14 +414,16 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_Aliases_Unencrypted_Success
     @Test
-    public void aliases_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void aliases_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
         assertAliases(new String[] {});
 
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertAliases(new String[] {getTestAlias1()});
 
-        mKeyStore.setEntry(getTestAlias2(), makeCa1(), null);
+        mKeyStore.setEntry(getTestAlias2(), makeCa(algorithm), null);
         assertAliases(new String[] {getTestAlias1(), getTestAlias2()});
     }
 
@@ -890,22 +438,26 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_ContainsAliases_PrivateAndCA_Unencrypted_Success
     @Test
-    public void containsAlias_privateKeyAndCA_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void containsAlias_privateKeyAndCA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
         assertAliases(new String[] {});
 
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertTrue("Should contain added private key", mKeyStore.containsAlias(getTestAlias1()));
 
-        mKeyStore.setEntry(getTestAlias2(), makeCa1(), null);
+        mKeyStore.setEntry(getTestAlias2(), makeCa(algorithm), null);
         assertTrue("Should contain added CA certificate", mKeyStore.containsAlias(getTestAlias2()));
     }
 
     // Previously called testKeyStore_ContainsAliases_CAOnly_Unencrypted_Success
     @Test
-    public void containsAlias_CA_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void containsAlias_CA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeCa1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeCa(algorithm), null);
         assertTrue("Should contain added CA certificate", mKeyStore.containsAlias(getTestAlias1()));
     }
 
@@ -919,11 +471,13 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_DeleteEntry_Unencrypted_Success
     @Test
-    public void deleteEntry_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void deleteEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
-        mKeyStore.setCertificateEntry(getTestAlias2(), generateCertificate(FAKE_RSA_CA_1));
-        mKeyStore.setCertificateEntry(getTestAlias3(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
+        mKeyStore.setCertificateEntry(getTestAlias2(), generateCaCertificate(algorithm));
+        mKeyStore.setCertificateEntry(getTestAlias3(), generateCaCertificate(algorithm));
         assertAliases(new String[] {getTestAlias1(), getTestAlias2(), getTestAlias3()});
 
         mKeyStore.deleteEntry(getTestAlias1());
@@ -945,17 +499,21 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_DeleteEntry_NonExistent_Unencrypted_Success
     @Test
-    public void deleteEntry_nonExistent_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void deleteEntry_nonExistent_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         mKeyStore.deleteEntry(getTestAlias2()); // Should not throw.
     }
 
     // Previously called testKeyStore_GetCertificate_Single_Unencrypted_Success
     @Test
-    public void getCertificate_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCertificate_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertAliases(new String[] {getTestAlias1()});
         assertNull(
                 "Certificate should not exist in keystore",
@@ -965,7 +523,8 @@ public class AndroidKeyStoreTest {
         assertNotNull("Retrieved certificate should not be null", retrieved);
 
         CertificateFactory f = CertificateFactory.getInstance("X.509");
-        Certificate actual = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        Certificate actual =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
         assertEquals("Actual and retrieved certificates should be the same", actual, retrieved);
     }
 
@@ -980,9 +539,11 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_CAEntry_Unencrypted_Success
     @Test
-    public void getCertificateAlias_CAEntry_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCertificateAlias_CAEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        Certificate cert = generateCertificate(FAKE_RSA_CA_1);
+        Certificate cert = generateCaCertificate(algorithm);
         mKeyStore.setCertificateEntry(getTestAlias1(), cert);
         assertEquals(
                 "Stored certificate alias should be found",
@@ -992,11 +553,14 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void getCertificateAlias_privateKeyEntry_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCertificateAlias_privateKeyEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         CertificateFactory f = CertificateFactory.getInstance("X.509");
-        Certificate actual = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+        Certificate actual =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
         assertEquals(
                 "Stored certificate alias should be found",
                 getTestAlias1(),
@@ -1006,15 +570,18 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_GetCertificateAlias_CAEntry_WithPrivateKeyUsingCA_Unencrypted_Success
     @Test
-    public void getCertificateAlias_CAEntryAndPrivateKeyEntryUsingCA_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCertificateAlias_CAEntryAndPrivateKeyEntryUsingCA_success(String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
-        Certificate actual = generateCertificate(FAKE_RSA_CA_1);
+        Certificate actual = generateCaCertificate(algorithm);
 
         // Insert TrustedCertificateEntry with CA name
         mKeyStore.setCertificateEntry(getTestAlias2(), actual);
 
         // Insert PrivateKeyEntry that uses the same CA
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
 
         assertEquals(
                 "Stored certificate alias should be found",
@@ -1024,10 +591,13 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_NonExist_Empty_Unencrypted_Failure
     @Test
-    public void getCertificateAlias_emptyKeystore_returnsNull() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCertificateAlias_emptyKeystore_returnsNull(String algorithm) throws Exception {
         mKeyStore.load(null, null);
         CertificateFactory f = CertificateFactory.getInstance("X.509");
-        Certificate actual = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        Certificate actual =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
         assertNull(
                 "Non-existent certificate alias should not be found",
                 mKeyStore.getCertificateAlias(actual));
@@ -1035,15 +605,17 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateAlias_NonExist_Unencrypted_Failure
     @Test
-    public void getCertificateAlias_nonExistent_returnsNull() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCertificateAlias_nonExistent_returnsNull(String algorithm) throws Exception {
         mKeyStore.load(null, null);
 
         // Insert TrustedCertificateEntry with CA name
-        Certificate ca = generateCertificate(FAKE_RSA_CA_1);
+        Certificate ca = generateCaCertificate(algorithm);
         mKeyStore.setCertificateEntry(getTestAlias1(), ca);
 
         // Generate a certificate but don't insert it in the KeyStore.
-        Certificate userCert = generateCertificate(FAKE_RSA_USER_1);
+        Certificate userCert = generateUserCertificate(algorithm);
 
         assertNull(
                 "Non-existent certificate alias should not be found",
@@ -1052,13 +624,15 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCertificateChain_SingleLength_Unencrypted_Success
     @Test
-    public void getCertificateChain_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCertificateChain_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
 
         Certificate[] expected = new Certificate[2];
-        expected[0] = generateCertificate(FAKE_RSA_USER_1);
-        expected[1] = generateCertificate(FAKE_RSA_CA_1);
+        expected[0] = generateUserCertificate(algorithm);
+        expected[1] = generateCaCertificate(algorithm);
 
         Certificate[] actual = mKeyStore.getCertificateChain(getTestAlias1());
 
@@ -1087,11 +661,13 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCreationDate_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void getCreationDate_privateKey_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCreationDate_privateKey_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
 
         // getTestAlias1()
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
 
         Date now = new Date();
         Date actual = mKeyStore.getCreationDate(getTestAlias1());
@@ -1105,11 +681,13 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetCreationDate_CAEntry_Unencrypted_Success
     @Test
-    public void getCreationDate_CA_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getCreationDate_CA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
 
         // Insert TrustedCertificateEntry with CA name
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
 
         Date now = new Date();
         Date actual = mKeyStore.getCreationDate(getTestAlias1());
@@ -1122,27 +700,16 @@ public class AndroidKeyStoreTest {
         assertTrue("Time should be close to current time", actual.after(expectedAfter));
     }
 
-    // Previously called testKeyStore_GetEntry_EC_NullParams_Unencrypted_Success
+    // Replaces three previous tests:
+    //   - testKeyStore_GetEntry_EC_NullParams_Unencrypted_Success
+    //   - testKeyStore_GetEntry_RSA_NullParams_Unencrypted_Success
+    //   - testKeyStore_GetEntry_NullParams_Unencrypted_Success
     @Test
-    public void getEntry_ECKeyWithNullParams_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getEntry_nullParams_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserEcKey1(), null);
-
-        Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
-        assertNotNull("Entry should exist", entry);
-        assertTrue("Should be a PrivateKeyEntry", entry instanceof PrivateKeyEntry);
-
-        PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
-        assertPrivateKeyEntryEquals(keyEntry, "EC", FAKE_EC_KEY_1, FAKE_EC_USER_1, FAKE_EC_CA_1);
-    }
-
-    // Previously called testKeyStore_GetEntry_RSA_NullParams_Unencrypted_Success
-    // Redundant test testKeyStore_GetEntry_NullParams_Unencrypted_Success deleted in favour of this
-    // one.
-    @Test
-    public void getEntry_RSAKeyWithNullParams_success() throws Exception {
-        mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
 
         Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
         assertNotNull("Entry should exist", entry);
@@ -1150,14 +717,18 @@ public class AndroidKeyStoreTest {
 
         PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
         assertPrivateKeyEntryEquals(
-                keyEntry, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                keyEntry,
+                algorithm,
+                FAKE_KEY.get(algorithm),
+                FAKE_USER.get(algorithm),
+                FAKE_CA.get(algorithm));
     }
 
     @SuppressWarnings("unchecked")
     private void assertPrivateKeyEntryEquals(
-            PrivateKeyEntry keyEntry, String keyType, byte[] key, byte[] cert, byte[] ca)
+            PrivateKeyEntry keyEntry, String algorithm, byte[] key, byte[] cert, byte[] ca)
             throws Exception {
-        KeyFactory keyFact = KeyFactory.getInstance(keyType);
+        KeyFactory keyFact = KeyFactory.getInstance(algorithm);
         PrivateKey expectedKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(key));
 
         CertificateFactory certFact = CertificateFactory.getInstance("X.509");
@@ -1245,9 +816,9 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetKey_NoPassword_Unencrypted_Success
     @Test
-    public void getKey_noPassword_success() throws Exception {
+    public void getKey_noPassword_success_RSA() throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey("RSA"), null);
 
         Key key = mKeyStore.getKey(getTestAlias1(), null);
         assertNotNull("Key should exist", key);
@@ -1256,7 +827,8 @@ public class AndroidKeyStoreTest {
 
         RSAKey actualKey = (RSAKey) key;
         KeyFactory keyFact = KeyFactory.getInstance("RSA");
-        PrivateKey expectedKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+        PrivateKey expectedKey =
+                keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get("RSA")));
         assertEquals(
                 "Inserted key should be same as retrieved key",
                 ((RSAKey) expectedKey).getModulus(),
@@ -1265,9 +837,11 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_GetKey_Certificate_Unencrypted_Failure
     @Test
-    public void getKey_certificate_returnsNull() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void getKey_certificate_returnsNull(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertNull(
                 "Certificate entries should return null", mKeyStore.getKey(getTestAlias1(), null));
     }
@@ -1294,9 +868,11 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_IsCertificateEntry_CA_Unencrypted_Success
     @Test
-    public void isCertificateEntry_CA_returnsTrue() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void isCertificateEntry_CA_returnsTrue(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertTrue(
                 "Should return true for CA certificate",
                 mKeyStore.isCertificateEntry(getTestAlias1()));
@@ -1304,9 +880,11 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_IsCertificateEntry_PrivateKey_Unencrypted_Failure
     @Test
-    public void isCertificateEntry_privateKey_returnsFalse() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void isCertificateEntry_privateKey_returnsFalse(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertFalse(
                 "Should return false for PrivateKeyEntry",
                 mKeyStore.isCertificateEntry(getTestAlias1()));
@@ -1323,17 +901,21 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_IsKeyEntry_PrivateKey_Unencrypted_Success
     @Test
-    public void isKeyEntry_privateKey_returnsTrue() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void isKeyEntry_privateKey_returnsTrue(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertTrue("Should return true for PrivateKeyEntry", mKeyStore.isKeyEntry(getTestAlias1()));
     }
 
     // Previously called testKeyStore_IsKeyEntry_CA_Unencrypted_Failure
     @Test
-    public void isKeyEntry_CA_returnsFalse() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void isKeyEntry_CA_returnsFalse(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertFalse(
                 "Should return false for CA certificate", mKeyStore.isKeyEntry(getTestAlias1()));
     }
@@ -1349,8 +931,10 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetCertificate_CA_Unencrypted_Success
     @Test
-    public void setCertificateEntry_CA_success() throws Exception {
-        final Certificate actual = generateCertificate(FAKE_RSA_CA_1);
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setCertificateEntry_CA_success(String algorithm) throws Exception {
+        final Certificate actual = generateCaCertificate(algorithm);
         mKeyStore.load(null, null);
         mKeyStore.setCertificateEntry(getTestAlias1(), actual);
         assertAliases(new String[] {getTestAlias1()});
@@ -1362,25 +946,30 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetCertificate_CAExists_Overwrite_Unencrypted_Success
     @Test
-    public void setCertificateEntry_overwriteCAWithCA_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setCertificateEntry_overwriteCAWithCA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertAliases(new String[] {getTestAlias1()});
 
         // TODO(b/491452429): Use different test vector for the overwrite
-        final Certificate cert = generateCertificate(FAKE_RSA_CA_1);
+        final Certificate cert = generateCaCertificate(algorithm);
         mKeyStore.setCertificateEntry(getTestAlias1(), cert);
         assertAliases(new String[] {getTestAlias1()});
     }
 
     // Previously called testKeyStore_SetCertificate_PrivateKeyExists_Unencrypted_Failure
     @Test
-    public void setCertificateEntry_overwritePrivateKeyWithCA_throwsException() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setCertificateEntry_overwritePrivateKeyWithCA_throwsException(String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         assertAliases(new String[] {getTestAlias1()});
 
-        final Certificate cert = generateCertificate(FAKE_RSA_CA_1);
+        final Certificate cert = generateCaCertificate(algorithm);
         assertThrows(
                 "Should throw when trying to overwrite a PrivateKey entry with a Certificate",
                 KeyStoreException.class,
@@ -1389,15 +978,19 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetEntry_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void setEntry_privateKeyEntry() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setEntry_privateKeyEntry(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        KeyFactory keyFact = KeyFactory.getInstance("RSA");
-        PrivateKey expectedKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+        KeyFactory keyFact = KeyFactory.getInstance(algorithm);
+        PrivateKey expectedKey =
+                keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
 
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
         final Certificate[] expectedChain = new Certificate[2];
-        expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
-        expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        expectedChain[0] =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
+        expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
         PrivateKeyEntry expected = new PrivateKeyEntry(expectedKey, expectedChain);
         mKeyStore.setEntry(getTestAlias1(), expected, null);
@@ -1409,25 +1002,35 @@ public class AndroidKeyStoreTest {
                 actualEntry instanceof PrivateKeyEntry);
 
         PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
-        assertPrivateKeyEntryEquals(actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+        assertPrivateKeyEntryEquals(
+                actual,
+                algorithm,
+                FAKE_KEY.get(algorithm),
+                FAKE_USER.get(algorithm),
+                FAKE_CA.get(algorithm));
     }
 
     // Previously called
     // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void setEntry_overwritePrivateKeyWithPrivateKey_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setEntry_overwritePrivateKeyWithPrivateKey_success(String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
-        final KeyFactory keyFact = KeyFactory.getInstance("RSA");
+        final KeyFactory keyFact = KeyFactory.getInstance(algorithm);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
         // Start with PrivateKeyEntry
         {
             PrivateKey expectedKey =
-                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
 
             final Certificate[] expectedChain = new Certificate[2];
-            expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
-            expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+            expectedChain[0] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
+            expectedChain[1] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
             PrivateKeyEntry expected = new PrivateKeyEntry(expectedKey, expectedChain);
             mKeyStore.setEntry(getTestAlias1(), expected, null);
@@ -1440,17 +1043,23 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                    actual,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    FAKE_CA.get(algorithm));
         }
 
         // TODO(b/491452429): Use different test vectors for the overwrite
         // Replace with PrivateKeyEntry
         {
             PrivateKey expectedKey =
-                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
             final Certificate[] expectedChain = new Certificate[2];
-            expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
-            expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+            expectedChain[0] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
+            expectedChain[1] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
             PrivateKeyEntry expected = new PrivateKeyEntry(expectedKey, expectedChain);
             mKeyStore.setEntry(getTestAlias1(), expected, null);
@@ -1463,21 +1072,27 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                    actual,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    FAKE_CA.get(algorithm));
         }
     }
 
     // Previously called
     // testKeyStore_SetEntry_CAEntry_Overwrites_PrivateKeyEntry_Unencrypted_Success
     @Test
-    public void setEntry_overwriteCAEntryWithPrivateKey_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setEntry_overwriteCAEntryWithPrivateKey_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
         // Start with TrustedCertificateEntry
         {
             final Certificate caCert =
-                    f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
             TrustedCertificateEntry expectedCertEntry = new TrustedCertificateEntry(caCert);
             mKeyStore.setEntry(getTestAlias1(), expectedCertEntry, null);
@@ -1496,12 +1111,14 @@ public class AndroidKeyStoreTest {
 
         // Replace with PrivateKeyEntry
         {
-            KeyFactory keyFact = KeyFactory.getInstance("RSA");
+            KeyFactory keyFact = KeyFactory.getInstance(algorithm);
             PrivateKey expectedKey =
-                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
             final Certificate[] expectedChain = new Certificate[2];
-            expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
-            expectedChain[1] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+            expectedChain[0] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
+            expectedChain[1] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
             mKeyStore.setEntry(getTestAlias1(), expectedPrivEntry, null);
@@ -1514,27 +1131,33 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actualPrivEntry = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actualPrivEntry, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                    actualPrivEntry,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    FAKE_CA.get(algorithm));
         }
     }
 
     // Previously called
     // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_CAEntry_Unencrypted_Success
     @Test
-    public void setEntry_overwritePrivateKeyWithCA_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setEntry_overwritePrivateKeyWithCA_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-
-        final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        final Certificate caCert =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
         // Start with PrivateKeyEntry
         {
-            KeyFactory keyFact = KeyFactory.getInstance("RSA");
+            KeyFactory keyFact = KeyFactory.getInstance(algorithm);
             PrivateKey expectedKey =
-                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
             final Certificate[] expectedChain = new Certificate[2];
-            expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+            expectedChain[0] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
             expectedChain[1] = caCert;
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
@@ -1548,7 +1171,11 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actualPrivEntry = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actualPrivEntry, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                    actualPrivEntry,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    FAKE_CA.get(algorithm));
         }
 
         // Replace with TrustedCertificateEntry
@@ -1572,18 +1199,23 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_SetEntry_PrivateKeyEntry_Overwrites_ShortPrivateKeyEntry_Unencrypted_Success
     @Test
-    public void setEntry_overwritePrivateKeyWithPrivateKeyWithoutChain_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setEntry_overwritePrivateKeyWithPrivateKeyWithoutChain_success(String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-        final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        final Certificate caCert =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
         // Start with PrivateKeyEntry
         {
-            KeyFactory keyFact = KeyFactory.getInstance("RSA");
+            KeyFactory keyFact = KeyFactory.getInstance(algorithm);
             PrivateKey expectedKey =
-                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
             final Certificate[] expectedChain = new Certificate[2];
-            expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+            expectedChain[0] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
             expectedChain[1] = caCert;
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
@@ -1597,16 +1229,21 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actualPrivEntry = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actualPrivEntry, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                    actualPrivEntry,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    FAKE_CA.get(algorithm));
         }
 
         // Replace with PrivateKeyEntry that has no chain
         {
-            KeyFactory keyFact = KeyFactory.getInstance("RSA");
+            KeyFactory keyFact = KeyFactory.getInstance(algorithm);
             PrivateKey expectedKey =
-                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
             final Certificate[] expectedChain = new Certificate[1];
-            expectedChain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+            expectedChain[0] =
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
 
             PrivateKeyEntry expectedPrivEntry = new PrivateKeyEntry(expectedKey, expectedChain);
             mKeyStore.setEntry(getTestAlias1(), expectedPrivEntry, null);
@@ -1619,20 +1256,26 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actualPrivEntry = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actualPrivEntry, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, null);
+                    actualPrivEntry,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    null);
         }
     }
 
     // Previously called testKeyStore_SetEntry_CAEntry_Overwrites_CAEntry_Unencrypted_Success
     @Test
-    public void setEntry_overwriteCAEntryWithCAEntry_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setEntry_overwriteCAEntryWithCAEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
 
         // Insert TrustedCertificateEntry
         {
             final Certificate caCert =
-                    f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
             TrustedCertificateEntry expectedCertEntry = new TrustedCertificateEntry(caCert);
             mKeyStore.setEntry(getTestAlias1(), expectedCertEntry, null);
@@ -1652,7 +1295,7 @@ public class AndroidKeyStoreTest {
         // Replace with TrustedCertificateEntry of USER
         {
             final Certificate userCert =
-                    f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+                    f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
 
             TrustedCertificateEntry expectedUserEntry = new TrustedCertificateEntry(userCert);
             mKeyStore.setEntry(getTestAlias1(), expectedUserEntry, null);
@@ -1672,15 +1315,19 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_ProtectedKey_Unencrypted_Failure
     @Test
-    public void setKeyEntry_ProtectedKey_throwsException() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setKeyEntry_protectedKey_throwsException(String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-        final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        final Certificate caCert =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
-        KeyFactory keyFact = KeyFactory.getInstance("RSA");
-        PrivateKey privKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+        KeyFactory keyFact = KeyFactory.getInstance(algorithm);
+        PrivateKey privKey =
+                keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
         final Certificate[] chain = new Certificate[2];
-        chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+        chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
         chain[1] = caCert;
 
         assertThrows(
@@ -1691,15 +1338,19 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_Unencrypted_Success
     @Test
-    public void setKeyEntry_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setKeyEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-        final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        final Certificate caCert =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
-        KeyFactory keyFact = KeyFactory.getInstance("RSA");
-        PrivateKey privKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+        KeyFactory keyFact = KeyFactory.getInstance(algorithm);
+        PrivateKey privKey =
+                keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
         final Certificate[] chain = new Certificate[2];
-        chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+        chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
         chain[1] = caCert;
 
         mKeyStore.setKeyEntry(getTestAlias1(), privKey, null, chain);
@@ -1713,22 +1364,32 @@ public class AndroidKeyStoreTest {
 
         PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
 
-        assertPrivateKeyEntryEquals(actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+        assertPrivateKeyEntryEquals(
+                actual,
+                algorithm,
+                FAKE_KEY.get(algorithm),
+                FAKE_USER.get(algorithm),
+                FAKE_CA.get(algorithm));
     }
 
     // Previously called testKeyStore_SetKeyEntry_Replaced_Unencrypted_Success
     @Test
-    public void setKeyEntry_replaceExistingEntryWithSameAlias_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setKeyEntry_replaceExistingEntryWithSameAlias_success(String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
         final CertificateFactory f = CertificateFactory.getInstance("X.509");
-        final Certificate caCert = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_CA_1));
+        final Certificate caCert =
+                f.generateCertificate(new ByteArrayInputStream(FAKE_CA.get(algorithm)));
 
         // Insert initial key
         {
-            KeyFactory keyFact = KeyFactory.getInstance("RSA");
-            PrivateKey privKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+            KeyFactory keyFact = KeyFactory.getInstance(algorithm);
+            PrivateKey privKey =
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
             final Certificate[] chain = new Certificate[2];
-            chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+            chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
             chain[1] = caCert;
 
             mKeyStore.setKeyEntry(getTestAlias1(), privKey, null, chain);
@@ -1741,16 +1402,21 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                    actual,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    FAKE_CA.get(algorithm));
         }
 
         // TODO(b/491452429): Use different test vectors for the overwrite
         // Replace key by using the existing key's alias
         {
-            KeyFactory keyFact = KeyFactory.getInstance("RSA");
-            PrivateKey privKey = keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1));
+            KeyFactory keyFact = KeyFactory.getInstance(algorithm);
+            PrivateKey privKey =
+                    keyFact.generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get(algorithm)));
             final Certificate[] chain = new Certificate[2];
-            chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_RSA_USER_1));
+            chain[0] = f.generateCertificate(new ByteArrayInputStream(FAKE_USER.get(algorithm)));
             chain[1] = caCert;
             mKeyStore.setKeyEntry(getTestAlias1(), privKey, null, chain);
 
@@ -1762,25 +1428,32 @@ public class AndroidKeyStoreTest {
 
             PrivateKeyEntry actual = (PrivateKeyEntry) actualEntry;
             assertPrivateKeyEntryEquals(
-                    actual, "RSA", FAKE_RSA_KEY_1, FAKE_RSA_USER_1, FAKE_RSA_CA_1);
+                    actual,
+                    algorithm,
+                    FAKE_KEY.get(algorithm),
+                    FAKE_USER.get(algorithm),
+                    FAKE_CA.get(algorithm));
         }
     }
 
     // Previously called testKeyStore_SetKeyEntry_ReplacedChain_Unencrypted_Success
     @Test
-    public void setKeyEntry_replaceKeyWithCertificateChain_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setKeyEntry_replaceKeyWithCertificateChain_success(String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
 
         // Add key to the keystore with setEntry.
         {
-            KeyStore.PrivateKeyEntry privEntry = makeUserRsaKey1();
+            KeyStore.PrivateKeyEntry privEntry = makeUserKey(algorithm);
             mKeyStore.setEntry(getTestAlias1(), privEntry, null);
             Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
             assertTrue(entry instanceof PrivateKeyEntry);
 
             PrivateKeyEntry keyEntry = (PrivateKeyEntry) entry;
             ArrayList<Certificate> chain = new ArrayList<Certificate>();
-            chain.add(generateCertificate(FAKE_RSA_CA_1));
+            chain.add(generateCaCertificate(algorithm));
             assertPrivateKeyEntryEquals(
                     keyEntry, privEntry.getPrivateKey(), privEntry.getCertificate(), chain);
         }
@@ -1792,7 +1465,7 @@ public class AndroidKeyStoreTest {
             assertTrue(key instanceof PrivateKey);
 
             PrivateKey expectedKey = (PrivateKey) key;
-            Certificate expectedCert = generateCertificate(FAKE_RSA_USER_1);
+            Certificate expectedCert = generateUserCertificate(algorithm);
             mKeyStore.setKeyEntry(
                     getTestAlias1(), expectedKey, null, new Certificate[] {expectedCert});
             Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
@@ -1806,18 +1479,21 @@ public class AndroidKeyStoreTest {
     // Previously called
     // testKeyStore_SetKeyEntry_ReplacedChain_DifferentPrivateKey_Unencrypted_Failure
     @Test
-    public void setKeyEntry_replaceChainForDifferentPrivateKey_throwsException() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setKeyEntry_replaceChainForDifferentPrivateKey_throwsException(String algorithm)
+            throws Exception {
         mKeyStore.load(null, null);
 
         // Create key #1
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
 
         // Create key #2
-        mKeyStore.setEntry(getTestAlias2(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias2(), makeUserKey(algorithm), null);
 
         // Try to replace key #1 with key #2 by using key #2's alias
         Key key2 = mKeyStore.getKey(getTestAlias2(), null);
-        Certificate key1Cert = generateCertificate(FAKE_RSA_USER_1);
+        Certificate key1Cert = generateUserCertificate(algorithm);
         assertThrows(
                 "Should not allow setting of KeyEntry with wrong PrivateKey",
                 KeyStoreException.class,
@@ -1828,16 +1504,18 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_SetKeyEntry_ReplacedWithSame_UnencryptedToUnencrypted_Failure
     @Test
-    public void setEntry_replaceWithSameEntry_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void setEntry_replaceWithSameEntry_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey(algorithm), null);
         Entry entry = mKeyStore.getEntry(getTestAlias1(), null);
         mKeyStore.setEntry(getTestAlias1(), entry, null);
     }
 
     // Previously called testKeyStore_SetKeyEntry_ReplacedWithSameGeneratedSecretKey
     @Test
-    public void setKeyEntry_replacedWithSameGeneratedSecretKey_success() throws Exception {
+    public void setKeyEntry_replacedWithSameGeneratedSecretKey_success_AES() throws Exception {
         final String plaintext = "My awesome plaintext message!";
         final String algorithm = "AES/GCM/NoPadding";
 
@@ -1876,17 +1554,19 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_Size_Unencrypted_Success
     @Test
-    public void size_success() throws Exception {
+    @Parameters(method = "getAlgorithms")
+    @TestCaseName(value = "{method}_{0}")
+    public void size_success(String algorithm) throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateCaCertificate(algorithm));
         assertEquals("The keystore size should match expected", 1, mKeyStore.size());
         assertAliases(new String[] {getTestAlias1()});
 
-        mKeyStore.setCertificateEntry(getTestAlias2(), generateCertificate(FAKE_RSA_CA_1));
+        mKeyStore.setCertificateEntry(getTestAlias2(), generateCaCertificate(algorithm));
         assertEquals("The keystore size should match expected", 2, mKeyStore.size());
         assertAliases(new String[] {getTestAlias1(), getTestAlias2()});
 
-        mKeyStore.setEntry(getTestAlias3(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias3(), makeUserKey(algorithm), null);
         assertEquals("The keystore size should match expected", 3, mKeyStore.size());
         assertAliases(new String[] {getTestAlias1(), getTestAlias2(), getTestAlias3()});
 
@@ -1950,7 +1630,7 @@ public class AndroidKeyStoreTest {
     @Test
     public void cipherWrap_success() throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setEntry(getTestAlias1(), makeUserRsaKey1(), null);
+        mKeyStore.setEntry(getTestAlias1(), makeUserKey("RSA"), null);
 
         // Test key usage
         Entry e = mKeyStore.getEntry(getTestAlias1(), null);
@@ -1980,7 +1660,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_Encrypting_RSA_NONE_NOPADDING
     @Test
-    public void cipherEncrypt_RSA_NONE_NOPADDING_success() throws Exception {
+    public void cipherEncrypt_success_RSA_NONE_NOPADDING() throws Exception {
         String alias = "MyKey";
         KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
         assertNotNull(ks);
@@ -2039,9 +1719,9 @@ public class AndroidKeyStoreTest {
         mKeyStore.setKeyEntry(
                 getTestAlias2(),
                 KeyFactory.getInstance("RSA")
-                        .generatePrivate(new PKCS8EncodedKeySpec(FAKE_RSA_KEY_1)),
+                        .generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get("RSA"))),
                 null, // no password (it's not even supported)
-                new Certificate[] {generateCertificate(FAKE_RSA_USER_1)});
+                new Certificate[] {generateUserCertificate("RSA")});
         PublicKey publicKey = mKeyStore.getCertificate(getTestAlias2()).getPublicKey();
         assertNotNull(publicKey);
 
@@ -2061,9 +1741,9 @@ public class AndroidKeyStoreTest {
         mKeyStore.setKeyEntry(
                 getTestAlias1(),
                 KeyFactory.getInstance("EC")
-                        .generatePrivate(new PKCS8EncodedKeySpec(FAKE_EC_KEY_1)),
+                        .generatePrivate(new PKCS8EncodedKeySpec(FAKE_KEY.get("EC"))),
                 null, // no password (it's not even supported)
-                new Certificate[] {generateCertificate(FAKE_EC_USER_1)});
+                new Certificate[] {generateUserCertificate("EC")});
         PublicKey publicKey = mKeyStore.getCertificate(getTestAlias1()).getPublicKey();
         assertNotNull(publicKey);
 
@@ -2075,7 +1755,7 @@ public class AndroidKeyStoreTest {
     @Test
     public void setCertificateEntry_RSAPublicKeyCryptoUsage_success() throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias2(), generateCertificate(FAKE_RSA_USER_1));
+        mKeyStore.setCertificateEntry(getTestAlias2(), generateUserCertificate("RSA"));
         PublicKey publicKey = mKeyStore.getCertificate(getTestAlias2()).getPublicKey();
         assertNotNull(publicKey);
 
@@ -2090,7 +1770,7 @@ public class AndroidKeyStoreTest {
     @Test
     public void setCertificateEntry_ECPublicKeyCryptoUsage_success() throws Exception {
         mKeyStore.load(null, null);
-        mKeyStore.setCertificateEntry(getTestAlias1(), generateCertificate(FAKE_EC_USER_1));
+        mKeyStore.setCertificateEntry(getTestAlias1(), generateUserCertificate("EC"));
         PublicKey publicKey = mKeyStore.getCertificate(getTestAlias1()).getPublicKey();
         assertNotNull(publicKey);
 
@@ -2128,7 +1808,7 @@ public class AndroidKeyStoreTest {
     // Previously called testKeyStore_LargeNumberOfKeysSupported_RSA
     @LargeTest
     @Test
-    public void importLargeNumberOfKeys_RSA_success() throws Exception {
+    public void importLargeNumberOfKeys_success_RSA() throws Exception {
         // This test imports key1, then lots of other keys, then key2, and then confirms that
         // key1 and key2 backed by Android Keystore work fine. The assumption is that if the
         // underlying implementation has a limit on the number of keys, it'll either delete the
@@ -2145,8 +1825,8 @@ public class AndroidKeyStoreTest {
         Certificate cert2 = TestUtils.getRawResX509Certificate(getContext(), R.raw.rsa_key2_cert);
         PrivateKey privateKey2 = TestUtils.getRawResPrivateKey(getContext(), R.raw.rsa_key2_pkcs8);
 
-        Certificate cert3 = generateCertificate(FAKE_RSA_USER_1);
-        PrivateKey privateKey3 = generatePrivateKey("RSA", FAKE_RSA_KEY_1);
+        Certificate cert3 = generateUserCertificate("RSA");
+        PrivateKey privateKey3 = generatePrivateKey("RSA");
 
         final int MAX_NUMBER_OF_KEYS = 2500;
         final StringBuilder aliasPrefix = new StringBuilder("test_large_number_of_rsa_keys_");
@@ -2210,7 +1890,7 @@ public class AndroidKeyStoreTest {
     // Previously called testKeyStore_LargeNumberOfKeysSupported_EC
     @LargeTest
     @Test
-    public void importLargeNumberOfKeys_EC_success() throws Exception {
+    public void importLargeNumberOfKeys_success_EC() throws Exception {
         // This test imports key1, then lots of other keys, then key2, and then confirms that
         // key1 and key2 backed by Android Keystore work fine. The assumption is that if the
         // underlying implementation has a limit on the number of keys, it'll either delete the
@@ -2229,8 +1909,8 @@ public class AndroidKeyStoreTest {
         Certificate cert2 = TestUtils.getRawResX509Certificate(getContext(), R.raw.ec_key2_cert);
         PrivateKey privateKey2 = TestUtils.getRawResPrivateKey(getContext(), R.raw.ec_key2_pkcs8);
 
-        Certificate cert3 = generateCertificate(FAKE_EC_USER_1);
-        PrivateKey privateKey3 = generatePrivateKey("EC", FAKE_EC_KEY_1);
+        Certificate cert3 = generateUserCertificate("EC");
+        PrivateKey privateKey3 = generatePrivateKey("EC");
 
         final int MAX_NUMBER_OF_KEYS = 2500;
         final StringBuilder aliasPrefix = new StringBuilder("test_large_number_of_ec_keys_");
@@ -2589,7 +2269,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_ImportSupportedSizes_EC
     @Test
-    public void import_EC_success() throws Exception {
+    public void import_success_EC() throws Exception {
         mKeyStore.load(null);
         KeyProtection params =
                 TestUtils.getMinimalWorkingImportParametersForSigningWith("SHA256withECDSA");
@@ -2605,7 +2285,7 @@ public class AndroidKeyStoreTest {
 
     // Previously called testKeyStore_ImportSupportedSizes_RSA
     @Test
-    public void import_RSA_success() throws Exception {
+    public void import_success_RSA() throws Exception {
         mKeyStore.load(null);
         KeyProtection params =
                 TestUtils.getMinimalWorkingImportParametersForSigningWith("SHA256withRSA");
@@ -2672,7 +2352,7 @@ public class AndroidKeyStoreTest {
     @Test
     @CddTest(requirements = {"9.11/C-1-2"})
     @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
-    public void import_MLDSA_success() throws Exception {
+    public void import_success_MLDSA() throws Exception {
         TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
         mKeyStore.load(null);
         String alias = "import-mldsa";
@@ -2832,8 +2512,8 @@ public class AndroidKeyStoreTest {
 
     private Set<String> createLargeNumberOfRsaKeyStoreEntryAliases(
             int numberOfKeys, StringBuilder aliasPrefix) throws Exception {
-        Certificate cert = generateCertificate(FAKE_RSA_USER_1);
-        PrivateKey privateKey = generatePrivateKey("RSA", FAKE_RSA_KEY_1);
+        Certificate cert = generateUserCertificate("RSA");
+        PrivateKey privateKey = generatePrivateKey("RSA");
 
         mKeyStore.load(null);
         KeyProtection protectionParams =
@@ -2913,7 +2593,7 @@ public class AndroidKeyStoreTest {
     // Previously called testKeyStore_LargeNumberOfLongAliases
     @ApiTest(apis = {"java.security.KeyStore#aliases"})
     @Test
-    public void importLargeNumberOfLongAliases_RSA_success() throws Exception {
+    public void importLargeNumberOfLongAliases_success_RSA() throws Exception {
         final int maxNumberOfKeys = 100;
         importLargeNumberOfRsaKeysAndValidateAliases(maxNumberOfKeys, createLongAliasPrefix());
     }
@@ -2925,7 +2605,7 @@ public class AndroidKeyStoreTest {
     // Previously called testKeyStore_LimitedNumberOfLongAliasesSuccess
     @ApiTest(apis = {"java.security.KeyStore#aliases"})
     @Test
-    public void importLimitedNumberOfLongAliases_RSA_success() throws Exception {
+    public void importLimitedNumberOfLongAliases_success_RSA() throws Exception {
         final int maxNumberOfKeys = 10;
         importLargeNumberOfRsaKeysAndValidateAliases(maxNumberOfKeys, createLongAliasPrefix());
     }
@@ -2938,7 +2618,7 @@ public class AndroidKeyStoreTest {
     // Previously called testKeyStore_LargeNumberShortAliasesSuccess
     @ApiTest(apis = {"java.security.KeyStore#aliases"})
     @Test
-    public void importLargeNumberOfShortAliases_RSA_success() throws Exception {
+    public void importLargeNumberOfShortAliases_success_RSA() throws Exception {
         final int maxNumberOfKeys = 2500;
         final StringBuilder aliasPrefix = new StringBuilder("test_short_key_alias_");
         importLargeNumberOfRsaKeysAndValidateAliases(maxNumberOfKeys, aliasPrefix);

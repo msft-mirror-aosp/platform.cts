@@ -71,6 +71,7 @@ public class CtsConfigLoadingTest {
                             "bionic",
                             "bluetooth",
                             "camera",
+                            "conscrypt",
                             "deviceinfo",
                             "devicepolicy",
                             "deqp",

@@ -668,6 +668,23 @@ public class EncoderTestXheAac {
                 format, new StreamVerifier(format, 1, 163920, 3 /* FD */, 0, 48000));
     }
 
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_XHE_AAC_SOFTWARE_ENCODER)
+    public void testXheAacOnePassVBR4() throws Exception {
+        MediaFormat format = new MediaFormat();
+        format.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_AUDIO_AAC);
+        format.setInteger(
+                MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectXHE);
+        format.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
+        format.setInteger(MediaFormat.KEY_QUALITY, 4);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, 100000);
+        encodeXheAacOnePass("okgoogle123_good.wav",
+                "/data/local/tmp/testXheAacOnePassVBR4.mp4",
+                format, new StreamVerifier(format, 1, 163920, 3 /* FD */, 0, 48000));
+    }
+
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_XHE_AAC_SOFTWARE_ENCODER)
     public void testXheAacOnePassSilence44100() throws Exception {

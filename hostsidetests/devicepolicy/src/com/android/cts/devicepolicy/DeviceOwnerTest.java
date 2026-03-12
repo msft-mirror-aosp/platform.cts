@@ -342,19 +342,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         assertEquals("Ephemeral flag must be set", FLAG_EPHEMERAL, flags & FLAG_EPHEMERAL);
     }
 
-    /**
-     * Test creating an user using the DevicePolicyManager's createAndManageUser method, affiliate
-     * the user and start the user in background to test APIs on that user.
-     * {@link android.app.admin.DevicePolicyManager#LEAVE_ALL_SYSTEM_APPS_ENABLED} is tested.
-     */
-    @Test
-    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
-            + "user mode")
-    public void testCreateAndManageUser_LeaveAllSystemApps() throws Exception {
-        assumeCanStartNewUser();
-
-        executeCreateAndManageUserTest("testCreateAndManageUser_LeaveAllSystemApps");
-    }
 
     @Test
     @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "

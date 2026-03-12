@@ -928,6 +928,15 @@
     <!-- CtsConnectivityMultiDevicesTestCases -->
     <option name="compatibility:include-filter" value="CtsConnectivityMultiDevicesTestCases ConnectivityMultiDevicesTest#test_hotspot_upstream_cellular"/>
     <option name="compatibility:include-filter" value="CtsConnectivityMultiDevicesTestCases ConnectivityMultiDevicesTest#test_mdns_via_hotspot"/>
+    <!-- CtsConscryptTestCases -->
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases android.net.ssl.SSLEnginesTest#useSessionTickets_ValidEngine"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.NativeCryptoArgTest#spake2Methods"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.java.security.KeyPairGeneratorTest#test_getInstance"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.java.security.SignatureTest#test_getInstance"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.javax.net.ssl.SSLContextTest#test_SSLContext_allProtocols"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_ClientHello_ALPN[3: TLSv1.3 client, TLSv1.3 server]"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_beginHandshake_noKeyStore[2: TLSv1.3 client, TLSv1.2 server]"/>
+    <option name="compatibility:include-filter" value="CtsConscryptTestCases com.android.org.conscrypt.metrics.MetricsTest#test_reflexiveEvent"/>
     <!-- CtsContactsProviderTestCases -->
     <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_AccountAttributesTest#testUpdateAccountAttributes_throwsExceptionOnUndefinedBit"/>
     <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_AllUriTest#testAllFileOperations"/>
@@ -1929,14 +1938,6 @@
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.invoke.ClassValueTest#testRemoveStale"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.invoke.ClassValueTest#testSingletonWinner"/>
     <!-- CtsLibcoreTestCases -->
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases android.net.ssl.SSLEnginesTest#useSessionTickets_ValidEngine"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.NativeCryptoArgTest#spake2Methods"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.java.security.KeyPairGeneratorTest#test_getInstance"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.java.security.SignatureTest#test_getInstance"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLContextTest#test_SSLContext_allProtocols"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_ClientHello_ALPN[3: TLSv1.3 client, TLSv1.3 server]"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.javax.net.ssl.SSLEngineVersionCompatibilityTest#test_SSLEngine_beginHandshake_noKeyStore[2: TLSv1.3 client, TLSv1.2 server]"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.metrics.MetricsTest#test_reflexiveEvent"/>
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.dalvik.system.VMRuntimeTest#testIsArtTestFlagEnabled"/>
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.lang.OldRuntimeTest#test_execLjava_lang_StringArray"/>
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.lang.invoke.MethodHandlesTest#testfindSpecial_invokeSuperInterfaceBehaviour"/>

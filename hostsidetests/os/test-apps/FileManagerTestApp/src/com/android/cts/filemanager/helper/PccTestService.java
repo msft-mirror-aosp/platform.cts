@@ -18,17 +18,28 @@ package com.android.cts.filemanager.helper;
 
 import android.app.privatecompute.PccService;
 import android.os.Bundle;
+import android.os.ResultReceiver;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+/**
+ * Service that runs in an isolated PCC process to verify file operations.
+ *
+ * <p>This service allows verifying that files were correctly moved or copied into the PCC protected
+ * directory.
+ */
 public class PccTestService extends PccService {
     private static final String TAG = "PccTestService";
 
+    public static final int RESULT_SUCCESS = 1;
+    public static final int RESULT_ERROR = 0;
+
     @Override
     public void onReceiveData(Bundle data, String packageName) {
+        data.setClassLoader(getClassLoader());
         String action = data.getString("action", "verify");
         Log.i(TAG, "onReceiveData: action=" + action);
 
@@ -42,8 +53,11 @@ public class PccTestService extends PccService {
     private void handlePrepare(Bundle data) {
         String fileName = data.getString("file");
         String content = data.getString("content");
+        ResultReceiver receiver = data.getParcelable("result_receiver", ResultReceiver.class);
+
         if (fileName == null || content == null) {
             Log.e(TAG, "Prepare failed: missing file or content");
+            if (receiver != null) receiver.send(RESULT_ERROR, null);
             return;
         }
 
@@ -52,14 +66,17 @@ public class PccTestService extends PccService {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(content.getBytes());
             Log.i(TAG, "Prepare successful: " + file.getAbsolutePath());
+            if (receiver != null) receiver.send(RESULT_SUCCESS, null);
         } catch (IOException e) {
             Log.e(TAG, "Prepare failed", e);
+            if (receiver != null) receiver.send(RESULT_ERROR, null);
         }
     }
 
     private void handleVerify(Bundle data) {
         String expectedFile = data.getString("expected_file");
         String expectedContent = data.getString("expected_content");
+        ResultReceiver receiver = data.getParcelable("result_receiver", ResultReceiver.class);
         Log.i(TAG, "handleVerify: expectedFile=" + expectedFile);
 
         boolean success = false;
@@ -104,16 +121,11 @@ public class PccTestService extends PccService {
         }
 
         if (success) {
-            // Create canary file only on success
-            File canary = new File(getDataDir(), "verification_success.txt");
-            try {
-                canary.createNewFile();
-                Log.i(TAG, "Canary created");
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to create canary", e);
-            }
+            Log.i(TAG, "Verification successful");
+            if (receiver != null) receiver.send(RESULT_SUCCESS, null);
         } else {
-            Log.e(TAG, "Verification failed, skipping canary creation");
+            Log.e(TAG, "Verification failed");
+            if (receiver != null) receiver.send(RESULT_ERROR, null);
         }
     }
 }
