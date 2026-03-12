@@ -1,0 +1,6 @@
+<resources>
+    <array name="app_function_app_level_files">
+        <item>@xml/appfunctions_v2_file1</item>
+        <item>@xml/appfunctions_v2_file2</item>
+    </array>
+</resources>

@@ -56,6 +56,8 @@
             value="CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk" />
         <option name="push"
             value="CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppBMultipleAppLevelXml.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBMultipleAppLevelXml.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
