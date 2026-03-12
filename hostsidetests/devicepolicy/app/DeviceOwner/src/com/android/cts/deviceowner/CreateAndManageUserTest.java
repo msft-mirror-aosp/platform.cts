@@ -30,7 +30,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
@@ -46,14 +45,10 @@ import com.android.compatibility.common.util.SystemUtil;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Test {@link DevicePolicyManager#createAndManageUser}.
@@ -63,7 +58,6 @@ public class CreateAndManageUserTest extends BaseDeviceOwnerTest {
 
     private static final String AFFILIATION_ID = "affiliation.id";
     private static final String EXTRA_AFFILIATION_ID = "affiliationIdExtra";
-    private static final String EXTRA_CURRENT_USER_PACKAGES = "currentUserPackages";
     private static final String EXTRA_METHOD_NAME = "methodName";
     private static final long ON_ENABLED_TIMEOUT_SECONDS = 120;
 
@@ -208,8 +202,8 @@ public class CreateAndManageUserTest extends BaseDeviceOwnerTest {
                 getContext(),
                 BasicAdminReceiver.ACTION_USER_STARTED, BasicAdminReceiver.ACTION_USER_STOPPED);
 
-        UserHandle userHandle = runCrossUserVerification(callback,
-                /* createAndManageUserFlags= */ 0, "logoutUser", /* currentUserPackages= */ null);
+        UserHandle userHandle =
+                runCrossUserVerification(callback, /* createAndManageUserFlags= */ 0, "logoutUser");
 
         List<UserHandle> users = callback.getUsersOnReceivedBroadcasts();
         Log.d(TAG, "users on brodcast: " + users);
@@ -306,82 +300,25 @@ public class CreateAndManageUserTest extends BaseDeviceOwnerTest {
         PrimaryUserService.assertCrossUserCallArrived();
     }
 
-    @SuppressWarnings("unused")
-    private static void assertAllSystemAppsInstalled(Context context,
-            DevicePolicyManager devicePolicyManager, ComponentName componentName,
-            Set<String> preInstalledSystemPackages) {
-        Log.d(TAG, "assertAllSystemAppsInstalled(): checking apps for user " + context.getUserId());
-
-        PackageManager packageManager = context.getPackageManager();
-        // First get a set of installed package names
-        Set<String> installedPackageNames = packageManager
-                .getInstalledApplications(/* flags= */ 0)
-                .stream()
-                .map(applicationInfo -> applicationInfo.packageName)
-                .collect(Collectors.toSet());
-        // Then filter all package names by those that are not installed
-        Set<String> uninstalledPackageNames = packageManager
-                .getInstalledApplications(PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                .stream()
-                .map(applicationInfo -> applicationInfo.packageName)
-                .filter(((Predicate<String>) installedPackageNames::contains).negate())
-                .collect(Collectors.toSet());
-
-        // Finally, filter out packages that are not pre-installed for the user
-        Iterator<String> iterator = uninstalledPackageNames.iterator();
-        while (iterator.hasNext()) {
-            String pkg = iterator.next();
-            if (!preInstalledSystemPackages.contains(pkg)) {
-                Log.i(TAG, "assertAllSystemAppsInstalled(): ignoring package " + pkg
-                        + " as it's not pre-installed on current user");
-                iterator.remove();
-            }
-        }
-
-        // Assert that all expected apps are installed
-        assertWithMessage("uninstalled system apps").that(uninstalledPackageNames).isEmpty();
-    }
-
-    public void testCreateAndManageUser_LeaveAllSystemApps() throws Exception {
-        int currentUserId = ActivityManager.getCurrentUser();
-        // TODO: instead of hard-coding the user type, calling getPreInstallableSystemPackages(),
-        // and passing the packages to runCrossUserVerification() / assertAllSystemAppsInstalled(),
-        // ideally the later should call um.getPreInstallableSystemPackages(um.getUsertype())
-        // (where um is the UserManager with the context of the newly created user),
-        // but currently the list of pre-installed apps is passed to the new user in the bundle.
-        // Given that these tests will be refactored anyways, it's not worth to try to change it.
-        String newUserType = UserManager.USER_TYPE_FULL_SECONDARY;
-        Set<String> preInstalledSystemPackages = SystemUtil.callWithShellPermissionIdentity(
-                () -> UserManager.get(mContext).getPreInstallableSystemPackages(newUserType));
-        if (preInstalledSystemPackages != null) {
-            Log.d(TAG, preInstalledSystemPackages.size() + " pre-installed system apps for "
-                    + "new user of type " + newUserType + ": " + preInstalledSystemPackages);
-        } else {
-            Log.d(TAG, "no pre-installed system apps allowlist for new user of type" + newUserType);
-        }
-
-        runCrossUserVerification(/* callback= */ null,
-                DevicePolicyManager.LEAVE_ALL_SYSTEM_APPS_ENABLED, "assertAllSystemAppsInstalled",
-                preInstalledSystemPackages);
-        PrimaryUserService.assertCrossUserCallArrived();
-    }
 
     private UserHandle runCrossUserVerification(int createAndManageUserFlags, String methodName)
             throws Exception {
-        return runCrossUserVerification(/* callback= */ null, createAndManageUserFlags, methodName,
-                /* currentUserPackages= */ null);
+        return runCrossUserVerification(/* callback= */ null, createAndManageUserFlags, methodName);
     }
 
-    private UserHandle runCrossUserVerification(UserActionCallback callback,
-            int createAndManageUserFlags, String methodName,
-            Set<String> currentUserPackages) throws Exception {
-        return runCrossUserVerification(callback, createAndManageUserFlags, methodName,
-                /* switchUser= */ false, currentUserPackages);
+    private UserHandle runCrossUserVerification(
+            UserActionCallback callback, int createAndManageUserFlags, String methodName)
+            throws Exception {
+        return runCrossUserVerification(
+                callback, createAndManageUserFlags, methodName, /* switchUser= */ false);
     }
 
-    private UserHandle runCrossUserVerification(UserActionCallback callback,
-            int createAndManageUserFlags, String methodName, boolean switchUser,
-            Set<String> currentUserPackages) throws Exception {
+    private UserHandle runCrossUserVerification(
+            UserActionCallback callback,
+            int createAndManageUserFlags,
+            String methodName,
+            boolean switchUser)
+            throws Exception {
         Log.d(TAG, "runCrossUserVerification(): flags=" + createAndManageUserFlags
                 + ", method=" + methodName);
         String testUserName = "TestUser_" + System.currentTimeMillis();
@@ -395,11 +332,6 @@ public class CreateAndManageUserTest extends BaseDeviceOwnerTest {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putString(EXTRA_AFFILIATION_ID, AFFILIATION_ID);
         bundle.putString(EXTRA_METHOD_NAME, methodName);
-        if (currentUserPackages != null) {
-            String[] array = new String[currentUserPackages.size()];
-            currentUserPackages.toArray(array);
-            bundle.putStringArray(EXTRA_CURRENT_USER_PACKAGES, array);
-        }
 
         Log.d(TAG, "creating user with PO " + profileOwner);
 
@@ -637,28 +569,15 @@ public class CreateAndManageUserTest extends BaseDeviceOwnerTest {
 
             String error = null;
             try {
-                Method method;
-                if (intent.hasExtra(EXTRA_CURRENT_USER_PACKAGES)) {
-                    method = CreateAndManageUserTest.class.getDeclaredMethod(
-                            intent.getStringExtra(EXTRA_METHOD_NAME), Context.class,
-                            DevicePolicyManager.class, ComponentName.class, Set.class);
-                } else {
-                    method = CreateAndManageUserTest.class.getDeclaredMethod(
-                            intent.getStringExtra(EXTRA_METHOD_NAME), Context.class,
-                            DevicePolicyManager.class, ComponentName.class);
-                }
+                Method method =
+                        CreateAndManageUserTest.class.getDeclaredMethod(
+                                intent.getStringExtra(EXTRA_METHOD_NAME),
+                                Context.class,
+                                DevicePolicyManager.class,
+                                ComponentName.class);
                 method.setAccessible(true);
                 Log.d(TAG, "Calling method " + method);
-                if (intent.hasExtra(EXTRA_CURRENT_USER_PACKAGES)) {
-                    String[] pkgsArray = intent.getStringArrayExtra(EXTRA_CURRENT_USER_PACKAGES);
-                    Set<String> pkgs = new HashSet<>(pkgsArray.length);
-                    for (String pkg : pkgsArray) {
-                        pkgs.add(pkg);
-                    }
-                    method.invoke(null, context, dpm, who, pkgs);
-                } else {
-                    method.invoke(null, context, dpm, who);
-                }
+                method.invoke(null, context, dpm, who);
             } catch (NoSuchMethodException | IllegalAccessException e) {
                 error = e.toString();
             } catch (InvocationTargetException e) {
