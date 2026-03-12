@@ -56,6 +56,7 @@ class AppOpsDeviceAwareTest {
             Manifest.permission.REVOKE_RUNTIME_PERMISSIONS,
             Manifest.permission.GET_APP_OPS_STATS,
             Manifest.permission.MANAGE_APPOPS,
+            Manifest.permission.INTERACT_ACROSS_USERS_FULL,
         )
 
     @Before
@@ -292,8 +293,7 @@ class AppOpsDeviceAwareTest {
         val endTimeMillis = System.currentTimeMillis()
         assertThat(AppOpsManager.MODE_ALLOWED).isEqualTo(mode)
 
-        val groupUsage =
-            appOpsManager.getPermissionGroupUsageForPrivacyIndicator(false)
+        val groupUsage = appOpsManager.getPermissionGroupUsageForPrivacyIndicator(false)
                 .filter { it.packageName == context.opPackageName }
         assertThat(groupUsage.size).isEqualTo(1)
 
