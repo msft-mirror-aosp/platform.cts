@@ -104,6 +104,9 @@ public class TestUtils {
 
     private static final int GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL = 202604;
 
+    // Defined in RFC 8410.
+    private static final String ED25519_OID = "1.3.101.112";
+
     private TestUtils() {}
 
     private static Context getContext() {
@@ -359,6 +362,19 @@ public class TestUtils {
             // However, only the AndroidKeyStore provider's XDH key classes implement these
             // interfaces. Conscrypt's XDH key classes do not. Since `publicKey` is a Conscrypt key
             // and `privateKey` is an Android Keystore key, there is no way to access the
+            // algorithm-specific parameters of `privateKey`, so there are no meaningful checks to
+            // perform.
+        } else if (ED25519_OID.equalsIgnoreCase(keyAlgorithm)) {
+            // Why compare with the Ed25519 OID? Conscrypt's EdDSA public keys return the OID from
+            // their `getAlgorithm()` method in order to be backwards-compatible with
+            // AndroidKeyStore provider implementations in the wild that use the OID and shipped
+            // prior to full Ed25519 support existing in Conscrypt (which was pushed to devices via
+            // mainline).
+            // JEP 339 introduced a number of interfaces for EdDSA keys: EdECPublicKey and
+            // EdECPrivateKey, both extending EdECKey (which provides a `getParams()` method).
+            // However, only the AndroidKeyStore provider's Ed25519 key classes implement these
+            // interfaces. Conscrypt's Ed25519 key classes do not. Since `publicKey` is a Conscrypt
+            // key and `privateKey` is an Android Keystore key, there is no way to access the
             // algorithm-specific parameters of `privateKey`, so there are no meaningful checks to
             // perform.
         } else if ("ML-DSA".equalsIgnoreCase(keyAlgorithm)) {
@@ -652,7 +668,7 @@ public class TestUtils {
 
         // TODO(b/395069350): Figure out why key generation fails with the ML-DSA test resources,
         // then add ML-DSA to this list.
-        String[] algorithms = new String[] {"EC", "RSA", "XDH"};
+        String[] algorithms = new String[] {"EC", "RSA", "XDH", "Ed25519"};
         for (String algo : algorithms) {
             try {
                 return KeyFactory.getInstance(algo).generatePrivate(privateKeySpec);
@@ -1069,7 +1085,7 @@ public class TestUtils {
 
     public static String getSignatureAlgorithmDigest(String algorithm) {
         String algorithmUpperCase = algorithm.toUpperCase(Locale.US);
-        if (algorithmUpperCase.startsWith("ML-DSA")) {
+        if (algorithmUpperCase.startsWith("ML-DSA") || algorithmUpperCase.equals("ED25519")) {
             return KeyProperties.DIGEST_NONE;
         }
 
@@ -1086,7 +1102,8 @@ public class TestUtils {
 
     public static String getSignatureAlgorithmPadding(String algorithm) {
         String algorithmUpperCase = algorithm.toUpperCase(Locale.US);
-        if (algorithmUpperCase.endsWith("WITHECDSA") || algorithmUpperCase.startsWith("ML-DSA")) {
+        if (algorithmUpperCase.endsWith("WITHECDSA") || algorithmUpperCase.startsWith("ML-DSA")
+                || algorithmUpperCase.equals("ED25519")) {
             return null;
         } else if (algorithmUpperCase.endsWith("WITHRSA")) {
             return KeyProperties.SIGNATURE_PADDING_RSA_PKCS1;
@@ -1099,7 +1116,7 @@ public class TestUtils {
 
     public static String getSignatureAlgorithmKeyAlgorithm(String algorithm) {
         String algorithmUpperCase = algorithm.toUpperCase(Locale.US);
-        if (algorithmUpperCase.endsWith("WITHECDSA")) {
+        if (algorithmUpperCase.endsWith("WITHECDSA") || algorithmUpperCase.equals("ED25519")) {
             return KeyProperties.KEY_ALGORITHM_EC;
         } else if ((algorithmUpperCase.endsWith("WITHRSA"))
                 || (algorithmUpperCase.endsWith("WITHRSA/PSS"))) {
