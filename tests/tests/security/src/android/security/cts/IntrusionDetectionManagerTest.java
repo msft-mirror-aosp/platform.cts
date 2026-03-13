@@ -156,6 +156,7 @@ public class IntrusionDetectionManagerTest {
                 };
         mIntrusionDetectionManager.addStateCallback(executor, scb);
         assertTrue(stateLatch.await(1, SECONDS));
+        mIntrusionDetectionManager.removeStateCallback(scb);
         executor.close();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
@@ -612,7 +613,7 @@ public class IntrusionDetectionManagerTest {
         }
 
         HttpURLConnection urlConnection = null;
-        int connectionTimeoutMS = 2_000;
+        int connectionTimeoutMS = 3_000;
         try {
             final URL url = new URL("https://" + server);
             urlConnection = (HttpURLConnection) url.openConnection();
