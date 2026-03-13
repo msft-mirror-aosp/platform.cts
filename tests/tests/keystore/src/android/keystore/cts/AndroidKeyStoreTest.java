@@ -2303,12 +2303,19 @@ public class AndroidKeyStoreTest {
                 "4096", R.raw.rsa_key4_4096_pkcs8, R.raw.rsa_key4_4096_cert, params);
     }
 
+    // Previously called testKeyStore_ImportSupported_X25519
     @Test
-    public void testKeyStore_ImportSupported_X25519() throws Exception {
+    public void import_success_X25519() throws Exception {
         mKeyStore.load(null);
         KeyProtection params = new KeyProtection.Builder(KeyProperties.PURPOSE_AGREE_KEY).build();
-        checkKeyPairImportSucceeds(
-                "x25519", R.raw.x25519_pkcs8, R.raw.x25519_cert, params);
+        checkKeyPairImportSucceeds("x25519", R.raw.x25519_pkcs8, R.raw.x25519_cert, params);
+    }
+
+    @Test
+    public void import_success_Ed25519() throws Exception {
+        mKeyStore.load(null);
+        KeyProtection params = TestUtils.getMinimalWorkingImportParametersForSigningWith("Ed25519");
+        checkKeyPairImportSucceeds("ed25519", R.raw.ed25519_pkcs8, R.raw.ed25519_cert, params);
     }
 
     private void checkKeyPairImportSucceeds(
