@@ -77,6 +77,8 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.interfaces.XECPublicKey;
+import java.security.interfaces.XECPrivateKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.EllipticCurve;
 import java.security.spec.InvalidKeySpecException;
@@ -487,10 +489,14 @@ public class TestUtils {
     }
 
     private static boolean isTransparentKey(Key key) {
-        if (key instanceof PrivateKey) {
+        if (key instanceof XECPrivateKey) {
+            return ((XECPrivateKey) key).getScalar().isPresent();
+        } else if (key instanceof PrivateKey) {
             return (key instanceof ECPrivateKey) || (key instanceof RSAPrivateKey);
         } else if (key instanceof PublicKey) {
-            return (key instanceof ECPublicKey) || (key instanceof RSAPublicKey);
+            return (key instanceof ECPublicKey)
+                    || (key instanceof RSAPublicKey)
+                    || (key instanceof XECPublicKey);
         } else if (key instanceof SecretKey) {
             return (key instanceof SecretKeySpec);
         } else {
