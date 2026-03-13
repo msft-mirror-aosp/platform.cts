@@ -114,10 +114,6 @@ public class VoiceInteractionManifestAttributesTest {
         } else {
             runShellCommand("settings delete secure " + Settings.Secure.VOICE_INTERACTION_SERVICE);
         }
-        // Clean up activities and services
-        runShellCommand("am force-stop " + SERVICE_PKG);
-        runShellCommand("am force-stop " + NO_PERMISSION_PKG);
-        runShellCommand("am force-stop android.voiceinteraction.testapp");
     }
 
     @Test
