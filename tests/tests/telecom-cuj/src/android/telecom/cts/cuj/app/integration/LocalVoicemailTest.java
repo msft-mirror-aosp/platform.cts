@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
 @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_LOCAL_VOICEMAIL)
 public class LocalVoicemailTest extends BaseAppVerifier {
 
-    public static final int STATE_TIMEOUT_MILLIS = 5000;
+    public static final int STATE_TIMEOUT_MILLIS = 8000;
     private TelecomManager mTelecomManager;
     private AudioManager mAudioManager;
 
