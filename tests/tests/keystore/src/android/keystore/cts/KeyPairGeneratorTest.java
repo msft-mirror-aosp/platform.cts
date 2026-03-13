@@ -204,7 +204,7 @@ public class KeyPairGeneratorTest {
         // version, which comes from the context and is not available.
         if (mExpectedAlgorithms == null) {
             mExpectedAlgorithms =
-                    TestUtils.teeKeyMintSupportsMlDsa()
+                    TestUtils.mlDsaSupportedByTeeKeyMint()
                             ? new String[] {"EC", "RSA", "ML-DSA", "ML-DSA-65", "ML-DSA-87"}
                             : new String[] {"EC", "RSA"};
         }
@@ -227,6 +227,12 @@ public class KeyPairGeneratorTest {
         Set<String> actualAlgsLowerCase = new HashSet<String>();
         Set<String> expectedAlgsLowerCase = new HashSet<String>(
                 Arrays.asList(TestUtils.toLowerCase(getExpectedAlgorithmsForTee())));
+
+        if (TestUtils.mlDsaExposedInProvider()) {
+            expectedAlgsLowerCase.add("ml-dsa");
+            expectedAlgsLowerCase.add("ml-dsa-65");
+            expectedAlgsLowerCase.add("ml-dsa-87");
+        }
 
         // TODO(b/485887290): Add these values in getExpectedAlgorithmsForTee() and add new tests
         // specific to Curve 22519.
