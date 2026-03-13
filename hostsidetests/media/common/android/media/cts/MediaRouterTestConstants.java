@@ -146,7 +146,6 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_ID_REQUIRES_ONE_PERMISSION = "route_requires_one_permission";
     public static final String ROUTE_ID_REQUIRES_ANY_PERMISSION_SET =
             "route_requires_any_permission_set";
-    public static final String ROUTE_ID_REQUIRES_LOCAL_NETWORK = "route_requires_local_network";
 
     public static final String ROUTE_ID_VISIBILITY_RESTRICTED = "route_visibility_restricted";
     public static final String ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED = "route_allow_privileged";
@@ -176,7 +175,6 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_NAME_REQUIRES_ONE_PERMISSION = "requires_one_permission_route";
     public static final String ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET =
             "requires_any_permission_set_route";
-    public static final String ROUTE_NAME_REQUIRES_LOCAL_NETWORK = "requests_local_network_route";
 
     public static final String ROUTE_NAME_VISIBILITY_RESTRICTED = "visibility_restricted_route";
     public static final String ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED = "allow_privileged_route";
@@ -228,10 +226,6 @@ public final class MediaRouterTestConstants {
             "osw_different_deduplication_id_same_name_2";
 
     public static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
-
-    // This id is defined as RESTRICT_LOCAL_NETWORK in the connectivity module's
-    // ConnectivityCompatChanges.java.
-    public static final long RESTRICT_LOCAL_NETWORK_CHANGE_ID = 365139289L;
 
     private MediaRouterTestConstants() {
         // Private to prevent instantiation.
