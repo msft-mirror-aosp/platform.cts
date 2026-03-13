@@ -1887,6 +1887,37 @@ public class OnDeviceIntelligenceManagerTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testGenerateLargeEmbeddings() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = CtsIntelligenceService.getSampleFeature(3);
+        mOnDeviceIntelligenceManager.generateEmbeddings(
+                feature,
+                new EmbeddingRequest(List.of(new Content(List.of(
+                        Part.createText("GenerateLargeResponse"))))),
+                null,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(EmbeddingResponse result) {
+                        assertThat(result.getEmbeddings()).hasSize(100);
+                        assertThat(result.getEmbeddings().get(0).getVector().length)
+                            .isEqualTo(5000);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("onError called: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(10, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
     public void testGenerateEmbeddings_serviceNotConfigured() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
