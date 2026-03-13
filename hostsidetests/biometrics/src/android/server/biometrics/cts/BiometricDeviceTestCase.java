@@ -90,6 +90,11 @@ abstract class BiometricDeviceTestCase extends DeviceTestCase implements IBuildR
         return getAidlSensorId("dumpsys face", ", provider: FaceProvider") > -1;
     }
 
+    /** If scene container is enabled. */
+    protected boolean isSceneContainerEnabled() throws Exception {
+        return getDevice().getSetting("global", "scene_container_enabled").equals("1");
+    }
+
     private int getAidlSensorId(String adbCommand, String providerRegex) throws Exception {
         final String dumpsys = getDevice().executeShellCommand(adbCommand);
         return dumpsys.indexOf(providerRegex);
