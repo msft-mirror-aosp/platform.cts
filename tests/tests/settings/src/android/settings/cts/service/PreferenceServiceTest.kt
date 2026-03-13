@@ -86,7 +86,7 @@ class PreferenceServiceTest {
         )
         // We assume a value that is writable is also readable, as it doesn't seem safe
         // to write blindly.
-        val pref = metadata.firstOrNull { it.isWritable }
+        val pref = metadata.firstOrNull { it.isWritable && it.isAvailable && it.isEnabled }
         if (pref == null) return
         val statusLatch = CountDownLatch(1)
         val permissions = pref.readPermissions + Manifest.permission.READ_SYSTEM_PREFERENCES
