@@ -274,23 +274,20 @@ public class TestUtils {
                 getFeatureVersionKeystore(getContext(), /* strongBox= */ false) >= 500);
     }
 
-    /** Returns whether TEE KeyMint on DUT supports ML-DSA. */
-    public static boolean teeKeyMintSupportsMlDsa() {
-        boolean mlDsaFlagEnabled = android.security.keystore2.Flags.mldsaSupport();
-        int version = getFeatureVersionKeystore(getContext(), /* strongBox= */ false);
-        boolean mlDsaSupported = version >= 500;
+    /**
+     * Returns whether ML-DSA is exposed in the AndroidKeyStore provider.
+     *
+     * Note that just because the provider exposes ML-DSA, doesn't mean that the underlying KeyMint
+     * implementation supports it. This function therefore is only useful for tests that check which
+     * algorithms are registered in the provider.
+     */
+    public static boolean mlDsaExposedInProvider() {
+        return android.security.keystore2.Flags.mldsaSupport();
+    }
 
-        Log.i(
-                TAG,
-                "ML-DSA flag enabled: "
-                        + mlDsaFlagEnabled
-                        + ", ML-DSA supported: "
-                        + mlDsaSupported
-                        + " (TEE KeyMint version: "
-                        + version
-                        + ")");
-
-        return mlDsaFlagEnabled && mlDsaSupported;
+    /** Returns whether ML-DSA is supported by TEE KeyMint on the DUT. */
+    public static boolean mlDsaSupportedByTeeKeyMint() {
+        return getFeatureVersionKeystore(getContext(), /* strongBox= */ false) >= 500;
     }
 
     /**
