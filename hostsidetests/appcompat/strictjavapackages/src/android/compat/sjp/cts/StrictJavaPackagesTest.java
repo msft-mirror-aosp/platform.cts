@@ -511,6 +511,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 // /system/framework/framework.jar
                 "Landroid/service/credentials/CredentialProviderService;",
                 "Landroid/window/OnBackAnimationCallback;",
+                "Landroid/text/SegmentFinder;",
 
                 // /apex/com.android.tethering/javalib/framework-connectivity.jar
                 "Landroid/net/http/UploadDataProvider;",
