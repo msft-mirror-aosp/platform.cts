@@ -100,6 +100,7 @@ public class ExcessiveBroadcastsTest extends BaseBroadcastTest {
             assertThat(appExitInfos.get(0).getReason()).isEqualTo(ApplicationExitInfo.REASON_CRASH);
             assertThat(appExitInfos.get(0).getSubReason())
                     .isEqualTo(ApplicationExitInfo.SUBREASON_EXCESSIVE_ENQUEUED_BROADCASTS_COUNT);
+            assertThat(appExitInfos.get(0).getDescription()).contains(TEST_ACTION1);
 
             // Verify that none of the enqueued broadcasts after the initial "wait" broadcast
             // were delivered, as they should be discarded as part of the treatment of the app
