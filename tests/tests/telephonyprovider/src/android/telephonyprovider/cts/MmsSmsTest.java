@@ -32,6 +32,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -131,6 +132,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_standardAppCantRead_mmsSmsConversation() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
@@ -146,6 +148,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_standardAppCantRead_mmsSmsConversationByThreadId() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
@@ -163,6 +166,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_standardAppCantRead_mmsSmsCompleteConversation() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
@@ -178,6 +182,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_standardAppCantRead_mmsSmsMessagesByPhone() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
@@ -194,6 +199,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_standardAppCantRead_mmsSmsSearch() {
         final String testWord = "xyz";
@@ -211,6 +217,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_snippetRedacted_mmsSmsSimpleConversation() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
@@ -229,6 +236,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_snippetRedacted_mmsSmsConversationRecipients() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
@@ -243,6 +251,7 @@ public class MmsSmsTest {
         }
     }
 
+    @AsbSecurityTest(cveBugId = 462056653L)
     @Test
     public void testOtpSms_snippetRedacted_mmsSmsConversationSubject() {
         final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage();
@@ -252,6 +261,30 @@ public class MmsSmsTest {
             mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ false);
             stopBeingDefaultSmsApp();
             mSmsOtpTestHelper.assertSnippetRedacted(uri, message, /* isRedacted */ true);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @AsbSecurityTest(cveBugId = 462056653L)
+    @Test
+    public void testOtpSms_standardAppCantRead_searchSuggest() {
+        final String testWord = "xyz";
+        final String message = mSmsOtpTestHelper.getSmsRetrieverOtpMessage() + " " + testWord;
+        insertOtpMessage(message);
+        try {
+            Uri uri =
+                    Uri.parse("content://mms-sms/searchSuggest")
+                            .buildUpon()
+                            .appendQueryParameter("pattern", testWord)
+                            .build();
+            mSmsOtpTestHelper.assertSmsPresenceWithoutProjection(uri, true);
+            stopBeingDefaultSmsApp();
+            try {
+                mSmsOtpTestHelper.assertSmsPresenceWithoutProjection(uri, false);
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(UnsupportedOperationException.class);
+            }
         } finally {
             ensureDefaultSmsApp();
         }

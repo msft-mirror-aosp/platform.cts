@@ -36,6 +36,7 @@ android_test {
         "telephony_flags_core_java_lib",
         "bedstead-enterprise",
         "android.view.flags-aconfig-java-export",
+        "platform-test-annotations",
     ],
     libs: [
         "android.test.runner.stubs.test",
