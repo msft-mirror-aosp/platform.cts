@@ -30,8 +30,6 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.PersistableBundle;
-import android.os.Process;
-import android.os.RemoteException;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
@@ -43,7 +41,6 @@ import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory;
 import com.android.compatibility.common.util.enterprise.DeviceAdminReceiverUtils;
 import com.android.cts.verifier.R;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -149,13 +146,10 @@ public class DeviceAdminTestReceiver extends DeviceAdminReceiver {
     public void onEnabled(Context context, Intent intent) {
         int myUserId = UserHandle.myUserId();
         Log.i(TAG, "Device admin enabled on user " + myUserId);
-        if (false) {
-            // Logic removed
-        }
     }
 
     private void setupProfile(Context context) {
-        DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+        DevicePolicyManager dpm = context.getSystemService(DevicePolicyManager.class);
         dpm.setProfileEnabled(new ComponentName(context.getApplicationContext(), getClass()));
 
         // Setup cross-profile intent filter to allow communications between the two versions of CtsVerifier

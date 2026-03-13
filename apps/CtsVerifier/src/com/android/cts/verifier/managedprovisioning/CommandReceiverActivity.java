@@ -17,8 +17,6 @@
 package com.android.cts.verifier.managedprovisioning;
 
 import static android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_HOME;
-import static android.app.admin.DevicePolicyManager.MAKE_USER_EPHEMERAL;
-import static android.app.admin.DevicePolicyManager.SKIP_SETUP_WIZARD;
 
 import static com.android.cts.verifier.Utils.flattenToShortString;
 
@@ -41,7 +39,6 @@ import android.graphics.BitmapFactory;
 import android.net.ProxyInfo;
 import android.net.wifi.WifiSsid;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.ContactsContract;
@@ -122,7 +119,6 @@ public class CommandReceiverActivity extends Activity {
             "clear-maximum-password-attempts";
     public static final String COMMAND_SET_DEFAULT_IME = "set-default-ime";
     public static final String COMMAND_CLEAR_DEFAULT_IME = "clear-default-ime";
-    public static final String COMMAND_REMOVE_SECONDARY_USERS = "remove-secondary-users";
     public static final String COMMAND_DISABLE_USB_DATA_SIGNALING = "disable-usb-data-signaling";
     public static final String COMMAND_ENABLE_USB_DATA_SIGNALING = "enable-usb-data-signaling";
     public static final String COMMAND_SET_REQUIRED_PASSWORD_COMPLEXITY =
@@ -130,7 +126,6 @@ public class CommandReceiverActivity extends Activity {
     public static final String COMMAND_SET_WIFI_SECURITY_LEVEL = "set-wifi-security-level";
     public static final String COMMAND_SET_SSID_ALLOWLIST = "set-ssid-allowlist";
     public static final String COMMAND_SET_SSID_DENYLIST = "set-ssid-denylist";
-    public static final String COMMAND_CHECK_NEW_USER_DISCLAIMER = "check-new-user-disclaimer";
 
     public static final String EXTRA_USER_RESTRICTION =
             "com.android.cts.verifier.managedprovisioning.extra.USER_RESTRICTION";
@@ -333,8 +328,7 @@ public class CommandReceiverActivity extends Activity {
                             return;
                         }
                         clearAllPoliciesAndRestrictions();
-                    } else if (mode == PolicyTransparencyTestListActivity.MODE_MANAGED_PROFILE
-                            || mode == PolicyTransparencyTestListActivity.MODE_MANAGED_USER) {
+                    } else if (mode == PolicyTransparencyTestListActivity.MODE_MANAGED_PROFILE) {
                         if (!mDpm.isProfileOwnerApp(getPackageName())) {
                             return;
                         }
@@ -525,14 +519,6 @@ public class CommandReceiverActivity extends Activity {
                     Log.d(TAG, "Clearing " + Settings.Secure.DEFAULT_INPUT_METHOD + " using "
                             + mDpm);
                     mDpm.setSecureSetting(mAdmin, Settings.Secure.DEFAULT_INPUT_METHOD, null);
-                } break;
-                case COMMAND_REMOVE_SECONDARY_USERS: {
-                    if (!mDpm.isDeviceOwnerApp(getPackageName())) {
-                        return;
-                    }
-                    for (UserHandle secondaryUser : mDpm.getSecondaryUsers(mAdmin)) {
-                        mDpm.removeUser(mAdmin, secondaryUser);
-                    }
                 } break;
                 case COMMAND_DISABLE_USB_DATA_SIGNALING: {
                     mDpm.setUsbDataSignalingEnabled(false);

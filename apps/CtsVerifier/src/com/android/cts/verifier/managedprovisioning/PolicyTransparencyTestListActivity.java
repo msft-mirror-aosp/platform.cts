@@ -50,7 +50,6 @@ public final class PolicyTransparencyTestListActivity extends PassFailButtons.Te
 
     public static final int MODE_DEVICE_OWNER = 1;
     public static final int MODE_MANAGED_PROFILE = 2;
-    public static final int MODE_MANAGED_USER = 4;
 
     /**
      * Pairs of:
@@ -105,9 +104,6 @@ public final class PolicyTransparencyTestListActivity extends PassFailButtons.Te
     private static final List<String> ALSO_VALID_FOR_MANAGED_PROFILE = Arrays.asList(
             PolicyTransparencyTestActivity.TEST_CHECK_PERMITTED_ACCESSIBILITY_SERVICE,
             PolicyTransparencyTestActivity.TEST_CHECK_PERMITTED_INPUT_METHOD);
-    private static final List<String> ALSO_VALID_FOR_MANAGED_USER = Arrays.asList(
-            PolicyTransparencyTestActivity.TEST_CHECK_PERMITTED_ACCESSIBILITY_SERVICE,
-            PolicyTransparencyTestActivity.TEST_CHECK_PERMITTED_INPUT_METHOD);
 
     private int mMode;
 
@@ -128,8 +124,7 @@ public final class PolicyTransparencyTestListActivity extends PassFailButtons.Te
 
         Log.d(TAG, "onCreate(): mode=" + mMode);
 
-        if (mMode != MODE_DEVICE_OWNER && mMode != MODE_MANAGED_PROFILE
-                && mMode != MODE_MANAGED_USER) {
+        if (mMode != MODE_DEVICE_OWNER && mMode != MODE_MANAGED_PROFILE) {
             throw new RuntimeException("Unknown mode " + mMode);
         }
 
@@ -172,17 +167,13 @@ public final class PolicyTransparencyTestListActivity extends PassFailButtons.Te
                 Log.d(TAG, "addTestsToAdapter(): skipping " + test + " on managed profile");
                 continue;
             }
-            if (mMode == MODE_MANAGED_USER && !ALSO_VALID_FOR_MANAGED_USER.contains(test)) {
-                Log.d(TAG, "addTestsToAdapter(): skipping " + test + " on managed user");
-                continue;
-            }
             String title = getString(policy.second);
             String testId = getTestId(title);
             intent.putExtra(PolicyTransparencyTestActivity.EXTRA_TITLE, title);
             intent.putExtra(PolicyTransparencyTestActivity.EXTRA_TEST_ID, testId);
             // This restriction is set per user so current user's DPM should be used instead of
             // device owner's DPM.
-            if (mMode == MODE_DEVICE_OWNER || ALSO_VALID_FOR_MANAGED_USER.contains(test)) {
+            if (mMode == MODE_DEVICE_OWNER) {
                 intent.putExtra(CommandReceiverActivity.EXTRA_USE_CURRENT_USER_DPM, true);
             }
             adapter.add(
@@ -195,8 +186,6 @@ public final class PolicyTransparencyTestListActivity extends PassFailButtons.Te
             return "DO_" + title;
         } else if (mMode == MODE_MANAGED_PROFILE) {
             return "MP_" + title;
-        } else if (mMode == MODE_MANAGED_USER) {
-            return "MU_" + title;
         }
         throw new RuntimeException("Unknown mode " + mMode);
     }

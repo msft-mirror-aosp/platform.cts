@@ -89,10 +89,8 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
     private static final String POLICY_TRANSPARENCY_TEST_ID = "POLICY_TRANSPARENCY";
     private static final String ENTERPRISE_PRIVACY_TEST_ID = "ENTERPRISE_PRIVACY";
     private static final String NETWORK_LOGGING_UI_TEST_ID = "NETWORK_LOGGING_UI";
-    private static final String DISALLOW_USER_SWITCH_TEST_ID = "DISALLOW_USER_SWITCH";
     private static final String REMOVE_DEVICE_OWNER_TEST_ID = "REMOVE_DEVICE_OWNER";
     private static final String DISALLOW_AMBIENT_DISPLAY_ID = "DISALLOW_AMBIENT_DISPLAY";
-    private static final String DISALLOW_REMOVE_USER_TEST_ID = "DISALLOW_REMOVE_USER";
     private static final String DISABLE_USB_DATA_SIGNALING_TEST_ID = "DISABLE_USB_DATA_SIGNALING";
     private static final String SET_REQUIRED_PASSWORD_COMPLEXITY_ID =
             "SET_REQUIRED_PASSWORD_COMPLEXITY";
@@ -668,12 +666,6 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
                         CommandReceiverActivity.COMMAND_DISABLE_NETWORK_LOGGING);
     }
 
-
-    private Intent createRemoveSecondaryUsersIntent() {
-        return new Intent(this, CommandReceiverActivity.class)
-                .putExtra(CommandReceiverActivity.EXTRA_COMMAND,
-                        CommandReceiverActivity.COMMAND_REMOVE_SECONDARY_USERS);
-    }
 
     private Intent createEnableUsbDataSignalingIntent() {
         return new Intent(this, CommandReceiverActivity.class)
