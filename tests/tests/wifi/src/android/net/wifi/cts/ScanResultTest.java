@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -408,9 +409,7 @@ public class ScanResultTest extends WifiJUnit4TestBase {
                     assertTrue("Scan retries exceeded 3", numRetry <= 3);
                 }
 
-                sWifiManager.startScan();
-                assertTrue("Should be throttled",
-                        waitForBroadcast(SCAN_WAIT_MSEC, STATE_SCAN_FAILURE));
+                assertFalse("Should be throttled", sWifiManager.startScan());
             }
         } finally {
             ShellIdentityUtils.invokeWithShellPermissions(
