@@ -36,7 +36,6 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Rule;
@@ -102,6 +101,7 @@ public abstract class EventDeliveryTestBase {
         mMessenger = new Messenger(mHandler);
         mPid = 0;
         mActivityOptions.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        mActivityOptions.setLaunchDisplayId(mContext.getDisplayId());
     }
 
     protected void tearDown() throws Exception {
@@ -118,7 +118,7 @@ public abstract class EventDeliveryTestBase {
         putExtraConsumer.accept(intent);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> TestApis.activities().startActivity(intent, mActivityOptions.toBundle()));
+                () -> mContext.startActivity(intent, mActivityOptions.toBundle()));
         waitLatch(mLatchActivityLaunch, "Failed to launch test activity");
 
         try {
@@ -140,7 +140,7 @@ public abstract class EventDeliveryTestBase {
         intent.setClassName(getTestPackage(), getTestActivity());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> TestApis.activities().startActivity(intent, mActivityOptions.toBundle()));
+                () -> mContext.startActivity(intent, mActivityOptions.toBundle()));
     }
 
     /** Bring the test activity into cached mode by launching another 2 apps */
