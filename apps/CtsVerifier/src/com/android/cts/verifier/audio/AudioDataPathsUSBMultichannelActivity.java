@@ -19,10 +19,14 @@ package com.android.cts.verifier.audio;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
+import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
@@ -51,6 +55,72 @@ public class AudioDataPathsUSBMultichannelActivity extends AudioDataPathsBaseAct
 
     private int mUsbInterfaceSupport;
 
+    private AudioDeviceInfo mUsbInDevice;
+    private AudioDeviceInfo mUsbOutDevice;
+    private final AudioDeviceCallback mLocalConnectListener =
+            new AudioDeviceCallback() {
+                @Override
+                public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+                    handleDeviceConnection();
+                }
+
+                @Override
+                public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+                    handleDeviceConnection();
+                }
+
+                private void handleDeviceConnection() {
+                    Log.i(TAG, "handleDeviceConnection()");
+                    new Handler(Looper.getMainLooper())
+                            .post(
+                                    () -> {
+                                        updateUsbCapabilities();
+                                        if (areUsbDevicesAvailable()) {
+                                            mTestManager.reset();
+                                            mTestManager.initializeTests();
+                                        }
+                                    });
+                }
+            };
+
+    private void updateUsbCapabilities() {
+        AudioManager audioManager = getSystemService(AudioManager.class);
+        mUsbInDevice = null;
+        AudioDeviceInfo[] inputs = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
+        for (AudioDeviceInfo dev : inputs) {
+            if (dev.getType() == AudioDeviceInfo.TYPE_USB_DEVICE) {
+                mUsbInDevice = dev;
+                break;
+            }
+        }
+        if (mUsbInDevice == null) {
+            return;
+        }
+
+        mUsbOutDevice = null;
+        AudioDeviceInfo[] outputs = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+        for (AudioDeviceInfo dev : outputs) {
+            if (dev.getType() == AudioDeviceInfo.TYPE_USB_DEVICE) {
+                mUsbOutDevice = dev;
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        getSystemService(AudioManager.class)
+                .registerAudioDeviceCallback(
+                        mLocalConnectListener, new Handler(Looper.getMainLooper()));
+    }
+
+    @Override
+    public void onStop() {
+        getSystemService(AudioManager.class).unregisterAudioDeviceCallback(mLocalConnectListener);
+        super.onStop();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setContentView(R.layout.audio_datapaths_usb_multichannel);
@@ -67,13 +137,18 @@ public class AudioDataPathsUSBMultichannelActivity extends AudioDataPathsBaseAct
                 R.string.audio_datapaths_USB_multichannel_info,
                 /* viewId= */ -1);
 
-        enableTestButtons(mUsbInterfaceSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO);
-
         TextView promptView = findViewById(R.id.audio_datapaths_deviceprompt);
-        promptView.setText(getString(R.string.audio_datapaths_usb_multichannel_nodevices));
 
         mUtiltitiesHandler.setChannelMasks(
                 TEST_IN_CHANNEL_COUNT, AudioFormat.CHANNEL_OUT_7POINT1_SURROUND);
+
+        if (grantAutoPass()) {
+            updateAutoPassMessage(promptView);
+            getPassButton().setEnabled(/* enabled= */ true);
+        }
+        enableTestButtons(mUsbInterfaceSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO);
+        promptView.setText(getString(R.string.audio_datapaths_usb_multichannel_nodevices));
+        updateUsbCapabilities();
     }
 
     @Override
@@ -88,9 +163,16 @@ public class AudioDataPathsUSBMultichannelActivity extends AudioDataPathsBaseAct
 
     @Override
     void gatherTestModules(TestManager testManager) {
+        if (!areUsbDevicesAvailable() || !mIsHandheld || mIsEmulator) {
+            return;
+        }
         addMultichannelModules(testManager, TEST_QUAD_CHANNELS);
         addMultichannelModules(testManager, TEST_FIVE_DOT_ONE_CHANNELS);
         addMultichannelModules(testManager, TEST_SEVEN_DOT_ONE_CHANNELS);
+    }
+
+    private boolean areUsbDevicesAvailable() {
+        return mUsbInDevice != null && mUsbOutDevice != null;
     }
 
     private void addMultichannelModules(TestManager testManager, int channelCount) {
@@ -153,15 +235,9 @@ public class AudioDataPathsUSBMultichannelActivity extends AudioDataPathsBaseAct
     @Override
     void postValidateTestDevices(int numValidTestModules) {
         TextView promptView = findViewById(R.id.audio_datapaths_deviceprompt);
-        if (!mIsHandheld) {
-            promptView.setText(
-                    getResources().getString(R.string.audio_datapaths_nonhandheld_autopass));
-            return;
-        }
-        if (mIsEmulator) {
-            promptView.setText(
-                    getResources().getString(R.string.audio_datapaths_emulator_autopass));
-            return;
+
+        if (grantAutoPass()) {
+            updateAutoPassMessage(promptView);
         }
         if (mUsbInterfaceSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
             int visibility =
@@ -193,5 +269,25 @@ public class AudioDataPathsUSBMultichannelActivity extends AudioDataPathsBaseAct
         return !mIsHandheld
                 || mIsEmulator
                 || Build.VERSION.MEDIA_PERFORMANCE_CLASS < Build.VERSION_CODES.CINNAMON_BUN;
+    }
+
+    private void updateAutoPassMessage(TextView promptView) {
+        enableTestButtons(/* enabled= */ false);
+        if (!mIsHandheld) {
+            promptView.setText(
+                    getResources().getString(R.string.audio_datapaths_nonhandheld_autopass));
+            return;
+        }
+        if (mIsEmulator) {
+            promptView.setText(
+                    getResources().getString(R.string.audio_datapaths_emulator_autopass));
+            return;
+        }
+        promptView.setText(
+                getResources()
+                        .getString(
+                                R.string.audio_datapaths_media_class_autopass,
+                                Build.VERSION.MEDIA_PERFORMANCE_CLASS,
+                                Build.VERSION_CODES.CINNAMON_BUN));
     }
 }
