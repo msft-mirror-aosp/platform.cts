@@ -878,6 +878,7 @@ public class TestHelper {
                 new TestNetworkRequestMatchCallback();
         mWifiManager.registerNetworkRequestMatchCallback(
                 Executors.newSingleThreadExecutor(), networkRequestMatchCallback);
+        networkRequestMatchCallback.waitForAnyCallback(DURATION_UI_INTERACTION_MILLIS);
         long start = SystemClock.elapsedRealtime();
         try {
             // 1. Wait for registration callback.
