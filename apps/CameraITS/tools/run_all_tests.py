@@ -42,6 +42,7 @@ TEST_KEY_TABLET = 'tablet'
 TEST_KEY_SENSOR_FUSION = 'sensor_fusion'
 TEST_KEY_GEN2 = 'gen2'
 PLACEHOLDER_DEVICE_TEXT = '<device-id>'
+PLACEHOLDER_TABLET_TEXT = '<tablet-id>'
 ACTIVITY_START_WAIT = 1.5  # seconds
 MERGE_RESULTS_TIMEOUT = 3600  # seconds
 
@@ -498,7 +499,8 @@ def get_device_serial_number(device, config_file_contents):
     device: String device label as specified in config file.dut/tablet
     config_file_contents: dict read from config.yml file
   """
-
+  tablet_device_id = None
+  dut_device_id = None
   for _, j in config_file_contents.items():
     for datadict in j:
       android_device_contents = datadict.get('Controllers')
@@ -800,12 +802,22 @@ def main():
   # Get test parameters from config file
   test_params_content = get_test_params(config_file_contents)
   if not camera_id_combos:
-    camera_id_combos = str(test_params_content['camera']).split(',')
+    camera_id_combos = str(test_params_content.get('camera', '')).split(',')
+
+  if (not camera_id_combos or '<camera-id>' in camera_id_combos or
+      '' in camera_id_combos or 'None' in camera_id_combos):
+    raise ValueError('camera_id not specified. Please provide camera_id '
+                     'either via command line or in config.yml.')
+
   if not scenes:
     scenes = str(test_params_content['scene']).split(',')
     scenes = [_INT_STR_DICT.get(n, n) for n in scenes]  # recover '1_1' & '1_2'
 
   device_id = get_device_serial_number('dut', config_file_contents)
+  if not device_id or device_id == PLACEHOLDER_DEVICE_TEXT:
+    raise ValueError('dut device_id not specified. Please provide serial number '
+                     'in config.yml.')
+
   # Enable external storage on DUT to send summary report to CtsVerifier.apk
   enable_external_storage(device_id)
 
@@ -831,6 +843,9 @@ def main():
   logging.info('Saving %s output files to: %s', config_file_test_key, topdir)
   if TEST_KEY_TABLET in config_file_test_key:
     tablet_id = get_device_serial_number('tablet', config_file_contents)
+    if not tablet_id or tablet_id == PLACEHOLDER_TABLET_TEXT:
+      raise ValueError('tablet_id not specified. Please provide serial number '
+                       'of tablet in config.yml.')
     tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.product.device'
     raw_output = subprocess.check_output(
         tablet_name_cmd, stderr=subprocess.STDOUT, shell=True)
