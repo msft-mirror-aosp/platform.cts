@@ -72,7 +72,7 @@ public class TurnOffWorkActivity extends DialogTestListActivity {
                 // test execution time.
                 mStartTime = System.currentTimeMillis();
                 try {
-                    startActivity(new Intent(Settings.ACTION_SYNC_SETTINGS));
+                    startActivity(new Intent(Settings.ACTION_SETTINGS));
                 } catch (ActivityNotFoundException e) {
                     Log.w(TAG, "Cannot start activity.", e);
                     Toast.makeText(TurnOffWorkActivity.this,
