@@ -336,7 +336,10 @@ public class ScanResultTest extends WifiJUnit4TestBase {
             PollingCheck.check(
                     "Wifi not connected",
                     WIFI_CONNECT_TIMEOUT_MILLIS,
-                    () -> sWifiManager.getConnectionInfo().getNetworkId() != -1);
+                    () -> {
+                        WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
+                        return wifiInfo.getNetworkId() != -1 && wifiInfo.getFrequency() != -1;
+                    });
         } catch (AssertionError e) {
             // try again after toggle wifi
             setWifiEnabled(false);
@@ -344,7 +347,10 @@ public class ScanResultTest extends WifiJUnit4TestBase {
             PollingCheck.check(
                     "Wifi not connected",
                     WIFI_CONNECT_TIMEOUT_MILLIS,
-                    () -> sWifiManager.getConnectionInfo().getNetworkId() != -1);
+                    () -> {
+                        WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
+                        return wifiInfo.getNetworkId() != -1 && wifiInfo.getFrequency() != -1;
+                    });
         }
 
         final WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
