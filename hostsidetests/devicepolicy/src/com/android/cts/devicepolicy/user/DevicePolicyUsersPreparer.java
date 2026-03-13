@@ -15,22 +15,15 @@
  */
 package com.android.cts.devicepolicy.user;
 
-import static android.app.admin.flags.Flags.FLAG_DEVICE_OWNER_FOR_ALL;
-import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
-
-import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER;
 import static com.android.tradefed.device.UserInfo.USER_NULL;
-import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
 import com.android.compatibility.common.util.BaseSwitchFullUserTargetPreparer;
-import com.android.compatibility.common.util.FlagsUtil;
-import com.android.compatibility.common.util.UserUtil;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.targetprep.BuildError;
+import com.android.tradefed.targetprep.SwitchUserTargetPreparer;
 import com.android.tradefed.targetprep.TargetSetupError;
 
 import com.google.common.base.Preconditions;
@@ -38,20 +31,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
 /**
- * Class responsible for "predicting" which users should be used for DevicePolicy purposes.
+ * Convenience {@link SwitchUserTargetPreparer} that provides a {@link UsersOracle} singleton.
  *
- * <p>In other words, it defines which user should be something (like the device owner), but doesn't
- * set it
- *
- * <p><b>NOTE:</b> callers <b>MUST</b> include {@link DevicePolicyUsersTargetPreparer} in their
- * {@code AndroidTest.xml}.
+ * <p><b>NOTE:</b> callers <b>MUST</b> include a {@code DevicePolicyUsersPreparer} in their {@code
+ * AndroidTest.xml} before calling {@link #getUsersOracleInstance(TestInformation)}.
  */
 public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPreparer {
 
@@ -68,7 +56,7 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
         if (mOracle != null) {
             CLog.w("sOracle singleton already set, using it instead: %s", mOracle);
         } else {
-            mOracle = createAndSetOracleSingleton(testInformation.getDevice(), getPreparedUserId());
+            mOracle = createAndSetOracleInstance(testInformation);
         }
     }
 
@@ -80,14 +68,24 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
         super.tearDown(testInformation, e);
     }
 
-    /** Gets the id of the current user when the test module started. */
+    /**
+     * Gets the id of the current user when the test module started.
+     *
+     * @deprecated should call {@link UsersOracle#getInitialCurrentUserId()} instead.
+     */
+    @Deprecated
     public static int getInitialCurrentUserId() {
-        return getOracle().mInitialCurrentUserId;
+        return getOracle().getInitialCurrentUserId();
     }
 
-    /** Gets the ids of the users that existed before the test module started. */
+    /**
+     * Gets the ids of the users that existed before the test module started.
+     *
+     * @deprecated should call {@link UsersOracle#getPreExistingUserIds()} instead.
+     */
+    @Deprecated
     public static ImmutableSet<Integer> getPreExistingUserIds() {
-        return ImmutableSet.copyOf(getOracle().mPreExistingUserIds);
+        return getOracle().getPreExistingUserIds();
     }
 
     /**
@@ -95,17 +93,30 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
      * DeviceOwner}.
      *
      * <p>Notice the *should* - it doesn't return which user is the *actual* {@code DeviceOwner}.
+     *
+     * @deprecated should call {@link UsersOracle#getDeviceOwnerUserId(TestInformation)} instead.
      */
+    @Deprecated
     public static int getDeviceOwnerUserId() {
         return getOracle().getDeviceOwnerUserId();
     }
 
-    /** Gets the id of a user that *should* be used by tests to set a {@code ProfileOwner} on. */
+    /**
+     * Gets the id of a user that *should* be used by tests to set a {@code ProfileOwner} on.
+     *
+     * @deprecated should call {@link UsersOracle#getProfileOwnerUserId()} instead.
+     */
+    @Deprecated
     public static int getProfileOwnerUserId() {
         return getOracle().getProfileOwnerUserId();
     }
 
-    /** Gets whether device owner could be set on any full user. */
+    /**
+     * Gets whether device owner could be set on any full user.
+     *
+     * @deprecated should call {@link UsersOracle#getProfileOwnerUserId()} instead.
+     */
+    @Deprecated
     public static boolean isDeviceOwnerSupportedOnAnyFullUsers() {
         return getOracle().isDeviceOwnerSupportedOnAnyFullUsers();
     }
@@ -113,7 +124,10 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
     /**
      * Gets the id of the user that *could* be used as parent of profiles (created by the test), or
      * {@link USER_NULL} if none could be used.
+     *
+     * @deprecated should call {@link UsersOracle#getProfileParentUserId()} instead.
      */
+    @Deprecated
     public static int getProfileParentUserId() {
         return getOracle().getProfileParentUserId();
     }
@@ -132,9 +146,28 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
         return oracle;
     }
 
-    private static UsersOracle createAndSetOracleSingleton(ITestDevice device, int preparedUserId)
+    /**
+     * Gets the {@link UsersOracle} singleton.
+     *
+     * @return singleton created on {@code setUp()}, or a new one if {@code setUp()} was not called
+     *     (or if it {@code #tearDown()} was called afterwards).
+     */
+    public static UsersOracle getUsersOracleInstance(TestInformation testInformation)
             throws DeviceNotAvailableException {
-        var oracle = new UsersOracle(device, preparedUserId);
+        var oracle = sOracle.get();
+        if (oracle == null) {
+            // Should have been set on setUp()
+            CLog.w(
+                    "getUsersOracleInstance(): static Oracle not set yet - did you include "
+                            + "DevicePolicyUsersTargetPreparer in your AndroidTest.xml?");
+            oracle = createAndSetOracleInstance(testInformation);
+        }
+        return oracle;
+    }
+
+    private static UsersOracle createAndSetOracleInstance(TestInformation testInformation)
+            throws DeviceNotAvailableException {
+        var oracle = UsersOracle.createInstance(testInformation);
         if (sOracle.compareAndSet(null, oracle)) {
             logAndDisplay("Set sOracle singleton to %s", oracle);
         } else {
@@ -145,114 +178,5 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                     sOracle, oracle);
         }
         return oracle;
-    }
-
-    private static final class UsersOracle {
-
-        private static final AtomicInteger sNextId = new AtomicInteger();
-
-        private final int mId = sNextId.incrementAndGet();
-        private final FlagsUtil mFlagsUtil;
-        private final boolean mIsHsum;
-        private final int mInitialCurrentUserId;
-        private final Set<Integer> mPreExistingUserIds;
-        private final @Nullable Integer mMainUserId;
-        private final boolean mSupportsProfilesForAll;
-        private final boolean mSupportsDeviceOwnerForAll;
-        // TODO(b/35372278): temporary workaround until flag is ramped up
-        private final boolean mIsAutomotive;
-
-        private UsersOracle(ITestDevice device, int initialCurrentUserId)
-                throws DeviceNotAvailableException {
-            mIsHsum = device.isHeadlessSystemUserMode();
-            mInitialCurrentUserId = initialCurrentUserId;
-            mPreExistingUserIds = device.getUserInfos().keySet();
-            mMainUserId = device.getMainUserId();
-            mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
-            mIsAutomotive = device.hasFeature("android.hardware.type.automotive");
-            mFlagsUtil = new FlagsUtil(device);
-            mSupportsDeviceOwnerForAll = mFlagsUtil.getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
-        }
-
-        private boolean isDeviceOwnerSupportedOnAnyFullUsers() {
-            return mSupportsDeviceOwnerForAll;
-        }
-
-        private int getDeviceOwnerUserId() {
-            if (!mIsHsum) {
-                return USER_SYSTEM;
-            }
-            if (mSupportsDeviceOwnerForAll) {
-                return mInitialCurrentUserId;
-            }
-            if (mMainUserId == null && mIsAutomotive) {
-                CLog.d("getDeviceOwnerUserId(): returning initial user (%d) on automotive build");
-                return mInitialCurrentUserId;
-            }
-            Preconditions.checkState(
-                    mMainUserId != null,
-                    "DO not supported on mainless-user device (most likely flag %s is disabled - "
-                            + "check logs)",
-                    FLAG_DEVICE_OWNER_FOR_ALL);
-            return mMainUserId;
-        }
-
-        private int getProfileOwnerUserId() {
-            // TODO(b/374832167): for now it's hard-coding USER_SYSTEM on non-HSUM devices, but in
-            // the long term it should simply return the current user as well.
-            return mIsHsum ? mInitialCurrentUserId : USER_SYSTEM;
-        }
-
-        private int getProfileParentUserId() {
-            if (!mIsHsum) {
-                // TODO(b/374832167): in theory we don't need this check - the logic below should
-                // apply to non-HSUM devices as well as it checks for mSupportsProfilesForAll - but
-                // given that the whole point of this class is to support HSUM device, it would be
-                // safer (to avoid potential breakages) to simplify its logic for non-HSUM devices
-                return USER_SYSTEM;
-            }
-            if (mMainUserId != null) {
-                return mMainUserId;
-            }
-            if (mIsAutomotive) {
-                CLog.d("getProfileParentUserId(): returning USER_NULL on automotive build");
-                return USER_NULL;
-            }
-            Preconditions.checkState(
-                    mSupportsProfilesForAll,
-                    "PO not supported on mainless-user device (either flag %s is disabled or "
-                            + "device doesn't define %s - check logs)",
-                    FLAG_PROFILES_FOR_ALL,
-                    CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
-            return mInitialCurrentUserId;
-        }
-
-        private String getFlagValueForDebuggingPurposes(String flag) {
-            try {
-                return Boolean.toString(mFlagsUtil.getBooleanFlag(flag));
-            } catch (Exception e) {
-                return e.toString();
-            }
-        }
-
-        @Override
-        public String toString() {
-            return String.format(
-                    "UsersOracle[mId=%d, mIsHsum=%b, mInitialCurrentUserId=%d, "
-                            + "mMainUserId=%s, mSupportsProfilesForAll(flag %s=%b)=%B, "
-                            + "mSupportsDeviceOwnerForAll(flag %s)=%B, mIsAutomotive=%b, "
-                            + "mPreExistingUserIds=%s]",
-                    mId,
-                    mIsHsum,
-                    mInitialCurrentUserId,
-                    mMainUserId,
-                    FLAG_PROFILES_FOR_ALL,
-                    getFlagValueForDebuggingPurposes(FLAG_PROFILES_FOR_ALL),
-                    mSupportsProfilesForAll,
-                    FLAG_DEVICE_OWNER_FOR_ALL,
-                    mSupportsDeviceOwnerForAll,
-                    mIsAutomotive,
-                    mPreExistingUserIds);
-        }
     }
 }
