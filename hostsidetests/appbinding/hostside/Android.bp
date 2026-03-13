@@ -46,11 +46,6 @@ java_test_host {
         ":CtsAppBindingService6",
         ":CtsAppBindingService7",
         ":CtsAppBindingServiceB",
-        ":CtsAppBindingServiceSupervision1",
-        ":CtsAppBindingServiceSupervision2",
-        ":CtsAppBindingServiceSupervision3",
-        ":CtsAppBindingServiceSupervision4",
-        ":CtsAppBindingServiceSupervision5",
     ],
     enable_static_aconfig_pb: true,
 }
