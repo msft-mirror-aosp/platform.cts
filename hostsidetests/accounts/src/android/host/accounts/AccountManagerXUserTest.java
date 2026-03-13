@@ -28,6 +28,7 @@ import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.CollectingTestListener;
 import com.android.tradefed.result.TestDescription;
@@ -35,6 +36,7 @@ import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.ITestInformationReceiver;
 
 import org.junit.After;
 import org.junit.Before;
@@ -46,13 +48,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Tests adding accounts for user profile
- */
+/** Tests adding accounts for user profile */
 @RunWith(DeviceJUnit4ClassRunner.class)
 @SystemUserOnly
 @AppModeFull(reason = "instant applications cannot see any other application")
-public final class AccountManagerXUserTest extends BaseMultiUserTest implements IBuildReceiver {
+public final class AccountManagerXUserTest extends BaseMultiUserTest
+        implements IBuildReceiver, ITestInformationReceiver {
 
     private static final String TEST_WITH_PERMISSION_APK =
             "CtsAccountManagerCrossUserApp.apk";
@@ -63,6 +64,7 @@ public final class AccountManagerXUserTest extends BaseMultiUserTest implements 
 
     private String mOldVerifierValue;
     private IBuildInfo mCtsBuild;
+    private TestInformation mTestInformation;
 
     private int mParentUserId;
     private int mProfileUserId;
@@ -80,7 +82,9 @@ public final class AccountManagerXUserTest extends BaseMultiUserTest implements 
                 device.executeShellCommand("settings get global package_verifier_enable");
         device.executeShellCommand("settings put global package_verifier_enable 0");
 
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
+        mParentUserId =
+                DevicePolicyUsersPreparer.getUsersOracleInstance(mTestInformation)
+                        .getProfileParentUserId();
 
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
         File apkFile = buildHelper.getTestFile(TEST_WITH_PERMISSION_APK);
@@ -110,6 +114,16 @@ public final class AccountManagerXUserTest extends BaseMultiUserTest implements 
     @Override
     public void setBuild(IBuildInfo buildInfo) {
         mCtsBuild = buildInfo;
+    }
+
+    @Override
+    public void setTestInformation(TestInformation testInformation) {
+        mTestInformation = testInformation;
+    }
+
+    @Override
+    public TestInformation getTestInformation() {
+        return mTestInformation;
     }
 
     @Test
