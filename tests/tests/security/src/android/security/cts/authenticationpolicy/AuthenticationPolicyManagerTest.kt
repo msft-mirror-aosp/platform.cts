@@ -19,7 +19,6 @@ import android.Manifest.permission.MANAGE_BIOMETRIC
 import android.Manifest.permission.MANAGE_SECURE_LOCK_DEVICE
 import android.Manifest.permission.TEST_BIOMETRIC
 import android.Manifest.permission.USE_BIOMETRIC_INTERNAL
-import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.app.Instrumentation
 import android.content.Context
 import android.cts.testapisreflection.userId
@@ -28,7 +27,6 @@ import android.hardware.biometrics.BiometricTestSession
 import android.hardware.biometrics.SensorProperties
 import android.platform.test.annotations.Presubmit
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.provider.Settings
 import android.security.Flags
 import android.security.Flags.secureLockDevice
 import android.security.Flags.secureLockdown
@@ -78,12 +76,7 @@ import org.junit.runner.RunWith
 @RequireNotAutomotive(reason = "Requires AuthenticationPolicyManager")
 @RequireNotTv(reason = "Requires AuthenticationPolicyManager")
 @RequireNotWatch(reason = "Requires AuthenticationPolicyManager")
-@EnsureHasPermission(
-    MANAGE_BIOMETRIC,
-    TEST_BIOMETRIC,
-    USE_BIOMETRIC_INTERNAL,
-    WRITE_SECURE_SETTINGS
-)
+@EnsureHasPermission(MANAGE_BIOMETRIC, TEST_BIOMETRIC, USE_BIOMETRIC_INTERNAL)
 @RequiresFlagsEnabled(Flags.FLAG_SECURE_LOCK_DEVICE, Flags.FLAG_SECURE_LOCKDOWN)
 class AuthenticationPolicyManagerTest {
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -128,7 +121,6 @@ class AuthenticationPolicyManagerTest {
         assumeTrue("setup | secure_lock_device flag must be enabled", secureLockDevice())
 
         waitForAllUnenrolled()
-        disableSceneContainer()
     }
 
     @After
@@ -694,10 +686,6 @@ class AuthenticationPolicyManagerTest {
 
     private fun cleanupSession(session: BiometricTestSession) {
         session.cleanupInternalState(context.userId)
-    }
-
-    private fun disableSceneContainer() {
-        Settings.Global.putInt(context.contentResolver, Settings.Global.SCENE_CONTAINER_ENABLED, 0)
     }
 }
 
