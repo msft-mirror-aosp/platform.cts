@@ -30,7 +30,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -85,29 +84,48 @@ suspend fun PointerInputScope.detectDragGesturesImmediate(
 
 class MainActivity : ComponentActivity() {
 
-    private val interactionReceiverBinder = InteractionReceiverBinder()
+    private var activityReadySignaled = false
+    private var isWindowFocused = false
+    private var isEnterAnimationComplete = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d(Constants.TAG, "MainActivity.onCreate")
         super.onCreate(savedInstanceState)
-        interactionReceiverBinder.register(this)
 
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    InteractionSender.sendInteraction(Interaction(Action.GoBack))
+                    InteractionSender.sendInteractionAsync(Interaction(Action.GoBack))
                 }
             },
         )
 
-        setContent { TestView(InteractionSender::sendInteraction) }
+        setContent { TestView(InteractionSender::sendInteractionAsync) }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        isWindowFocused = hasFocus
+        checkAndSendActivityReady()
+    }
+
+    override fun onEnterAnimationComplete() {
+        super.onEnterAnimationComplete()
+        isEnterAnimationComplete = true
+        checkAndSendActivityReady()
     }
 
     override fun onDestroy() {
-        InteractionSender.sendInteraction(Interaction(Action.Destroy))
+        InteractionSender.sendInteractionAsync(Interaction(Action.Destroy))
         super.onDestroy()
-        interactionReceiverBinder.unregister(this)
+    }
+
+    private fun checkAndSendActivityReady() {
+        if (isWindowFocused && isEnterAnimationComplete && !activityReadySignaled) {
+            activityReadySignaled = true
+            InteractionSender.sendInteractionAsync(Interaction(Action.ActivityReady))
+        }
     }
 }
 

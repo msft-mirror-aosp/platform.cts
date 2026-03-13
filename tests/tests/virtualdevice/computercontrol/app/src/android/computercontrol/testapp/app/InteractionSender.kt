@@ -16,39 +16,56 @@
 
 package android.computercontrol.testapp.app
 
+import android.computercontrol.testapp.common.Action
 import android.computercontrol.testapp.common.Constants
 import android.computercontrol.testapp.common.Interaction
-import android.os.Bundle
+import android.os.IBinder
 import android.os.Message
 import android.os.Messenger
-import android.os.RemoteException
-import android.util.Log
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 object InteractionSender {
 
-    private var remoteMessenger: Messenger? = null
+    private var remoteCallback = MutableStateFlow<RemoteCallback?>(null)
 
-    fun sendInteraction(interaction: Interaction) {
-        Log.d(Constants.TAG, "Sending interaction: $interaction")
-        if (remoteMessenger == null) {
-            Log.w(Constants.TAG, "remoteMessenger is null, cannot send interaction")
-            return
-        }
-        val msg = Message.obtain()
-        val bundle = Bundle()
-        bundle.putParcelable(Constants.KEY_INTERACTION, interaction)
-        msg.data = bundle
-        try {
-            Log.d(Constants.TAG, "Sending interaction to remote messenger: $interaction")
-            remoteMessenger?.send(msg)
-            Log.d(Constants.TAG, "Sent interaction to remote messenger")
-        } catch (e: RemoteException) {
-            Log.e(Constants.TAG, "Error sending interaction", e)
+    fun sendInteractionAsync(interaction: Interaction) {
+        CoroutineScope(Dispatchers.Default).launch {
+            // If a callback is not already set, wait for one to be set.
+            val callback = withTimeout(20.seconds) { remoteCallback.first { it != null }!! }
+            callback.messenger.send(
+                Message.obtain().apply {
+                    data.putParcelable(Constants.KEY_INTERACTION, interaction)
+                }
+            )
         }
     }
 
-    fun setRemoteMessenger(messenger: Messenger?) {
-        Log.d(Constants.TAG, "Setting remote messenger: $messenger")
-        remoteMessenger = messenger
+    fun setRemoteMessenger(messenger: Messenger, token: IBinder) {
+        if (remoteCallback.value != null) {
+            throw IllegalStateException("Remote messenger is already set!")
+        }
+        remoteCallback.value = RemoteCallback(messenger, token)
     }
+
+    fun removeRemoteMessenger(token: IBinder) {
+        val callback = remoteCallback.value
+        if (callback?.token != token) {
+            throw IllegalStateException("Token mismatch: expected ${callback?.token}, got $token")
+        }
+
+        callback.messenger.send(
+            Message.obtain().apply {
+                data.putParcelable(Constants.KEY_INTERACTION, Interaction(Action.CallbackRemoved))
+            }
+        )
+        remoteCallback.value = null
+    }
+
+    private data class RemoteCallback(val messenger: Messenger, val token: IBinder)
 }

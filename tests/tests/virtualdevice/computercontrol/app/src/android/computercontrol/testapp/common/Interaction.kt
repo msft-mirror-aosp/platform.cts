@@ -63,13 +63,21 @@ sealed interface Action : Parcelable {
     }
 
     @Parcelize
+    data object CallbackRemoved : Action {
+        override fun toString(): String {
+            return "CallbackRemoved"
+        }
+    }
+
+    @Parcelize
     data class TextFieldValueChange(
         val textFieldId: String,
         val text: String,
         val uncommittedText: String?,
     ) : Action {
         override fun toString(): String {
-            return "TextFieldValueChange(id=$textFieldId, value=$text, uncommittedText=$uncommittedText)"
+            return "TextFieldValueChange(id=$textFieldId, value=$text, " +
+                    "uncommittedText=$uncommittedText)"
         }
     }
 }

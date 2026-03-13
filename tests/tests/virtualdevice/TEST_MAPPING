@@ -15,6 +15,9 @@
     {
       "name": "CtsVirtualDevicesCameraTestCases",
       "keywords": ["primary-device"]
+    },
+    {
+      "name": "CtsVirtualDevicesComputerControlTests"
     }
   ],
   "postsubmit": [
