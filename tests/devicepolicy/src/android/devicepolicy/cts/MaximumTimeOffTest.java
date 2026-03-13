@@ -82,14 +82,9 @@ public final class MaximumTimeOffTest {
     @NotificationsTest
     public void setManagedProfileMaximumTimeOff_timesOut_personalAppsAreSuspended()
             throws Exception {
-        long originalMaximumTimeOff =
-                dpc(sDeviceState).devicePolicyManager()
-                        .getManagedProfileMaximumTimeOff(
-                                dpc(sDeviceState).componentName());
         try (TestAppInstance personalInstance = sTestApp.install()) {
             TestAppActivityReference activity = personalInstance.activities().any();
-            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1);
+            setManagedProfileMaximumTimeOff(/* timeoutMs= */ 1);
             workProfile(sDeviceState).setQuietMode(true);
 
             assertPackageSuspended(sTestApp.pkg());
@@ -101,8 +96,36 @@ public final class MaximumTimeOffTest {
             dpc(sDeviceState)
                     .devicePolicyManager()
                     .setPersonalAppsSuspended(dpc(sDeviceState).componentName(), false);
-            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
+            setManagedProfileMaximumTimeOff(0);
+        }
+    }
+
+    /**
+     * We set the maximum time off to 10 seconds in this test to make sure the timeout is triggered
+     * by the alarm instead of a second broadcast (e.g. ACTION_USER_STOPPED).
+     */
+    @Test
+    @PolicyAppliesTest(policy = MaximumTimeOff.class)
+    @NotificationsTest
+    @Postsubmit(reason = "New test")
+    @RequireFlagsEnabled(value = {Flags.FLAG_ADD_USER_INFO_IN_PROFILE_OFF_DEADLINE_ALARM})
+    public void setManagedProfileMaximumTimeOff_longerTimeOut_personalAppsAreSuspended()
+            throws Exception {
+        try (TestAppInstance personalInstance = sTestApp.install()) {
+            TestAppActivityReference activity = personalInstance.activities().any();
+            setManagedProfileMaximumTimeOff(/* timeoutMs= */ 10_000);
+            workProfile(sDeviceState).setQuietMode(true);
+
+            assertPackageSuspended(sTestApp.pkg());
+
+            startActivityWithoutBlocking(activity);
+            assertBlockedByAdminDialogAppears();
+        } finally {
+            workProfile(sDeviceState).setQuietMode(false);
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .setPersonalAppsSuspended(dpc(sDeviceState).componentName(), false);
+            setManagedProfileMaximumTimeOff(0);
         }
     }
 
@@ -121,8 +144,7 @@ public final class MaximumTimeOffTest {
 
             TestAppActivityReference activity = personalInstance.activities().any();
 
-            dpm.setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1800_000);
+            setManagedProfileMaximumTimeOff(/* timeoutMs= */ 1800_000);
             setQuietModeAndWaitForUserStopped(sDeviceState);
 
             originalTime = System.currentTimeMillis();
@@ -173,13 +195,8 @@ public final class MaximumTimeOffTest {
     @PolicyAppliesTest(policy = MaximumTimeOff.class)
     @NotificationsTest
     public void setManagedProfileMaximumTimeOff_timesOut_notificationIsShown() {
-        long originalMaximumTimeOff =
-                dpc(sDeviceState).devicePolicyManager()
-                        .getManagedProfileMaximumTimeOff(
-                                dpc(sDeviceState).componentName());
         try (NotificationListener notifications = TestApis.notifications().createListener()) {
-            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1);
+            setManagedProfileMaximumTimeOff(/* timeoutMs= */ 1);
 
             workProfile(sDeviceState).setQuietMode(true);
 
@@ -193,35 +210,37 @@ public final class MaximumTimeOffTest {
             dpc(sDeviceState)
                     .devicePolicyManager()
                     .setPersonalAppsSuspended(dpc(sDeviceState).componentName(), false);
-            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
+            setManagedProfileMaximumTimeOff(0);
         }
     }
 
     @CannotSetPolicyTest(policy = MaximumTimeOff.class, includeNonDeviceAdminStates = false)
     public void setManagedProfileMaximumTimeOff_notAllowed_throwsException() {
         assertThrows(SecurityException.class, () -> {
-            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1);
+            setManagedProfileMaximumTimeOff(/* timeoutMs= */ 1);
         });
     }
 
     @CanSetPolicyTest(policy = MaximumTimeOff.class)
     public void getManagedProfileMaximumTimeOff_returnsSetValue() {
-        long originalMaximumTimeOff =
-                dpc(sDeviceState).devicePolicyManager()
-                        .getManagedProfileMaximumTimeOff(
-                                dpc(sDeviceState).componentName());
         try {
-            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 12345);
+            setManagedProfileMaximumTimeOff(/* timeoutMs= */ 12345);
 
-            assertThat(dpc(sDeviceState).devicePolicyManager().getManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName())).isEqualTo(12345);
+            assertThat(getManagedProfileMaximumTimeOff()).isEqualTo(12345);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
+            setManagedProfileMaximumTimeOff(0);
         }
+    }
+
+    private long getManagedProfileMaximumTimeOff() {
+        return dpc(sDeviceState)
+                .devicePolicyManager()
+                .getManagedProfileMaximumTimeOff(dpc(sDeviceState).componentName());
+    }
+
+    private void setManagedProfileMaximumTimeOff(long timeoutMs) {
+        dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                dpc(sDeviceState).componentName(), /* timeoutMs= */ timeoutMs);
     }
 
     // TODO(264249662): Add missing coverage
