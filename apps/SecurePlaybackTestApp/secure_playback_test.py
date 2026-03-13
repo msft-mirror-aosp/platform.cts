@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import json
 import logging
 import os
@@ -23,6 +24,7 @@ import time
 from mobly import asserts
 from mobly import test_runner
 import secure_playback_base_test
+from snippet_uiautomator import uiautomator
 
 _ACTION_SECURE_PLAYBACK_START = (
     'com.android.cts.verifier.media.ACTION_SECURE_PLAYBACK_START'
@@ -32,11 +34,13 @@ _ACTION_SECURE_PLAYBACK_RESULT = (
 )
 _APP_SIDE_SERVER_PORT = 8000
 _APP_START_WAIT_TIME_SEC = 3
+_CTS_VERIFIER_ACTIVITY = 'com.android.cts.verifier/.CtsVerifierActivity'
 _EXPECTED_NUMBER_OF_CODES = 256
 _HOST_SIDE_SERVER_PORT = 51501  # Arbitrary port number
 _HTTP_SERVER_STR = 'http.server'
 _MAX_DROPPED_FRAMES = 5
 _SECURE_PLAYBACK_CODEC_NAME = 'media.secureplayback.extra.CODEC_NAME'
+_SECURE_PLAYBACK_CTS_VERIFIER_TEST_LIST_NAME = 'Secure Playback Test'
 _SECURE_PLAYBACK_EXTRA_STREAMING_URI = (
     'media.secureplayback.extra.STREAMING_URI'
 )
@@ -49,6 +53,7 @@ _SECURE_PLAYBACK_NUM_DROPPED_FRAMES = (
 _SECURE_PLAYBACK_RESULTS_KEY = 'media.secureplayback.extra.RESULTS'
 _TEST_ACTIVITY = 'com.android.cts.verifier/.media.SecurePlaybackTestActivity'
 _TEST_VIDEO_FOLDER = 'piano-keys-wv-cenc'
+_UI_WAIT_TIMEOUT = datetime.timedelta(seconds=5)
 _WAIT_FOR_NETWORK_SEC = 10
 
 
@@ -66,6 +71,9 @@ class SecurePlaybackTest(secure_playback_base_test.SecurePlaybackBaseTest):
 
   def setup_class(self):
     super().setup_class()
+    self.dut.services.register(
+        uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
+    )
     # Set up server
     serve_directory = os.path.join(
         os.environ['SECURE_PLAYBACK_TEST_APP_TOP'],
@@ -89,6 +97,13 @@ class SecurePlaybackTest(secure_playback_base_test.SecurePlaybackBaseTest):
       self.server_process.wait()
     logging.info('Removing all reverse socket connections')
     self.dut.adb.reverse(['--remove-all'])
+    # Set up CTS Verifier Activity to receive results
+    self.dut.adb.shell(
+        f'am start -S -n {_CTS_VERIFIER_ACTIVITY} '
+        '--activity-brought-to-front --activity-reorder-to-front'
+    )
+    self._scroll_and_click_test(_SECURE_PLAYBACK_CTS_VERIFIER_TEST_LIST_NAME)
+    time.sleep(_APP_START_WAIT_TIME_SEC)
     passed_or_skipped = len(self.results.passed) + len(self.results.skipped)
     if passed_or_skipped == len(self.results.requested):
       logging.info('All tests passed or skipped')
@@ -97,6 +112,20 @@ class SecurePlaybackTest(secure_playback_base_test.SecurePlaybackBaseTest):
           f'--es {_SECURE_PLAYBACK_RESULTS_KEY} PASS'
       )
     super().teardown_class()
+
+  def _scroll_and_click_test(self, test_name):
+    """Scrolls down and clicks the test name."""
+    if self.dut.ui(text=test_name).wait.exists(timeout=_UI_WAIT_TIMEOUT):
+      self.dut.ui(text=test_name).click.wait()
+      return
+
+    scrollable_view = self.dut.ui(scrollable=True)
+    if scrollable_view.wait.exists(timeout=_UI_WAIT_TIMEOUT):
+      click_success = scrollable_view.scroll.down.click(text=test_name)
+      if not click_success:
+        raise AssertionError(
+            f'Failed to click test {test_name} after scrolling.'
+        )
 
   def setup_test(self):
     super().setup_test()
