@@ -49,3 +49,24 @@ android_test {
     ],
     sdk_version: "test_current",
 }
+
+android_test {
+    name: "CtsSoundTriggerPccTestCases",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "ctstestrunner-axt",
+        "CtsSoundTriggerInstrumentation",
+        "compatibility-device-util-axt",
+        "android.media.soundtrigger-aconfig-java",
+        "androidx.test.ext.junit",
+    ],
+    srcs: ["src/android/soundtrigger/cts/SoundTriggerManagerTest.java"],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    sdk_version: "test_current",
+    test_config: "AndroidTest-pcc.xml",
+    manifest: "AndroidManifest-pcc.xml",
+}
