@@ -230,20 +230,15 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     public void setUp() throws Exception {
         assumeTrue(sShouldRunTest);
         mExecutorService = Executors.newSingleThreadScheduledExecutor();
-
-        // Disconnect current network if any.
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> sWifiManager.disconnect());
-
+            () -> {
+                sWifiManager.removeAppState(myUid(), sContext.getPackageName());
+                sWifiManager.setWifiEnabled(true);
+                sWifiManager.disconnect();
+        });
         // Wait for Wifi to be disconnected.
-        PollingCheck.check(
-                "Wifi not disconnected",
-                20_000,
-                () -> sWifiManager.getConnectionInfo().getNetworkId() == -1);
-
-        // Clear any existing app state before each test.
-        ShellIdentityUtils.invokeWithShellPermissions(
-                () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
+        PollingCheck.check("Wifi not disconnected", 20_000,
+            () -> sWifiManager.getConnectionInfo().getNetworkId() == -1);
     }
 
     @After
@@ -258,11 +253,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> {
                     sWifiManager.removeAppState(myUid(), sContext.getPackageName());
-                    try {
-                        Thread.sleep(DURATION_NETWORK_DISCONNECT_MILLIS);
-                    } catch (InterruptedException e) {
-                        Log.d(TAG, "sleep interrupted");
-                    }
+                    sWifiManager.setWifiEnabled(false);
                 });
     }
 
