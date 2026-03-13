@@ -72,12 +72,15 @@ import android.content.res.Resources;
 import android.graphics.Insets;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.server.wm.MockImeHelper;
 import android.server.wm.WindowInsetsAnimationWaiter;
 import android.server.wm.WindowManagerTestBase;
+import android.server.wm.settings.SettingsSession;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.InputDevice;
@@ -104,10 +107,12 @@ import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Assume;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
+import org.junit.rules.TestRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,6 +127,7 @@ import java.util.function.Supplier;
  * Build/Install/Run:
  *     atest CtsWindowManagerDeviceInsets:WindowInsetsControllerTests
  */
+@AppModeFull(reason = "Cannot write global settings as an instant app.")
 @Presubmit
 @android.server.wm.annotation.Group2
 public class WindowInsetsControllerTests extends WindowManagerTestBase {
@@ -137,6 +143,13 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
+
+    @ClassRule
+    public static final TestRule sAnimatorDurationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            0.1f);
 
     @Rule
     public final ErrorCollector mErrorCollector = new ErrorCollector();
