@@ -1291,11 +1291,13 @@ public class WifiRttTest extends TestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     public void testRangingToTest11azApUsingScanResult() throws InterruptedException {
-        assumeTrue(mCharacteristics != null && mCharacteristics.getBoolean(
-                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
+        assumeTrue(
+                "Device does not support 11az NTB Initiator, skipping test",
+                mCharacteristics != null
+                        && mCharacteristics.getBoolean(
+                                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
         ScanResult testAp = getS11AzScanResult();
-        assertNotNull("Cannot find any test APs which support RTT / IEEE 802.11az"
-                + " - please verify that your test setup includes them!", testAp);
+        assumeTrue("Skipping test as no IEEE 802.11az capable AP was found", testAp != null);
         RangingRequest.Builder builder = new RangingRequest.Builder();
         builder.addAccessPoint(testAp);
         RangingRequest request = builder.build();
@@ -1349,13 +1351,14 @@ public class WifiRttTest extends TestBase {
     @ApiTest(apis = {"android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
             "android.net.wifi.rtt.ResponderConfig#is80211azNtbSupported"})
     public void testRangingToTest11azApUsingResponderConfig() throws InterruptedException {
-        assumeTrue(mCharacteristics != null && mCharacteristics.getBoolean(
-                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
+        assumeTrue(
+                "Device does not support 11az NTB Initiator, skipping test",
+                mCharacteristics != null
+                        && mCharacteristics.getBoolean(
+                                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
         // Scan for IEEE 802.11az supporting APs
         ScanResult testAp = getS11AzScanResult();
-        assertNotNull(
-                "Cannot find any test APs which support RTT / IEEE 802.11az - please verify that "
-                        + "your test setup includes them!", testAp);
+        assumeTrue("Skipping test as no IEEE 802.11az capable AP was found", testAp != null);
         int preamble = ResponderConfig.fromScanResult(testAp).getPreamble();
 
         // Create a ResponderConfig from the builder API.
@@ -1424,8 +1427,10 @@ public class WifiRttTest extends TestBase {
     public void testSecureRangingToTest11azApUsingScanResult() throws InterruptedException {
         // Check Device capabilities
         assumeNotNull(mCharacteristics);
-        assumeTrue(mCharacteristics.getBoolean(
-                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
+        assumeTrue(
+                "Device does not support 11az NTB Initiator, skipping test",
+                mCharacteristics.getBoolean(
+                        WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
         assumeTrue(mCharacteristics.getBoolean(
                 WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_RANGING_FRAME_PROTECTION_SUPPORTED));
         assumeTrue(mCharacteristics.getBoolean(
@@ -1436,8 +1441,9 @@ public class WifiRttTest extends TestBase {
 
         // Check for responder
         ScanResult testAp = getS11AzSecureScanResult();
-        assertNotNull("Cannot find any test APs which support IEEE 802.11az Secure Ranging"
-                + " - please verify that your test setup includes them!", testAp);
+        assumeTrue(
+                "Skipping test as no IEEE 802.11az Secure Ranging capable AP was found",
+                testAp != null);
         RangingRequest.Builder builder = new RangingRequest.Builder();
         builder.addAccessPoint(testAp);
         RangingRequest request = builder.build();
@@ -1681,11 +1687,13 @@ public class WifiRttTest extends TestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     public void testRangingToTest11azApErrorModel() throws InterruptedException {
-        assumeTrue(mCharacteristics != null && mCharacteristics.getBoolean(
-                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
+        assumeTrue(
+                "Device does not support 11az NTB Initiator, skipping test",
+                mCharacteristics != null
+                        && mCharacteristics.getBoolean(
+                                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
         ScanResult testAp = getS11AzScanResult();
-        assertNotNull("Cannot find any test APs which support RTT / IEEE 802.11az"
-                + " - please verify that your test setup includes them!", testAp);
+        assumeTrue("Skipping test as no IEEE 802.11az capable AP was found", testAp != null);
         RangingRequest.Builder builder = new RangingRequest.Builder();
         builder.addAccessPoint(testAp);
         RangingRequest request = builder.build();
