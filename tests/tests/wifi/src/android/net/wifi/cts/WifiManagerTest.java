@@ -4111,6 +4111,33 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         try {
             uiAutomation.adoptShellPermissionIdentity();
 
+            // Wait for a validated wifi network to have internet access.
+            CountDownLatch validatedLatch = new CountDownLatch(1);
+            ConnectivityManager.NetworkCallback networkCallback =
+                    new ConnectivityManager.NetworkCallback() {
+                        @Override
+                        public void onCapabilitiesChanged(
+                                Network network, NetworkCapabilities networkCapabilities) {
+                            if (networkCapabilities.hasCapability(
+                                    NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
+                                validatedLatch.countDown();
+                            }
+                        }
+                    };
+            sConnectivityManager.registerNetworkCallback(
+                    new NetworkRequest.Builder()
+                            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                            .build(),
+                    networkCallback);
+            try {
+                assertTrue(
+                        "Wifi network with internet not available",
+                        validatedLatch.await(WIFI_CONNECT_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
+            } finally {
+                sConnectivityManager.unregisterNetworkCallback(networkCallback);
+            }
+
             // Turn screen on for wifi traffic polling.
             turnScreenOn();
             sWifiManager.registerTrafficStateCallback(
