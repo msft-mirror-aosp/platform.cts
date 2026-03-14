@@ -38,7 +38,6 @@ java_defaults {
         "cts-hardware-lib",
         "cts-display-lib",
         "junit-params",
-        "mockito-target-minus-junit4",
         "platform-test-annotations",
         "androidx.test.uiautomator_uiautomator",
         "truth",
@@ -58,15 +57,21 @@ java_defaults {
         "display_flags_lib",
     ],
 
-    srcs: [
-        "src/**/*.java",
-        "src/**/*.kt",
-    ],
-
     sdk_version: "test_current",
 
     // No jni_libs here, as we don't do the native part of CtsViewTestCases
     // on Ravenwood yet.
+}
+
+java_defaults {
+    name: "CtsViewTestCasesRavenwood-default",
+    defaults: ["CtsViewTestCases-default"],
+
+    team: "trendy_team_ravenwood",
+    build_resources: true,
+    ravenizer: {
+        strip_mockito: true,
+    },
 }
 
 android_test {
@@ -80,6 +85,16 @@ android_test {
         "dts",
     ],
 
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
+
+    static_libs: [
+        "mockito-target-minus-junit4",
+        "ravenwood-junit",
+    ],
+
     compile_multilib: "both",
 
     jni_libs: [
@@ -88,24 +103,28 @@ android_test {
     ],
 }
 
-// This is a Ravenwood version of CtsViewTestCases, but
+android_ravenwood_test {
+    name: "CtsViewTestCasesRavenwood",
+    defaults: ["CtsViewTestCasesRavenwood-default"],
+    srcs: [
+        "src/android/view/cts/util/*.java",
+        "src/android/view/cts/util/*.kt",
+        "src/android/view/cts/KeyEventTest.java",
+        "src/android/view/cts/MotionEvent*.java",
+    ],
+}
+
+// This is an experimental version of CtsViewTestCasesRavenwood, but
 // _almost all tests will fail for now_.
 // This is used by the Ravenwood team for their work on View support.
 // DO NOT add it to any pre/post submit test.
 android_ravenwood_test {
-    name: "CtsViewTestCasesRavenwood",
-    defaults: ["CtsViewTestCases-default"],
-
-    team: "trendy_team_ravenwood",
-
-    build_resources: true,
-    auto_gen_config: true,
-
-    ravenizer: {
-        strip_mockito: true,
-    },
-
-    // TODO: Add jni_libs too.
+    name: "CtsViewTestCasesRavenwood_exp",
+    defaults: ["CtsViewTestCasesRavenwood-default"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
 }
 
 test_module_config {

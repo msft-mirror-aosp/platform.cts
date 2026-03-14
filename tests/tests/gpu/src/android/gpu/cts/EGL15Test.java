@@ -27,6 +27,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.hardware.HardwareBuffer;
 import android.hardware.SyncFence;
 import android.opengl.EGL14;
 import android.opengl.EGL15;
@@ -39,11 +40,17 @@ import android.opengl.EGLSurface;
 import android.opengl.EGLSync;
 import android.opengl.GLES20;
 import android.os.SystemProperties;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.graphics.egl.flags.Flags;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -53,6 +60,8 @@ import java.time.Duration;
 @SmallTest
 @RunWith(BlockJUnit4ClassRunner.class)
 public class EGL15Test {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     static {
         System.loadLibrary("ctsgpu_jni");
@@ -476,6 +485,32 @@ public class EGL15Test {
             throw new RuntimeException("eglCreateContext failed");
         }
         EGL14.eglDestroyContext(mEglDisplay, mEglContext);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EGL_GET_NATIVE_CLIENT_BUFFER)
+    public void testEGL15AndroidGetClientNativeBuffer() {
+        if (mEglVersion < 15) {
+            return;
+        }
+
+        String eglExtensions = EGL14.eglQueryString(mEglDisplay, EGL14.EGL_EXTENSIONS);
+        if (!eglExtensions.contains("EGL_ANDROID_get_native_client_buffer")) {
+            return;
+        }
+
+        try (HardwareBuffer hardwareBuffer =
+                HardwareBuffer.create(
+                        64,
+                        64,
+                        HardwareBuffer.RGBA_8888,
+                        1,
+                        HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE)) {
+            long clientBuffer = EGLExt.eglGetNativeClientBufferANDROID(hardwareBuffer);
+
+            assertEquals("EGL error should be EGL_SUCCESS", EGL14.EGL_SUCCESS, EGL14.eglGetError());
+            assertNotEquals("Should return non-zero client buffer on success", 0L, clientBuffer);
+        }
     }
 }
 

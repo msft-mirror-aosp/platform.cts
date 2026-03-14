@@ -171,6 +171,7 @@ def _do_brightness_check(
     - brightness_diff: A float representing the brightness difference.
   """
   e_msg = None
+  marginal_pass_msg = None
 
   # Check the R channel brightness as it is most sensitive
   brightness_1st = image_processing_utils.compute_image_means(patch_1st)
@@ -188,6 +189,13 @@ def _do_brightness_check(
           f'Actual: {brightness_diff:.3f}, '
           f'Expected to be >= {threshold:.2f}')
       logging.debug(e_msg)
+    elif (brightness_diff <= (
+        threshold * its_session_utils.MARGINAL_PASS_FACTOR_FLASH)):
+      marginal_pass_msg = (
+        f'Marginally passing brightness check between {tonemap_1st} and '
+        f'{tonemap_2nd}. Actual: {brightness_diff:.2f}, '
+        f'Expected: {threshold:.1f}. '
+      )
   elif comparison_type == '<=':
     if brightness_diff > threshold:
       e_msg = (
@@ -195,10 +203,17 @@ def _do_brightness_check(
           f'{tonemap_2nd} for greyscale cells exceeds the threshold. '
           f'Actual: {brightness_diff:.3f}, '
           f'Expected: {threshold:.2f}')
+    elif (brightness_diff >= (
+        threshold * its_session_utils.MARGINAL_PASS_FACTOR)):
+      marginal_pass_msg = (
+        f'Marginally passing brightness check between {tonemap_1st} and '
+        f'{tonemap_2nd}. Actual: {brightness_diff:.2f}, '
+        f'Expected: {threshold:.1f}. '
+      )
   else:
     e_msg = f'Invalid comparison type: {comparison_type}'
     logging.debug(e_msg)
-  return e_msg, brightness_diff
+  return e_msg, marginal_pass_msg, brightness_diff
 
 
 def _do_captures_and_extract_patch(
@@ -345,8 +360,9 @@ class TonemapSequence(its_base_test.ItsBaseTest):
       )
 
       for tm1, tm2, threshold, comparison_type in _BRIGHTNESS_CHECK:
+        marginal_pass_message = []
         if tm1 in tonemap_results and tm2 in tonemap_results:
-          e_msg, diff = _do_brightness_check(
+          e_msg, marginal_pass_msg, diff = _do_brightness_check(
               tonemap_results[tm1]['patch'], tonemap_results[tm2]['patch'],
               tm1, tm2, threshold, comparison_type
           )
@@ -354,6 +370,8 @@ class TonemapSequence(its_base_test.ItsBaseTest):
           logging.debug('%s_%s_mean_brightness_diff: %.3f', tm1, tm2, diff)
           if e_msg:
             assertion_errors.append(e_msg)
+          if marginal_pass_msg:
+            marginal_pass_message.append(marginal_pass_msg)
         else:
           error_msg = f'Data not available for {tm1} vs {tm2}.'
           logging.error(error_msg)
@@ -361,6 +379,9 @@ class TonemapSequence(its_base_test.ItsBaseTest):
 
       if assertion_errors:
         raise AssertionError('\n'.join(assertion_errors))
+      elif marginal_pass_message:
+        logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
+                          marginal_pass_message)
 
 if __name__ == '__main__':
   test_runner.main()

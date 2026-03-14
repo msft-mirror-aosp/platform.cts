@@ -23,6 +23,7 @@ java_library {
     kotlin_plugins: ["kotlin-parcelize-compiler-plugin"],
     static_libs: [
         "kotlin-parcelize-runtime",
+        "kotlinx-coroutines-android",
     ],
 }
 

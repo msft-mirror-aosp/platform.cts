@@ -48,7 +48,11 @@
   ],
   "platinum-test-bvt":[
     {
-      "name": "CtsBluetoothTestCases"
+      "name": "CtsBluetoothTestCases",
+      "options":[
+        { "include-annotation":"android.platform.test.annotations.PlatinumTest" },
+        { "exclude-annotation":"org.junit.Ignore" }
+      ]
     }
   ]
 }

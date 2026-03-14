@@ -3465,15 +3465,6 @@
     <option name="compatibility:include-filter" value="CtsSettingsPreferenceServiceTest android.service.settings.preferences.SettingsPreferenceServiceClientTest#setPreferenceValue_retrievesResult"/>
     <option name="compatibility:include-filter" value="CtsSettingsPreferenceServiceTest android.service.settings.preferences.SettingsPreferenceServiceClientTest#setPreferenceValue_withoutPermission_throwsException"/>
     <!-- CtsSettingsTestCases -->
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testAdjustNumericDeviceStateItemByPercentage_deviceNotLocked_doesNotThrowException"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testAdjustNumericDeviceStateItemByPercentage_requestInitiatedWhileUnlockedSet_doesNotThrowException"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testGetBatteryDeviceState_deviceNotLocked_doesNotThrowException"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testGetNotificationsDeviceState_shouldNotReturnWorkData"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testGetStorageDeviceState_deviceNotLocked_doesNotThrowException"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testGetStorageDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testGetUncategorizedDeviceState_deviceNotLocked_doesNotThrowException"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testOffsetNumericDeviceStateItemByValue_deviceNotLocked_doesNotThrowException"/>
-    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testOffsetNumericDeviceStateItemByValue_requestInitiatedWhileUnlockedSet_doesNotThrowException"/>
     <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.SettingsIntentsTest#testSimPreferenceIntentReceiverExists"/>
     <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_protectedWithPermission"/>
     <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.VpnAppExclusionSettingsTest#testVpnAppExclusionSettingsExist"/>

@@ -22,6 +22,7 @@ import com.google.common.io.BaseEncoding;
 
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
 import java.util.Set;
 
 import co.nstant.in.cbor.CborException;
@@ -34,6 +35,23 @@ public abstract class Attestation {
     static final String EAT_OID = "1.3.6.1.4.1.11129.2.1.25";
     static final String ASN1_OID = "1.3.6.1.4.1.11129.2.1.17";
     static final String KEY_USAGE_OID = "2.5.29.15"; // Standard key usage extension.
+
+    // The following extension OIDs are acceptable to appear as critical extensions in an
+    // attestation certificate.
+    static final Set<String> ALLOWED_CRITICAL_OIDS =
+            Collections.unmodifiableSet(Set.of(KEY_USAGE_OID));
+
+    // The following extension OIDs are acceptable to appear as non-critical extensions in an
+    // attestation certificate.
+    //
+    // OEMs that want additional entries to be included in this set should provide:
+    // - The OID value for the extension.
+    // - The schema for the associated data.
+    // - An example certificate that includes the extension.
+    //
+    // OEM extensions should not include device-specific identifiers.
+    static final Set<String> ALLOWED_NON_CRITICAL_OIDS =
+            Collections.unmodifiableSet(Set.of(ASN1_OID, EAT_OID));
 
     static final String CRL_DP_OID = "2.5.29.31"; // Standard CRL Distribution Points extension.
 
@@ -190,11 +208,11 @@ public abstract class Attestation {
         return new ImmutableSet.Builder<String>()
                 .addAll(
                         x509Cert.getCriticalExtensionOIDs().stream()
-                                .filter(s -> !KEY_USAGE_OID.equals(s))
+                                .filter(s -> !ALLOWED_CRITICAL_OIDS.contains(s))
                                 .iterator())
                 .addAll(
                         x509Cert.getNonCriticalExtensionOIDs().stream()
-                                .filter(s -> !ASN1_OID.equals(s) && !EAT_OID.equals(s))
+                                .filter(s -> !ALLOWED_NON_CRITICAL_OIDS.contains(s))
                                 .iterator())
                 .build();
     }

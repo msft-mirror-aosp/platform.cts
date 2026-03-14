@@ -68,6 +68,13 @@ public class CallDiagnosticServiceTest extends BaseTelecomTestWithMockServices {
         if (mConnection != null ) {
             mConnection.onDisconnect();
             mConnection.destroy();
+            mConnection = null;
+        }
+        if (mService != null) {
+            mService.getCalls().clear();
+        }
+        for (android.telecom.Connection c : CtsConnectionService.getAllConnectionsFromTelecom()) {
+            c.destroy();
         }
         runWithShellPermissionIdentity(() -> {
             // Make sure it is unregistered as well.

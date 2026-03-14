@@ -30,6 +30,11 @@ android_test {
     static_libs: [
         "permission-test-util-lib",
         "cts-wm-util",
+        "android.content.pm.flags-aconfig-java",
+        "android.security.flags-aconfig-java",
+        "CtsContentPackageManagerUtils",
+        "ravenwood-junit",
+        "sts-device-util",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [

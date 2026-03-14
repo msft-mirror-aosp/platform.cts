@@ -554,16 +554,18 @@ public class AudioDisconnectActivity
                     }
                     testConfig.mInsertPlugResult = TestConfiguration.RESULT_DETECTED;
 
-                    //-----------------------------------------------------------------------
-                    // 3. Wait for stream to disconnect after the insert event.
-                    //-----------------------------------------------------------------------
+                    // ----------------------------------------------------------------------------
+                    // 3. Wait for stream to disconnect or routing change after the insert event.
+                    // ----------------------------------------------------------------------------
                     // This happens really fast, so it is what causes the quick flash
                     // between insert/remove prompts
                     if (LOG) {
                         Log.d(TAG, "Wait for stream disconnect from plug in event");
                     }
                     timeoutCount = TIME_TO_FAILURE_MILLIS / POLL_DURATION_MILLIS;
-                    while (!abortTest && (timeoutCount-- > 0)
+                    // TODO: b/489829199 check routing changed callback
+                    while (!abortTest
+                            && (timeoutCount-- > 0)
                             && mStream.getStreamState() == StreamState.STARTED) {
                         setTextMessage(mDebugMessageTx,
                                 "Stream Config: " + testConfig.getConfigString() + "\n"
@@ -572,13 +574,6 @@ public class AudioDisconnectActivity
                                 + " seconds:" + countToSeconds(timeoutCount));
                         Thread.sleep(POLL_DURATION_MILLIS);
                     }
-                    if (timeoutCount <= 0) {
-                        setTextMessage(mUserPromptTx,
-                                "TIMEOUT waiting for DISCONNECT on " + streamName);
-                        testConfig.mInsertPlugResult = TestConfiguration.RESULT_TIMEOUT;
-                        abortTest = true;
-                        break;
-                    } // Done. Test failed
                     testConfig.mInsertStreamDisconnectResult = TestConfiguration.RESULT_DETECTED;
 
                     // The stream is no longer in the STARTED state at this point.
@@ -586,7 +581,15 @@ public class AudioDisconnectActivity
                     if (LOG) {
                         Log.d(TAG, "plug in getLastErrorCallbackResult() = " + error);
                     }
-                    if (error != OboePlayer.ERROR_DISCONNECTED) {
+                    // If the stream stays on the same thread, there should not be error but
+                    // routing changed callback. Otherwise, the stream should be disconnected.
+                    if (error != OboePlayer.ERROR_DISCONNECTED && error != OboePlayer.OK) {
+                        // When the stream is disconnected, it indicates the device has different
+                        // support of builtin devices and peripherals. If the error code is OK,
+                        // there should be a routing changed callback fired, which is right now
+                        // not available on external oboe. In that case, give a pass if there is
+                        // error code is OK.
+                        // TODO: b/489829199 check routing changed callback
                         testConfig.mInsertStreamOboeDisconnectResult =
                                 TestConfiguration.RESULT_BADDISCONNECTCODE;
                         testConfig.mInsertStreamOboeDisconnectCode = error;
@@ -603,6 +606,7 @@ public class AudioDisconnectActivity
                     //------------------------------------------------
                     // need to restart the stream after the rerouting
                     //------------------------------------------------
+                    stopAudio();
                     restartAudio(testConfig);
 
                     //-------------------------------------------
@@ -665,16 +669,18 @@ public class AudioDisconnectActivity
                     }
                     testConfig.mRemovalPlugResult = TestConfiguration.RESULT_DETECTED;
 
-                    //------------------------------------------------------------
-                    // 6. Wait for stream disconnect after the removal event.
-                    //------------------------------------------------------------
+                    // --------------------------------------------------------------------------
+                    // 6. Wait for stream disconnect or routing change after the removal event.
+                    // --------------------------------------------------------------------------
                     // This happens really fast, so it is what causes the quick flash
                     // between insert/remove prompts
                     if (LOG) {
                         Log.d(TAG, "Wait for stream disconnec from unplug in event");
                     }
                     timeoutCount = TIME_TO_FAILURE_MILLIS / POLL_DURATION_MILLIS;
-                    while (!abortTest && (timeoutCount > 0)
+                    // TODO: b/489829199 check routing changed callback
+                    while (!abortTest
+                            && (timeoutCount > 0)
                             && mStream.getStreamState() == StreamState.STARTED) {
                         setTextMessage(mDebugMessageTx,
                                 "Stream Config: " + testConfig.getConfigString() + "\n"
@@ -684,21 +690,21 @@ public class AudioDisconnectActivity
                         Thread.sleep(POLL_DURATION_MILLIS);
                         timeoutCount--;
                     }
-                    if (timeoutCount <= 0) {
-                        setTextMessage(mUserPromptTx,
-                                "TIMEOUT waiting " + streamName + " for DISCONNECT");
-                        testConfig.mRemovalStreamDisconnectResult =
-                                TestConfiguration.RESULT_TIMEOUT;
-                        abortTest = true;
-                        break;  // Done. Test Failed.
-                    }
 
                     // Stream is no longer in a STARTED state
                     error = mStream.getLastErrorCallbackResult();
                     if (LOG) {
                         Log.d(TAG, "unplug getLastErrorCallbackResult() = " + error);
                     }
-                    if (error != OboePlayer.ERROR_DISCONNECTED) {
+                    // If the stream stays on the same thread, there should not be error but
+                    // routing changed callback. Otherwise, the stream should be disconnected.
+                    if (error != OboePlayer.ERROR_DISCONNECTED && error != OboePlayer.OK) {
+                        // When the stream is disconnected, it indicates the device has different
+                        // support of builtin devices and peripherals. If the error code is OK,
+                        // there should be a routing changed callback fired, which is right now
+                        // not available on external oboe. In that case, give a pass if there is
+                        // error code is OK.
+                        // TODO: b/489829199 check routing changed callback
                         testConfig.mRemovalStreamOboeDisconnectResult =
                                 TestConfiguration.RESULT_BADDISCONNECTCODE;
                         testConfig.mRemovalStreamOboeDisconnectCode = error;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2025 The Android Open Source Project
+<!-- Copyright (C) 2026 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,22 +15,17 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.cts.appbinding.supervision">
-
+    package="android.soundtrigger.pcc.cts">
     <application>
-        <uses-library android:name="android.test.runner"/>
-
-        <!-- Target to-be-bound service. -->
-        <service android:name=".MySupervisionService"
-            android:exported="true"
-            android:process=":persistent"
-            android:permission="android.permission.BIND_SUPERVISION_APP_SERVICE">
-            <intent-filter>
-                <action android:name="android.app.action.SUPERVISION_APP_SERVICE"/>
-            </intent-filter>
-        </service>
+        <uses-library android:name="android.test.runner" />
+        <!-- A PCC component is required for a PCC uid to be assigned to the test. -->
+        <service android:name=".UnusedPccService"
+            android:exported="false"
+            android:privateComputeCore="true" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="com.android.cts.appbinding.supervision"/>
+        android:targetPackage="android.soundtrigger.pcc.cts"
+        android:label="CTS tests of android.soundtrigger for PCC"> </instrumentation>
 </manifest>
+

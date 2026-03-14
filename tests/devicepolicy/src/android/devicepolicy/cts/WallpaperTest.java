@@ -24,19 +24,20 @@ import static com.android.bedstead.permissions.CommonPermissions.READ_WALLPAPER_
 import static com.android.bedstead.permissions.CommonPermissions.SET_WALLPAPER;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.graphics.Bitmap;
 
 import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.policies.Wallpaper;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
-import com.android.bedstead.enterprise.policies.Wallpaper;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -75,10 +76,8 @@ public final class WallpaperTest {
                 new CleanUpWallpaperWithDpcResource()) {
             dpc(sDeviceState).wallpaperManager().setBitmap(sReferenceWallpaper);
 
-            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                    .toMeet((bitmap) -> BitmapUtils.compareBitmaps(bitmap, sReferenceWallpaper))
-                    .errorOnFail()
-                    .await();
+            assertThat(BitmapUtils.compareBitmaps(TestApis.wallpaper().getBitmap(),
+                    sReferenceWallpaper)).isTrue();
         }
     }
 
@@ -91,10 +90,8 @@ public final class WallpaperTest {
                 new CleanUpWallpaperWithTestApiResource()) {
             dpc(sDeviceState).wallpaperManager().setBitmap(sReferenceWallpaper);
 
-            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                    .toMeet((bitmap) -> BitmapUtils.compareBitmaps(bitmap, sOriginalWallpaper))
-                    .errorOnFail()
-                    .await();
+            assertThat(BitmapUtils.compareBitmaps(TestApis.wallpaper().getBitmap(),
+                    sOriginalWallpaper)).isTrue();
         }
     }
 
@@ -109,10 +106,8 @@ public final class WallpaperTest {
                         new CleanUpWallpaperWithTestApiResource()) {
             testAppInstance.wallpaperManager().setBitmap(sReferenceWallpaper);
 
-            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                    .toMeet((bitmap) -> BitmapUtils.compareBitmaps(bitmap, sReferenceWallpaper))
-                    .errorOnFail()
-                    .await();
+            assertThat(BitmapUtils.compareBitmaps(TestApis.wallpaper().getBitmap(),
+                    sReferenceWallpaper)).isTrue();
         }
     }
 
@@ -124,10 +119,8 @@ public final class WallpaperTest {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
             testAppInstance.wallpaperManager().setBitmap(sReferenceWallpaper);
 
-            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                    .toMeet((bitmap) -> BitmapUtils.compareBitmaps(bitmap, sOriginalWallpaper))
-                    .errorOnFail()
-                    .await();
+            assertThat(BitmapUtils.compareBitmaps(TestApis.wallpaper().getBitmap(),
+                    sOriginalWallpaper)).isTrue();
         }
     }
 
@@ -141,10 +134,8 @@ public final class WallpaperTest {
                 new CleanUpWallpaperWithTestApiResource()) {
             TestApis.wallpaper().setStream(BitmapUtils.bitmapToInputStream(sReferenceWallpaper));
 
-            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                    .toMeet((bitmap) -> BitmapUtils.compareBitmaps(bitmap, sReferenceWallpaper))
-                    .errorOnFail()
-                    .await();
+            assertThat(BitmapUtils.compareBitmaps(TestApis.wallpaper().getBitmap(),
+                    sReferenceWallpaper)).isTrue();
         }
     }
 
@@ -155,20 +146,14 @@ public final class WallpaperTest {
     public void setStream_disallowed_cannotSet() {
         TestApis.wallpaper().setStream(BitmapUtils.bitmapToInputStream(sReferenceWallpaper));
 
-        Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                .toMeet(bitmap -> BitmapUtils.compareBitmaps(bitmap, sOriginalWallpaper))
-                .errorOnFail()
-                .await();
+        assertThat(BitmapUtils.compareBitmaps(TestApis.wallpaper().getBitmap(),
+                sOriginalWallpaper)).isTrue();
     }
 
     private class CleanUpWallpaperWithTestApiResource implements AutoCloseable {
         @Override
         public void close() throws Exception {
             TestApis.wallpaper().setBitmap(sOriginalWallpaper);
-            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                    .toMeet(bitmap -> BitmapUtils.compareBitmaps(bitmap, sOriginalWallpaper))
-                    .errorOnFail()
-                    .await();
         }
     }
 
@@ -176,10 +161,6 @@ public final class WallpaperTest {
         @Override
         public void close() throws Exception {
             dpc(sDeviceState).wallpaperManager().setBitmap(sOriginalWallpaper);
-            Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
-                    .toMeet(bitmap -> BitmapUtils.compareBitmaps(bitmap, sOriginalWallpaper))
-                    .errorOnFail()
-                    .await();
         }
     }
 }

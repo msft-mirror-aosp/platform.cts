@@ -28,6 +28,7 @@ import android.app.ondeviceintelligence.Content;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.InferenceInfo;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
+import android.app.ondeviceintelligence.Part;
 import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
@@ -60,6 +61,8 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -92,9 +95,21 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     }
 
     public static EmbeddingResponse getSampleEmbeddingResponse() {
-        return new EmbeddingResponse(List.of(new EmbeddingVector(
-                new float[]{0.1f, 0.2f, 0.3f},
-                new int[]{1, 3})));
+        return new EmbeddingResponse(List.of(new EmbeddingVector(new float[]{0.1f, 0.2f, 0.3f},
+                new int[]{3})));
+    }
+
+    public static EmbeddingResponse getLargeEmbeddingResponse() {
+        int numVectors = 100;
+        int dim = 5000;
+        List<EmbeddingVector> vectors = new ArrayList<>();
+        float[] v = new float[dim];
+        int[] shape = new int[]{dim};
+        Arrays.fill(v, 0.1f);
+        for (int i = 0; i < numVectors; i++) {
+            vectors.add(new EmbeddingVector(v, shape));
+        }
+        return new EmbeddingResponse(vectors);
     }
 
     public static ImageDescriptionResponse getSampleImageDescriptionResponse() {
@@ -419,6 +434,16 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             @Nullable CancellationSignal cancellationSignal,
             @NonNull OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException> callback) {
         Log.i(TAG, "onGenerateEmbeddings called");
+        if (request.getContent() != null && !request.getContent().isEmpty()) {
+            Content content = request.getContent().get(0);
+            if (content.getParts() != null && !content.getParts().isEmpty()) {
+                Part part = content.getParts().get(0);
+                if (part.getText() != null && part.getText().startsWith("GenerateLargeResponse")) {
+                    callback.onResult(getLargeEmbeddingResponse());
+                    return;
+                }
+            }
+        }
         callback.onResult(getSampleEmbeddingResponse());
     }
 

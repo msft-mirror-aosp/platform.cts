@@ -49,6 +49,9 @@ import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 
+import java.util.ArrayList;
+import java.util.List;
+
 class AudioLoopbackCalibrationDialog extends Dialog
         implements OnClickListener, AppCallback, AdapterView.OnItemSelectedListener {
     public static final String TAG = "AudioLoopbackCalibrationDialog";
@@ -71,6 +74,7 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private int mEncoding = BuilderBase.ENCODING_PCM_FLOAT;
     private int mNumDisplayChannels;
     private WaveScopeView mWaveView = null;
+    private TextView mStatusText;
 
     public void setOutputChannelMask(int mask) {
         mOutputChannelMask = mask;
@@ -84,6 +88,10 @@ class AudioLoopbackCalibrationDialog extends Dialog
 
     Spinner mInputsSpinner;
     Spinner mOutputsSpinner;
+
+    Spinner mChannelSpinner;
+    Button mStartButton;
+    private List<Integer> mChannelIndices = new ArrayList<>();
 
     AudioDeviceInfo[] mInputDevices;
     AudioDeviceInfo[] mOutputDevices;
@@ -138,32 +146,27 @@ class AudioLoopbackCalibrationDialog extends Dialog
         mWaveView.setDisplayLimits(true);
         mWaveView.setDisplayZero(true);
 
-        LinearLayout processLayout = findViewById(R.id.audio_calibration_process);
-        // Remove Left and Right buttons to replace with dynamic ones
-        View leftButton = findViewById(R.id.audio_calibration_left);
-        leftButton.setVisibility(View.GONE);
-        View rightButton = findViewById(R.id.audio_calibration_right);
-        rightButton.setVisibility(View.GONE);
+        mStatusText = (TextView) findViewById(R.id.audio_calibration_status);
 
-        int insertIndex = processLayout.indexOfChild(leftButton);
+        mChannelSpinner = (Spinner) findViewById(R.id.audio_calibration_channel_spinner);
+        mStartButton = (Button) findViewById(R.id.audio_calibration_start);
+        mStartButton.setOnClickListener(this);
+
+        ArrayAdapter<String> channelAdapter =
+                new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item);
+        channelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        mChannelIndices.clear();
         if (mOutputChannelMask != 0) {
             int[] orderedMaskBits = AudioLoopbackUtilitiesHandler.getOrderedMaskBits();
             for (int maskBit : orderedMaskBits) {
                 if ((mOutputChannelMask & maskBit) != 0) {
-                    Button btn = new Button(mContext);
-                    btn.setText(AudioLoopbackUtilitiesHandler.getLabelForMaskBit(maskBit));
-                    final int channelIndex = Integer.bitCount(mOutputChannelMask & (maskBit - 1));
-                    btn.setOnClickListener(v -> startAudio(channelIndex));
-                    processLayout.addView(
-                            btn,
-                            insertIndex++,
-                            new LinearLayout.LayoutParams(/* width= */ 0, LayoutParams.MATCH_PARENT,
-                                    /* weight= */ 1.0f));
+                    channelAdapter.add(AudioLoopbackUtilitiesHandler.getLabelForMaskBit(maskBit));
+                    mChannelIndices.add(Integer.bitCount(mOutputChannelMask & (maskBit - 1)));
                 }
             }
         } else {
             for (int i = 0; i < mOutputChannels; i++) {
-                Button btn = new Button(mContext);
                 String label;
                 if (mOutputChannels == 1) {
                     label = "Mono";
@@ -175,16 +178,11 @@ class AudioLoopbackCalibrationDialog extends Dialog
                 } else {
                     label = "Channel" + (i + 1);
                 }
-                btn.setText(label);
-                final int channelIndex = i;
-                btn.setOnClickListener(v -> startAudio(channelIndex));
-                processLayout.addView(
-                        btn,
-                        insertIndex++,
-                        new LinearLayout.LayoutParams(/* width= */ 0, LayoutParams.MATCH_PARENT,
-                                /* weight= */ 1.0f));
+                channelAdapter.add(label);
+                mChannelIndices.add(i);
             }
         }
+        mChannelSpinner.setAdapter(channelAdapter);
 
         findViewById(R.id.audio_calibration_stop).setOnClickListener(this);
         findViewById(R.id.audio_calibration_done).setOnClickListener(this);
@@ -255,14 +253,37 @@ class AudioLoopbackCalibrationDialog extends Dialog
         return arrayAdapter;
     }
 
-    private static final int CHANNEL_LEFT = 0;
-    private static final int CHANNEL_RIGHT = 1;
+    private void updateButtons() {
+        mStartButton.setEnabled(!mPlaying);
+        findViewById(R.id.audio_calibration_stop).setEnabled(mPlaying);
+        mChannelSpinner.setEnabled(!mPlaying);
+        mChannelSpinner.setAlpha(!mPlaying ? 1.0f : 0.5f);
+        mInputsSpinner.setEnabled(!mPlaying);
+        mInputsSpinner.setAlpha(!mPlaying ? 1.0f : 0.5f);
+        mOutputsSpinner.setEnabled(!mPlaying);
+        mOutputsSpinner.setAlpha(!mPlaying ? 1.0f : 0.5f);
+    }
 
     void startAudio(int channelIndex) {
-        stopAudio();
+        if (mPlaying) {
+            return;
+        }
+
+        mStatusText.setText(R.string.audio_loopback_starting);
+
+        // Ensure any previous audio is completely torn down before starting new initialization
+        // because we might change devices/channels.
+        mDuplexAudioManager.unwind();
 
         int mask = 1 << channelIndex;
         AudioSourceProvider sourceProvider = new SparseChannelAudioSourceProvider(mask);
+
+        // Pre-calculate display channels
+        mNumDisplayChannels = mInputChannels;
+        if (mSelectedInputDevice != null && AudioDeviceUtils.isMicDevice(mSelectedInputDevice)
+                && mInputChannels <= 2) {
+            mNumDisplayChannels = 1;
+        }
 
         // Player
         mDuplexAudioManager.setSources(sourceProvider, mAudioSinkProvider);
@@ -277,50 +298,73 @@ class AudioLoopbackCalibrationDialog extends Dialog
         // Recorder
         mDuplexAudioManager.setRecorderRouteDevice(mSelectedInputDevice);
         mDuplexAudioManager.setRecorderSampleRate(mSampleRate);
-        mNumDisplayChannels = mInputChannels;
-        if (mSelectedInputDevice != null && AudioDeviceUtils.isMicDevice(mSelectedInputDevice)
-                && mInputChannels <= 2) {
-            mNumDisplayChannels = 1;
-        }
-        Log.d(TAG, "mNumDisplayChannels:" + mNumDisplayChannels);
-        mWaveView.setNumChannels(mNumDisplayChannels);
+
+        // Important: Set these BEFORE buildStreams
         mDuplexAudioManager.setNumRecorderChannels(mNumDisplayChannels);
         mDuplexAudioManager.setEncoding(mEncoding);
 
         // Open the streams.
-        // Note AudioSources and AudioSinks get allocated at this point
-        // check for success for both input and output.
         int buildStatus =
                 mDuplexAudioManager.buildStreams(BuilderBase.TYPE_OBOE, BuilderBase.TYPE_OBOE);
+
+        mWaveView.setNumChannels(mNumDisplayChannels);
+
         if (buildStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
             Log.e(TAG, "Bad Duplex Build. buildStatus:0x" + Integer.toHexString(buildStatus));
-            // TODO - Provide more failure information for this
             mPlaying = false;
         } else {
             int startStatus = mDuplexAudioManager.start();
 
             if (startStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
                 Log.e(TAG, "Bad Duplex Start. startStatus:0x" + Integer.toHexString(startStatus));
-                // TODO - Provide more failure information for this
+                mDuplexAudioManager.unwind();
                 mPlaying = false;
             } else {
                 mPlaying = true;
             }
         }
+
+        if (mPlaying) {
+            mStatusText.setText(R.string.audio_loopback_playing);
+        } else {
+            mStatusText.setText("Failed to start audio.");
+        }
+        updateButtons();
     }
 
     void stopAudio() {
-        if (mPlaying) {
-            mDuplexAudioManager.unwind();
-            mPlaying = false;
+        if (!mPlaying) {
+            return;
         }
+
+        mStatusText.setText(R.string.audio_loopback_stopping);
+
+        // Use stopWithoutUnwind() instead of unwind() for faster silence.
+        mDuplexAudioManager.stopWithoutUnwind();
+        mPlaying = false;
+
+        mStatusText.setText("");
+        updateButtons();
+    }
+
+    @Override
+    public void dismiss() {
+        // Full teardown on dismiss
+        mDuplexAudioManager.unwind();
+        mPlaying = false;
+        super.dismiss();
     }
 
     //
     // OnClickListener
     //
     public void onClick(View v) {
-        if (v.getId() == R.id.audio_calibration_stop) {
+        if (v.getId() == R.id.audio_calibration_start) {
+            int position = mChannelSpinner.getSelectedItemPosition();
+            if (position != AdapterView.INVALID_POSITION) {
+                startAudio(mChannelIndices.get(position));
+            }
+        } else if (v.getId() == R.id.audio_calibration_stop) {
             stopAudio();
         } else if (v.getId() == R.id.audio_calibration_done) {
             dismiss();
@@ -352,7 +396,9 @@ class AudioLoopbackCalibrationDialog extends Dialog
         }
 
         void stateChangeHandler() {
-            stopAudio();
+            if (mPlaying) {
+                stopAudio();
+            }
 
             mInputDevices = mAudioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
             mInputsSpinner.setAdapter(fillAdapter(mInputDevices));
@@ -379,7 +425,9 @@ class AudioLoopbackCalibrationDialog extends Dialog
     //
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        stopAudio();
+        if (mPlaying) {
+            stopAudio();
+        }
         if (parent.getId() == R.id.input_devices_spinner) {
             if (position == 0) {
                 mSelectedInputDevice = null;

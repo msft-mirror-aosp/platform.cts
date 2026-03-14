@@ -18,7 +18,8 @@ package android.virtualdevice.cts.computercontrol
 
 import android.computercontrol.testapp.common.Action
 import android.computercontrol.testapp.common.Constants
-import com.android.compatibility.common.util.PollingCheck
+import android.computercontrol.testapp.common.TestAppFocusRequester
+import android.computercontrol.testapp.common.TestAppInteractionReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -27,7 +28,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.google.common.truth.Truth.assertThat
-import com.google.common.truth.Truth.assertWithMessage
+import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
@@ -50,6 +51,10 @@ class ComputerControlInteractionTest {
         )
 
     @get:Rule val testName = TestName()
+
+    private val testAppInteractions =
+        TestAppInteractionReceiver(getInstrumentation().context)
+    private val focusRequester = TestAppFocusRequester(getInstrumentation().context)
 
     private val bounds =
         getInstrumentation()
@@ -84,16 +89,23 @@ class ComputerControlInteractionTest {
             Pair(-100, -100),
         )
 
+    @After
+    fun tearDown() {
+        testAppInteractions.close()
+    }
+
     fun launchTestApp(className: String? = null): TestAppAgent {
         // TODO(b/463464798): Added failure test case to verify the behavior
         // when permission dialog is pending on the screen or permission is
         // refused from the settings.
-        return TestAppAgentLauncher()
+        val testAppAgent = TestAppAgentLauncher()
             .launch(
                 "CtsComputerControlTest-${testName.methodName}",
                 TEST_APP_PACKAGE_NAME,
                 className,
             )
+        testAppInteractions.nextAction<Action.ActivityReady>()
+        return testAppAgent
     }
 
     @Test
@@ -102,9 +114,7 @@ class ComputerControlInteractionTest {
         val y = bounds.height() / 2
         testAppAgent.tap(x, y)
 
-        val tap = testAppAgent.nextAction(Action.Tap::class.java)
-        assertThat(tap).isNotNull()
-        tap!!
+        val tap = testAppInteractions.nextAction<Action.Tap>()
         assertThat(tap.x).isEqualTo(x)
         assertThat(tap.y).isEqualTo(y)
     }
@@ -115,9 +125,7 @@ class ComputerControlInteractionTest {
         val y = bounds.height() / 2
         testAppAgent.longPress(x, y)
 
-        val longPress = testAppAgent.nextAction(Action.LongPress::class.java)
-        assertThat(longPress).isNotNull()
-        longPress!!
+        val longPress = testAppInteractions.nextAction<Action.LongPress>()
         assertThat(longPress.x).isEqualTo(x)
         assertThat(longPress.y).isEqualTo(y)
     }
@@ -128,9 +136,7 @@ class ComputerControlInteractionTest {
         for ((x, y) in edgeCoordinates) {
             testAppAgent.longPress(x, y)
 
-            val longPress = testAppAgent.nextAction(Action.LongPress::class.java)
-            assertThat(longPress).isNotNull()
-            longPress!!
+            val longPress = testAppInteractions.nextAction<Action.LongPress>()
             assertThat(longPress.x).isEqualTo(x)
             assertThat(longPress.y).isEqualTo(y)
         }
@@ -152,9 +158,7 @@ class ComputerControlInteractionTest {
         val y2 = bounds.height() / 4
         testAppAgent.swipe(x1, y1, x2, y2)
 
-        val swipe = testAppAgent.nextAction(Action.Swipe::class.java)
-        assertThat(swipe).isNotNull()
-        swipe!!
+        val swipe = testAppInteractions.nextAction<Action.Swipe>()
         assertThat(swipe.x1).isEqualTo(x1)
         assertThat(swipe.y1).isEqualTo(y1)
         assertThat(swipe.x2).isEqualTo(x2)
@@ -187,9 +191,7 @@ class ComputerControlInteractionTest {
             val (x1, y1, x2, y2) = coords
             testAppAgent.swipe(x1, y1, x2, y2)
 
-            val swipe = testAppAgent.nextAction(Action.Swipe::class.java)
-            assertThat(swipe).isNotNull()
-            swipe!!
+            val swipe = testAppInteractions.nextAction<Action.Swipe>()
             assertThat(swipe.x1).isEqualTo(x1)
             assertThat(swipe.y1).isEqualTo(y1)
             assertThat(swipe.x2).isEqualTo(x2)
@@ -240,8 +242,7 @@ class ComputerControlInteractionTest {
         // 1 is the action code for GoBack.
         testAppAgent.performAction(1)
 
-        val goBack = testAppAgent.nextAction(Action.GoBack::class.java)
-        assertThat(goBack).isNotNull()
+        val goBack = testAppInteractions.nextAction<Action.GoBack>()
     }
 
     @Test
@@ -257,9 +258,7 @@ class ComputerControlInteractionTest {
         for ((x, y) in edgeCoordinates) {
             testAppAgent.tap(x, y)
 
-            val tap = testAppAgent.nextAction(Action.Tap::class.java)
-            assertThat(tap).isNotNull()
-            tap!!
+            val tap = testAppInteractions.nextAction<Action.Tap>()
             assertThat(tap.x).isEqualTo(x)
             assertThat(tap.y).isEqualTo(y)
         }
@@ -288,28 +287,22 @@ class ComputerControlInteractionTest {
         // Insert text1 to text field 1.
         val text1 = "Hello World"
         val text2 = "Goodbye World"
-        testAppAgent.requestFocus(Constants.TEXT_FIELD_1)
+        focusRequester.requestFocus(Constants.TEXT_FIELD_1)
         testAppAgent.insertText(text1)
-        var insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
-        assertThat(insertText1).isNotNull()
-        insertText1!!
+        var insertText1 = testAppInteractions.nextAction<Action.TextFieldValueChange>()
         assertThat(insertText1.textFieldId).isEqualTo(Constants.TEXT_FIELD_1)
         assertThat(insertText1.text).isEqualTo(text1)
 
         // Insert text2 to text field 1 again.
         testAppAgent.insertText(text2)
-        insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
-        assertThat(insertText1).isNotNull()
-        insertText1!!
+        insertText1 = testAppInteractions.nextAction<Action.TextFieldValueChange>()
         assertThat(insertText1.textFieldId).isEqualTo(Constants.TEXT_FIELD_1)
         assertThat(insertText1.text).isEqualTo(text2)
 
         // Insert text2 to text field 2.
-        testAppAgent.requestFocus(Constants.TEXT_FIELD_2)
+        focusRequester.requestFocus(Constants.TEXT_FIELD_2)
         testAppAgent.insertText(text2)
-        val insertText2 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
-        assertThat(insertText2).isNotNull()
-        insertText2!!
+        val insertText2 = testAppInteractions.nextAction<Action.TextFieldValueChange>()
         assertThat(insertText2.textFieldId).isEqualTo(Constants.TEXT_FIELD_2)
         assertThat(insertText2.text).isEqualTo(text2)
     }
@@ -317,16 +310,10 @@ class ComputerControlInteractionTest {
     @Test
     fun testInsertText_combinations() = launchTestApp(TEST_APP_CLASS_NAME).use { testAppAgent ->
         val textFieldId = Constants.TEXT_FIELD_1
-        testAppAgent.requestFocus(textFieldId)
+        focusRequester.requestFocus(textFieldId)
 
         fun assertText(expectedText: String, expectedUncommittedText: String) {
-            val change = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
-            assertWithMessage(
-                "TextFieldValueChange action was not received within the timeout"
-            )
-                .that(change)
-                .isNotNull()
-            val nonNullChange = change!!
+            val nonNullChange = testAppInteractions.nextAction<Action.TextFieldValueChange>()
             assertThat(nonNullChange.textFieldId).isEqualTo(textFieldId)
             assertThat(nonNullChange.text).isEqualTo(expectedText)
             if (expectedUncommittedText.isEmpty()) {
@@ -347,12 +334,20 @@ class ComputerControlInteractionTest {
 
         // Insert " text3" as composing text, don't replace, don't commit.
         testAppAgent.insertText(
-            " text3", replaceExisting = false, commitText = false, waitForStable = false)
+            " text3",
+            replaceExisting = false,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("text1 text2 text3", "")
 
         // Insert " text4" to append to composing text, don't replace, don't commit.
         testAppAgent.insertText(
-            " text4", replaceExisting = false, commitText = false, waitForStable = false)
+            " text4",
+            replaceExisting = false,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("text1 text2 text3 text4", "")
 
         // Commit the composing text by inserting an empty string, then append.
@@ -367,12 +362,20 @@ class ComputerControlInteractionTest {
 
         // Replace text with composing text, don't commit.
         testAppAgent.insertText(
-            "new composing", replaceExisting = true, commitText = false, waitForStable = false)
+            "new composing",
+            replaceExisting = true,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("new composing", "")
 
         // Append to the new composing text, don't commit.
         testAppAgent.insertText(
-            " more", replaceExisting = false, commitText = false, waitForStable = false)
+            " more",
+            replaceExisting = false,
+            commitText = false,
+            waitForStable = false
+        )
         assertText("new composing more", "")
 
         // Commit the current composing text, then append.
@@ -392,11 +395,14 @@ class ComputerControlInteractionTest {
             // Insert text without focusing on any text field.
             testAppAgent.insertText("should not appear", replaceExisting = false, commitText = true)
             testAppAgent.insertText("should not appear", replaceExisting = true, commitText = true)
-            testAppAgent.insertText("should not appear", replaceExisting = false, commitText = false)
+            testAppAgent.insertText(
+                "should not appear",
+                replaceExisting = false,
+                commitText = false
+            )
 
             // Expect no text field value change action to be received.
-            val noAction = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
-            assertThat(noAction).isNull()
+            testAppInteractions.assertNoAction<Action.TextFieldValueChange>()
         }
 
     @Test

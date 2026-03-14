@@ -88,7 +88,7 @@ public class GfxInfoDumpsysTest extends BaseDumpsysTest {
                             "Flags,FrameTimelineVsyncId,IntendedVsync,Vsync"
                                     + ",InputEventId,HandleInputStart,AnimationStart"
                                     + ",PerformTraversalsStart,DrawStart,FrameDeadline"
-                                    + ",FrameStartTime,FrameInterval,WorkloadTarget"
+                                    + ",FrameStartTime,FrameInterval,WorkloadTarget,AnimationTime"
                                     + ",SyncQueued,SyncStart,IssueDrawCommandsStart,SwapBuffers"
                                     + ",FrameCompleted,DequeueBufferDuration,QueueBufferDuration"
                                     + ",GpuCompleted,SwapBuffersCompleted,DisplayPresentTime"));
@@ -115,12 +115,12 @@ public class GfxInfoDumpsysTest extends BaseDumpsysTest {
                 final long timestampAnimationStart = numparts[6];
                 final long timestampPerformTraversalsStart = numparts[7];
                 final long timestampDrawStart = numparts[8];
-                // skip FrameDeadline, FrameInterval, FrameStartTime, WorkloadDuration
-                final long timestampSyncQueued = numparts[13];
-                final long timestampSyncStart = numparts[14];
-                final long timestampIssueDrawCommandsStart = numparts[15];
-                final long timestampSwapBuffers = numparts[16];
-                final long timestampFrameCompleted = numparts[17];
+                // skip FrameDeadline, FrameInterval, FrameStartTime, WorkloadTarget, AnimationTime
+                final long timestampSyncQueued = numparts[14];
+                final long timestampSyncStart = numparts[15];
+                final long timestampIssueDrawCommandsStart = numparts[16];
+                final long timestampSwapBuffers = numparts[17];
+                final long timestampFrameCompleted = numparts[18];
 
                 // assert time is flowing forwards. we need to check each entry explicitly
                 // as some entries do not represent a flow of events.

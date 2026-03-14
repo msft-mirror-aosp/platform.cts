@@ -16,10 +16,6 @@
 
 package android.virtualdevice.cts.computercontrol
 
-import android.computercontrol.testapp.common.Action
-import android.computercontrol.testapp.common.Interaction
-import android.computercontrol.testapp.common.InteractionReceiver
-import android.computercontrol.testapp.common.TestAppFocusRequester
 import android.content.ComponentName
 import android.content.Context
 import android.media.Image
@@ -33,15 +29,9 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
 
 class TestAppAgent(private val context: Context, private val session: ComputerControlSession) :
     AutoCloseable {
-    private val interactionQueue = Channel<Interaction>(Channel.UNLIMITED)
-    private var interactionReceiver: InteractionReceiver? = null
-    private var testAppFocusRequester: TestAppFocusRequester? = null
     private val sessionCloseFuture = CompletableFuture<Void>()
 
     /** Lifecycle callback that can be installed on the test agent. */
@@ -88,25 +78,10 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
                 Log.d("TestAppAgent", "Launched application: $packageName")
             }
         }
-
-        interactionReceiver = InteractionReceiver(context)
-        interactionReceiver!!.bind { interaction ->
-            Log.d("TestAppAgent", "Interaction received")
-            interactionQueue.trySend(interaction)
-        }
-        testAppFocusRequester = TestAppFocusRequester(context)
-
-        waitForActivityReady()
     }
 
     fun handOverApplications() {
         session.handOverApplications()
-    }
-
-    fun requestFocus(textFieldId: String) {
-        testAppFocusRequester!!.requestFocus(textFieldId)
-        // TODO: look into how to get rid of this sleep for requesting focus.
-        Thread.sleep(1000)
     }
 
     // When session is closed, tap is no op, and no need to wait for stability.
@@ -157,24 +132,6 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
 
     fun getAccessibilityWindows(): List<AccessibilityWindowInfo> {
         return session.getAccessibilityWindows()
-    }
-
-    private fun waitForActivityReady() {
-        nextAction(Action.ActivityReady::class.java)
-    }
-
-    fun <T : Action> nextAction(clazz: Class<T>): T? = runBlocking {
-        withTimeoutOrNull(TimeUnit.SECONDS.toMillis(20)) {
-            while (true) {
-                val interaction = interactionQueue.receive()
-                val action = interaction.action
-                if (clazz.isInstance(action)) {
-                    @Suppress("UNCHECKED_CAST")
-                    return@withTimeoutOrNull action as T
-                }
-            }
-            @Suppress("UNREACHABLE_CODE") null
-        }
     }
 
     fun actAndWaitForStable(action: () -> Unit) {

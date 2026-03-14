@@ -42,9 +42,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 
 class AppActivity : ComponentActivity() {
 
-    private val interactionReceiverBinder = InteractionReceiverBinder()
-
     private var activityReadySignaled = false
+    private var isWindowFocused = false
+    private var isEnterAnimationComplete = false
 
     private val focusRequesters =
         mapOf(
@@ -66,7 +66,6 @@ class AppActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(Constants.TAG, "AppActivity.onCreate")
-        interactionReceiverBinder.register(this)
 
         val filter = IntentFilter(Constants.ACTION_REQUEST_FOCUS)
         registerReceiver(focusReceiver, filter, RECEIVER_EXPORTED)
@@ -81,21 +80,30 @@ class AppActivity : ComponentActivity() {
             "onWindowFocusChanged: hasFocus=$hasFocus, " +
                 "signaled=$activityReadySignaled"
         )
-        if (hasFocus && !activityReadySignaled) {
-            activityReadySignaled = true
-            sendInteraction(Interaction(Action.ActivityReady))
-            Log.d(Constants.TAG, "Sent ActivityReady signal")
-        }
+        isWindowFocused = hasFocus
+        checkAndSendActivityReady()
+    }
+
+    override fun onEnterAnimationComplete() {
+        super.onEnterAnimationComplete()
+        isEnterAnimationComplete = true
+        checkAndSendActivityReady()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        interactionReceiverBinder.unregister(this)
         unregisterReceiver(focusReceiver)
     }
 
     private fun sendInteraction(interaction: Interaction) {
-        InteractionSender.sendInteraction(interaction)
+        InteractionSender.sendInteractionAsync(interaction)
+    }
+
+    private fun checkAndSendActivityReady() {
+        if (isWindowFocused && isEnterAnimationComplete && !activityReadySignaled) {
+            activityReadySignaled = true
+            sendInteraction(Interaction(Action.ActivityReady))
+        }
     }
 }
 

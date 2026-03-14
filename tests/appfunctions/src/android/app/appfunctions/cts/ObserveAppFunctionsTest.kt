@@ -28,6 +28,7 @@ import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaH
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.assertAppFunctionPackageMetadataEquals
 import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
+import android.app.appfunctions.cts.AppFunctionUtils.getAllAppFunctionPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.searchAppFunctions
@@ -35,7 +36,6 @@ import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
-import android.app.appfunctions.cts.AppFunctionUtils.getAllAppFunctionPackages
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.CtsTestUtil.freezeProcess
@@ -45,11 +45,11 @@ import android.app.appfunctions.testutils.CtsTestUtil.safeRetryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.safeUnfreezeProcess
 import android.app.appfunctions.testutils.CtsTestUtil.unfreezeProcess
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
+import android.app.appfunctions.testutils.ITestAppFunctionProxyManagerService
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
+import android.app.appfunctions.testutils.TestAppFunctionProxyManagerService
 import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
-import android.app.appfunctions.testutils.ITestAppFunctionProxyManagerService
-import android.app.appfunctions.testutils.TestAppFunctionProxyManagerService
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -1142,11 +1142,7 @@ class ObserveAppFunctionsTest {
                     .contains(DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT)
             }
             testObserver.clearHistory()
-            unfreezeProcess(
-                context,
-                CtsApp.PACKAGE_NAME,
-                CtsApp.PROXY_MANAGER_PROCESS_NAME,
-            )
+            unfreezeProcess(context, CtsApp.PACKAGE_NAME, CtsApp.PROXY_MANAGER_PROCESS_NAME)
             // Since there is no signal available to know whether the unfreeze
             // notification has been dispatched, we need to wait for a period of
             // time before start asserting.
@@ -1170,6 +1166,100 @@ class ObserveAppFunctionsTest {
             )
             awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, testObserver)
             testObservation.cancel()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun onPackageDataCleared_initialRuntimeStateDefault_doesNotNotify() = doBlocking {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        val targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME
+        val functionEnabledByDefault = DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT
+
+        try {
+            setAppFunctionEnabledRemote(
+                targetPackage,
+                functionEnabledByDefault.functionIdentifier,
+                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+            )
+
+            observation = observeAppFunctions(observer)
+            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
+
+            ShellCommand.builder(
+                    "pm clear --user ${TestApis.users().current().id()} $targetPackage"
+                )
+                .execute()
+
+            // Trigger an unrelated notification wait for it to be dispatched, to ensure preceding
+            // notifications, if any, have already been dispatched.
+            val sentinelFunction = CtsApp.FunctionNames.ADD
+            manager.setAppFunctionEnabled(
+                sentinelFunction.functionIdentifier,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            retryAssert {
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
+                    .contains(sentinelFunction)
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
+                    .doesNotContain(functionEnabledByDefault)
+            }
+        } finally {
+            observation?.cancel()
+            resetEnabledStates()
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun onPackageDataCleared_initialRuntimeStateNotDefault_notifiesObserver() = doBlocking {
+        val observer = TestClientObserver()
+        var observation: AppFunctionObservation? = null
+        val targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME
+        val functionEnabledByDefault = DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT
+        val functionDisabledByDefault = DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT
+
+        try {
+            setAppFunctionEnabledRemote(
+                targetPackage,
+                functionEnabledByDefault.functionIdentifier,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            setAppFunctionEnabledRemote(
+                targetPackage,
+                functionDisabledByDefault.functionIdentifier,
+                AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+            )
+
+            observation = observeAppFunctions(observer)
+            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
+
+            ShellCommand.builder(
+                    "pm clear --user ${TestApis.users().current().id()} $targetPackage"
+                )
+                .execute()
+
+            retryAssert {
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
+                    .containsAtLeast(functionDisabledByDefault, functionEnabledByDefault)
+            }
+        } finally {
+            observation?.cancel()
+            resetEnabledStates()
         }
     }
 
@@ -1441,13 +1531,8 @@ class ObserveAppFunctionsTest {
         return ITestAppFunctionRegistrationService.Stub.asInterface(binder)
     }
 
-    private fun bindToProxyManagerService(
-    ): ITestAppFunctionProxyManagerService {
-        val serviceIntent =
-            Intent(
-                context,
-                TestAppFunctionProxyManagerService::class.java
-            )
+    private fun bindToProxyManagerService(): ITestAppFunctionProxyManagerService {
+        val serviceIntent = Intent(context, TestAppFunctionProxyManagerService::class.java)
         val binder: IBinder = serviceTestRule.bindService(serviceIntent)
         return ITestAppFunctionProxyManagerService.Stub.asInterface(binder)
     }

@@ -17,6 +17,7 @@
 package android.virtualdevice.cts.computercontrol
 
 import android.computercontrol.testapp.common.Action
+import android.computercontrol.testapp.common.TestAppInteractionReceiver
 import android.content.ComponentName
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -26,6 +27,7 @@ import android.server.wm.WindowManagerStateHelper
 import android.util.Log
 import android.view.Display
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.extensions.computercontrol.ComputerControlSession
@@ -33,6 +35,7 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
@@ -136,6 +139,12 @@ class ComputerControlSessionManagementTest {
     private val context = getInstrumentation().context
     private val windowManagerStateHelper = WindowManagerStateHelper()
     private val launcher = TestAppAgentLauncher()
+    private val testAppInteractions = TestAppInteractionReceiver(context)
+
+    @After
+    fun tearDown() {
+        testAppInteractions.close()
+    }
 
     private fun launchTestAppAgent(
         packageNames: List<String> = listOf(TEST_APP_PACKAGE_NAME, TEST_APP2_PACKAGE_NAME)
@@ -210,6 +219,7 @@ class ComputerControlSessionManagementTest {
     fun testLaunchApplication_validPackageName() {
         launchTestAppAgent().use { testAppAgent ->
             testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            testAppInteractions.nextAction<Action.ActivityReady>()
             // The activity is launched on the virtual display.
             assertActivityResumedOnVirtualDisplay(TEST_APP_COMPONENT_NAME)
         }
@@ -242,6 +252,7 @@ class ComputerControlSessionManagementTest {
     fun testLaunchApplication_validComponentName() {
         launchTestAppAgent().use { testAppAgent ->
             testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME, TEST_APP_CLASS_NAME)
+            testAppInteractions.nextAction<Action.ActivityReady>()
             // The activity is launched on the virtual display.
             assertActivityResumedOnVirtualDisplay(TEST_APP_COMPONENT_NAME)
         }
@@ -287,6 +298,7 @@ class ComputerControlSessionManagementTest {
     fun testStabilityListener() {
         launchTestAppAgent().use { testAppAgent ->
             testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            testAppInteractions.nextAction<Action.ActivityReady>()
             waitAndAssertActivityResumed(TEST_APP_COMPONENT_NAME)
         }
     }
@@ -400,12 +412,14 @@ class ComputerControlSessionManagementTest {
         }
     }
 
+    @FlakyTest(bugId = 491587958)
     @Test
     fun testHandOver() {
         launchTestAppAgent().use { testAppAgent ->
             val lifecycleCallback = LifecycleCallbackImpl()
             testAppAgent.lifecycleCallback.set(lifecycleCallback)
             testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            testAppInteractions.nextAction<Action.ActivityReady>()
 
             // Launch the test app on the virtual display.
             val virtualDisplayId = assertActivityResumedOnVirtualDisplay(TEST_APP_COMPONENT_NAME)
@@ -417,8 +431,10 @@ class ComputerControlSessionManagementTest {
             val displayId = getDisplayId(TEST_APP_COMPONENT_NAME)
             assertThat(displayId).isNotEqualTo(virtualDisplayId)
             assertThat(displayId).isEqualTo(Display.DEFAULT_DISPLAY)
-            // Assert that activity isn't destroyed when handover applications.
-            assertThat(testAppAgent.nextAction(Action.Destroy::class.java)).isNull()
+
+            // TODO: b/491587958 - Activity should not be destroyed when being moved
+            //  to the main display.
+            testAppInteractions.assertNoAction<Action.Destroy>()
         }
 
         // Request a new session and re-launch the test app. The activity should
@@ -464,6 +480,7 @@ class ComputerControlSessionManagementTest {
             val lifecycleCallback = LifecycleCallbackImpl()
             testAppAgent.lifecycleCallback.set(lifecycleCallback)
             testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            testAppInteractions.nextAction<Action.ActivityReady>()
             // Assert that launch the test app on the virtual display.
             waitAndAssertActivityResumed(TEST_APP_COMPONENT_NAME)
             lifecycleCallback.assertInvokeOnClosed { testAppAgent.close() }
@@ -473,7 +490,7 @@ class ComputerControlSessionManagementTest {
             // Assert that the session is closed and interactions are no-op.
             testAppAgent.noOpTap()
             // Assert that test app isn't tapped.
-            assertThat(testAppAgent.nextAction(Action.Tap::class.java)).isNull()
+            testAppInteractions.assertNoAction<Action.Tap>()
         }
     }
 
@@ -482,19 +499,19 @@ class ComputerControlSessionManagementTest {
         // Launch the test app, tap on the screen and close the session.
         launchTestAppAgent().use { testAppAgent ->
             testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            testAppInteractions.nextAction<Action.ActivityReady>()
             waitAndAssertActivityResumed(TEST_APP_COMPONENT_NAME)
             testAppAgent.tap(0, 0)
-            val tap = testAppAgent.nextAction(Action.Tap::class.java)
-            assertThat(tap).isNotNull()
+            testAppInteractions.nextAction<Action.Tap>()
             testAppAgent.close()
         }
         // Launch the test app, tap on the screen and close the session again.
         launchTestAppAgent().use { testAppAgent ->
             testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            testAppInteractions.nextAction<Action.ActivityReady>()
             waitAndAssertActivityResumed(TEST_APP_COMPONENT_NAME)
             testAppAgent.tap(0, 0)
-            val tap = testAppAgent.nextAction(Action.Tap::class.java)
-            assertThat(tap).isNotNull()
+            testAppInteractions.nextAction<Action.Tap>()
             testAppAgent.close()
         }
     }

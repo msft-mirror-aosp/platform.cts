@@ -90,9 +90,6 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
     private static final String ENTERPRISE_PRIVACY_TEST_ID = "ENTERPRISE_PRIVACY";
     private static final String NETWORK_LOGGING_UI_TEST_ID = "NETWORK_LOGGING_UI";
     private static final String DISALLOW_USER_SWITCH_TEST_ID = "DISALLOW_USER_SWITCH";
-    private static final String USER_SWITCHER_MESSAGE_TEST_ID = "USER_SWITCHER_MESSAGE";
-    private static final String ENABLE_LOGOUT_TEST_ID = "ENABLE_LOGOUT";
-    private static final String MANAGED_USER_TEST_ID = "MANAGED_USER_UI";
     private static final String REMOVE_DEVICE_OWNER_TEST_ID = "REMOVE_DEVICE_OWNER";
     private static final String DISALLOW_AMBIENT_DISPLAY_ID = "DISALLOW_AMBIENT_DISPLAY";
     private static final String DISALLOW_REMOVE_USER_TEST_ID = "DISALLOW_REMOVE_USER";
@@ -547,83 +544,7 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
                 R.string.enterprise_privacy_test,
                 enterprisePolicyTestIntent));
 
-        if (FeatureUtil.supportManagedSecondaryUsers(this)) {
-            // Managed user
-            // b/340154320 Disabled while the teardown of the user is resulting in a crash
-//            adapter.add(createInteractiveTestItem(this, MANAGED_USER_TEST_ID,
-//                    R.string.managed_user_test,
-//                    R.string.managed_user_positive_tests_instructions,
-//                    new ButtonInfo[]{
-//                            new ButtonInfo(
-//                                    R.string.device_owner_settings_go,
-//                                    createCreateManagedUserIntent())}));
 
-            // User switcher message
-            adapter.add(createInteractiveTestItem(this, USER_SWITCHER_MESSAGE_TEST_ID,
-                    R.string.device_owner_user_switcher_message,
-                    R.string.device_owner_user_switcher_message_info,
-                    new ButtonInfo[]{
-                            new ButtonInfo(
-                                    R.string.device_owner_with_user_switcher_message,
-                                    createWithUserSwitcherMessageIntent()),
-                            new ButtonInfo(
-                                    R.string.device_owner_without_user_switcher_message,
-                                    createWithoutUserSwitcherMessageIntent())}));
-
-            // Enable logout
-            adapter.add(createInteractiveTestItem(this, ENABLE_LOGOUT_TEST_ID,
-                    R.string.device_owner_enable_logout,
-                    R.string.device_owner_enable_logout_info,
-                    new ButtonInfo[]{
-                            new ButtonInfo(
-                                    R.string.device_owner_settings_go,
-                                    createEnableLogoutIntent())}));
-
-            // DISALLOW_USER_SWITCH
-            adapter.add(createInteractiveTestItem(this, DISALLOW_USER_SWITCH_TEST_ID,
-                    R.string.device_owner_disallow_user_switch,
-                    R.string.device_owner_disallow_user_switch_info,
-                    new ButtonInfo[]{
-                            new ButtonInfo(R.string.device_owner_disallow_user_switch_create_user,
-                                    createCreateManagedUserWithoutSetupIntent()),
-                            new ButtonInfo(R.string.device_owner_user_restriction_set,
-                                    CommandReceiverActivity
-                                            .createSetDeviceOwnerUserRestrictionIntent(
-                                                    UserManager.DISALLOW_USER_SWITCH,
-                                                    /* enforced= */ true)),
-                            new ButtonInfo(R.string.device_owner_settings_go,
-                                    new Intent(Settings.ACTION_USER_SETTINGS)),
-                            new ButtonInfo(R.string.device_owner_user_restriction_unset,
-                                    CommandReceiverActivity
-                                            .createSetDeviceOwnerUserRestrictionIntent(
-                                                    UserManager.DISALLOW_USER_SWITCH,
-                                                    /* enforced= */ false))
-            }));
-
-            // DISALLOW_REMOVE_USER
-            adapter.add(createInteractiveTestItem(this, DISALLOW_REMOVE_USER_TEST_ID,
-                    R.string.disallow_remove_user,
-                    R.string.device_owner_disallow_remove_user_info,
-                    new ButtonInfo[]{
-                            new ButtonInfo(
-                                    R.string.device_owner_disallow_remove_user_create_user,
-                                    createCreateManagedUserWithoutSetupIntent()),
-                            new ButtonInfo(
-                                    R.string.device_owner_user_restriction_set,
-                                    CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                            UserManager.DISALLOW_REMOVE_USER, true)),
-                            new ButtonInfo(
-                                    R.string.device_owner_settings_go,
-                                    new Intent(Settings.ACTION_USER_SETTINGS)),
-                            new ButtonInfo(
-                                    R.string.device_owner_user_restriction_unset,
-                                    CommandReceiverActivity.createSetCurrentUserRestrictionIntent(
-                                            UserManager.DISALLOW_REMOVE_USER, false)),
-                            new ButtonInfo(
-                                    R.string.device_owner_remove_secondary_user,
-                                    createRemoveSecondaryUsersIntent())
-            }));
-        }
 
         // Network logging UI
         adapter.add(createInteractiveTestItem(this, NETWORK_LOGGING_UI_TEST_ID,
@@ -747,37 +668,6 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
                         CommandReceiverActivity.COMMAND_DISABLE_NETWORK_LOGGING);
     }
 
-    private Intent createCreateManagedUserIntent() {
-        // Set execution start time for counting test execution time.
-        mStartTime = System.currentTimeMillis();
-        return new Intent(this, CommandReceiverActivity.class)
-                .putExtra(CommandReceiverActivity.EXTRA_COMMAND,
-                        CommandReceiverActivity.COMMAND_CREATE_MANAGED_USER);
-    }
-
-    private Intent createWithUserSwitcherMessageIntent() {
-        return new Intent(this, CommandReceiverActivity.class)
-                .putExtra(CommandReceiverActivity.EXTRA_COMMAND,
-                        CommandReceiverActivity.COMMAND_WITH_USER_SWITCHER_MESSAGE);
-    }
-
-    private Intent createWithoutUserSwitcherMessageIntent() {
-        return new Intent(this, CommandReceiverActivity.class)
-                .putExtra(CommandReceiverActivity.EXTRA_COMMAND,
-                        CommandReceiverActivity.COMMAND_WITHOUT_USER_SWITCHER_MESSAGE);
-    }
-
-    private Intent createEnableLogoutIntent() {
-        return new Intent(this, CommandReceiverActivity.class)
-                .putExtra(CommandReceiverActivity.EXTRA_COMMAND,
-                        CommandReceiverActivity.COMMAND_ENABLE_LOGOUT);
-    }
-
-    private Intent createCreateManagedUserWithoutSetupIntent() {
-        return new Intent(this, CommandReceiverActivity.class)
-                .putExtra(CommandReceiverActivity.EXTRA_COMMAND,
-                        CommandReceiverActivity.COMMAND_CREATE_MANAGED_USER_WITHOUT_SETUP);
-    }
 
     private Intent createRemoveSecondaryUsersIntent() {
         return new Intent(this, CommandReceiverActivity.class)

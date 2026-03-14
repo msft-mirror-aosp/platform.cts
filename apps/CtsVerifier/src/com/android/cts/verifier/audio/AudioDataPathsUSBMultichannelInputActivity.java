@@ -69,8 +69,35 @@ public class AudioDataPathsUSBMultichannelInputActivity extends AudioDataPathsBa
         setInfoResources(R.string.audio_datapaths_usb_multichannel_input_test,
                 R.string.audio_datapaths_usb_multichannel_input_info, -1);
 
-        ((TextView) findViewById(R.id.audio_datapaths_deviceprompt))
-                .setText(getString(R.string.audio_datapaths_usb_4channel_input_nodevices));
+        TextView promptView = findViewById(R.id.audio_datapaths_deviceprompt);
+
+        if (grantAutoPass()) {
+            updateAutoPassInfo(promptView);
+        } else {
+            promptView.setText(R.string.audio_datapaths_usb_4channel_input_nodevices);
+        }
+    }
+
+    private void updateAutoPassInfo(TextView promptView) {
+        if (!mIsHandheld) {
+            promptView.setText(
+                    getResources().getString(R.string.audio_datapaths_nonhandheld_autopass));
+            enableTestButtons(/* enabled= */ false);
+            return;
+        }
+        if (mIsEmulator) {
+            promptView.setText(
+                    getResources().getString(R.string.audio_datapaths_emulator_autopass));
+        } else {
+            promptView.setText(
+                    getResources()
+                            .getString(
+                                    R.string.audio_datapaths_media_class_autopass,
+                                    Build.VERSION.MEDIA_PERFORMANCE_CLASS,
+                                    Build.VERSION_CODES.CINNAMON_BUN));
+        }
+
+        enableTestButtons(/* enabled= */ false);
     }
 
     @Override
@@ -254,8 +281,17 @@ public class AudioDataPathsUSBMultichannelInputActivity extends AudioDataPathsBa
             module.setAnalysisChannel(channelIndex);
             module.mEncoding = mDetectedEncoding;
             module.setSources(sourceProvider, analysisSinkProvider);
-            module.setDescription("In:" + mDetectedInChannelCount + " Out:" + mDetectedOutChannelCount
-                    + " Ch " + channelIndex + " Enc:" + mDetectedEncoding + " Rate:" + mDetectedSampleRate);
+            module.setDescription(
+                    "In:"
+                            + mDetectedInChannelCount
+                            + " Out:"
+                            + mDetectedOutChannelCount
+                            + " Ch "
+                            + channelIndex
+                            + " Enc:"
+                            + mDetectedEncoding
+                            + " Rate:"
+                            + mDetectedSampleRate);
 
             testManager.addTestModule(module);
         }

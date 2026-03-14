@@ -5129,29 +5129,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="set_high_required_password_complexity">Set high required password complexity</string>
     <string name="remove_required_password_complexity">Remove required password complexity</string>
 
-    <string name="managed_user_test">Managed User</string>
-    <string name="managed_user_positive_tests">Managed User positive tests</string>
-    <string name="managed_user_positive_tests_instructions">
-        The positive managed user tests verify policies on a managed user created by a device owner.
-        \n
-        Press Go button to create a managed user, and you will be switched to the managed user
-        automatically. Dismiss the keyguard and a \'Managed User Tests\' should launch.\n
-        Follow the test instructions and press \'pass\' or \'fail\' to return to this screen.\n
-    </string>
-    <string name="managed_user_positive_tests_instructions" product="automotive">
-        The positive managed user tests verify policies on a managed user created by a device owner.
-        \n
-        Press Go button to create a managed user, and you will be switched to the managed user
-        automatically; a \'Managed User Tests\' should launch.\n
-        Follow the test instructions and press \'pass\' or \'fail\' to return to this screen.\n
-    </string>
-    <string name="managed_user_positive_tests_info">
-        The positive managed user tests verify policies on a managed user created by a device owner.
-        Proceed to the test cases, then press \'pass\' or \'fail\' to finish this test.
-    </string>
-    <string name="managed_user_positive_category">Managed User Tests</string>
-    <string name="managed_user_check_managed_user_test">Check affiliated profile owner</string>
-    <string name="managed_user_incorrect_managed_user">Missing or incorrect affiliated profile owner: CTSVerifier is not affilaited PO!</string>
+
 
     <string name="device_owner_disallow_user_switch">Disallow user switch</string>
     <string name="device_owner_disallow_user_switch_info">
@@ -5190,36 +5168,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="device_owner_disallow_user_switch_create_user">Create uninitialized user</string>
 
-    <string name="device_owner_user_switcher_message">User switcher message</string>
-    <string name="device_owner_user_switcher_message_info">
-        1. Please press the \'With user switcher message\' button to set the user switcher message.
-        You will then be automatically switched to a secondary user. If a user switcher dialog shows
-        up, it should read \'Start user session\'. Wait until you are automatically switched back to
-        primary, if a user switcher dialog shows up, it should read \'End user session\'.
 
-        \n
-        2. Please press the \'Without user switcher message\' button to clear the user switcher
-        message. You will then be automatically switched to a secondary user. If a user switcher
-        dialog shows up, it should read \'Switching to managed user\'. Wait until you are
-        automatically switched back to primary, if a user switcher dialog shows up, it should read
-        \'Switching to (name of primary user)\'.
-    </string>
-    <string name="device_owner_with_user_switcher_message">With user switcher message</string>
-    <string name="device_owner_without_user_switcher_message">Without user switcher message</string>
 
-    <string name="device_owner_enable_logout">Logout</string>
-    <string name="device_owner_enable_logout_info">
-        Please press the Go button to enable logout. You will then be switched to a newly created
-        user.
-        Look for a way to logout the current user without unlocking the lock screen. The control is
-        usually named \'End session\'.\n
-        The location may vary depending on manufacturer, typical locations are:\n
-        - In power button menu by long pressing power button.\n
-        - On the lock screen.\n
-        \n
-        When successfully logout and switched back to primary user, confirm that the logout control
-        is not available in primary user.
-    </string>
+
 
     <!-- Strings for JobScheduler Tests -->
     <string name="js_test_description">This test is mostly automated, but requires some user interaction. You can pass this test once the list items below are checked.</string>
@@ -5866,9 +5817,10 @@ You should be prompted to select credentials; choose the ones you just installed
         This panel allows you to set levels for loopback signals
         The process is as follows:
         &#8226;Select the input and output devices on which the loopback is executing.
-        &#8226;Click "Left" to play a sine wave on the left channel of the selected output device.
+        &#8226;Select a channel from the Channel selection spinner.
+        &#8226;Click \"Start\" to play a sine wave on the selected channel of the selected output device.
         &#8226;Use the volume control on the DUT and/or external peripheral to set an appropriate signal level.
-        &#8226;Repeat the process for the right channel.
+        &#8226;Repeat the process for other channels. Note: You must stop the audio before selecting a different channel.
     </string>
 
     <!-- Audio Data Paths Test-->
@@ -5964,6 +5916,7 @@ You should be prompted to select credentials; choose the ones you just installed
         If an Analog Headset Jack is available, please insert an Analog Loopback Plug and run the test.</string>
     <string name="audio_datapaths_nonhandheld_autopass">Non-Handheld device. A PASS is automatically granted.</string>
     <string name="audio_datapaths_emulator_autopass">Emulator device. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_media_class_autopass" formatted="false">Current media performance class is %d this test requires %d or greater. A PASS is automatically granted.</string>
 
     <string name="audio_datapaths_usb_nosupport">This device does not have a host-mode USB port. A PASS is automatically granted.</string>
     <string name="audio_datapaths_usb_undetermined">Support for host-mode USB could not be determined.
@@ -6032,6 +5985,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
 
     <string name="audio_loopback_calibrate_default">Default</string>
+    <string name="audio_loopback_calibrate_channel">Channel:</string>
+    <string name="audio_loopback_starting">Starting&#8230;</string>
+    <string name="audio_loopback_playing">Playing&#8230;</string>
+    <string name="audio_loopback_stopping">Stopping&#8230;</string>
     <string name="audio_loopback_running">Running&#8230;</string>
 
     <!-- USB Device Warning Dialog -->

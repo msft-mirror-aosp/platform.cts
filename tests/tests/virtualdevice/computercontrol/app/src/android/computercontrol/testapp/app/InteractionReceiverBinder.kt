@@ -20,29 +20,32 @@ import android.computercontrol.testapp.common.Constants
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Messenger
 import android.util.Log
 
 class InteractionReceiverBinder : BroadcastReceiver() {
-    override fun onReceive(context: Context?, intent: Intent?) {
+
+    override fun onReceive(context: Context, intent: Intent) {
         Log.d(Constants.TAG, "Received intent in InteractionReceiverBinder: $intent")
-        if (intent?.action == Constants.ACTION_REMOTE_CALLBACK) {
-            val remoteMessenger =
-                intent.getParcelableExtra(
-                    Constants.EXTRA_REMOTE_MESSENGER,
-                    Messenger::class.java
-                )
-            InteractionSender.setRemoteMessenger(remoteMessenger)
+
+        when (intent.action) {
+            Constants.ACTION_SET_REMOTE_CALLBACK -> {
+                val remoteMessenger =
+                    intent.getParcelableExtra(
+                        Constants.EXTRA_REMOTE_MESSENGER,
+                        Messenger::class.java
+                    )
+                val token = intent.extras?.getBinder(Constants.EXTRA_REMOTE_CALLBACK_TOKEN)
+                requireNotNull(remoteMessenger) { "Remote messenger is missing" }
+                requireNotNull(token) { "Token is missing" }
+                InteractionSender.setRemoteMessenger(remoteMessenger, token)
+            }
+
+            Constants.ACTION_REMOVE_REMOTE_CALLBACK -> {
+                val token = intent.extras?.getBinder(Constants.EXTRA_REMOTE_CALLBACK_TOKEN)
+                requireNotNull(token) { "Token is missing" }
+                InteractionSender.removeRemoteMessenger(token)
+            }
         }
-    }
-
-    fun register(context: Context) {
-        val filter = IntentFilter(Constants.ACTION_REMOTE_CALLBACK)
-        context.registerReceiver(this, filter, Context.RECEIVER_EXPORTED)
-    }
-
-    fun unregister(context: Context) {
-        context.unregisterReceiver(this)
     }
 }

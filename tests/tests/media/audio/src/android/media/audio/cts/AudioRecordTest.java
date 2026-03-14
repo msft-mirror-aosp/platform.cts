@@ -316,7 +316,8 @@ public class AudioRecordTest {
                 30 /*periodsPerSecond*/, 2 /*markerPeriodsPerSecond*/,
                 false /*useByteBuffer*/, true /*blocking*/,
                 false /*auditRecording*/, false /*isChannelIndex*/, 8000 /*TEST_SR*/,
-                AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 500 /*TEST_TIME_MS*/);
+                AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                1000 /*TEST_TIME_MS*/);
     }
 
     @Test
@@ -1717,17 +1718,23 @@ public class AudioRecordTest {
         final double tolerance = (isLowLatencyDevice() ? 0.01 : 0.5) * (coarse ? 3. : 1.);
 
         // Usually the ratio is accurate to one part per thousand or better.
-        // Log.d(TAG, "ratio=" + ratio + ", timeDiff=" + timeDiff + ", frameDiff=" + frameDiff +
-        //        ", timeByFrames=" + timeByFrames + ", sampleRate=" + sampleRate);
-        assertWithMessage("Timestamp rate must match sample rate by ratio")
-                .that(ratio)
-                .isWithin(tolerance)
-                .of(1.);
+        Log.d(TAG, "Monotonic: ratio=" + ratio + ", timeDiff=" + timeDiff +
+                ", frameDiff=" + frameDiff + ", timeByFrames=" + timeByFrames +
+                ", sampleRate=" + sampleRate);
 
         final long timeDiffBoot = stopTsBoot.nanoTime - startTsBoot.nanoTime;
         final long frameDiffBoot = stopTsBoot.framePosition - startTsBoot.framePosition;
         final long timeByFramesBoot = frameDiffBoot * NANOS_PER_SECOND / sampleRate;
         final double ratioBoot = (double) timeDiffBoot / timeByFramesBoot;
+
+        Log.d(TAG, "Boottime: ratio=" + ratioBoot + ", timeDiff=" + timeDiffBoot +
+                ", frameDiff=" + frameDiffBoot + ", timeByFrames=" + timeByFramesBoot +
+                ", sampleRate=" + sampleRate);
+
+        assertWithMessage("Timestamp rate must match sample rate by ratio")
+                .that(ratio)
+                .isWithin(tolerance)
+                .of(1.);
 
         assertWithMessage("Boottime timestamp rate must match sample rate by ratio")
                 .that(ratioBoot)
