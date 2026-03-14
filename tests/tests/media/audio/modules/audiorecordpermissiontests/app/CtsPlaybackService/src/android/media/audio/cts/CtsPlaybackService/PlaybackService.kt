@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-package android.media.audio.cts.CtsRecordServiceApi34
+package android.media.audio.cts.CtsPlaybackService
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Bundle
-import android.util.Log
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
 
-/**
- * Recv which starts an FGS
- */
-class TrampolineReceiver : android.media.audio.cts.audiopermissiontests.common.TrampolineReceiver() {
-    override fun getAppName() : String = "CtsRecordServiceApi34"
+class PlaybackService : android.media.audio.cts.audiopermissiontests.common.PlaybackService() {
+    override fun getAppName() = "CtsPlaybackService"
+    override fun getCapabilities() = FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
 }

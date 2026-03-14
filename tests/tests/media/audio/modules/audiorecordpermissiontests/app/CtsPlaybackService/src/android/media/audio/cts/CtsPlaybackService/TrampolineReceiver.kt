@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package android.media.audio.cts.CtsRecordServiceApi34
-
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Bundle
-import android.util.Log
+package android.media.audio.cts.CtsPlaybackService
 
 /**
- * Recv which starts an FGS
+ * Activity which fires an intent when moving to top and from top, and registers a
+ * receiver to trigger finishing the activity.
  */
 class TrampolineReceiver : android.media.audio.cts.audiopermissiontests.common.TrampolineReceiver() {
-    override fun getAppName() : String = "CtsRecordServiceApi34"
+    override fun getAppName() : String = "CtsPlaybackService"
 }

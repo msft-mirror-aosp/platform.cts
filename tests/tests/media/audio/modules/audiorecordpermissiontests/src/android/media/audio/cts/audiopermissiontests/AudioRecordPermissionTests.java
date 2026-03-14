@@ -38,6 +38,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.audio.cts.audiopermissiontests.common.IAttrProvider;
+import android.media.audio.cts.audiopermissiontests.UtilsKt;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.AppModeFull;
@@ -46,13 +47,12 @@ import android.provider.Settings;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -580,14 +580,8 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     public void testIfAttemptChangeCapabilities_isNotSilenced() throws Exception {
         var TEST_PACKAGE = API_34_PACKAGE;
         // Go foreground without WIU caps. Note: if we attempt to start with record here, AMS throws
-        mContext.sendBroadcast(
-                new Intent(TEST_PACKAGE + ACTION_BOUNCE_FOREGROUND)
-                        .setComponent(
-                                new ComponentName(
-                                        TEST_PACKAGE, TEST_PACKAGE + ".TrampolineReceiver")));
-        SystemUtil.runShellCommand("am wait-for-broadcast-barrier");
-        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + TEST_PACKAGE);
-
+        UtilsKt.bounceService(mContext, TEST_PACKAGE, true, SERVICE_NAME);
+        mServiceStartedPackages.add(TEST_PACKAGE);
         // Go foreground with the right capabilities
         startForeground(TEST_PACKAGE);
 

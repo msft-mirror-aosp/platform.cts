@@ -16,14 +16,11 @@
  -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-     package="android.media.audio.cts.CtsRecordServiceApi34">
+     package="android.media.audio.cts.CtsPlaybackService">
     <uses-sdk android:minSdkVersion="11"
-         android:targetSdkVersion="34"/>
+         android:targetSdkVersion="35"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.UPDATE_APP_OPS_STATS"/>
 
     <application android:debuggable="true"
                  android:usesCleartextTraffic="true">
@@ -35,13 +32,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <service android:name=".RecordService"
-            android:foregroundServiceType="microphone|mediaPlayback"
+        <service android:name=".PlaybackService"
+            android:foregroundServiceType="mediaPlayback"
             android:exported="true"/>
         <receiver android:name=".TrampolineReceiver"
              android:exported="true">
             <intent-filter>
-                <action android:name="android.media.audio.cts.CtsRecordServiceApi34.ACTION_BOUNCE_SERVICE"/>
+                <action android:name="android.media.audio.cts.CtsPlaybackService.ACTION_BOUNCE_SERVICE"/>
             </intent-filter>
         </receiver>
     </application>
