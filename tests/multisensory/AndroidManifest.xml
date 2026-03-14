@@ -18,6 +18,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      package="android.os.cts.multisensory">
 
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
     <application>
         <uses-library android:name="android.test.runner" />
     </application>

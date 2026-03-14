@@ -21,7 +21,6 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 import android.platform.test.annotations.FlakyTest;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.log.LogUtil.CLog;
 
 import org.junit.Test;
@@ -52,7 +51,7 @@ public final class LauncherAppsProfileTest extends BaseLauncherAppsTest {
 
         removeTestUsers();
         // Create a managed profile
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
+        mParentUserId = getProfileParentUserId();
         mProfileUserId = createManagedProfile(mParentUserId);
         installAppAsUser(MANAGED_PROFILE_APK, mProfileUserId);
         setProfileOwnerOrFail(MANAGED_PROFILE_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,

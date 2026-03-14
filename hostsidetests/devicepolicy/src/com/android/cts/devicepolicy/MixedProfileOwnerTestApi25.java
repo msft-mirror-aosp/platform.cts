@@ -20,7 +20,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresProfileOwnerSupport;
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 
 /**
  * Set of tests for pure (non-managed) profile owner use cases that also apply to device owners.
@@ -33,7 +32,7 @@ public final class MixedProfileOwnerTestApi25 extends DeviceAndProfileOwnerTestA
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = DevicePolicyUsersPreparer.getProfileOwnerUserId();
+        mUserId = getProfileOwnerUserId();
 
         installAppAsUser(DEVICE_ADMIN_APK, mUserId);
         if (!setProfileOwner(

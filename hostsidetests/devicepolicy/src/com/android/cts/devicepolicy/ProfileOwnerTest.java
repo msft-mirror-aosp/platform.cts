@@ -19,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresProfileOwnerSupport;
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.log.LogUtil.CLog;
 
 import org.junit.Test;
@@ -42,7 +41,7 @@ public final class ProfileOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = DevicePolicyUsersPreparer.getProfileOwnerUserId();
+        mUserId = getProfileOwnerUserId();
 
         installAppAsUser(PROFILE_OWNER_APK, mUserId);
         if (!setProfileOwner(

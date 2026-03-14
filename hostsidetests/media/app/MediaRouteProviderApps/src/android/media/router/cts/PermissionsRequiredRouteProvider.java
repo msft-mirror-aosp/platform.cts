@@ -22,13 +22,10 @@ import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SE
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_1;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_2;
 import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_3;
-import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSION_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ANY_PERMISSION_SET;
-import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ONE_PERMISSION;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_RESTRICTED_OTHER_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET;
-import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_LOCAL_NETWORK;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ONE_PERMISSION;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_RESTRICTED_OTHER_PACKAGE;
 
@@ -67,10 +64,6 @@ public class PermissionsRequiredRouteProvider extends BaseFakeRouteProviderServi
                                             REQUIRED_PERMISSIONS_SET_3_1,
                                             REQUIRED_PERMISSIONS_SET_3_2,
                                             REQUIRED_PERMISSIONS_SET_3_3))),
-                    createPermissionsRequiredRoute(
-                            ROUTE_ID_REQUIRES_LOCAL_NETWORK,
-                            ROUTE_NAME_REQUIRES_LOCAL_NETWORK,
-                            List.of(Set.of(REQUIRED_PERMISSION_LOCAL_NETWORK))),
                     createRestrictedRouteAllowPrivileged(
                             ROUTE_ID_RESTRICTED_OTHER_PACKAGE,
                             ROUTE_NAME_RESTRICTED_OTHER_PACKAGE,

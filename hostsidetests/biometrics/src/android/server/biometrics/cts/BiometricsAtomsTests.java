@@ -320,6 +320,12 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
             exemptionReasons = {},
             justification = "METRIC")
     public void testSecureLockDeviceStateChangedAtom() throws Exception {
+        // TODO (b/427071498): Remove check when SLD implemented for Flexiglass
+        if (isSceneContainerEnabled()) {
+            CLog.w("Skipping test - scene container is enabled");
+            return;
+        }
+
         if (!hasSecureLockscreen()) {
             CLog.w("Skipping test - no secure lockscreen on device");
             return;

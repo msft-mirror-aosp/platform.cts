@@ -26,10 +26,11 @@ android_test {
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
+        "audiopermissiontests_shared",
+        "com.android.media.audio-aconfig-java",
         "compatibility-device-util-axt",
         "mediatestutils",
         "sts-device-util",
-        "audiopermissiontests_shared",
     ],
     srcs: [
         "src/**/*.java",
@@ -39,11 +40,12 @@ android_test {
         ":CtsRecordServiceApi34",
         ":CtsRecordServiceApi34NoCap",
         ":CtsRecordServiceApi33",
+        ":CtsPlaybackService",
     ],
     test_suites: [
         "cts",
         "general-tests",
         "sts",
     ],
-    sdk_version: "test_33",
+    sdk_version: "test_current",
 }

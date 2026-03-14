@@ -2,7 +2,6 @@ package com.android.cts.devicepolicy;
 
 import static org.junit.Assert.fail;
 
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 
 import org.junit.Test;
@@ -38,7 +37,7 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
     public void setUp() throws Exception {
         super.setUp();
 
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
+        mParentUserId = getProfileParentUserId();
     }
 
     @Test

@@ -28,6 +28,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
+import com.android.cts.devicepolicy.user.UsersOracle;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -38,6 +39,8 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.truth.Expect;
 
@@ -215,7 +218,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
         // Gets the value of the initial user running these tests - it will be switched to (in
         // a few lines) and won't be removed
-        mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mInitialUserId = getInitialCurrentUserId();
 
         mNonTestUserIds.add(USER_SYSTEM);
         mNonTestUserIds.add(mInitialUserId);
@@ -228,7 +231,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
                 getDevice().getCurrentUser(),
                 getDevice().getMainUserId(),
                 mNonTestUserIds,
-                DevicePolicyUsersPreparer.getPreExistingUserIds());
+                getPreExistingUserIds());
 
         getDevice().executeShellCommand(" mkdir " + TEST_UPDATE_LOCATION);
 
@@ -825,10 +828,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected final boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
-        CLog.d("setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b", componentName,
-                userId, expectFailure);
+        CLog.d(
+                "setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b",
+                componentName, userId, expectFailure);
         // TODO(b/35372278): temporary workaround until flag is ramped up
-        if (isAutomotive() && !DevicePolicyUsersPreparer.isDeviceOwnerSupportedOnAnyFullUsers()) {
+        if (isAutomotive() && !isDeviceOwnerSupportedOnAnyFullUsers()) {
             throw new AssumptionViolatedException("Cannot set device owner on automotive build");
         }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
@@ -1211,6 +1215,46 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             // need to check that it's not null
             expect.withMessage("Cleanup task#%s failed", i).that(cleanupFailure).isNull();
         }
+    }
+
+    private UsersOracle getUsersOracle() throws DeviceNotAvailableException {
+        var testInformation = getTestInformation();
+        Preconditions.checkState(
+                testInformation != null, "called before TestInformation is available");
+
+        return DevicePolicyUsersPreparer.getUsersOracleInstance(testInformation);
+    }
+
+    /** Abstraction for {@link UsersOracle#getInitialCurrentUserId()} */
+    protected final int getInitialCurrentUserId() throws DeviceNotAvailableException {
+        return getUsersOracle().getInitialCurrentUserId();
+    }
+
+    /** Abstraction for {@link UsersOracle#getPreExistingUserIds(ImmutableSet)} */
+    protected final ImmutableSet<Integer> getPreExistingUserIds()
+            throws DeviceNotAvailableException {
+        return getUsersOracle().getPreExistingUserIds();
+    }
+
+    /** Abstraction for {@link UsersOracle#getInitialCurrentUserId()} */
+    protected final int getDeviceOwnerUserId() throws DeviceNotAvailableException {
+        return getUsersOracle().getDeviceOwnerUserId();
+    }
+
+    /** Abstraction for {@link UsersOracle#getProfileOwnerUserId()} */
+    protected final int getProfileOwnerUserId() throws DeviceNotAvailableException {
+        return getUsersOracle().getProfileOwnerUserId();
+    }
+
+    /** Abstraction for {@link UsersOracle#getInitialCurrentUserId()} */
+    protected final boolean isDeviceOwnerSupportedOnAnyFullUsers()
+            throws DeviceNotAvailableException {
+        return getUsersOracle().isDeviceOwnerSupportedOnAnyFullUsers();
+    }
+
+    /** Abstraction for {@link UsersOracle#getProfileParentUserId()} */
+    protected final int getProfileParentUserId() throws DeviceNotAvailableException {
+        return getUsersOracle().getProfileParentUserId();
     }
 
     /**

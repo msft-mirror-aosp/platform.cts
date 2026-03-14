@@ -24,8 +24,7 @@ import android.os.Bundle
 import android.util.Log
 
 /**
- * Activity which fires an intent when moving to top and from top, and registers a
- * receiver to trigger finishing the activity.
+ * Recv which starts an FGS
  */
 class TrampolineReceiver : android.media.audio.cts.audiopermissiontests.common.TrampolineReceiver() {
     override fun getAppName() : String = "CtsRecordServiceApi34"

@@ -29,7 +29,6 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.TemporarilyIgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.annotations.LockSettingsTest;
-import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.RunUtil;
@@ -172,7 +171,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDeviceOwnerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mInitialUserId = DevicePolicyUsersPreparer.getInitialCurrentUserId();
+        mInitialUserId = getInitialCurrentUserId();
     }
 
     @Override

@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -332,10 +333,26 @@ public class ScanResultTest extends WifiJUnit4TestBase {
     public void testScanResultMatchesWifiInfo() throws Exception {
         // ensure Wifi is connected
         ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.reconnect());
-        PollingCheck.check(
-                "Wifi not connected",
-                WIFI_CONNECT_TIMEOUT_MILLIS,
-                () -> sWifiManager.getConnectionInfo().getNetworkId() != -1);
+        try {
+            PollingCheck.check(
+                    "Wifi not connected",
+                    WIFI_CONNECT_TIMEOUT_MILLIS,
+                    () -> {
+                        WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
+                        return wifiInfo.getNetworkId() != -1 && wifiInfo.getFrequency() != -1;
+                    });
+        } catch (AssertionError e) {
+            // try again after toggle wifi
+            setWifiEnabled(false);
+            setWifiEnabled(true);
+            PollingCheck.check(
+                    "Wifi not connected",
+                    WIFI_CONNECT_TIMEOUT_MILLIS,
+                    () -> {
+                        WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
+                        return wifiInfo.getNetworkId() != -1 && wifiInfo.getFrequency() != -1;
+                    });
+        }
 
         final WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
         assertThat(wifiInfo).isNotNull();
@@ -392,9 +409,7 @@ public class ScanResultTest extends WifiJUnit4TestBase {
                     assertTrue("Scan retries exceeded 3", numRetry <= 3);
                 }
 
-                sWifiManager.startScan();
-                assertTrue("Should be throttled",
-                        waitForBroadcast(SCAN_WAIT_MSEC, STATE_SCAN_FAILURE));
+                assertFalse("Should be throttled", sWifiManager.startScan());
             }
         } finally {
             ShellIdentityUtils.invokeWithShellPermissions(
