@@ -561,19 +561,23 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                     codec = new CodecEncoderGLSurface(codecName, mediaType, configParam,
                             mAllTestParams);
                     codec.launchInstance();
-                    codec.doWork(10);
+                    // launchInstance internally calls start() and this is expected to raise
+                    // MediaCodec.CodecException.ERROR_INSUFFICIENT_RESOURCE if required resources
+                    // are not available. However, on some devices, it is observed that the actual
+                    // resources required for the current configuration is not computed at start but
+                    // deferred till first input process. So start() call might succeed but after
+                    // queueing inputs, CodecException.ERROR_INSUFFICIENT_RESOURCE could be raised
+                    // and communicated to the client via onError callback. So check for error
+                    // before proceeding.
                     int cbCount = codec.getResourceChangeCbCount();
+                    codec.doWork(1);
+                    // wait for onRequiredResourcesChanged/onError cb.
                     codec.waitOnResourceChange(cbCount);
-                    // In some components it is observed that the actual resources required for
-                    // the current configuration is not computed at start but deferred till first
-                    // enqueueInput. So start() call might succeed but after queueing inputs,
-                    // CodecException.ERROR_INSUFFICIENT_RESOURCE could be raised and
-                    // communicated to the client via onError callback. So check for error before
-                    // proceeding.
                     Pair<Boolean, RuntimeException> errState = codec.getCodecErrState();
                     if (errState.first) {
                         throw errState.second;
                     }
+                    codec.doWork(9);
                     codecs.add(codec);
                     numInstances++;
                     codec = null;

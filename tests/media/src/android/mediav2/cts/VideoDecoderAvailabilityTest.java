@@ -678,19 +678,23 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     codec = new DecodeToSurfaceWrapper(codecName, mediaType, testInput,
                             obj.second);
                     codec.launchInstance(configFormat);
+                    // launchInstance internally calls start() and this is expected to raise
+                    // MediaCodec.CodecException.ERROR_INSUFFICIENT_RESOURCE if required resources
+                    // are not available. However, on some devices, it is observed that the actual
+                    // resources required for the current configuration is not computed at start but
+                    // deferred till first input process. So start() call might succeed but after
+                    // queueing inputs, CodecException.ERROR_INSUFFICIENT_RESOURCE could be raised
+                    // and communicated to the client via onError callback. So check for error
+                    // before proceeding.
                     int cbCount = codec.getResourceChangeCbCount();
+                    codec.decode(0, 1);
+                    // wait for onRequiredResourcesChanged/onError cb.
                     codec.waitOnResourceChange(cbCount);
-                    codec.decode(0, frameCount);
-                    // In some components it is observed that the actual resources required for
-                    // the current configuration is not computed at start but deferred till first
-                    // enqueueInput. So start() call might succeed but after queueing inputs,
-                    // CodecException.ERROR_INSUFFICIENT_RESOURCE could be raised and
-                    // communicated to the client via onError callback. So check for error before
-                    // proceeding.
                     Pair<Boolean, RuntimeException> errState = codec.getCodecErrState();
                     if (errState.first) {
                         throw errState.second;
                     }
+                    codec.decode(1, frameCount);
                     codecs.add(codec);
                     surfaces.add(obj);
                     numInstances++;
