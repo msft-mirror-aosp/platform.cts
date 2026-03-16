@@ -83,16 +83,16 @@ public class CujInCallService extends InCallService {
     @Override
     public void onCallAdded(Call call) {
         Log.i(TAG, String.format("onCallAdded: call=[%s]", call));
-        sCallIdToCall.put(call.getDetails().getId(), call);
-        CujCallCallback cujCallCallback = new CujCallCallback();
-        call.registerCallback(cujCallCallback);
-        sCallIdToCallback.put(call.getDetails().getId(), cujCallCallback);
         sLastCall = call;
         if (call.getDetails().getExtras() != null) {
             sLastCallExtrasAtStart = call.getDetails().getExtras().deepCopy();
         } else {
             sLastCallExtrasAtStart = null;
         }
+        sCallIdToCall.put(call.getDetails().getId(), call);
+        CujCallCallback cujCallCallback = new CujCallCallback();
+        call.registerCallback(cujCallCallback);
+        sCallIdToCallback.put(call.getDetails().getId(), cujCallCallback);
     }
 
     @Override
