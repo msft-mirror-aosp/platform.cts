@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,82 +14,74 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import android.bluetooth.le.AdvertiseCallback;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.compatibility.common.util.CddTest;
-
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
-
-import java.util.HashSet;
-import java.util.Set;
+import android.bluetooth.le.AdvertiseCallback
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.CddTest
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.Mock
+import org.mockito.junit.MockitoJUnit
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 
 /** Test of {@link AdvertiseCallback}. */
-@RunWith(AndroidJUnit4.class)
-public class AdvertiseCallbackTest {
-    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
+@RunWith(AndroidJUnit4::class)
+class AdvertiseCallbackTest {
+    @get:Rule val mockitoRule = MockitoJUnit.rule()
 
-    private final MockAdvertiser mMockAdvertiser = new MockAdvertiser();
-    @Mock private AdvertiseCallback mAdvertiseCallback;
+    @Mock private lateinit var advertiseCallback: AdvertiseCallback
+
+    private val mockAdvertiser = MockAdvertiser()
 
     @Before
-    public void setUp() {
-        Assume.assumeTrue(
-                TestUtils.isBleSupported(
-                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
+    fun setUp() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        Assume.assumeTrue(TestUtils.isBleSupported(context))
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @SmallTest
     @Test
-    public void advertiseSuccess() {
-        mMockAdvertiser.startAdvertise(mAdvertiseCallback);
-        verify(mAdvertiseCallback).onStartSuccess(any());
-        verifyNoMoreInteractions(mAdvertiseCallback);
+    fun advertiseSuccess() {
+        mockAdvertiser.startAdvertise(advertiseCallback)
+        verify(advertiseCallback).onStartSuccess(anyOrNull())
+        verifyNoMoreInteractions(advertiseCallback)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @SmallTest
     @Test
-    public void advertiseFailure() {
-        mMockAdvertiser.startAdvertise(mAdvertiseCallback);
-        verify(mAdvertiseCallback).onStartSuccess(any());
-        verifyNoMoreInteractions(mAdvertiseCallback);
+    fun advertiseFailure() {
+        mockAdvertiser.startAdvertise(advertiseCallback)
+        verify(advertiseCallback).onStartSuccess(anyOrNull())
+        verifyNoMoreInteractions(advertiseCallback)
 
         // Second advertise with the same callback should fail.
-        mMockAdvertiser.startAdvertise(mAdvertiseCallback);
-        verify(mAdvertiseCallback).onStartFailure(anyInt());
-        verifyNoMoreInteractions(mAdvertiseCallback);
+        mockAdvertiser.startAdvertise(advertiseCallback)
+        verify(advertiseCallback).onStartFailure(any())
+        verifyNoMoreInteractions(advertiseCallback)
     }
 
     // A mock advertiser which emulate BluetoothLeAdvertiser behavior.
-    private static class MockAdvertiser {
-        private Set<AdvertiseCallback> mCallbacks = new HashSet<>();
+    private class MockAdvertiser {
+        private val callbacks = mutableSetOf<AdvertiseCallback>()
 
-        void startAdvertise(AdvertiseCallback callback) {
-            synchronized (mCallbacks) {
-                if (mCallbacks.contains(callback)) {
-                    callback.onStartFailure(AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED);
+        fun startAdvertise(callback: AdvertiseCallback) {
+            synchronized(callbacks) {
+                if (callbacks.contains(callback)) {
+                    callback.onStartFailure(AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED)
                 } else {
-                    callback.onStartSuccess(null);
-                    mCallbacks.add(callback);
+                    callback.onStartSuccess(null)
+                    callbacks.add(callback)
                 }
             }
         }
