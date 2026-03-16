@@ -21,6 +21,8 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -105,6 +107,18 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
                 showUAPInfoDialog();
             }
         }
+    }
+
+    public String getConnectedAudioPeripheralName() {
+        String deviceName = "NO_DEVICE";
+        if (mIsPeripheralAttached) {
+            if (mOutputDevInfo != null) {
+                deviceName = mOutputDevInfo.getProductName().toString();
+            } else if (mInputDevInfo != null) {
+                deviceName = mInputDevInfo.getProductName().toString();
+            }
+        }
+        return deviceName;
     }
 
     @Override
@@ -247,6 +261,27 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
         }
     }
 
+    private AlertDialog mAlertDialog;
+    void showAlertForUnvalidatedPeripheral() {
+        if (mAlertDialog != null && mAlertDialog.isShowing()) {
+            return;
+        }
+
+        AlertDialog.Builder builder =
+                new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
+        builder.setTitle(R.string.usb_midi_unvalidated_peripheral_title);
+        builder.setMessage(R.string.usb_midi_unvalidated_peripheral_message);
+        builder.setPositiveButton(android.R.string.ok, null);
+
+        AlertDialog dialog = builder.show();
+        mAlertDialog = dialog;
+
+        TextView messageView = (TextView) dialog.findViewById(android.R.id.message);
+        if (messageView != null) {
+            messageView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        }
+    }
+
     private class ConnectListener extends AudioDeviceCallback {
         /*package*/ ConnectListener() {}
 
@@ -262,6 +297,10 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
             showProfileStatus();
             showPeripheralStatus();
             updateConnectStatus();
+
+            if (mIsPeripheralAttached && mSelectedProfile == null) {
+                showAlertForUnvalidatedPeripheral();
+            }
         }
 
         @Override

@@ -84,7 +84,7 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
     private static final String KEY_USB_AUDIO_OUTPUT_PERIPHERAL_PROFILE = "usb_audio_playback_peripheral_profile";
 
     public UsbMidiAudioActivity() {
-        super(true); // Mandated peripheral is required
+        super(false); // Mandated peripheral is not required
     }
 
     @Override
@@ -242,12 +242,7 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
                 ResultUnit.NONE);
         reportLog.addValue(
                 KEY_USB_AUDIO_OUTPUT_PERIPHERAL,
-                mSelectedProfile == null ? "UNSUPPORTED" : mSelectedProfile.getName(),
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-        reportLog.addValue(
-                KEY_USB_AUDIO_OUTPUT_PERIPHERAL_PROFILE,
-                mSelectedProfile == null ? "UNSUPPORTED" : mSelectedProfile.getDescription(),
+                getConnectedAudioPeripheralName(),
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
         reportLog.submit();
@@ -350,25 +345,7 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
      * Overriding USBAudioPeripheralPlayerActivity to set whether the audio play button is enabled
      */
     public void updateConnectStatus() {
-        if (mIsPeripheralAttached) {
-            if (checkIfAttachedPeripheralIsSupported()) {
-                mPlayBtn.setEnabled(true);
-            }else{
-                mPlayBtn.setEnabled(false);
-                showUnsupportedPeripheralDialog();
-            }
-        } else {
-            mPlayBtn.setEnabled(false);
-        }
-    }
-
-    void showUnsupportedPeripheralDialog() {
-        AlertDialog.Builder builder =
-                        new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
-        builder.setTitle(R.string.usb_midi_unsupported_peripheral_title);
-        builder.setMessage(R.string.usb_midi_unsupported_peripheral_message);
-        builder.setPositiveButton(android.R.string.ok, null);
-        builder.show();
+        mPlayBtn.setEnabled(mIsPeripheralAttached);
     }
 
     class LocalClickListener implements View.OnClickListener {
