@@ -17,6 +17,7 @@
 package android.keystore.cts;
 
 import static android.keystore.cts.util.TestUtils.KmType;
+import static android.keystore.cts.util.TestUtils.assumeKmAlgorithmSupport;
 import static android.keystore.cts.util.TestUtils.assumeKmSupport;
 import static android.keystore.cts.util.TestUtils.isStrongboxKeyMint;
 import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
@@ -430,7 +431,7 @@ public class KeyPairGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{2}")
     public void testGenerateHonorsRequestedAuthorizations(
             KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
-        assumeKmSupport(kmType);
+        assumeKmAlgorithmSupport(kmType, algorithm);
 
         Date keyValidityStart = new Date(System.currentTimeMillis() - TestUtils.DAY_IN_MILLIS);
         Date keyValidityForOriginationEnd =
@@ -511,7 +512,7 @@ public class KeyPairGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{2}")
     public void testLimitedUseKey(
             KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
-        assumeKmSupport(kmType);
+        assumeKmAlgorithmSupport(kmType, algorithm);
         int maxUsageCount = 1;
         int expectedSizeBits = DEFAULT_KEY_SIZES.get(algorithm);
         KeyPairGenerator generator = getGenerator(algorithm);
@@ -533,7 +534,7 @@ public class KeyPairGeneratorTest {
     public void testGenerateAuthBoundKey_Lskf(
             KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
         assumeLockScreenSupport();
-        assumeKmSupport(kmType);
+        assumeKmAlgorithmSupport(kmType, algorithm);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyPairGenerator generator = getGenerator(algorithm);
             generator.initialize(getWorkingSpec(
@@ -553,7 +554,7 @@ public class KeyPairGeneratorTest {
     public void testGenerateAuthBoundKey_LskfOrStrongBiometric(
             KmType kmType, String algorithm, String unusedAlgorithmNameForTest) throws Exception {
         assumeLockScreenSupport();
-        assumeKmSupport(kmType);
+        assumeKmAlgorithmSupport(kmType, algorithm);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyPairGenerator generator = getGenerator(algorithm);
             generator.initialize(getWorkingSpec(
@@ -777,6 +778,7 @@ public class KeyPairGeneratorTest {
     @SuppressWarnings("deprecation")
     @Test
     public void testGenerate_MlDsa_LegacySpec() throws Exception {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
         KeyPairGenerator generator = getMlDsaGenerator();
         generator.initialize(
                 new KeyPairGeneratorSpec.Builder(getContext())
@@ -1091,6 +1093,7 @@ public class KeyPairGeneratorTest {
     // KeyMint supports ML-DSA.
     @Test
     public void testGenerate_MlDsa_Different_Keys() throws Exception {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
         KeyPairGenerator generator = getMlDsaGenerator();
         generator.initialize(new KeyGenParameterSpec.Builder(
                 TEST_ALIAS_1,
@@ -1346,6 +1349,7 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testGenerate_MlDsa_ModernSpec_Defaults() throws Exception {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
         KeyPairGenerator generator = getMlDsaGenerator();
         generator.initialize(
                 new KeyGenParameterSpec.Builder(
@@ -1753,6 +1757,7 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testGenerate_MlDsa_ModernSpec_AsCustomAsPossible() throws Exception {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
         KeyPairGenerator generator = getMlDsaGenerator();
         Date keyValidityStart = new Date(System.currentTimeMillis());
         Date keyValidityEndDateForOrigination = new Date(System.currentTimeMillis() + 1000000);

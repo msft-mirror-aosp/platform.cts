@@ -157,6 +157,14 @@ public class TestUtils {
         }
     }
 
+    public static void assumeKmAlgorithmSupport(KmType kmType, String algorithm) {
+        assumeKmSupport(kmType);
+        // ML-DSA is only supported by TEE KeyMint >= v5.
+        if (algorithm.startsWith("ML-DSA")) {
+            assumeMlDsaSupported(isStrongboxKeyMint(kmType));
+        }
+    }
+
     static public void assumeLockScreenSupport() {
         assumeTrue(
                 "Only test when DUT supports lock screen",
