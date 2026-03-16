@@ -694,7 +694,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     if (errState.first) {
                         throw errState.second;
                     }
-                    codec.decode(1, frameCount);
+                    codec.decode(1, frameCount - 1);
                     codecs.add(codec);
                     surfaces.add(obj);
                     numInstances++;
