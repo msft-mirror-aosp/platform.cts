@@ -422,8 +422,6 @@
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[foldable:2:OPENED] android.graphics.cts.FrameRateOverrideTest#testAppBackpressure"/>
 
     <!-- b/441197389 -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.alert.AnomalyDetectionTests#testPerfetto" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.alert.AnomalyDetectionTests#testPerfetto" />
     <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testSystemServerLossErrorCode" />
     <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testSystemServerLossErrorCode" />
     <option name="compatibility:exclude-filter" value="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testAtomIdLossDistributionCollection" />
