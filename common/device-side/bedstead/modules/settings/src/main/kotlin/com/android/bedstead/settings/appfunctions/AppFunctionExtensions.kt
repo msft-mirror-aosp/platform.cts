@@ -17,6 +17,24 @@ package com.android.bedstead.settings.appfunctions
 
 import android.app.appsearch.GenericDocument
 
+/**
+ * Extracts [DeviceStateItem] from device state item result.
+ */
+fun GenericDocument.asDeviceStateItemResult(): DeviceStateItem {
+    return getPropertyDocumentArray(
+        "androidAppfunctionsReturnValue.deviceStateItem"
+    )!!.first().asDeviceStateItem()
+}
+
+/**
+ * Extracts [SetDeviceStateItemResponse] from set device state item result.
+ */
+fun GenericDocument.asSetDeviceStateItemResult(): SetDeviceStateItemResponse {
+    return getPropertyDocumentArray(
+        "androidAppfunctionsReturnValue"
+    )!!.first().asSetDeviceStateItemResponse()
+}
+
 internal fun GenericDocument.asDeviceStateMetadataResult(): List<PerScreenMetadata> =
     getPropertyDocumentArray(
         "androidAppfunctionsReturnValue.perScreenMetadata"
@@ -72,6 +90,12 @@ private fun GenericDocument.asDeviceStateItemMetadata() = DeviceStateItemMetadat
     possibleValues = getPropertyString("possibleValues"),
     purpose = getPropertyString("purpose"),
     writable = getPropertyBoolean("writable")
+)
+
+private fun GenericDocument.asSetDeviceStateItemResponse() = SetDeviceStateItemResponse(
+    currentValue = getPropertyString("currentValue")!!,
+    failureReason = getPropertyString("failureReason"),
+    isSuccessful = getPropertyBoolean("isSuccessful")
 )
 
 private const val KEY_PREFIX = "[key="

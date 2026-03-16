@@ -52,6 +52,62 @@ class AppFunctionsBlockingClient(private val packageName: String = SETTINGS_PACK
         return executeAppFunction(request)?.resultDocument
     }
 
+    /**
+     * Executes getDeviceStateItem app function and returns the response.
+     */
+    fun getDeviceStateItem(key: String): ExecuteAppFunctionResponse? {
+        val innerParams = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "getDeviceStateItemParams"
+        )
+            .setPropertyString("key", key)
+            .build()
+
+        val params = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "schemaType"
+        )
+            .setPropertyDocument("getDeviceStateItemParams", innerParams)
+            .build()
+
+        val request = ExecuteAppFunctionRequest.Builder(packageName, "getDeviceStateItem")
+            .setParameters(params)
+            .build()
+
+        return executeAppFunction(request)
+    }
+
+    /**
+     * Executes setDeviceStateItem app function and returns the response.
+     */
+    fun setDeviceStateItem(key: String, value: String): ExecuteAppFunctionResponse? {
+        val innerParams = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "setDeviceStateItemParams"
+        )
+            .setPropertyString("key", key)
+            .setPropertyString("value", value)
+            .build()
+
+        val params = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "schemaType"
+        )
+            .setPropertyDocument("setDeviceStateItemParams", innerParams)
+            .build()
+
+        val request = ExecuteAppFunctionRequest.Builder(
+            packageName,
+            "setDeviceStateItem"
+        ).setParameters(params).build()
+
+        return executeAppFunction(request)
+    }
+
     private fun executeAppFunction(
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse? {
