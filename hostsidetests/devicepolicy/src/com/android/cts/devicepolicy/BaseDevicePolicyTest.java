@@ -831,10 +831,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         CLog.d(
                 "setDeviceOwner(componentName=%s, userId=%d, expectFailure=%b",
                 componentName, userId, expectFailure);
-        // TODO(b/35372278): temporary workaround until flag is ramped up
-        if (isAutomotive() && !isDeviceOwnerSupportedOnAnyFullUsers()) {
-            throw new AssumptionViolatedException("Cannot set device owner on automotive build");
-        }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");
@@ -1244,12 +1240,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     /** Abstraction for {@link UsersOracle#getProfileOwnerUserId()} */
     protected final int getProfileOwnerUserId() throws DeviceNotAvailableException {
         return getUsersOracle().getProfileOwnerUserId();
-    }
-
-    /** Abstraction for {@link UsersOracle#getInitialCurrentUserId()} */
-    protected final boolean isDeviceOwnerSupportedOnAnyFullUsers()
-            throws DeviceNotAvailableException {
-        return getUsersOracle().isDeviceOwnerSupportedOnAnyFullUsers();
     }
 
     /** Abstraction for {@link UsersOracle#getProfileParentUserId()} */
