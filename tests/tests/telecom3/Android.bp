@@ -17,9 +17,14 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-res_dirs = ["../telecom/res"]
-android_test {
-    name: "CtsTelecomTestCases3",
+filegroup {
+    name: "cts-telecom3-test-manifest",
+    srcs: ["AndroidManifest.xml"],
+    visibility: ["//packages/modules/Telephony:__subpackages__"],
+}
+
+android_library {
+    name: "CtsTelecomTestCases3Lib",
     defaults: ["cts_defaults"],
     static_libs: [
         "compatibility-device-util-axt",
@@ -28,15 +33,11 @@ android_test {
     ],
     libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
-    aaptflags: [
-        "--auto-add-overlay",
-        "--extra-packages android.telecom.cts",
-        "--rename-manifest-package android.telecom3.cts",
-    ],
+    // Fix: resources cannot be shared by path in Soong if it involves "../"
+    // Instead, rely on CtsTelecomTestCases3 applying resources through aaptflags or merging.
     sdk_version: "test_current",
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
+    min_sdk_version: "23",
+    visibility: [
+        "//packages/modules/Telephony:__subpackages__",
     ],
 }

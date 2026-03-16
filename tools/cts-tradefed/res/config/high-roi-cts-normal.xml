@@ -3688,9 +3688,6 @@
     <!-- CtsTelecomHostCases -->
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testCallStateChangedAtom_basicTest"/>
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testEmergencyNumberDialedAtom"/>
-    <!-- CtsTelecomTestCases3 -->
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases3 android.telecom.cts.SelfManagedAwareInCallServiceTest#testInCallServiceIncoming"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases3 android.telecom.cts.SelfManagedAwareInCallServiceTest#testSelfManagedSignalling"/>
     <!-- CtsTelephonyCujTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsTelephonyCujTestCases[instant] android.telephony.cts.cuj.DataTest#testBasicPhoneAttributes"/>
     <!-- CtsTelephonyHostCases -->
