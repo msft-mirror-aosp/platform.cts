@@ -25,7 +25,6 @@ import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.MotionEvent
 import android.view.PointerIcon
-import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.BlockingQueueEventVerifier
@@ -77,16 +76,8 @@ class PointerIconTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDeviceRule = VirtualDeviceRule.createDefault()!!
-
-    // Use VirtualDeviceManager to create the display for this test because VirtualDisplays
-    // created via VDM have mouse acceleration disabled automatically.
-    // TODO(b/366492484): Remove reliance on VDM when we achieve feature parity between VDM
-    //   and display + input APIs.
-    @get:Rule
     val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(
-        testName,
-        virtualDeviceRule = virtualDeviceRule
+        testName
     )
     @get:Rule
     val defaultPointerSpeedRule = DefaultPointerSpeedRule()
@@ -110,7 +101,6 @@ class PointerIconTest {
         }
 
         device.setUp(
-            virtualDeviceRule.defaultVirtualDevice,
             virtualDisplayRule.virtualDisplay.display,
         )
 
@@ -125,10 +115,6 @@ class PointerIconTest {
     @After
     fun tearDown() {
         device.tearDown()
-        // Have the virtual device rule re-acquire the permissions needed for its tear-down logic.
-        // VirtualDisplayActivityScenario.Rule drops the shell identity, which makes the virtual
-        // device rule lose its required permissions.
-        virtualDeviceRule.acquireNecessaryPermissions()
     }
 
     @Test
