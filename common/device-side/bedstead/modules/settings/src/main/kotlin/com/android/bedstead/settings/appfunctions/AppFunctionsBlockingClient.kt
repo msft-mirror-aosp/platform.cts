@@ -43,7 +43,10 @@ class AppFunctionsBlockingClient(private val packageName: String = SETTINGS_PACK
         return getResultDocument(functionIdentifier)!!.asDeviceStateResult()
     }
 
-    internal fun getDeviceStateMetadata(): List<PerScreenMetadata> {
+    /**
+     * Returns getDeviceStateMetadata as list of [PerScreenMetadata].
+     */
+    fun getDeviceStateMetadata(): List<PerScreenMetadata> {
         return getResultDocument("getDeviceStateMetadata")!!.asDeviceStateMetadataResult()
     }
 
