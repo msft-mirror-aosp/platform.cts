@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,71 +14,54 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import android.Manifest.permission.BLUETOOTH_PRIVILEGED
+import android.bluetooth.test_utils.BlockingBluetoothAdapter
+import android.bluetooth.test_utils.Permissions
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bluetooth.flags.Flags
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertThrows
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static com.google.common.truth.Truth.assertThat;
+@RunWith(AndroidJUnit4::class)
+class GattOffloadCapabilitiesTest {
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-import static org.junit.Assert.assertThrows;
-
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.GattOffloadCapabilities;
-import android.bluetooth.test_utils.BlockingBluetoothAdapter;
-import android.bluetooth.test_utils.Permissions;
-import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.bluetooth.flags.Flags;
-
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
-public class GattOffloadCapabilitiesTest {
-
-    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
-    private final BluetoothAdapter mAdapter =
-            mContext.getSystemService(BluetoothManager.class).getAdapter();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    private val context = InstrumentationRegistry.getInstrumentation().context
+    private val adapter = BlockingBluetoothAdapter.adapter
 
     @Before
-    public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+    fun setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(context))
+        assertThat(adapter.enable()).isTrue()
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_GATT_OFFLOAD_API)
     @Test
-    public void getSupportedCapabilities() {
-        assertThrows(SecurityException.class, () -> mAdapter.getSupportedGattOffloadCapabilities());
+    fun getSupportedCapabilities() {
+        assertThrows(SecurityException::class.java) { adapter.supportedGattOffloadCapabilities }
 
-        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
-            GattOffloadCapabilities capabilities = mAdapter.getSupportedGattOffloadCapabilities();
-            assertThat(capabilities).isNotNull();
-            if (capabilities.isClientOffloadSupported()) {
-                assertThat(capabilities.getSupportedClientProperties()).isNotEqualTo(0);
-
+        Permissions.withPermissions(BLUETOOTH_PRIVILEGED).use {
+            val capabilities = adapter.supportedGattOffloadCapabilities
+            assertThat(capabilities!!).isNotNull()
+            if (capabilities.isClientOffloadSupported) {
+                assertThat(capabilities.supportedClientProperties).isNotEqualTo(0)
             } else {
-                assertThat(capabilities.getSupportedClientProperties()).isEqualTo(0);
+                assertThat(capabilities.supportedClientProperties).isEqualTo(0)
             }
-            if (capabilities.isServerOffloadSupported()) {
-                assertThat(capabilities.getSupportedServerProperties()).isNotEqualTo(0);
-
+            if (capabilities.isServerOffloadSupported) {
+                assertThat(capabilities.supportedServerProperties).isNotEqualTo(0)
             } else {
-                assertThat(capabilities.getSupportedServerProperties()).isEqualTo(0);
+                assertThat(capabilities.supportedServerProperties).isEqualTo(0)
             }
         }
     }
