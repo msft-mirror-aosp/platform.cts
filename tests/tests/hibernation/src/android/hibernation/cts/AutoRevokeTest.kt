@@ -142,6 +142,8 @@ class AutoRevokeTest {
                 runShellCommandOrThrow("cmd statusbar collapse"),
                 equalTo(""))
         clearNotifications()
+        // Unplug battery to remove charging overlay
+        runShellCommandOrThrow("cmd battery unplug")
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
         if ("false".equals(runShellCommandOrThrow("cmd lock_settings get-disabled"))) {
@@ -167,6 +169,8 @@ class AutoRevokeTest {
 
     @After
     fun cleanUp() {
+        // Reset battery state so device charges normally
+        runShellCommandOrThrow("cmd battery reset")
         goBack()
     }
 
