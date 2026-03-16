@@ -91,45 +91,51 @@ public abstract class DefaultCameraAccessTestBase {
         final CameraManager cameraManager = activity.getSystemService(CameraManager.class);
         final int[] cameraError = {NO_ERROR};
         final List<CameraDevice> cameraDevices = new ArrayList<>();
+        final List<ImageReader> imageReaders = new ArrayList<>();
 
-        final CameraDevice.StateCallback cameraCallback = new CameraDevice.StateCallback() {
-            @Override
-            public void onOpened(@NonNull CameraDevice cameraDevice) {
-                cameraDevices.add(cameraDevice);
-                final ImageReader imageReader = ImageReader.newInstance(640, 480,
-                        ImageFormat.JPEG, 1);
-                try {
-                    cameraDevice.createCaptureSession(
-                            Collections.singletonList(imageReader.getSurface()),
-                            new CameraCaptureSession.StateCallback() {
-                                @Override
-                                public void onConfigured(@NonNull CameraCaptureSession session) {}
+        final CameraDevice.StateCallback cameraCallback =
+                new CameraDevice.StateCallback() {
+                    @Override
+                    public void onOpened(@NonNull CameraDevice cameraDevice) {
+                        cameraDevices.add(cameraDevice);
+                        final ImageReader imageReader =
+                                ImageReader.newInstance(640, 480, ImageFormat.JPEG, 1);
+                        imageReaders.add(imageReader);
+                        try {
+                            cameraDevice.createCaptureSession(
+                                    Collections.singletonList(imageReader.getSurface()),
+                                    new CameraCaptureSession.StateCallback() {
+                                        @Override
+                                        public void onConfigured(
+                                                @NonNull CameraCaptureSession session) {
+                                            cond.open();
+                                        }
 
-                                @Override
-                                public void onConfigureFailed(
-                                        @NonNull CameraCaptureSession session) {}
-                            }, null);
-                    cond.open();
-                } catch (CameraAccessException e) {
-                    cameraError[0] = e.getReason();
-                    cond.open();
-                } finally {
-                    imageReader.close();
-                }
-            }
+                                        @Override
+                                        public void onConfigureFailed(
+                                                @NonNull CameraCaptureSession session) {
+                                            cond.open();
+                                        }
+                                    },
+                                    null);
+                        } catch (CameraAccessException e) {
+                            cameraError[0] = e.getReason();
+                            cond.open();
+                        }
+                    }
 
-            @Override
-            public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-                cameraError[0] = CameraDevice.StateCallback.ERROR_CAMERA_DISABLED;
-                cond.open();
-            }
+                    @Override
+                    public void onDisconnected(@NonNull CameraDevice cameraDevice) {
+                        cameraError[0] = CameraDevice.StateCallback.ERROR_CAMERA_DISABLED;
+                        cond.open();
+                    }
 
-            @Override
-            public void onError(@NonNull CameraDevice cameraDevice, int error) {
-                cameraError[0] = error;
-                cond.open();
-            }
-        };
+                    @Override
+                    public void onError(@NonNull CameraDevice cameraDevice, int error) {
+                        cameraError[0] = error;
+                        cond.open();
+                    }
+                };
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
             try {
@@ -141,6 +147,9 @@ public abstract class DefaultCameraAccessTestBase {
         cond.block(TIMEOUT_MILLIS);
         for (CameraDevice device : cameraDevices) {
             device.close();
+        }
+        for (ImageReader imageReader : imageReaders) {
+            imageReader.close();
         }
         return cameraError[0];
     }
