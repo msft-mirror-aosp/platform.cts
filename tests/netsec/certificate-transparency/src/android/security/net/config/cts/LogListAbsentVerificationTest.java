@@ -24,6 +24,7 @@ import static android.security.net.config.cts.CertificateTransparencyTestUtils.d
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNoException;
 
 import android.os.Build;
 
@@ -36,6 +37,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.net.URL;
+import java.net.UnknownHostException;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -58,8 +60,12 @@ public class LogListAbsentVerificationTest extends BaseTestCase {
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
         HttpsURLConnection urlConnection2 = (HttpsURLConnection) url2.openConnection();
-        urlConnection.connect();
-        urlConnection2.connect();
+        try {
+            urlConnection.connect();
+            urlConnection2.connect();
+        } catch (UnknownHostException e) {
+            assumeNoException(e.getMessage(), e);
+        }
 
         assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
         assertEquals(urlConnection2.getResponseCode(), HTTP_OK_RESPONSE_CODE);
