@@ -67,6 +67,7 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private AppCallback mAudioCallbackHandler;
 
     private boolean mPlaying;
+    private int mActiveChannelIndex = -1;
     private int mInputChannels = 2;
     private int mOutputChannels = 2;
     private int mOutputChannelMask = 0;
@@ -149,6 +150,7 @@ class AudioLoopbackCalibrationDialog extends Dialog
         mStatusText = (TextView) findViewById(R.id.audio_calibration_status);
 
         mChannelSpinner = (Spinner) findViewById(R.id.audio_calibration_channel_spinner);
+        mChannelSpinner.setOnItemSelectedListener(this);
         mStartButton = (Button) findViewById(R.id.audio_calibration_start);
         mStartButton.setOnClickListener(this);
 
@@ -256,12 +258,24 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private void updateButtons() {
         mStartButton.setEnabled(!mPlaying);
         findViewById(R.id.audio_calibration_stop).setEnabled(mPlaying);
-        mChannelSpinner.setEnabled(!mPlaying);
-        mChannelSpinner.setAlpha(!mPlaying ? 1.0f : 0.5f);
         mInputsSpinner.setEnabled(!mPlaying);
         mInputsSpinner.setAlpha(!mPlaying ? 1.0f : 0.5f);
         mOutputsSpinner.setEnabled(!mPlaying);
         mOutputsSpinner.setAlpha(!mPlaying ? 1.0f : 0.5f);
+    }
+
+    private void onAudioLoopbackReady() {
+        mPlaying = true;
+        mStatusText.setText(R.string.audio_loopback_playing);
+        mChannelSpinner.setEnabled(true);
+        updateButtons();
+    }
+
+    private void onAudioLoopbackError(String message) {
+        mPlaying = false;
+        mStatusText.setText(message);
+        mChannelSpinner.setEnabled(true);
+        updateButtons();
     }
 
     void startAudio(int channelIndex) {
@@ -269,7 +283,9 @@ class AudioLoopbackCalibrationDialog extends Dialog
             return;
         }
 
+        mActiveChannelIndex = channelIndex;
         mStatusText.setText(R.string.audio_loopback_starting);
+        mChannelSpinner.setEnabled(false);
 
         // Ensure any previous audio is completely torn down before starting new initialization
         // because we might change devices/channels.
@@ -311,25 +327,18 @@ class AudioLoopbackCalibrationDialog extends Dialog
 
         if (buildStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
             Log.e(TAG, "Bad Duplex Build. buildStatus:0x" + Integer.toHexString(buildStatus));
-            mPlaying = false;
+            onAudioLoopbackError("Failed to build audio streams.");
         } else {
             int startStatus = mDuplexAudioManager.start();
 
             if (startStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
                 Log.e(TAG, "Bad Duplex Start. startStatus:0x" + Integer.toHexString(startStatus));
                 mDuplexAudioManager.unwind();
-                mPlaying = false;
+                onAudioLoopbackError("Failed to start audio streams.");
             } else {
-                mPlaying = true;
+                onAudioLoopbackReady();
             }
         }
-
-        if (mPlaying) {
-            mStatusText.setText(R.string.audio_loopback_playing);
-        } else {
-            mStatusText.setText("Failed to start audio.");
-        }
-        updateButtons();
     }
 
     void stopAudio() {
@@ -342,6 +351,7 @@ class AudioLoopbackCalibrationDialog extends Dialog
         // Use stopWithoutUnwind() instead of unwind() for faster silence.
         mDuplexAudioManager.stopWithoutUnwind();
         mPlaying = false;
+        mActiveChannelIndex = -1;
 
         mStatusText.setText("");
         updateButtons();
@@ -425,6 +435,16 @@ class AudioLoopbackCalibrationDialog extends Dialog
     //
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        if (parent.getId() == R.id.audio_calibration_channel_spinner) {
+            int newChannelIndex = mChannelIndices.get(position);
+            if (mPlaying && newChannelIndex != mActiveChannelIndex) {
+                mChannelSpinner.setEnabled(false);
+                stopAudio();
+                startAudio(newChannelIndex);
+            }
+            return;
+        }
+
         if (mPlaying) {
             stopAudio();
         }
