@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,72 +14,70 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static android.Manifest.permission.BLUETOOTH_CONNECT;
-import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
-import static android.bluetooth.BluetoothStatusCodes.ERROR_REMOTE_OPERATION_NOT_SUPPORTED;
-import static android.bluetooth.BluetoothStatusCodes.ERROR_TIMEOUT;
-import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
+import android.Manifest.permission.BLUETOOTH_CONNECT
+import android.Manifest.permission.BLUETOOTH_PRIVILEGED
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothStatusCodes.ERROR_REMOTE_OPERATION_NOT_SUPPORTED
+import android.bluetooth.BluetoothStatusCodes.ERROR_TIMEOUT
+import android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED
+import android.bluetooth.le.DistanceMeasurementResult
+import android.bluetooth.le.DistanceMeasurementSession
+import android.bluetooth.test_utils.BlockingBluetoothAdapter
+import android.os.Build
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.ApiLevelUtil
+import com.android.compatibility.common.util.CddTest
+import com.google.common.truth.Truth.assertThat
+import org.junit.After
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.junit.MockitoJUnit
+import org.mockito.kotlin.mock
 
-import static com.google.common.truth.Truth.assertThat;
+@RunWith(AndroidJUnit4::class)
+class DistanceMeasurementSessionTest {
+    @get:Rule val mockitoRule = MockitoJUnit.rule()
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.le.DistanceMeasurementResult;
-import android.bluetooth.le.DistanceMeasurementSession;
-import android.bluetooth.test_utils.BlockingBluetoothAdapter;
-import android.content.Context;
-import android.os.Build;
+    private val context = InstrumentationRegistry.getInstrumentation().context
+    private val adapter = BlockingBluetoothAdapter.adapter
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
+    private val testCallback =
+        object : DistanceMeasurementSession.Callback {
+            override fun onStarted(session: DistanceMeasurementSession) {}
 
-import com.android.compatibility.common.util.ApiLevelUtil;
-import com.android.compatibility.common.util.CddTest;
+            override fun onStartFail(reason: Int) {}
 
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+            override fun onStopped(session: DistanceMeasurementSession, reason: Int) {}
 
-@RunWith(AndroidJUnit4.class)
-public class DistanceMeasurementSessionTest {
-    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
-    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
-    private DistanceMeasurementSession.Callback mTestcallback =
-            new DistanceMeasurementSession.Callback() {
-                public void onStarted(DistanceMeasurementSession session) {}
-
-                public void onStartFail(int reason) {}
-
-                public void onStopped(DistanceMeasurementSession session, int reason) {}
-
-                public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
-            };
+            override fun onResult(device: BluetoothDevice, result: DistanceMeasurementResult) {}
+        }
 
     @Before
-    public void setUp() {
-        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
+    fun setUp() {
+        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU))
+        Assume.assumeTrue(TestUtils.isBleSupported(context))
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue()
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)
+        Assume.assumeTrue(adapter.isDistanceMeasurementSupported == FEATURE_SUPPORTED)
     }
 
     @After
-    public void tearDown() {
-        TestUtils.dropPermissionAsShellUid();
+    fun tearDown() {
+        TestUtils.dropPermissionAsShellUid()
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @Test
-    public void callbackMethods() {
-        mTestcallback.onStarted(null);
-        mTestcallback.onStartFail(ERROR_REMOTE_OPERATION_NOT_SUPPORTED);
-        mTestcallback.onStopped(null, ERROR_TIMEOUT);
-        mTestcallback.onResult(null, null);
+    fun callbackMethods() {
+        testCallback.onStarted(mock<DistanceMeasurementSession>())
+        testCallback.onStartFail(ERROR_REMOTE_OPERATION_NOT_SUPPORTED)
+        testCallback.onStopped(mock<DistanceMeasurementSession>(), ERROR_TIMEOUT)
+        testCallback.onResult(mock<BluetoothDevice>(), mock<DistanceMeasurementResult>())
     }
 }
