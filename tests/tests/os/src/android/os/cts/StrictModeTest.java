@@ -760,9 +760,7 @@ public class StrictModeTest extends StrictModeTestBase {
         assertViolation("Tried to access visual service " + WM_CLASS_NAME,
                 () -> applicationContext.getSystemService(WindowManager.class));
 
-        assertViolation(
-                "The API:ViewConfiguration needs a proper configuration.",
-                () -> ViewConfiguration.get(applicationContext));
+        assertNoViolation(() -> ViewConfiguration.get(applicationContext));
 
         mInstrumentation.runOnMainSync(() -> {
             try {
@@ -796,9 +794,7 @@ public class StrictModeTest extends StrictModeTestBase {
         assertViolation("Tried to access visual service " + WM_CLASS_NAME,
                 () -> displayContext.getSystemService(WindowManager.class));
 
-        assertViolation(
-                "The API:ViewConfiguration needs a proper configuration.",
-                () -> ViewConfiguration.get(displayContext));
+        assertNoViolation(() -> ViewConfiguration.get(displayContext));
 
         mInstrumentation.runOnMainSync(() -> {
             try {
@@ -971,9 +967,7 @@ public class StrictModeTest extends StrictModeTestBase {
         assertViolation("Tried to access visual service " + WM_CLASS_NAME,
                 () -> uiDerivedDisplayContext.getSystemService(WindowManager.class));
 
-        assertViolation(
-                "The API:ViewConfiguration needs a proper configuration.",
-                () -> ViewConfiguration.get(uiDerivedDisplayContext));
+        assertNoViolation(() -> ViewConfiguration.get(uiDerivedDisplayContext));
 
         mInstrumentation.runOnMainSync(() -> {
             try {
@@ -1062,9 +1056,7 @@ public class StrictModeTest extends StrictModeTestBase {
         assertViolation("Tried to access visual service " + WM_CLASS_NAME,
                 () -> configDerivedDisplayContext.getSystemService(WindowManager.class));
 
-        assertViolation(
-                "The API:ViewConfiguration needs a proper configuration.",
-                () -> ViewConfiguration.get(configDerivedDisplayContext));
+        assertNoViolation(() -> ViewConfiguration.get(configDerivedDisplayContext));
 
         mInstrumentation.runOnMainSync(() -> {
             try {
@@ -1108,9 +1100,7 @@ public class StrictModeTest extends StrictModeTestBase {
             assertViolation("Tried to access visual service " + WM_CLASS_NAME,
                     () -> service.getSystemService(WindowManager.class));
 
-            assertViolation(
-                    "The API:ViewConfiguration needs a proper configuration.",
-                    () -> ViewConfiguration.get(service));
+            assertNoViolation(() -> ViewConfiguration.get(service));
 
             mInstrumentation.runOnMainSync(() -> {
                 try {
