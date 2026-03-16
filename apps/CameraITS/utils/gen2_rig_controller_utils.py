@@ -13,6 +13,7 @@
 # limitations under the License.
 """Utility functions for gen2 rig hardware."""
 
+import enum
 import logging
 import os
 import struct
@@ -86,10 +87,20 @@ _ORTHOGONAL_CAPTURE_FORMAT_STR = 'yuv'
 _ORTHOGONAL_POSITION_MAX_TRIES = 5
 _ROTATION_WAIT_TIME = 3  # seconds
 
-_ARDUINO_BRIGHTNESS_MAX = 1
-_ARDUINO_BRIGHTNESS_MIN = 0
-_ARDUINO_LIGHT_START_BYTE = 100
-_ARDUINO_CMD_LENGTH = 3
+class LightingStartByte(enum.IntEnum):
+  """Start byte for gen2 rig lighting."""
+  LUX_1000 = 100
+  LUX_200 = 101
+  LUX_3 = 99
+
+
+class BrightnessLevel(enum.IntEnum):
+  """Brightness level of the gen2 rig lights."""
+  OFF = 0
+  LUX_1000 = 1
+  LUX_200 = 2
+  LUX_3 = 3
+
 _WAIT_FOR_ROTATOR_MOVEMENT = 2
 _WAIT_FOR_CMD_COMPLETION = 1
 _WAIT_FOR_CONFIG_COMPLETION = 0.2
@@ -531,18 +542,36 @@ def set_light_brightness(serial_port, channel, brightness_level, delay=0):
   Args:
     serial_port: object; serial port
     channel: str for lighting channel
-    brightness_level: int value of brightness.
+    brightness_level: BrightnessLevel enum value.
     delay: int; time in seconds
   """
   def to_char(digit):
     return digit + ord('0')
 
-  cmd = [struct.pack('B', i) for i in [
-      _ARDUINO_LIGHT_START_BYTE, to_char(channel), to_char(brightness_level)]]
-  logging.debug('Lighting cmd: %s', cmd)
-  for item in cmd:
-    serial_port.write(item)
-  time.sleep(delay)
+  brightness_mapping = {
+      BrightnessLevel.OFF: (
+          [LightingStartByte.LUX_3, LightingStartByte.LUX_1000,
+           LightingStartByte.LUX_200], BrightnessLevel.OFF),
+      BrightnessLevel.LUX_1000: (
+          [LightingStartByte.LUX_1000], BrightnessLevel.LUX_1000),
+      BrightnessLevel.LUX_200: (
+          [LightingStartByte.LUX_200], BrightnessLevel.LUX_1000),
+      BrightnessLevel.LUX_3: (
+          [LightingStartByte.LUX_3], BrightnessLevel.LUX_1000),
+  }
+
+  if brightness_level not in brightness_mapping:
+    raise ValueError(f'Invalid brightness level: {brightness_level}')
+
+  start_bytes, cmd_brightness_level = brightness_mapping[brightness_level]
+
+  for entry in start_bytes:
+    cmd = [struct.pack('B', i) for i in [
+        entry, to_char(channel), to_char(cmd_brightness_level)]]
+    logging.debug('Lighting cmd: %s', cmd)
+    for item in cmd:
+      serial_port.write(item)
+    time.sleep(delay)
 
 
 def set_lighting_state(serial_port, channel, state):
@@ -554,13 +583,13 @@ def set_lighting_state(serial_port, channel, state):
     state: str 'ON/OFF'
   """
   logging.debug('Setting the lights state to: %s', state)
-  if state == 'ON':
-    level = 1
-  elif state == 'OFF':
-    level = 0
-  else:
+  state_mapping = {
+      'ON': BrightnessLevel.LUX_1000,
+      'OFF': BrightnessLevel.OFF,
+  }
+  if state not in state_mapping:
     raise ValueError(f'Lighting state not defined correctly: {state}')
-  set_light_brightness(serial_port, channel, level,
+  set_light_brightness(serial_port, channel, state_mapping[state],
                        delay=_WAIT_FOR_CMD_COMPLETION)
 
 
