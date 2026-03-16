@@ -64,16 +64,6 @@
                 <action android:name="android.media.MediaRoute2ProviderService"/>
             </intent-filter>
         </service>
-        <service android:name=".SystemMediaRoutingProviderService"
-                android:exported="false"
-                android:enabled="false">
-            <!-- We only enable this service once we've adopted shell permission identity for
-            MODIFY_AUDIO_ROUTING during runtime, which is necessary for system media routing. -->
-            <intent-filter>
-                <action android:name="android.media.MediaRoute2ProviderService"/>
-                <category android:name="android.media.MediaRoute2ProviderService.SYSTEM_MEDIA"/>
-            </intent-filter>
-        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
