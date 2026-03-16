@@ -40,7 +40,6 @@ import androidx.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 
-
 public class UntrustedTouchTestService extends Service {
     public static final int BACKGROUND_COLOR = 0xFF00FF00;
 
@@ -56,6 +55,7 @@ public class UntrustedTouchTestService extends Service {
     private volatile Context mSawContext;
     private volatile WindowManager mWindowManager;
     private volatile WindowManager mSawWindowManager;
+    private Context mDisplayContext;
 
     @Override
     public void onCreate() {
@@ -74,10 +74,11 @@ public class UntrustedTouchTestService extends Service {
         // why we're only instantiating the mWindowManager field in this method.
         final var displayManager = getSystemService(DisplayManager.class);
         final var display = displayManager.getDisplay(displayId);
-        final var displayContext = createDisplayContext(display);
-        mWindowManager = displayContext.getSystemService(WindowManager.class);
-        mSawContext = displayContext.createWindowContext(LayoutParams.TYPE_APPLICATION_OVERLAY,
-                null /* options */);
+        mDisplayContext = createDisplayContext(display);
+        mWindowManager = mDisplayContext.getSystemService(WindowManager.class);
+        mSawContext =
+                mDisplayContext.createWindowContext(
+                        LayoutParams.TYPE_APPLICATION_OVERLAY, null /* options */);
         mSawWindowManager = mSawContext.getSystemService(WindowManager.class);
         return mBinder.asBinder();
     }
@@ -113,7 +114,7 @@ public class UntrustedTouchTestService extends Service {
 
         @Override
         public void showActivityChildWindow(String name, IBinder token) throws RemoteException {
-            View view = getView(mService);
+            View view = getView(mDisplayContext);
             LayoutParams params = newOverlayLayoutParams(name, LayoutParams.TYPE_APPLICATION);
             params.token = token;
             mMainHandler.post(() -> mWindowManager.addView(view, params));
