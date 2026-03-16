@@ -295,8 +295,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.IndeterminateTest";
 
         ProgressStyleIndeterminateTest() {
-            super(R.string.progress_style_indeterminate,
-                    R.drawable.progress_style_indeterminate);
+            super(
+                    R.string.notification_progress_style_indeterminate,
+                    R.drawable.notification_progress_style_indeterminate);
         }
 
         @Override
@@ -325,8 +326,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.ProgressTest";
 
         ProgressStyleProgressTest() {
-            super(R.string.progress_style_progress,
-                    R.drawable.progress_style_progress);
+            super(
+                    R.string.notification_progress_style_progress,
+                    R.drawable.notification_progress_style_progress);
         }
 
         @Override
@@ -356,8 +358,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.MultipleSegmentsTest";
 
         ProgressStyleMultipleSegmentsTest() {
-            super(R.string.progress_style_multiple_segments,
-                    R.drawable.progress_style_multiple_segments);
+            super(
+                    R.string.notification_progress_style_multiple_segments,
+                    R.drawable.notification_progress_style_multiple_segments);
         }
 
 
@@ -393,8 +396,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.MultiplePointsTest";
 
         ProgressStyleMultiplePointsTest() {
-            super(R.string.progress_style_multiple_points,
-                    R.drawable.progress_style_multiple_points);
+            super(
+                    R.string.notification_progress_style_multiple_points,
+                    R.drawable.notification_progress_style_multiple_points);
         }
 
         @Override
@@ -432,8 +436,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.StartAndEndIconsTest";
 
         ProgressStyleStartAndEndIconsTest() {
-            super(R.string.progress_style_start_and_end_icons,
-                    R.drawable.progress_style_start_and_end_icons);
+            super(
+                    R.string.notification_progress_style_start_and_end_icons,
+                    R.drawable.notification_progress_style_start_and_end_icons);
         }
 
         @Override
@@ -476,8 +481,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.ProgressTrackerIconTest";
 
         ProgressStyleProgressTrackerIconTest() {
-            super(R.string.progress_style_progress_tracker_icon,
-                    R.drawable.progress_style_progress_tracker_icon);
+            super(
+                    R.string.notification_progress_style_progress_tracker_icon,
+                    R.drawable.notification_progress_style_progress_tracker_icon);
         }
 
         @Override
@@ -514,8 +520,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.LargeIconTest";
 
         ProgressStyleLargeIconTest() {
-            super(R.string.progress_style_large_icon,
-                    R.drawable.progress_style_large_icon);
+            super(
+                    R.string.notification_progress_style_large_icon,
+                    R.drawable.notification_progress_style_large_icon);
         }
 
         @Override
@@ -549,8 +556,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.NotStyledByProgressTest";
 
         ProgressStyleNotStyledByProgressTest() {
-            super(R.string.progress_style_not_styled_by_progress,
-                    R.drawable.progress_style_not_styled_by_progress);
+            super(
+                    R.string.notification_progress_style_not_styled_by_progress,
+                    R.drawable.notification_progress_style_not_styled_by_progress);
         }
 
         @Override
@@ -600,8 +608,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NPSVA.RTLTest";
 
         ProgressStyleRTLTest() {
-            super(R.string.progress_style_rtl_enabled,
-                    R.drawable.progress_style_rtl_enabled);
+            super(
+                    R.string.notification_progress_style_rtl_enabled,
+                    R.drawable.notification_progress_style_rtl_enabled);
         }
 
         @Override
@@ -658,8 +667,8 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
 
         ProgressStyleManySegmentsSameColorTest() {
             super(
-                    R.string.progress_style_many_segments_with_same_color,
-                    R.drawable.progress_style_many_segments_with_same_color);
+                    R.string.notification_progress_style_many_segments_with_same_color,
+                    R.drawable.notification_progress_style_many_segments_with_same_color);
         }
 
         @Override
@@ -690,7 +699,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NSVA.ProgressStyleSemanticColorTest";
 
         ProgressStyleSemanticColorTest() {
-            super(R.string.progress_style_semantic_color, R.drawable.progress_style_semantic_color);
+            super(
+                    R.string.notification_progress_style_semantic_color,
+                    R.drawable.notification_progress_style_semantic_color);
         }
 
         @Override
@@ -729,7 +740,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NSVA.MetricStyleChronometerTest";
 
         private MetricStyleChronometerTest() {
-            super(R.string.metric_style_one_chronometer, R.drawable.metric_style_one_chronometer);
+            super(
+                    R.string.notification_metric_style_one_chronometer,
+                    R.drawable.notification_metric_style_one_chronometer);
         }
 
         @Override
@@ -760,7 +773,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NSVA.MetricStyleTwoMetricsTest";
 
         private MetricStyleTwoMetricsTest() {
-            super(R.string.metric_style_two_metrics, R.drawable.metric_style_two_metrics);
+            super(
+                    R.string.notification_metric_style_two_metrics,
+                    R.drawable.notification_metric_style_two_metrics);
         }
 
         @Override
@@ -792,7 +807,9 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NSVA.MetricStyleManyMetricsTest";
 
         private MetricStyleManyMetricsTest() {
-            super(R.string.metric_style_three_metrics, R.drawable.metric_style_three_metrics);
+            super(
+                    R.string.notification_metric_style_three_metrics,
+                    R.drawable.notification_metric_style_three_metrics);
         }
 
         @Override
