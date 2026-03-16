@@ -41,6 +41,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -100,6 +101,7 @@ public class DecoderTestIamf {
     public void setUp() throws Exception {
         final Instrumentation inst = InstrumentationRegistry.getInstrumentation();
         assertNotNull(inst);
+        Assume.assumeTrue("No IAMF decoder found on device", MediaUtils.hasDecoder(MIMETYPE_IAMF));
     }
 
     private int getApiLevel() {
@@ -117,6 +119,7 @@ public class DecoderTestIamf {
     @Test
     @ApiTest(apis = {"android.media.MediaFormat#KEY_CHANNEL_MASK"})
     @RequiresFlagsEnabled(Flags.FLAG_IAMF_SOFTWARE_DECODER)
+    @CddTest(requirements = {"5.1.2/C-8-2", "5.1.2/C-8-3"})
     public void testIamfChannelMask() throws Exception {
         int apiLevel = getApiLevel();
         Assume.assumeTrue("Test only runs on Android Baklava or later",
