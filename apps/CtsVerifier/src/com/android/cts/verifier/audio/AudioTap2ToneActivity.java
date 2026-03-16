@@ -302,6 +302,7 @@ public class AudioTap2ToneActivity
             mDuplexAudioManager = new DuplexAudioManager(sourceProvider, sinkProvider);
             mDuplexAudioManager.setNumRecorderChannels(NUM_RECORD_CHANNELS);
             mDuplexAudioManager.setInputPreset(Recorder.INPUT_PRESET_UNPROCESSED);
+            mDuplexAudioManager.setPlayerSharingMode(BuilderBase.SHARING_MODE_EXCLUSIVE);
         }
 
         int buildStatus = mDuplexAudioManager.buildStreams(mApi, BuilderBase.TYPE_JAVA);
