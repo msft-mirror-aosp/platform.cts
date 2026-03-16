@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,32 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  -->
-
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="android.view.textclassifier.cts">
+package="android.view.textclassifier.cts">
 
-    <!-- TODO: change to 31 when it is finalized. -->
-    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="30" />
-
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <application android:label="TextClassifier TestCase">
         <uses-library android:name="android.test.runner"/>
-
         <service
             android:name=".CtsTextClassifierService"
             android:exported="true"
+            android:privateComputeCore="true"
             android:permission="android.permission.BIND_TEXTCLASSIFIER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.textclassifier.TextClassifierService"/>
             </intent-filter>
         </service>
 
-        <activity android:name=".TextViewActivity" android:theme="@style/NoAnimation"/>
+        <activity android:name=".TextViewActivity"
+            android:theme="@style/NoAnimation"
+            android:privateComputeCore="true"
+        />
     </application>
 
-    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-                     android:targetPackage="android.view.textclassifier.cts"
-                     android:label="CTS tests of android.view.textclassifier">
-    </instrumentation>
-
+<instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+    android:targetPackage="android.view.textclassifier.cts"
+    android:label="CTS tests of android.soundtrigger for PCC"> </instrumentation>
 </manifest>
