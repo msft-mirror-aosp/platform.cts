@@ -203,13 +203,15 @@ public class KeyPairGeneratorTest {
     // version. We don't check the StrongBox KeyMint version here since this function should only be
     // used for tests that use TEE KeyMint. Tests that exercise StrongBox KeyMint don't use this
     // function and are instead parameterized using parameter sets that include the security level.
+    // Note that we also need to check whether the algorithm is exposed in the AndroidKeyStore
+    // provider because these test exercise KeyMint's ML-DSA implementation via the provider.
     private String[] getExpectedAlgorithmsForTee() {
         // Lazily initialize the array of expected algorithms. The array can't be initialized in a
         // static initializer (e.g. a @BeforeClass method) because it depends on the Keystore
         // version, which comes from the context and is not available.
         if (mExpectedAlgorithms == null) {
             mExpectedAlgorithms =
-                    TestUtils.mlDsaSupportedByTeeKeyMint()
+                    TestUtils.mlDsaSupportedByTeeKeyMint() && TestUtils.mlDsaExposedInProvider()
                             ? new String[] {"EC", "RSA", "XDH", "ML-DSA", "ML-DSA-65", "ML-DSA-87"}
                             : new String[] {"EC", "RSA", "XDH"};
         }
