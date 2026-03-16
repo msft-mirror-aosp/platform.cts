@@ -951,25 +951,25 @@
     <option name="compatibility:include-filter" value="CtsMediaEncoderTestCases android.media.encoder.cts.VideoEncoderTest#testEncode[253_c2.exynos.hevc.encoder_video/hevc_7,680x4,320_true_TEST_MODE_SPECIFIC]"/>
     <!-- CtsMediaExtractorTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaExtractorTestCases android.media.extractor.cts.MediaExtractorTest#testDolbyVisionMediaExtractorProfileDvav1"/>
-    <!-- CtsMediaHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#packageManagerSpammingProviderService_doesNotAutoBindAfterCrashing"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#providerService_doesNotAutoBindAfterCrashing"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testDeduplicationIds_propagateAcrossApps"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testDeviceType_propagatesAcrossApps"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeNotVisibleWhenOnePermissionNotHeld"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenFirstSetInListIsHeld"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenOnePermissionIsHeld"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenSecondSetInListIsHeld"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRestrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRestrictLocalNetworkCompatChange_enabled_routeNotFound"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testVisibilityAndAllowedPackages_propagateAcrossApps"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.ProxyMediaRouter2HostSideTest#getInstance_withMediaRoutingControl_cannotSeeVisibilityRestrictedRoute"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.ProxyMediaRouter2HostSideTest#requestScan_withMediaRoutingControl_withScreenOff_triggersScanning"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.ProxyMediaRouter2HostSideTest#requestScan_withScreenOnScanning_triggersScanning"/>
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.session.cts.OutputSwitcherHostTest#testShowSystemOutputSwitcherWithOverriddenMediaSessionOwner"/>
+    <!-- CtsMediaRouterHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#packageManagerSpammingProviderService_doesNotAutoBindAfterCrashing"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#permissionHiddenRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#providerService_doesNotAutoBindAfterCrashing"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testDeduplicationIds_propagateAcrossApps"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testDeviceType_propagatesAcrossApps"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeNotVisibleWhenOnePermissionNotHeld"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenFirstSetInListIsHeld"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenOnePermissionIsHeld"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenSecondSetInListIsHeld"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRestrictLocalNetworkCompatChange_enabled_routeFoundWhenWifiPermissionHeld"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRestrictLocalNetworkCompatChange_enabled_routeNotFound"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testVisibilityAndAllowedPackages_propagateAcrossApps"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#visibilityRestrictedRoute_routeSelectedInOsw_routeBecomesVisibleBeforeTransfer"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.ProxyMediaRouter2HostSideTest#getInstance_withMediaRoutingControl_cannotSeeVisibilityRestrictedRoute"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.ProxyMediaRouter2HostSideTest#requestScan_withMediaRoutingControl_withScreenOff_triggersScanning"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.ProxyMediaRouter2HostSideTest#requestScan_withScreenOnScanning_triggersScanning"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.session.cts.OutputSwitcherHostTest#testShowSystemOutputSwitcherWithOverriddenMediaSessionOwner"/>
     <!-- CtsMediaMiscTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.MediaSyncTest#testSetPlaybackParamsFail"/>
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ParamsTest#testPlaybackParamsSpeedChecks"/>

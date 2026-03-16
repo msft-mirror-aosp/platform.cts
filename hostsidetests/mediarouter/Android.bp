@@ -1,0 +1,67 @@
+//
+// Copyright (C) 2026 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+java_test_host {
+    name: "CtsMediaRouterHostTestCases",
+    team: "trendy_team_android_media_better_together",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "src/**/*.java",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    libs: [
+        "cts-tradefed",
+        "tradefed",
+        "compatibility-host-util",
+    ],
+    static_libs: [
+        "com.android.media.flags.bettertogether-aconfig-java-host",
+        "CompatChangeGatingTestBase",
+        "cts-host-utils",
+        "device-policy-users-preparer",
+        "CtsMediaRouterHostTestCommon",
+        "flag-junit-host",
+        "modules-utils-build-testing",
+    ],
+    device_common_data: [
+        ":CtsMediaRouterHostSideTestBluetoothPermissionsApp",
+        ":CtsMediaRouterHostSideTestModifyAudioRoutingApp",
+        ":CtsMediaRouterHostSideTestMediaRoutingControlApp",
+        ":CtsMediaRouterHostSideTestRequiredPermissionsApp",
+        ":CtsMediaRouterHostSideTestProviderApp1",
+        ":CtsMediaRouterHostSideTestProviderApp2",
+        ":CtsMediaRouterHostSideTestProviderApp3",
+        ":CtsMediaRouterHostSideTestProviderRequiresPermissionsApp",
+        ":CtsMediaRouterHostSideTestProviderSelfScanOnlyApp",
+        ":CtsMediaRouterHostSideTestProviderWithPackageManagerSpam",
+        ":CtsMediaRouterHostSideTestProxyScanningTestApp",
+        ":CtsProxyMediaRouterSecondaryUserTestHelperApp",
+        ":CtsProxyMediaRouterTestHelperApp",
+        ":CtsMediaRouterHostSideTestPerAppDiscoveryPrefsConsumer1",
+        ":CtsMediaRouterHostSideTestPerAppDiscoveryPrefsConsumer2",
+        ":CtsMediaRouterHostSideTestProviderPerApp",
+        ":CtsMediaSessionCreatorApp",
+        ":CtsMediaSessionOwnerApp",
+    ],
+    enable_static_aconfig_pb: true,
+}

@@ -348,8 +348,8 @@
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.SoundPoolMidiTest#testLoadMore[1]"/>
     <!-- CtsMediaCodecTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaCodecTestCases android.media.codec.cts.EncodeVirtualDisplayWithCompositionTest#testRenderingMaxResolutionRemotely"/>
-    <!-- CtsMediaHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenOnePermissionIsHeld"/>
+    <!-- CtsMediaRouterHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsMediaRouterHostTestCases android.media.router.cts.MediaRouter2HostSideTest#testRequiredPermissions_routeVisibleWhenOnePermissionIsHeld"/>
     <!-- CtsMediaMuxerTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MediaMuxerTest#testAPVVideoOnlyOutputInMP4"/>
     <!-- CtsMediaPlayerTestCases -->
