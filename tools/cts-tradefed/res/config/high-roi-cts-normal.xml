@@ -2623,8 +2623,7 @@
     <!-- CtsNetSecConfigCertificateTransparencyTestCases -->
     <option name="compatibility:include-filter" value="CtsNetSecConfigCertificateTransparencyTestCases android.security.net.config.cts.CertificateTransparencyTest#testCertificateTransparencyVerificationRequired"/>
     <option name="compatibility:include-filter" value="CtsNetSecConfigCertificateTransparencyTestCases android.security.net.config.cts.CertificateTransparencyTest#testCertificateTransparencyVerificationRequired_includeSubdomains"/>
-    <option name="compatibility:include-filter"
-        value="CtsNetSecConfigCertificateTransparencyTestCases android.security.net.config.cts.LogListPresentVerificationTest#testX509TrustManagerExtensions_sctDomain_connectionSucceeds" />
+    <option name="compatibility:include-filter" value="CtsNetSecConfigCertificateTransparencyTestCases android.security.net.config.cts.LogListPresentVerificationTest#testX509TrustManagerExtensions_sctDomain_connectionSucceeds"/>
     <!-- CtsNetSecConfigCleartextTrafficTestCases -->
     <option name="compatibility:include-filter" value="CtsNetSecConfigCleartextTrafficTestCases android.security.net.config.cts.CleartextPermittedTest#testDefaultDenied"/>
     <!-- CtsNetSecConfigCleartextTrafficTestCases[instant] -->
@@ -5919,6 +5918,8 @@
     <!-- Exclude the failing tests in CtsVirtualDevicesCameraTestCases -->
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraTestCases android.virtualdevice.cts.camera.VirtualCameraTest#createSession_calledTwice_fails"/>
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraTestCases android.virtualdevice.cts.camera.VirtualCameraTest#virtualCamera_streamId_matchesCreationOrder"/>
+    <!-- Exclude the failing tests in CtsVoiceInteractionTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_successInInitialUser"/>
     <!-- Exclude the failing tests in MctsTelecomTestCases -->
     <option name="compatibility:exclude-filter" value="MctsTelecomTestCases android.telecom.cts.AccessibilitySystemActionTest#testInCall_headsetHookAction_hangupCall"/>
     <option name="compatibility:exclude-filter" value="MctsTelecomTestCases android.telecom.cts.AccessibilitySystemActionTest#testIncomingCall_headsetHookAction_acceptsCall"/>
