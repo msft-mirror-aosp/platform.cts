@@ -19,8 +19,9 @@ package android.view.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -53,13 +54,28 @@ public class ViewScrollToTopTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    public void testViewDispatchScrollToTop_defaultReturnsFalse() {
+    public void testViewOnScrollToTop_defaultReturnsFalse() {
         try (ActivityScenario<TestActivity> scenario =
                 ActivityScenario.launch(TestActivity.class)) {
             scenario.onActivity(
                     activity -> {
                         TestView view = new TestView(activity);
-                        assertFalse(view.dispatchScrollToTop(0));
+                        assertFalse(view.onScrollToTop(0));
+                    });
+        }
+    }
+
+    @Test
+    public void testViewDispatchScrollToTop_callsOnScrollToTop() {
+        try (ActivityScenario<TestActivity> scenario =
+                ActivityScenario.launch(TestActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        TestView view = spy(new TestView(activity));
+                        doReturn(true).when(view).onScrollToTop(anyInt());
+
+                        assertTrue(view.dispatchScrollToTop(0));
+                        verify(view).onScrollToTop(anyInt());
                     });
         }
     }
@@ -82,10 +98,42 @@ public class ViewScrollToTopTest {
                                 View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY));
                         parent.layout(0, 0, 100, 100);
 
-                        doReturn(true).when(child).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child).onScrollToTop(anyInt());
 
                         assertTrue(parent.dispatchScrollToTop(50));
                         verify(child).dispatchScrollToTop(50);
+                    });
+        }
+    }
+
+    @Test
+    public void testViewGroupDispatchScrollToTop_parentHandlesBeforeChildren() {
+        try (ActivityScenario<TestActivity> scenario =
+                ActivityScenario.launch(TestActivity.class)) {
+            scenario.onActivity(
+                    activity -> {
+                        LinearLayout root = spy(new LinearLayout(activity));
+                        root.setOrientation(LinearLayout.VERTICAL);
+
+                        TestView child = spy(new TestView(activity));
+                        child.setLayoutParams(new LinearLayout.LayoutParams(100, 100));
+                        // Both want to handle it
+                        doReturn(true).when(child).onScrollToTop(anyInt());
+
+                        root.addView(child);
+                        root.measure(
+                                View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY),
+                                View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY));
+                        root.layout(0, 0, 100, 100);
+
+                        // Root handles it
+                        doReturn(true).when(root).onScrollToTop(anyInt());
+
+                        assertTrue(root.dispatchScrollToTop(50));
+
+                        // Parent handles it first, child is never called
+                        verify(root).onScrollToTop(anyInt());
+                        verify(child, never()).onScrollToTop(anyInt());
                     });
         }
     }
@@ -102,12 +150,12 @@ public class ViewScrollToTopTest {
                         // Child 1: Does not consume (returns false)
                         TestView child1 = spy(new TestView(activity));
                         child1.setLayoutParams(new LinearLayout.LayoutParams(100, 100));
-                        doReturn(false).when(child1).dispatchScrollToTop(anyInt());
+                        doReturn(false).when(child1).onScrollToTop(anyInt());
 
                         // Child 2: Consumes (returns true)
                         TestView child2 = spy(new TestView(activity));
                         child2.setLayoutParams(new LinearLayout.LayoutParams(100, 100));
-                        doReturn(true).when(child2).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child2).onScrollToTop(anyInt());
 
                         root.addView(child1);
                         root.addView(child2);
@@ -140,17 +188,17 @@ public class ViewScrollToTopTest {
                         // Child 1: Top-most, but returns false (Ignored)
                         TestView child1 = spy(new TestView(activity));
                         child1.setLayoutParams(new LinearLayout.LayoutParams(100, 100));
-                        doReturn(false).when(child1).dispatchScrollToTop(anyInt());
+                        doReturn(false).when(child1).onScrollToTop(anyInt());
 
                         // Child 2: Middle, returns true (Consumed)
                         TestView child2 = spy(new TestView(activity));
                         child2.setLayoutParams(new LinearLayout.LayoutParams(100, 100));
-                        doReturn(true).when(child2).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child2).onScrollToTop(anyInt());
 
                         // Child 3: Bottom, valid target, but should be shadowed by Child 2
                         TestView child3 = spy(new TestView(activity));
                         child3.setLayoutParams(new LinearLayout.LayoutParams(100, 100));
-                        doReturn(true).when(child3).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child3).onScrollToTop(anyInt());
 
                         root.addView(child1);
                         root.addView(child2);
@@ -171,7 +219,7 @@ public class ViewScrollToTopTest {
                         verify(child2).dispatchScrollToTop(50);
 
                         // 3. Child 3 should NEVER be visited because Child 2 consumed the event.
-                        verify(child3, org.mockito.Mockito.never()).dispatchScrollToTop(anyInt());
+                        verify(child3, never()).dispatchScrollToTop(anyInt());
                     });
         }
     }
@@ -196,7 +244,7 @@ public class ViewScrollToTopTest {
                                 View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY));
                         parent.layout(0, 0, 110, 100);
 
-                        doReturn(true).when(child).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child).onScrollToTop(anyInt());
 
                         // Dispatch at x=20.
                         // Child Left = 10. Local Coord = 20 - 10 = 10.
@@ -225,7 +273,7 @@ public class ViewScrollToTopTest {
                                 View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY));
                         parent.layout(0, 0, 120, 100);
 
-                        doReturn(true).when(child).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child).onScrollToTop(anyInt());
 
                         // Dispatch at x=30.
                         // Padding=20. Child Left=20. Local Coord = 30 - 20 = 10.
@@ -254,7 +302,7 @@ public class ViewScrollToTopTest {
                                 View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY));
                         parent.layout(0, 0, 120, 100);
 
-                        doReturn(true).when(child).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child).onScrollToTop(anyInt());
                         assertEquals(20f, child.getTranslationX(), 0.0);
 
                         // Dispatch at x=30.
@@ -288,7 +336,7 @@ public class ViewScrollToTopTest {
                                 View.MeasureSpec.makeMeasureSpec(200, View.MeasureSpec.EXACTLY));
                         parent.layout(0, 0, 200, 200);
 
-                        doReturn(true).when(child).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child).onScrollToTop(anyInt());
 
                         // Dispatch at x=50.
                         // Maps Parent(50, 0) -> Local(0, 50).
@@ -322,7 +370,7 @@ public class ViewScrollToTopTest {
                                 View.MeasureSpec.makeMeasureSpec(200, View.MeasureSpec.EXACTLY));
                         parent.layout(0, 0, 200, 200);
 
-                        doReturn(true).when(child).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child).onScrollToTop(anyInt());
 
                         // Dispatch at x=100.
                         // Scale=2.0. Local Coord = 100 / 2.0 = 50.
@@ -354,7 +402,7 @@ public class ViewScrollToTopTest {
                         child.setY(50); // Physically at top of viewport
 
                         parent.addView(child);
-                        doReturn(true).when(child).dispatchScrollToTop(anyInt());
+                        doReturn(true).when(child).onScrollToTop(anyInt());
 
                         // Dispatch at x=10.
                         // Uses mScrollY(50) -> Hits child at Y=50.
