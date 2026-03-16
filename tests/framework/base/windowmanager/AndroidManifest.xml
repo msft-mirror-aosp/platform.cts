@@ -246,6 +246,8 @@
 
         <!--intent tests-->
         <activity android:name="android.server.wm.intent.Activities$RegularActivity"/>
+        <activity android:name="android.server.wm.intent.Activities$HandleConfigRegularActivity"
+            android:configChanges="allKnown" />
         <activity android:name="android.server.wm.intent.Activities$SingleTopActivity"
              android:launchMode="singleTop"/>
         <activity android:name="android.server.wm.intent.Activities$SingleInstanceActivity"
