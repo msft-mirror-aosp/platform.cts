@@ -27,10 +27,6 @@ import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.Call.STATE_SIMULATED_RINGING;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_CALL_SCREENING;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_UNKNOWN;
-import static android.telecom.Call.AUDIO_PROCESSING_USE_CASE_VOICEMAIL;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_WAIT_FOR_AUDIO_ACTIVE;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_WAIT_FOR_AUDIO_OPS_COMPLETE;
 import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
@@ -47,7 +43,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.ContentResolver;
-import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -1041,9 +1036,10 @@ public class SingleCallingTest extends BaseAppVerifier {
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testTelecomLocksFocus_TransactionalVoipAppMain() throws Exception {
-        if (isAutomotive() || !mShouldTestTelecom) {
+        if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         performFocusLockTest(TransactionalVoipAppMain);
     }
 
@@ -1069,9 +1065,10 @@ public class SingleCallingTest extends BaseAppVerifier {
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testTelecomLocksFocus_ConnectionServiceVoipAppMain() throws Exception {
-        if (isAutomotive() || !mShouldTestTelecom) {
+        if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         performFocusLockTest(ConnectionServiceVoipAppMain);
     }
 
@@ -1097,9 +1094,10 @@ public class SingleCallingTest extends BaseAppVerifier {
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#placeCall"})
     public void testTelecomLocksFocus_ManagedConnectionServiceVoipAppMain() throws Exception {
-        if (isAutomotive() || !mShouldTestTelecom) {
+        if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         performFocusLockTest(ManagedConnectionServiceApp);
     }
 
@@ -1428,10 +1426,6 @@ public class SingleCallingTest extends BaseAppVerifier {
     /*********************************************************************************************
      *                           Helpers
      /*********************************************************************************************/
-
-    private boolean isAutomotive() {
-        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
-    }
 
     private void verifyOutgoingCallStateTransitions(
             AppControlWrapper appControlWrapper, AudioFocusRequest audioFocusRequest)
