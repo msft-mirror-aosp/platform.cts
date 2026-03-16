@@ -1785,8 +1785,6 @@
     <option name="compatibility:include-filter" value="CtsSystemUiTestCases android.systemui.cts.WindowInsetsBehaviorTests#systemGesture_notExcludeViewRects_withoutAnyCancel"/>
     <!-- CtsTelecomHostCases -->
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testCallStateChangedAtom_basicTest"/>
-    <!-- CtsTelecomTestCases2 -->
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases2 android.telecom.cts.DefaultDialerOperationsNoPermissionsTest#testGetDefaultOutgoingPhoneAccount"/>
     <!-- CtsTelecomTestCases3 -->
     <option name="compatibility:include-filter" value="CtsTelecomTestCases3 android.telecom.cts.SelfManagedAwareInCallServiceTest#testSelfManagedSignalling"/>
     <!-- CtsTelephonyProviderTestCases -->
