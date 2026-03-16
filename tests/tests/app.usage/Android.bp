@@ -193,3 +193,25 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.app.usage.cts.UsageStatsTest"],
 }
+
+android_test {
+    name: "CtsUsageEventsPccTestCases",
+    team: "trendy_team_framework_bpm",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "androidx.test.rules",
+        "androidx.test.ext.junit",
+        "compatibility-device-util-axt",
+    ],
+    srcs: [
+        "src/android/app/usage/cts/pcc/UsageEventsPccTest.java",
+        "src/android/app/usage/cts/Activities.java",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    sdk_version: "test_current",
+    manifest: "AndroidManifest-pcc.xml",
+    test_config: "AndroidTest-pcc.xml",
+}
