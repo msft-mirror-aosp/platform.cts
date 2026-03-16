@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,100 +14,92 @@
  * limitations under the License.
  */
 
-package android.bluetooth.cts;
+package android.bluetooth.cts
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.CddTest
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.Mock
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
+import org.mockito.junit.MockitoJUnit
+import org.mockito.kotlin.mock
 
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanSettings;
+/** Test cases for [ScanCallback]. */
+@RunWith(AndroidJUnit4::class)
+class ScanCallbackTest {
+    @get:Rule val mockitoRule = MockitoJUnit.rule()
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
+    @Mock private lateinit var scanCallback: ScanCallback
 
-import com.android.compatibility.common.util.CddTest;
-
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
-
-import java.util.HashSet;
-import java.util.Set;
-
-/** Test cases for {@link ScanCallback}. */
-@RunWith(AndroidJUnit4.class)
-public class ScanCallbackTest {
-
-    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
-
-    @Mock private ScanCallback mScanCallback;
-
-    private final MockScanner mMockScanner = new MockScanner();
+    private val mockScanner = MockScanner()
 
     @Before
-    public void setUp() {
-        var context = InstrumentationRegistry.getInstrumentation().getContext();
-        Assume.assumeTrue(TestUtils.isBleSupported(context));
+    fun setUp() {
+        val context = InstrumentationRegistry.getInstrumentation().context
+        Assume.assumeTrue(TestUtils.isBleSupported(context))
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @SmallTest
     @Test
-    public void scanSuccess() {
-        mMockScanner.startScan(new ScanSettings.Builder().build(), mScanCallback);
-        verify(mScanCallback).onScanResult(anyInt(), any());
-        verifyNoMoreInteractions(mScanCallback);
+    fun scanSuccess() {
+        mockScanner.startScan(ScanSettings.Builder().build(), scanCallback)
+        verify(scanCallback).onScanResult(anyInt(), any())
+        verifyNoMoreInteractions(scanCallback)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @SmallTest
     @Test
-    public void batchScans() {
-        mMockScanner.startScan(
-                new ScanSettings.Builder().setReportDelay(1000).build(), mScanCallback);
-        verify(mScanCallback).onBatchScanResults(any());
-        verifyNoMoreInteractions(mScanCallback);
+    fun batchScans() {
+        mockScanner.startScan(ScanSettings.Builder().setReportDelay(1000).build(), scanCallback)
+        verify(scanCallback).onBatchScanResults(any())
+        verifyNoMoreInteractions(scanCallback)
     }
 
-    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @CddTest(requirements = ["7.4.3/C-2-1"])
     @SmallTest
     @Test
-    public void scanFail() {
-        ScanSettings settings = new ScanSettings.Builder().build();
+    fun scanFail() {
+        val settings = ScanSettings.Builder().build()
         // The first scan is success.
-        mMockScanner.startScan(settings, mScanCallback);
-        verify(mScanCallback).onScanResult(anyInt(), any());
-        verifyNoMoreInteractions(mScanCallback);
+        mockScanner.startScan(settings, scanCallback)
+        verify(scanCallback).onScanResult(anyInt(), any())
+        verifyNoMoreInteractions(scanCallback)
 
         // A second scan with the same callback should fail.
-        mMockScanner.startScan(settings, mScanCallback);
-        verify(mScanCallback).onScanFailed(anyInt());
-        verifyNoMoreInteractions(mScanCallback);
+        mockScanner.startScan(settings, scanCallback)
+        verify(scanCallback).onScanFailed(anyInt())
+        verifyNoMoreInteractions(scanCallback)
     }
 
     // A mock scanner for mocking BLE scanner functionalities.
-    private static class MockScanner {
-        private final Set<ScanCallback> mCallbacks = new HashSet<>();
+    private class MockScanner {
+        private val callbacks = mutableSetOf<ScanCallback>()
 
-        void startScan(ScanSettings settings, ScanCallback callback) {
-            synchronized (mCallbacks) {
-                if (mCallbacks.contains(callback)) {
-                    callback.onScanFailed(ScanCallback.SCAN_FAILED_ALREADY_STARTED);
-                    return;
+        fun startScan(settings: ScanSettings, callback: ScanCallback) {
+            synchronized(callbacks) {
+                if (callbacks.contains(callback)) {
+                    callback.onScanFailed(ScanCallback.SCAN_FAILED_ALREADY_STARTED)
+                    return
                 }
-                mCallbacks.add(callback);
-                if (settings.getReportDelayMillis() == 0) {
-                    callback.onScanResult(0, null);
+                callbacks.add(callback)
+                if (settings.reportDelayMillis == 0L) {
+                    callback.onScanResult(0, mock<ScanResult>())
                 } else {
-                    callback.onBatchScanResults(null);
+                    callback.onBatchScanResults(mock<List<ScanResult>>())
                 }
             }
         }
