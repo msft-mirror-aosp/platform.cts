@@ -16,15 +16,15 @@
 
 package android.view.surfacecontrol.cts;
 
-import static android.server.wm.CtsWindowInfoUtils.assertAndDumpWindowState;
-
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Region;
+import android.os.IBinder;
 import android.server.wm.BuildUtils;
+import android.server.wm.CtsWindowInfoUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -44,8 +44,10 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(AndroidJUnit4.class)
 public class SetTouchableRegionTest {
@@ -103,11 +105,34 @@ public class SetTouchableRegionTest {
         mActivity = mActivityRule.getActivity();
     }
 
+    private void waitForPopupOnTop() throws InterruptedException {
+        final AtomicReference<IBinder> popupTokenRef = new AtomicReference<>();
+        mInstrumentation.runOnMainSync(() -> popupTokenRef.set(mPopupView.getWindowToken()));
+        assertTrue(
+                "Popup window not on top",
+                CtsWindowInfoUtils.waitForWindowOnTop(
+                        Duration.ofMillis(WAIT_TIME_MS), () -> popupTokenRef.get()));
+    }
+
+    private void waitForWindowTouchableRegion(View view, Region expectedRegion)
+            throws InterruptedException {
+        final AtomicReference<IBinder> tokenRef = new AtomicReference<>();
+        mInstrumentation.runOnMainSync(() -> tokenRef.set(view.getWindowToken()));
+        assertTrue(
+                "Window " + view + " never reached expected touchable region",
+                CtsWindowInfoUtils.waitForWindowInfos(
+                        windowInfos -> {
+                            for (var windowInfo : windowInfos) {
+                                if (windowInfo.windowToken == tokenRef.get()) {
+                                    return expectedRegion.equals(windowInfo.touchableRegion);
+                                }
+                            }
+                            return false;
+                        },
+                        Duration.ofMillis(WAIT_TIME_MS)));
+    }
+
     void tapSync() throws InterruptedException {
-        // TODO: b/279051608 when touchable regions in WindowInfosListenerForTest is exposed, wait
-        // until the correct touchable regions are set for the window. Until then, just force
-        // a syncInputTransaction to make sure the region update for popupView is sent to input
-        // before invoking the tap.
         mInstrumentation.getUiAutomation().syncInputTransactions();
 
         mInstrumentation.waitForIdleSync();
@@ -162,12 +187,17 @@ public class SetTouchableRegionTest {
         });
         assertTrue("Failed to add popup view",
                 waitForPopupView.await(WAIT_TIME_MS, TimeUnit.MILLISECONDS));
+
+        waitForPopupOnTop();
+
         mMotionRecordingView.reset();
         tapSync();
 
         // However now we have covered ourselves with a MATCH_PARENT popup window
         // and so the tap should not reach us
-        assertAndDumpWindowState(TAG, "Received motion event",
+        CtsWindowInfoUtils.assertAndDumpWindowState(
+                TAG,
+                "Received motion event",
                 mMotionRecordingView.waitForEvent(false /* receivedEvent */));
 
         CountDownLatch updateTouchableRegionsLatch = new CountDownLatch(1);
@@ -187,10 +217,14 @@ public class SetTouchableRegionTest {
         assertTrue("Failed to update touchable regions for popup view",
                 updateTouchableRegionsLatch.await(WAIT_TIME_MS, TimeUnit.MILLISECONDS));
 
+        waitForWindowTouchableRegion(mPopupView, new Region());
+
         tapSync();
         // But now we have punched a touchable region hole in the popup window and
         // we should be reachable again.
-        assertAndDumpWindowState(TAG, "Failed to receive motion event",
+        CtsWindowInfoUtils.assertAndDumpWindowState(
+                TAG,
+                "Failed to receive motion event",
                 mMotionRecordingView.waitForEvent(true /* receivedEvent */));
     }
 }
