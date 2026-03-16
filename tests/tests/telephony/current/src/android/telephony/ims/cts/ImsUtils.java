@@ -122,28 +122,44 @@ public class ImsUtils {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = (SubscriptionManager) context.getSystemService(
                 Context.TELEPHONY_SUBSCRIPTION_SERVICE);
-        List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
-                SubscriptionManager::getActiveSubscriptionInfoList);
+        int[] subId = new int[1];
+        subId[0] = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
 
-        int defaultSubId = SubscriptionManager.getDefaultVoiceSubscriptionId();
-        if (defaultSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID
-                && isSubIdInInfoList(infos, defaultSubId)) {
-            return defaultSubId;
-        }
+        try {
+            retryUntilTrue(() -> {
+                List<SubscriptionInfo> infos =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        sm, SubscriptionManager::getActiveSubscriptionInfoList);
+                if (infos == null) {
+                    return false;
+                }
 
-        defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
-        if (defaultSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID
-                && isSubIdInInfoList(infos, defaultSubId)) {
-            return defaultSubId;
-        }
+                int defaultSubId = SubscriptionManager.getDefaultVoiceSubscriptionId();
+                if (defaultSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID
+                        && isSubIdInInfoList(infos, defaultSubId)) {
+                    subId[0] = defaultSubId;
+                    return true;
+                }
 
-        // Couldn't resolve a default. We can try to resolve a default using the active
-        // subscriptions.
-        if (!infos.isEmpty()) {
-            return infos.get(0).getSubscriptionId();
+                defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+                if (defaultSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID
+                        && isSubIdInInfoList(infos, defaultSubId)) {
+                    subId[0] = defaultSubId;
+                    return true;
+                }
+
+                // Couldn't resolve a default. We can try to resolve a default using the active
+                // subscriptions.
+                if (!infos.isEmpty()) {
+                    subId[0] = infos.get(0).getSubscriptionId();
+                    return true;
+                }
+                return false;
+            }, 5000, 10);
+        } catch (Exception e) {
+            // ignore
         }
-        // There must be at least one active subscription.
-        return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+        return subId[0];
     }
 
     private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
