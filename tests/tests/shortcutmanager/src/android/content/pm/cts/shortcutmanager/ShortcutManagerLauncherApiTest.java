@@ -15,6 +15,7 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static android.Manifest.permission.TEST_LOCK_APPS;
 import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_GET_KEY_FIELDS_ONLY;
 import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_GET_PERSISTED_DATA;
 import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC;
@@ -28,23 +29,35 @@ import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
 import android.content.LocusId;
 import android.content.pm.Capability;
 import android.content.pm.CapabilityParams;
+import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
+import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Icon;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.sts.common.LockSettingsUtil;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -53,6 +66,12 @@ import java.util.List;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase {
+    @Rule
+    public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Override
     protected String getOverrideConfig() {
         return "max_icon_dimension_dp=96,"
@@ -353,6 +372,65 @@ public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase 
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_APP_LOCK_APIS,
+        android.security.Flags.FLAG_APP_LOCK_CORE,
+        android.content.pm.Flags.FLAG_APP_LOCK_SHORTCUT_REMOVAL
+    })
+    @ApiTest(apis = {"android.content.pm.LauncherApps#getShortcuts"})
+    public void testGetShortcutsAsLauncher_withAppLockStateChanges() throws Exception {
+        runWithCallerWithStrictMode(mPackageContext1, () -> {
+            enableManifestActivity("Launcher_manifest_1", true);
+
+            retryUntil(() -> getManager().getManifestShortcuts().size() == 1,
+                    "Manifest shortcut didn't show up");
+
+            assertThat(getManager().setDynamicShortcuts(list(makeShortcut("s1"),
+                    makeShortcut("s2")))).isTrue();
+        });
+        setDefaultLauncher(getInstrumentation(), mLauncherContext1);
+
+        runWithCallerWithStrictMode(mLauncherContext1, () -> {
+            getLauncherApps().pinShortcuts(
+                    mPackageContext1.getPackageName(),
+                    list("s1", "ms1"), getUserHandle());
+        });
+
+        // Initially, without App Lock enabled, LauncherApps#getShortcuts returns full list of
+        // shortcuts.
+        final int allFlags = FLAG_MATCH_DYNAMIC | FLAG_MATCH_PINNED | FLAG_MATCH_MANIFEST;
+        runWithCallerWithStrictMode(mLauncherContext1, () -> {
+            assertWith(getShortcutsAsLauncher(allFlags, mPackageContext1.getPackageName(),
+                    null, 0, list(), list()))
+                    .haveIds("s1", "s2", "ms1")
+                    .areAllEnabled();
+        });
+
+        // Test LauncherApps#getShortcuts with App Lock enabled.
+        try (AutoCloseable withLockScreen = new LockSettingsUtil(getTestContext()).withLockScreen();
+                AutoCloseable withAppLockEnabled = setPackageAppLockEnabledScoped(
+                        mPackageContext1.getPackageName(), getTestContext().getPackageManager())) {
+            // Assert that LauncherApps#getShortcuts returns an empty list with App Lock enabled.
+            runWithCallerWithStrictMode(mLauncherContext1, () -> {
+                assertWith(getShortcutsAsLauncher(allFlags, mPackageContext1.getPackageName(),
+                        null, 0, list(), list()))
+                        .isEmpty();
+            });
+        }
+
+        // Assert that LauncherApps#getShortcuts reflects the full list of shortcuts after App Lock
+        // state changes to disabled.
+        runWithCallerWithStrictMode(mLauncherContext1, () -> {
+            assertWith(getShortcutsAsLauncher(allFlags, mPackageContext1.getPackageName(),
+                    null, 0, list(), list()))
+                    .haveIds("s1", "s2", "ms1")
+                    .areAllEnabled();
+        });
+    }
+
+    @Test
     public void testGetShortcutIcon() throws Exception {
         final Icon icon1 = Icon.createWithBitmap(BitmapFactory.decodeResource(
                 getTestContext().getResources(), R.drawable.black_16x64));
@@ -434,5 +512,37 @@ public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase 
             mLauncherContext1, mPackageContext1.getPackageName(), "s1", false));
         assertIconDimensions(icon2, getIconAsLauncher(
             mLauncherContext1, mPackageContext1.getPackageName(), "s2", false));
+    }
+
+    /**
+     * Enables App Lock for the specified package and returns an {@link AutoCloseable} that
+     * automatically disables it upon closing. Using {@link PackageManager#setPackageAppLockEnabled}
+     * requires either {@link TEST_LOCK_APPS} or {@link android.Manifest.permission#LOCK_APPS}
+     * permission. This method uses {@link TEST_LOCK_APPS} by adopting shell permission identity.
+     *
+     * <p>This method asserts that the operation to enable App Lock is successful. The returned
+     * {@link AutoCloseable} also asserts that the operation to disable App Lock is successful
+     * when closed.
+     *
+     * <p><b>Preconditions:</b>
+     * <ul>
+     *   <li>A screen lock must be set up on the device. See {@link setLskfScoped}</li>
+     *   <li>The package must support the App Lock feature.</li>
+     * </ul>
+     *
+     * @param packageName the name of the package for which App Lock should be enabled.
+     * @param pm the {@link PackageManager} instance to use for the operation.
+     * @return an {@link AutoCloseable} that disables App Lock for the package when closed.
+     */
+    private AutoCloseable setPackageAppLockEnabledScoped(String packageName, PackageManager pm) {
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ true)).isTrue();
+        }, TEST_LOCK_APPS);
+
+        return () -> {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ false)).isTrue();
+            }, TEST_LOCK_APPS);
+        };
     }
 }

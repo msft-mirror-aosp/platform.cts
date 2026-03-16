@@ -23,6 +23,7 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
@@ -70,6 +71,13 @@ public class StartActivityAsUserTests extends ActivityManagerTestBase {
         }
 
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        if (FeatureUtil.isAutomotive()) {
+            UserManager userManager = context.getSystemService(UserManager.class);
+            if (userManager.isVisibleBackgroundUsersSupported()) {
+                return;
+            }
+        }
+
         // Create a CLONE profile to start a new activity as. On Automotive devices, CLONE profiles
         // are not supported, thus create a FULL secondary user instead.
         final String createUserOptions =
@@ -108,6 +116,15 @@ public class StartActivityAsUserTests extends ActivityManagerTestBase {
     @Before
     public void checkMultipleUsersNotSupportedOrSecondUserCreated() {
         assumeTrue(SUPPORTS_MULTIPLE_USERS);
+        if (FeatureUtil.isAutomotive()) {
+            UserManager userManager = mContext.getSystemService(UserManager.class);
+            // These tests that involve a secondary user that is neither the current user
+            // nor a visible background user are not applicable in Automotive Multi User
+            // on Multi Display configuration.
+            assumeFalse(
+                    "Test not supported on Automotive with visible background users",
+                    userManager.isVisibleBackgroundUsersSupported());
+        }
         assertThat(sSecondUserId).isNotEqualTo(0);
     }
 

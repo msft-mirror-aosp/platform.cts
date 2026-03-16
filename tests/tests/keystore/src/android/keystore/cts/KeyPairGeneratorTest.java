@@ -161,6 +161,10 @@ public class KeyPairGeneratorTest {
     static {
         DEFAULT_KEY_SIZES.put("EC", 256);
         DEFAULT_KEY_SIZES.put("RSA", 2048);
+        // Key size doesn't make sense for X25519, but since the original implementation of X25519
+        // in the AndroidKeyStore provider uses 256, we can't update it (e.g. to -1 like for ML-DSA)
+        // for backwards-compatibility reasons.
+        DEFAULT_KEY_SIZES.put("XDH", 256);
         DEFAULT_KEY_SIZES.put("ML-DSA", -1);
         DEFAULT_KEY_SIZES.put("ML-DSA-65", -1);
         DEFAULT_KEY_SIZES.put("ML-DSA-87", -1);
@@ -179,6 +183,7 @@ public class KeyPairGeneratorTest {
             {KmType.SB, "RSA", "RSA"},
             {KmType.TEE, "EC", "EC"},
             {KmType.TEE, "RSA", "RSA"},
+            {KmType.TEE, "XDH", "XDH"},
             {KmType.TEE, "ML-DSA", "MLDSA"},
         };
     }
@@ -198,15 +203,17 @@ public class KeyPairGeneratorTest {
     // version. We don't check the StrongBox KeyMint version here since this function should only be
     // used for tests that use TEE KeyMint. Tests that exercise StrongBox KeyMint don't use this
     // function and are instead parameterized using parameter sets that include the security level.
+    // Note that we also need to check whether the algorithm is exposed in the AndroidKeyStore
+    // provider because these test exercise KeyMint's ML-DSA implementation via the provider.
     private String[] getExpectedAlgorithmsForTee() {
         // Lazily initialize the array of expected algorithms. The array can't be initialized in a
         // static initializer (e.g. a @BeforeClass method) because it depends on the Keystore
         // version, which comes from the context and is not available.
         if (mExpectedAlgorithms == null) {
             mExpectedAlgorithms =
-                    TestUtils.mlDsaSupportedByTeeKeyMint()
-                            ? new String[] {"EC", "RSA", "ML-DSA", "ML-DSA-65", "ML-DSA-87"}
-                            : new String[] {"EC", "RSA"};
+                    TestUtils.mlDsaSupportedByTeeKeyMint() && TestUtils.mlDsaExposedInProvider()
+                            ? new String[] {"EC", "RSA", "XDH", "ML-DSA", "ML-DSA-65", "ML-DSA-87"}
+                            : new String[] {"EC", "RSA", "XDH"};
         }
 
         // Clone the array so that one test cannot accidentally modify the array in a way that
@@ -237,7 +244,6 @@ public class KeyPairGeneratorTest {
         // TODO(b/485887290): Add these values in getExpectedAlgorithmsForTee() and add new tests
         // specific to Curve 22519.
         expectedAlgsLowerCase.add("ed25519");
-        expectedAlgsLowerCase.add("xdh");
 
         for (Service service : services) {
             if ("KeyPairGenerator".equalsIgnoreCase(service.getType())) {
@@ -436,20 +442,36 @@ public class KeyPairGeneratorTest {
         String[] encryptionPaddings =
                 new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_OAEP,
                         KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1};
-        String[] digests =  algorithm.startsWith("ML-DSA")
-                ? new String[] {KeyProperties.DIGEST_NONE}
-                : new String[] {KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1};
-        int purposes = KeyProperties.PURPOSE_SIGN;
+        String[] digests;
+        if (algorithm.startsWith("ML-DSA")) {
+            digests = new String[] {KeyProperties.DIGEST_NONE};
+        } else if (algorithm.equals("XDH")) {
+            digests = new String[] {};
+        } else {
+            digests = new String[] {KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1};
+        }
         KeyPairGenerator generator = getGenerator(algorithm);
-        generator.initialize(getWorkingSpec(purposes)
+        int purposes;
+        KeyGenParameterSpec.Builder specBuilder;
+        if (algorithm.equals("XDH")) {
+            purposes = KeyProperties.PURPOSE_AGREE_KEY;
+            specBuilder =
+                    getWorkingSpec(purposes)
+                            .setAlgorithmParameterSpec(new ECGenParameterSpec("x25519"));
+        } else {
+            purposes = KeyProperties.PURPOSE_SIGN;
+            specBuilder = getWorkingSpec(purposes);
+        }
+        specBuilder
                 .setBlockModes(blockModes)
                 .setEncryptionPaddings(encryptionPaddings)
                 .setDigests(digests)
                 .setKeyValidityStart(keyValidityStart)
                 .setKeyValidityForOriginationEnd(keyValidityForOriginationEnd)
                 .setKeyValidityForConsumptionEnd(keyValidityForConsumptionEnd)
-                .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
-                .build());
+                .setIsStrongBoxBacked(isStrongboxKeyMint(kmType));
+        generator.initialize(specBuilder.build());
+
         KeyPair keyPair = generator.generateKeyPair();
         assertEquals(algorithm, keyPair.getPrivate().getAlgorithm());
 
@@ -1042,6 +1064,29 @@ public class KeyPairGeneratorTest {
         }
     }
 
+    @Test
+    public void testGenerate_X25519_Different_Keys() throws Exception {
+        KeyPairGenerator generator = getEcGenerator();
+        generator.initialize(new KeyGenParameterSpec.Builder(
+                TEST_ALIAS_1,
+                KeyProperties.PURPOSE_AGREE_KEY)
+                .setAlgorithmParameterSpec(new ECGenParameterSpec("x25519"))
+                .build());
+        KeyPair keyPair1 = generator.generateKeyPair();
+        PublicKey pub1 = keyPair1.getPublic();
+
+        generator.initialize(new KeyGenParameterSpec.Builder(
+                TEST_ALIAS_2,
+                KeyProperties.PURPOSE_AGREE_KEY)
+                .setAlgorithmParameterSpec(new ECGenParameterSpec("x25519"))
+                .build());
+        KeyPair keyPair2 = generator.generateKeyPair();
+        PublicKey pub2 = keyPair2.getPublic();
+        if(Arrays.equals(pub1.getEncoded(), pub2.getEncoded())) {
+            fail("The same X25519 key pair was generated twice");
+        }
+    }
+
     // Note that unlike for RSA/EC, this test isn't parameterized by KeyMint type since only TEE
     // KeyMint supports ML-DSA.
     @Test
@@ -1251,6 +1296,44 @@ public class KeyPairGeneratorTest {
         assertEquals(
                 KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
                 keyInfo.getPurposes());
+        assertFalse(keyInfo.isUserAuthenticationRequired());
+        assertNull(keyInfo.getKeyValidityStart());
+        assertNull(keyInfo.getKeyValidityForOriginationEnd());
+        assertNull(keyInfo.getKeyValidityForConsumptionEnd());
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getDigests()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getEncryptionPaddings()));
+    }
+
+    @Test
+    public void testGenerate_X25519_ModernSpec_Defaults() throws Exception {
+        KeyPairGenerator generator = getEcGenerator();
+        generator.initialize(
+                new KeyGenParameterSpec.Builder(
+                                TEST_ALIAS_1,
+                                KeyProperties.PURPOSE_AGREE_KEY)
+                        .setAlgorithmParameterSpec(new ECGenParameterSpec("x25519"))
+                        .build());
+        KeyPair keyPair = generator.generateKeyPair();
+        assertGeneratedKeyPairAndSelfSignedCertificate(
+                keyPair,
+                TEST_ALIAS_1,
+                "XDH",
+                256,
+                DEFAULT_CERT_SUBJECT,
+                DEFAULT_CERT_SERIAL_NUMBER,
+                DEFAULT_CERT_NOT_BEFORE,
+                DEFAULT_CERT_NOT_AFTER);
+        KeyInfo keyInfo = TestUtils.getKeyInfo(keyPair.getPrivate());
+
+        assertEquals(256, keyInfo.getKeySize());
+
+        assertEquals(TEST_ALIAS_1, keyInfo.getKeystoreAlias());
+        assertOneOf(
+                keyInfo.getOrigin(), KeyProperties.ORIGIN_GENERATED, KeyProperties.ORIGIN_UNKNOWN);
+        assertEquals(
+                KeyProperties.PURPOSE_AGREE_KEY, keyInfo.getPurposes());
         assertFalse(keyInfo.isUserAuthenticationRequired());
         assertNull(keyInfo.getKeyValidityStart());
         assertNull(keyInfo.getKeyValidityForOriginationEnd());
@@ -1607,6 +1690,63 @@ public class KeyPairGeneratorTest {
                 KeyProperties.ENCRYPTION_PADDING_RSA_OAEP,
                 KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
 
+        assertFalse(keyInfo.isUserAuthenticationRequired());
+        assertEquals(0, keyInfo.getUserAuthenticationValidityDurationSeconds());
+    }
+
+    @Test
+    public void testGenerate_X25519_ModernSpec_AsCustomAsPossible() throws Exception {
+        KeyPairGenerator generator = getEcGenerator();
+        Date keyValidityStart = new Date(System.currentTimeMillis());
+        Date keyValidityEndDateForOrigination = new Date(System.currentTimeMillis() + 1000000);
+        Date keyValidityEndDateForConsumption = new Date(System.currentTimeMillis() + 10000000);
+
+        Date certNotBefore = new Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 7);
+        Date certNotAfter = new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7);
+        BigInteger certSerialNumber = new BigInteger("12345678");
+        X500Principal certSubject = new X500Principal("cn=hello");
+        generator.initialize(
+                new KeyGenParameterSpec.Builder(
+                                TEST_ALIAS_1,
+                                KeyProperties.PURPOSE_AGREE_KEY)
+                        .setAlgorithmParameterSpec(new ECGenParameterSpec("x25519"))
+                        .setKeyValidityStart(keyValidityStart)
+                        .setKeyValidityForOriginationEnd(keyValidityEndDateForOrigination)
+                        .setKeyValidityForConsumptionEnd(keyValidityEndDateForConsumption)
+                        .setCertificateSerialNumber(certSerialNumber)
+                        .setCertificateSubject(certSubject)
+                        .setCertificateNotBefore(certNotBefore)
+                        .setCertificateNotAfter(certNotAfter)
+                        .build());
+        KeyPair keyPair = generator.generateKeyPair();
+        assertGeneratedKeyPairAndSelfSignedCertificate(
+                keyPair,
+                TEST_ALIAS_1,
+                "XDH",
+                256,
+                certSubject,
+                certSerialNumber,
+                certNotBefore,
+                certNotAfter);
+        KeyInfo keyInfo = TestUtils.getKeyInfo(keyPair.getPrivate());
+
+        // Key size doesn't make sense for X25519, but since the original implementation produces
+        // 256, we can't update it for backwards-compatibility reasons.
+        assertEquals(256, keyInfo.getKeySize());
+
+        assertEquals(TEST_ALIAS_1, keyInfo.getKeystoreAlias());
+        assertOneOf(
+                keyInfo.getOrigin(), KeyProperties.ORIGIN_GENERATED, KeyProperties.ORIGIN_UNKNOWN);
+        assertEquals(
+                KeyProperties.PURPOSE_AGREE_KEY,
+                keyInfo.getPurposes());
+        assertEquals(keyValidityStart, keyInfo.getKeyValidityStart());
+        assertEquals(keyValidityEndDateForOrigination, keyInfo.getKeyValidityForOriginationEnd());
+        assertEquals(keyValidityEndDateForConsumption, keyInfo.getKeyValidityForConsumptionEnd());
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getBlockModes()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getDigests()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
+        MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getEncryptionPaddings()));
         assertFalse(keyInfo.isUserAuthenticationRequired());
         assertEquals(0, keyInfo.getUserAuthenticationValidityDurationSeconds());
     }
@@ -2167,8 +2307,9 @@ public class KeyPairGeneratorTest {
         assertEquals(expectedKeyAlgorithm, keyPair.getPublic().getAlgorithm());
         TestUtils.assertKeyStoreKeyPair(mKeyStore, alias, keyPair);
 
-        // Key size is ignored for ML-DSA keys.
-        if (!expectedKeyAlgorithm.equalsIgnoreCase("ML-DSA")) {
+        // Key size is ignored for ML-DSA and XDH keys.
+        if (!expectedKeyAlgorithm.equalsIgnoreCase("ML-DSA")
+                && !expectedKeyAlgorithm.equalsIgnoreCase("XDH")) {
             TestUtils.assertKeySize(expectedKeySize, keyPair);
         }
 
@@ -2406,9 +2547,12 @@ public class KeyPairGeneratorTest {
     }
 
     private KeyGenParameterSpec.Builder getWorkingSpec(String algorithm) {
-        return algorithm.startsWith("ML-DSA")
-                ? getWorkingSpec(KeyProperties.PURPOSE_SIGN)
-                : getWorkingSpec(0);
+        if (algorithm.startsWith("ML-DSA")) {
+            return getWorkingSpec(KeyProperties.PURPOSE_SIGN);
+        } else if (algorithm.equals("XDH")) {
+            return getWorkingSpec(KeyProperties.PURPOSE_AGREE_KEY);
+        }
+        return getWorkingSpec(0);
     }
 
     private KeyGenParameterSpec.Builder getWorkingSpec(@KeyProperties.PurposeEnum int purposes) {

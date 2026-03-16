@@ -18,6 +18,8 @@ package android.voiceinteraction.cts;
 
 import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.MANAGE_HOTWORD_DETECTION;
+import static android.Manifest.permission.MANAGE_SENSOR_PRIVACY;
+import static android.Manifest.permission.OBSERVE_SENSOR_PRIVACY;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
 import static android.voiceinteraction.cts.testcore.Helper.createFakeAudioFormat;
@@ -33,6 +35,7 @@ import static com.google.common.truth.Truth.assertThat;
 import android.compat.testing.PlatformCompatChangeRule;
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.SensorPrivacyManager;
 import android.media.cts.MediaProjectionRule;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
@@ -121,6 +124,8 @@ public class VoiceInteractionServiceSelfTriggerTest {
             new VoiceInteractionServiceConnectedRule(mContext, getTestVoiceInteractionService());
 
     private CtsBasicVoiceInteractionService mService;
+    private boolean mInitialMicPrivacy;
+    private boolean mInitialCameraPrivacy;
 
     public String getTestVoiceInteractionService() {
         return CTS_SERVICE_PACKAGE + "/" + SERVICE_COMPONENT;
@@ -133,6 +138,29 @@ public class VoiceInteractionServiceSelfTriggerTest {
         sStructureEnabledMgr.set("1");
         sScreenshotEnabledManager.set("1");
         VoiceInteractionTestReceiver.reset();
+
+        // Unblock sensors to prevent focus-stealing dialogs on TV
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(
+                        MANAGE_SENSOR_PRIVACY,
+                        OBSERVE_SENSOR_PRIVACY)) {
+            SensorPrivacyManager sensorPrivacyManager =
+                    mContext.getSystemService(SensorPrivacyManager.class);
+            if (sensorPrivacyManager.supportsSensorToggle(
+                    SensorPrivacyManager.Sensors.MICROPHONE)) {
+                mInitialMicPrivacy = sensorPrivacyManager.isSensorPrivacyEnabled(
+                        SensorPrivacyManager.Sensors.MICROPHONE);
+                sensorPrivacyManager.setSensorPrivacy(
+                        SensorPrivacyManager.Sensors.MICROPHONE, false);
+            }
+            if (sensorPrivacyManager.supportsSensorToggle(
+                    SensorPrivacyManager.Sensors.CAMERA)) {
+                mInitialCameraPrivacy = sensorPrivacyManager.isSensorPrivacyEnabled(
+                        SensorPrivacyManager.Sensors.CAMERA);
+                sensorPrivacyManager.setSensorPrivacy(
+                        SensorPrivacyManager.Sensors.CAMERA, false);
+            }
+        }
     }
 
     @After
@@ -145,6 +173,26 @@ public class VoiceInteractionServiceSelfTriggerTest {
             }
         }
         mService = null;
+
+        // Restore sensor privacy state
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(
+                        MANAGE_SENSOR_PRIVACY,
+                        OBSERVE_SENSOR_PRIVACY)) {
+            SensorPrivacyManager sensorPrivacyManager =
+                    mContext.getSystemService(SensorPrivacyManager.class);
+            if (sensorPrivacyManager.supportsSensorToggle(
+                    SensorPrivacyManager.Sensors.MICROPHONE)) {
+                sensorPrivacyManager.setSensorPrivacy(
+                        SensorPrivacyManager.Sensors.MICROPHONE, mInitialMicPrivacy);
+            }
+            if (sensorPrivacyManager.supportsSensorToggle(
+                    SensorPrivacyManager.Sensors.CAMERA)) {
+                sensorPrivacyManager.setSensorPrivacy(
+                        SensorPrivacyManager.Sensors.CAMERA, mInitialCameraPrivacy);
+            }
+        }
+
         // Ensure device is in a known state (e.g. home screen or test app)
         mUiDevice.pressHome();
     }

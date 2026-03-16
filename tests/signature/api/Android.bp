@@ -39,6 +39,22 @@ java_genrule {
 }
 
 java_genrule {
+    name: "cts-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android.txt",
+        ],
+        default: [
+            ":frameworks-base-api-exportable-current.txt",
+        ],
+    }),
+    out: [
+        "current.api.gz",
+    ],
+}
+
+java_genrule {
     name: "cts-system-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
@@ -50,11 +66,43 @@ java_genrule {
 }
 
 java_genrule {
+    name: "cts-system-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-system-android.txt",
+        ],
+        default: [
+            ":frameworks-base-api-exportable-system-current.txt",
+        ],
+    }),
+    out: [
+        "system-current.api.gz",
+    ],
+}
+
+java_genrule {
     name: "cts-system-removed-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
         ":frameworks-base-api-exportable-system-removed.txt",
     ],
+    out: [
+        "system-removed.api.gz",
+    ],
+}
+
+java_genrule {
+    name: "cts-system-removed-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-system-android-removed.txt",
+        ],
+        default: [
+            ":frameworks-base-api-exportable-system-removed.txt",
+        ],
+    }),
     out: [
         "system-removed.api.gz",
     ],
@@ -72,11 +120,43 @@ genrule {
 }
 
 genrule {
+    name: "cts-android-test-base-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android-test-base.txt",
+        ],
+        default: [
+            ":android-test-base-current.txt",
+        ],
+    }),
+    out: [
+        "android-test-base-current.api.gz",
+    ],
+}
+
+genrule {
     name: "cts-android-test-mock-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
         ":android-test-mock-current.txt",
     ],
+    out: [
+        "android-test-mock-current.api.gz",
+    ],
+}
+
+genrule {
+    name: "cts-android-test-mock-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android-test-mock.txt",
+        ],
+        default: [
+            ":android-test-mock-current.txt",
+        ],
+    }),
     out: [
         "android-test-mock-current.api.gz",
     ],
@@ -94,11 +174,32 @@ genrule {
 }
 
 genrule {
-    name: "cts-apache-http-legacy-current-api-gz",
+    name: "cts-android-test-runner-current-srcs-or-latest-prebuilt-api-gz",
     defaults: ["signature-cts-api-api-gz"],
-    srcs: [
-        ":apache-http-legacy-current.txt",
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-android-test-runner.txt",
+        ],
+        default: [
+            ":android-test-runner-current.txt",
+        ],
+    }),
+    out: [
+        "android-test-runner-current.api.gz",
     ],
+}
+
+genrule {
+    name: "cts-apache-http-legacy-current-srcs-or-latest-prebuilt-api-gz",
+    defaults: ["signature-cts-api-api-gz"],
+    srcs: select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+        "REL": [
+            ":latest-prebuilt-public-apache-http-legacy.txt",
+        ],
+        default: [
+            ":apache-http-legacy-current.txt",
+        ],
+    }),
     out: [
         "apache-http-legacy-current.api.gz",
     ],

@@ -166,6 +166,8 @@ public final class HapticsDeviceInfo extends DeviceInfo {
                 "config_ringtoneEffectUris");
         collectConfigBoolean(store, "keyboard_vibration_settings_supported",
                 "config_keyboardVibrationSettingsSupported");
+        collectConfigBoolean(store, "keyboard_vibration_settings_intensity_supported",
+                "config_keyboardVibrationSettingsIntensitySupported");
         store.endGroup();
     }
 

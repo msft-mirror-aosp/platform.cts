@@ -30,3 +30,17 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     min_sdk_version: "30",
 }
+
+android_test_helper_app {
+    name: "CtsQueryTextClassifierServicePccActivity",
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest-pcc.xml",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "mts",
+    ],
+    srcs: ["src/**/*.java"],
+    min_sdk_version: "30",
+    sdk_version: "test_current",
+}

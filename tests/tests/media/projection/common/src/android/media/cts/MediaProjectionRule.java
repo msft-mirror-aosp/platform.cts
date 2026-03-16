@@ -37,6 +37,7 @@ import android.media.ImageReader;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -92,6 +93,14 @@ public class MediaProjectionRule implements TestRule {
     private static final int RECORDING_DENSITY = 200;
     private static final int TIMEOUT_MS = 3000;
     private static final int SCREENSHOT_TIMEOUT_MS = 1000;
+
+    private static final int[] RECORDABLE_DISPLAY_TYPES =
+            new int[] {
+                Display.TYPE_OVERLAY,
+                Display.TYPE_EXTERNAL,
+                Display.TYPE_INTERNAL,
+                Display.TYPE_WIFI
+            };
 
     private final MediaProjection.Callback mEmptyMediaProjectionCallback =
             new MediaProjection.Callback() {};
@@ -239,6 +248,15 @@ public class MediaProjectionRule implements TestRule {
             boolean skipDefaultCallback,
             @Nullable String displayName)
             throws Exception {
+        if (displayName == null) {
+            if (hasMultipleDisplays(mDisplayManager)) {
+                // When multiple displays are present, we use the device name for the default
+                // display.
+                // see: frameworks/base/packages/SystemUI/src/com/android/systemui/
+                // mediaprojection/permission/ShareToAppPermissionDialogDelegate.kt
+                displayName = Build.MODEL;
+            }
+        }
         showMediaProjectionConsent(config, launchCookie, foregroundServiceClass);
         mActivity.performMediaProjectionConsent(displayName);
         mMediaProjectionTrackerRule.mMediaProjection = mActivity.startMediaProjection();
@@ -547,5 +565,20 @@ public class MediaProjectionRule implements TestRule {
                 mBackgroundHandler = null;
             }
         }
+    }
+
+    private static boolean hasMultipleDisplays(DisplayManager displayManager) {
+        Objects.requireNonNull(displayManager);
+        for (Display display : displayManager.getDisplays()) {
+            if (display.getDisplayId() == Display.DEFAULT_DISPLAY) {
+                continue;
+            }
+            for (int type : RECORDABLE_DISPLAY_TYPES) {
+                if (display.getType() == type) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -16,11 +16,12 @@
 
 package android.app.usage.cts;
 
-import android.annotation.Nullable;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.ArraySet;
 import android.view.WindowManager;
+
+import androidx.annotation.Nullable;
 
 public final class Activities {
 

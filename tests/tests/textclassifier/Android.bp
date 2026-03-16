@@ -51,3 +51,44 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+android_test {
+    name: "CtsTextClassifierPccTestCases",
+    team: "trendy_team_android_platform_communications",
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest-pcc.xml",
+    static_libs: [
+        "androidx.test.runner",
+        "androidx.test.rules",
+        "androidx.appcompat_appcompat",
+        "androidx.test.core",
+        "ctstestrunner-axt",
+        "compatibility-device-util-axt",
+        "truth",
+        "androidx.test.ext.junit",
+        "androidx.test.uiautomator_uiautomator",
+        "android.permission.flags-aconfig-java",
+        "bedstead",
+    ],
+
+    libs: [
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
+    ],
+    data: [
+        ":CtsQueryTextClassifierServiceActivity",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    srcs: [
+
+        "src/android/view/textclassifier/cts/TextClassificationTest.java",
+
+    ],
+    per_testcase_directory: true,
+    resource_dirs: ["res"],
+    sdk_version: "test_current",
+    test_config: "AndroidTest-pcc.xml",
+}

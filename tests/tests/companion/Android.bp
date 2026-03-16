@@ -78,7 +78,7 @@ android_test {
         ":CompanionDeviceTestApp",
     ],
     per_testcase_directory: true,
-
+    compile_multilib: "both",
     target_sdk_version: "current",
 }
 

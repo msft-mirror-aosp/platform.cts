@@ -437,7 +437,6 @@ public class PhotoPickerUiUtils {
      * Gets a UI element using UI Automator (BySelector) that matches the provided text.
      *
      * @param text   The text to match. This can be a regular expression.
-     * @param device The {@link UiDevice} instance to use for searching.
      * @param displayId The id of the target display.
      * @return the BySelector for given text and displayId
      */
@@ -446,27 +445,50 @@ public class PhotoPickerUiUtils {
     }
 
     /**
-     * Finds a UI element using UI Automator (UiObject2) that matches the provided
-     * content description.
+     * Gets a UI element using UI Automator (BySelector) that matches the provided content
+     * description.
      *
-     * @param text   The content description to match.
-     * @param device The {@link UiDevice} instance to use for searching.
+     * @param text The content description to match.
+     * @param displayId The id of the target display.
+     * @return the BySelector for given text and displayId
      */
-    public static UiObject2 getUiObjectMatchingDescription(@NonNull String text, UiDevice device) {
-        return device.findObject(By.desc(text));
+    public static BySelector getBySelectorMatchingDescription(@NonNull String text, int displayId) {
+        return By.desc(text).displayId(displayId);
     }
 
     /**
-     * Finds a UI element using UI Automator (UiObject2) that matches the provided
-     * content description.
+     * Finds a UI element using UI Automator (UiObject2) that matches the provided content
+     * description.
      *
-     * @param text   The content description to match.
+     * @param text The content description to match.
+     * @param device The {@link UiDevice} instance to use for searching.
+     */
+    public static UiObject2 getUiObject2MatchingDescription(@NonNull String text, UiDevice device) {
+        return device.wait(Until.findObject(By.desc(text)), SHORT_TIMEOUT);
+    }
+
+    /**
+     * Finds a UI element using UI Automator (UiObject) that matches the provided content
+     * description.
+     *
+     * @param text The content description to match.
+     * @param device The {@link UiDevice} instance to use for searching.
+     */
+    public static UiObject getUiObjectMatchingDescription(@NonNull String text, UiDevice device) {
+        return device.findObject(new UiSelector().description(text));
+    }
+
+    /**
+     * Finds a UI element using UI Automator (UiObject2) that matches the provided content
+     * description.
+     *
+     * @param text The content description to match.
      * @param device The {@link UiDevice} instance to use for searching.
      * @param displayId The id of the target display.
      * @return the {@link UiObject2} for given text and displayId
      */
-    public static UiObject2 getUiObjectMatchingDescription(@NonNull String text, UiDevice device,
-            int displayId) {
+    public static UiObject2 getUiObject2MatchingDescription(
+            @NonNull String text, UiDevice device, int displayId) {
         return device.findObject(By.desc(text).displayId(displayId));
     }
 }

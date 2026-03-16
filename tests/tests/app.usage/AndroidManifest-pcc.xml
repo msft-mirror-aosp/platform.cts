@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.app.usage.cts.pcc">
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <application>
+        <uses-library android:name="android.test.runner" />
+        <!-- A PCC component is required for a PCC uid to be assigned to the test. -->
+        <service android:name=".UnusedPccService"
+            android:privateComputeCore="true"
+            android:exported="false"/>
+
+        <activity android:name="android.app.usage.cts.Activities$ActivityOne"
+            android:privateComputeCore="true"
+            android:exported="true" />
+    </application>
+
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="android.app.usage.cts.pcc"
+        android:label="CTS UsageEvents PCC Tests" />
+</manifest>

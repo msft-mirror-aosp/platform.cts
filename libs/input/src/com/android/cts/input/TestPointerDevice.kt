@@ -16,13 +16,16 @@
 
 package com.android.cts.input
 
-import android.companion.virtual.VirtualDeviceManager.VirtualDevice
+import android.Manifest.permission.INJECT_EVENTS
 import android.graphics.Point
+import android.hardware.input.InputManager
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
 import android.view.Display
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.ThrowingSupplier
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_FINGER
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_PEN
 
@@ -32,16 +35,19 @@ enum class TestPointerDevice {
         private lateinit var virtualMouse: VirtualMouse
 
         override fun setUp(
-            virtualDevice: VirtualDevice,
             display: Display
         ) {
-            virtualMouse =
-                virtualDevice.createVirtualMouse(
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            val inputManager =
+                instrumentation.context.getSystemService(InputManager::class.java)!!
+            virtualMouse = runWithShellPermissionIdentity(ThrowingSupplier {
+                inputManager.createVirtualMouse(
                     VirtualMouseConfig.Builder()
                         .setVendorId(TEST_VENDOR_ID)
                         .setProductId(TEST_PRODUCT_ID)
                         .setInputDeviceName("Pointer Icon Test Mouse")
                         .setAssociatedDisplayId(display.displayId).build())
+            }, INJECT_EVENTS, ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
         }
 
         override fun hoverMove(dx: Int, dy: Int) {
@@ -68,7 +74,6 @@ enum class TestPointerDevice {
 
         @Suppress("DEPRECATION")
         override fun setUp(
-            virtualDevice: VirtualDevice,
             display: Display
         ) {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -100,7 +105,6 @@ enum class TestPointerDevice {
         private lateinit var touchpad: UinputTouchPad
 
         override fun setUp(
-            virtualDevice: VirtualDevice,
             display: Display
         ) {
             touchpad =
@@ -138,8 +142,12 @@ enum class TestPointerDevice {
         override fun toString(): String = "TOUCHPAD"
     };
 
+    fun setUp(
+        ignored: AutoCloseable,
+        display: Display,
+    ) = setUp(display)
+
     abstract fun setUp(
-        virtualDevice: VirtualDevice,
         display: Display,
     )
 
@@ -149,5 +157,7 @@ enum class TestPointerDevice {
     companion object {
         const val TEST_VENDOR_ID = 0x18d1
         const val TEST_PRODUCT_ID = 0xabcd
+        const val ASSOCIATE_INPUT_DEVICE_TO_DISPLAY =
+                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
     }
 }
