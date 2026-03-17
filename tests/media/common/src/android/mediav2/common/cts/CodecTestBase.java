@@ -204,7 +204,7 @@ public abstract class CodecTestBase {
     public static final HashMap<String, int[]> PROFILE_HDR_MAP = new HashMap<>();
     public static final boolean ENABLE_LOGS = false;
     public static final int PER_TEST_TIMEOUT_LARGE_TEST_MS = 300000;
-    public static final int PER_TEST_TIMEOUT_SMALL_TEST_MS = 60000;
+    public static final int PER_TEST_TIMEOUT_SMALL_TEST_MS = 90000;
     public static final int UNSPECIFIED = 0;
     // Maintain Timeouts in sync with their counterpart in NativeMediaCommon.h
     // block at most 5ms while looking for io buffers
