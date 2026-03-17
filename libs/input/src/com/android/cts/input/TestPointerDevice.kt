@@ -17,6 +17,7 @@
 package com.android.cts.input
 
 import android.Manifest.permission.INJECT_EVENTS
+import android.Manifest.permission.SET_POINTER_SPEED
 import android.graphics.Point
 import android.hardware.input.InputManager
 import android.hardware.input.VirtualMouse
@@ -40,6 +41,14 @@ enum class TestPointerDevice {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             val inputManager =
                 instrumentation.context.getSystemService(InputManager::class.java)!!
+
+            runWithShellPermissionIdentity(
+                {
+                    inputManager.setMouseScalingEnabled(false, display.displayId)
+                },
+                SET_POINTER_SPEED
+            )
+
             virtualMouse = runWithShellPermissionIdentity(ThrowingSupplier {
                 inputManager.createVirtualMouse(
                     VirtualMouseConfig.Builder()
