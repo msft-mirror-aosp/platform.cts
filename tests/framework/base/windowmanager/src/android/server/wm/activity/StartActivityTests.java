@@ -259,14 +259,15 @@ public class StartActivityTests extends ActivityManagerTestBase {
     @Test
     @ApiTest(apis = {"android.app.Activity#navigateUpTo"})
     public void testStartActivityByNavigateUpToFromDiffUid() {
-        final Intent rootIntent = new Intent(mContext, Activities.RegularActivity.class);
-        final String regularActivityName = Activities.RegularActivity.class.getName();
-        final TestActivitySession<Activities.RegularActivity> activitySession1 =
+        final Intent rootIntent =
+                new Intent(mContext, Activities.HandleConfigRegularActivity.class);
+        final String regularActivityName = Activities.HandleConfigRegularActivity.class.getName();
+        final TestActivitySession<Activities.HandleConfigRegularActivity> activitySession1 =
                 createManagedTestActivitySession();
         activitySession1.launchTestActivityOnDisplaySync(regularActivityName, rootIntent,
                 getMainDisplayId());
 
-        final Intent navIntent = new Intent(mContext, Activities.RegularActivity.class);
+        final Intent navIntent = new Intent(mContext, Activities.HandleConfigRegularActivity.class);
         verifyNavigateUpTo(activitySession1, navIntent);
 
         navIntent.addFlags(FLAG_ACTIVITY_CLEAR_TOP);
