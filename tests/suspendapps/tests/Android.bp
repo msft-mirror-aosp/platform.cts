@@ -34,6 +34,7 @@ android_test {
         "platform-test-rules",
         "bedstead-enterprise",
         "TestApp",
+        "com.android.window.flags.window-aconfig-java",
     ],
 
     platform_apis: true,
