@@ -43,6 +43,7 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.ShellUtils;
 
 import com.google.common.base.Strings;
 
@@ -55,6 +56,8 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SmallTest
 @AppModeFull(reason = "Instant Apps cannot get car related permissions")
@@ -74,6 +77,7 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
     private CarPowerManager mCarPowerManager;
     private CarOccupantZoneManager mCarOccupantZoneManager;
     private String mInitialPowerPolicyId;
+    private boolean mAutoPowerSaving;
     private final Executor mExecutor = mContext.getMainExecutor();
 
     // TODO(b/242350638): add missing annotations, remove (on child bug of 242350638)
@@ -91,6 +95,10 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
         mCarOccupantZoneManager = (CarOccupantZoneManager) getCar().getCarManager(
                 Car.CAR_OCCUPANT_ZONE_SERVICE);
         mInitialPowerPolicyId = mCarPowerManager.getCurrentPowerPolicy().getPolicyId();
+        Matcher matcher = Pattern.compile("mIsAutoPowerSaving[:]?=(true|false)").matcher(
+                ShellUtils.runShellCommand(
+                "dumpsys car_service --services CarPowerManagementService"));
+        mAutoPowerSaving = matcher.find() && Boolean.parseBoolean(matcher.group(1));
     }
 
     @After
@@ -188,6 +196,7 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
     @Test
     public void testSetDisplayPowerState_passengerDisplays_modeOn() throws Exception {
         assumeTrue("No passenger zones", mCarOccupantZoneManager.hasPassengerZones());
+        assumeTrue("Passenger display auto-power saving is disabled", mAutoPowerSaving);
 
         updateDisplayPowerModeSetting(DISPLAY_POWER_MODE_ON);
 
@@ -223,6 +232,7 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
     @Test
     public void testSetDisplayPowerState_passengerDisplays_modeOff() throws Exception {
         assumeTrue("No passenger zones", mCarOccupantZoneManager.hasPassengerZones());
+        assumeTrue("Passenger display auto-power saving is disabled", mAutoPowerSaving);
 
         updateDisplayPowerModeSetting(DISPLAY_POWER_MODE_OFF);
 
@@ -258,6 +268,7 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
     @Test
     public void testSetDisplayPowerState_passengerDisplays_modeAlwaysOn() throws Exception {
         assumeTrue("No passenger zones", mCarOccupantZoneManager.hasPassengerZones());
+        assumeTrue("Passenger display auto-power saving is disabled", mAutoPowerSaving);
 
         updateDisplayPowerModeSetting(DISPLAY_POWER_MODE_ALWAYS_ON);
 
