@@ -1002,8 +1002,8 @@ public class CarrierConfigManagerTest {
             return;
         }
         ServiceState serviceState = mTelephonyManager.getServiceState();
-        assumeTrue(!isSimCardPresent() || serviceState == null
-                || serviceState.getState() != STATE_IN_SERVICE);
+        assumeTrue("Test requires a SIM card in service", isSimCardPresent()
+                && serviceState != null && serviceState.getState() == STATE_IN_SERVICE);
 
         final int subId = SubscriptionManager.getDefaultDataSubscriptionId();
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
