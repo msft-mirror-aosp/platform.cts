@@ -896,7 +896,7 @@ public class CarrierConfigManagerTest {
 
     @Test
     public void testCarrierConfigChangeListener() throws Exception {
-        LinkedBlockingQueue<CarrierConfigChangeParams> queue = new LinkedBlockingQueue<>(1);
+        LinkedBlockingQueue<CarrierConfigChangeParams> queue = new LinkedBlockingQueue<>(10);
 
         CarrierConfigManager.CarrierConfigChangeListener listener =
                 (slotIndex, subId, carrierId, preciseCarrierId) -> queue.offer(
@@ -911,8 +911,22 @@ public class CarrierConfigManagerTest {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyRegistryManager,
                     (trm) -> trm.notifyCarrierConfigChanged(TEST_SLOT_INDEX, TEST_SUB_ID,
                             TEST_CARRIER_ID, TEST_PRECISE_CARRIER_ID));
-            CarrierConfigChangeParams result = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 
+            CarrierConfigChangeParams result = null;
+            long timeoutTime = System.currentTimeMillis() + TIMEOUT_MILLIS;
+            while (System.currentTimeMillis() < timeoutTime) {
+                CarrierConfigChangeParams p = queue.poll(
+                        timeoutTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                if (p != null && p.mSlotIndex == TEST_SLOT_INDEX
+                        && p.mSubId == TEST_SUB_ID
+                        && p.mCarrierId == TEST_CARRIER_ID
+                        && p.mPreciseCarrierId == TEST_PRECISE_CARRIER_ID) {
+                    result = p;
+                    break;
+                }
+            }
+
+            assertNotNull("Did not receive expected carrier config change notification", result);
             assertEquals(TEST_SLOT_INDEX, result.mSlotIndex);
             assertEquals(TEST_SUB_ID, result.mSubId);
             assertEquals(TEST_CARRIER_ID, result.mCarrierId);
