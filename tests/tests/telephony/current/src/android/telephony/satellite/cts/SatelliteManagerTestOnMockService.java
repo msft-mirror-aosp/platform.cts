@@ -74,7 +74,7 @@ import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
-import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
+import android.telephony.cts.ServiceStateRadioStateListener;
 import android.telephony.satellite.AntennaDirection;
 import android.telephony.satellite.AntennaPosition;
 import android.telephony.satellite.EarfcnRange;
@@ -847,7 +847,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerOnMockSer
             Intent intent = pendingIntent.get().getIntent();
             assertNotNull(intent);
             assertEquals(
-                    MockSatelliteServiceManager.PACKAGE, intent.getComponent().getPackageName());
+                    sMockSatelliteServiceManager.getPackageName(), intent.getComponent().getPackageName());
             assertEquals(
                     MockPointingUiActivity.class.getName(), intent.getComponent().getClassName());
             assertEquals(

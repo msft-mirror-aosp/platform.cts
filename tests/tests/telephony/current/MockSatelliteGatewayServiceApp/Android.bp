@@ -10,16 +10,15 @@ android_test_helper_app {
         "src/**/*.java",
         "aidl/**/I*.aidl",
     ],
-    libs: [
-        "telephony-common",
-    ],
+    libs: [],
     static_libs: [
         "compatibility-device-util-axt",
     ],
     aidl: {
+        include_dirs: ["frameworks/base/telephony/java"],
         local_include_dirs: ["aidl/"],
     },
-    platform_apis: true,
+    sdk_version: "test_current",
     test_suites: [
         "general-tests",
     ],

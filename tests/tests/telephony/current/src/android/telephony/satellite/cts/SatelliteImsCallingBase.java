@@ -69,12 +69,13 @@ import java.util.concurrent.TimeUnit;
 public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
     private static final String LOG_TAG = "SatelliteImsCallingBase";
 
-    protected static final String PACKAGE = "android.telephony.satellite.cts";
-    protected static final String PACKAGE_CTS_DIALER = "android.telephony.cts";
     protected static final String COMMAND_SET_DEFAULT_DIALER = "telecom set-default-dialer ";
     protected static final String COMMAND_GET_DEFAULT_DIALER = "telecom get-default-dialer";
-    protected static final String INCALL_COMPONENT =
-            "android.telephony.cts/.InCallServiceStateValidator";
+
+    protected static String getIncallComponent() {
+        return InstrumentationRegistry.getInstrumentation().getContext().getPackageName()
+                + "/android.telephony.cts.InCallServiceStateValidator";
+    }
 
     // The timeout to wait in current state in milliseconds
     protected static final int WAIT_IN_CURRENT_STATE = 100;
@@ -188,7 +189,8 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
             // Get the default dialer and save it to restore after test ends.
             sPreviousDefaultDialer = getDefaultDialer(InstrumentationRegistry.getInstrumentation());
             // Set dialer as "android.telephony.cts"
-            setDefaultDialer(InstrumentationRegistry.getInstrumentation(), PACKAGE_CTS_DIALER);
+            setDefaultDialer(InstrumentationRegistry.getInstrumentation(),
+                    InstrumentationRegistry.getInstrumentation().getContext().getPackageName());
 
             // Get the default Subscription values and save it to restore after test ends.
             sPreviousOptInStatus =
@@ -545,7 +547,7 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
         logd(LOG_TAG, "setupForEmergencyCalling: slotId=" + slotId + ", testNumber=" + testNumber);
         enableCarrierUseImsFirstForEmergency(slotId);
         TestUtils.setSystemDialerOverride(
-                InstrumentationRegistry.getInstrumentation(), INCALL_COMPONENT);
+                InstrumentationRegistry.getInstrumentation(), getIncallComponent());
         TestUtils.addTestEmergencyNumber(InstrumentationRegistry.getInstrumentation(), testNumber);
         mIsEmergencyCallingSetup = true;
     }

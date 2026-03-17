@@ -52,7 +52,7 @@ import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
+import android.annotation.NonNull;
 
 import com.android.internal.telephony.flags.Flags;
 
@@ -1322,7 +1322,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (!shouldTestSatellite()) return;
         grantSatellitePermission();
 
-        String ctsPackageName = "android.telephony.cts";
+        String ctsPackageName = getContext().getPackageName();
         boolean containsCtsApp = false;
         List<String> resApps = sSatelliteManager.getSatelliteDataOptimizedApps();
         assertFalse(resApps.isEmpty());

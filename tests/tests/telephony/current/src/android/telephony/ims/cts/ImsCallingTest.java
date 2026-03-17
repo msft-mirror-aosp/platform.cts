@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.content.Context;
 import android.media.AudioManager;
 import android.net.Uri;
