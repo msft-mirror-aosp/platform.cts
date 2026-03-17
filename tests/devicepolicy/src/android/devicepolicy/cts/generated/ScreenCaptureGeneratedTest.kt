@@ -87,7 +87,11 @@ public final class ScreenCapturePolicy_ScopeDevice
 public final class ScreenCapturePolicy_ScopeParentUser
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+@RequireFlagsEnabled(
+    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+    Flags.FLAG_POLICY_STREAMLINING,
+)
 @UsesEnterprisePolicies(
     scopeUser = ScreenCapturePolicy_ScopeUser::class,
     scopeDevice = ScreenCapturePolicy_ScopeDevice::class,

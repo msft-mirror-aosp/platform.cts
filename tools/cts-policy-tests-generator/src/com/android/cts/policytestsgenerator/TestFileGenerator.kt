@@ -41,6 +41,7 @@ class TestFileGenerator(val metadata: PolicyMetadata) {
             validValues = ValuesGenerator.generateValidValues(metadata),
             invalidValues = ValuesGenerator.generateInvalidValues(metadata),
             apisUnderTest = ApisUnderTestGenerator.generateApiList(metadata),
+            flags = FlagsGenerator.generateFlags(metadata),
         )
     }
 }
@@ -59,6 +60,7 @@ private fun generateTestFile(
     validValues: List<String>,
     invalidValues: List<InvalidValueTestCase>,
     apisUnderTest: List<String>,
+    flags: List<String>,
 ): String {
     val year = java.time.LocalDate.now().year
 
@@ -73,6 +75,9 @@ private fun generateTestFile(
         formatPermissions(parentUserPermissions, "APPLIES_TO_PARENT")
     val policyScopeDevicePermissions = formatPermissions(devicePermissions, "APPLIES_GLOBALLY")
     val invalidValueTestCases = formatInvalidValueTestCases(invalidValues)
+
+    // The generated file includes 'android.app.admin.flags.Flags', so strip it from the flags.
+    val strippedFlags = flags.map { it.replaceFirst("android.app.admin.flags.", "") }
 
     val enterprisePolicyImports =
         formatEnterprisePolicyImports(
@@ -144,7 +149,9 @@ private fun generateTestFile(
       public final class ${policyName}Policy_ScopeParentUser
 
       @RunWith(BedsteadJUnit4::class)
-      @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+      @RequireFlagsEnabled(
+          ${formatListValues(strippedFlags, indent="          ")}
+      )
       @UsesEnterprisePolicies(
           scopeUser = ${policyName}Policy_ScopeUser::class,
           scopeDevice = ${policyName}Policy_ScopeDevice::class,
@@ -252,3 +259,7 @@ private fun formatList(elements: List<String>, indent: String, addCommas: Boolea
             postfix = "${comma}\n${indent})",
         )
 }
+
+// Formats the list values, one on each line, with indent and commas added.
+private fun formatListValues(elements: List<String>, indent: String) =
+    elements.joinToString(",\n${indent}", postfix = ",")
