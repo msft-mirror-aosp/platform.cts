@@ -685,13 +685,29 @@ public class RingerTest extends BaseAppVerifier {
         return false;
     }
 
-    private AudioManager configureAudioManager(int ringerMode, AudioPlaybackCallback callback) {
+    private AudioManager configureAudioManager(int ringerMode, AudioPlaybackCallback callback)
+            throws Exception {
         AudioManager audioManager = mContext.getSystemService(AudioManager.class);
         assertNotNull("AudioManager should not be null", audioManager);
 
         // Configure the ringer mode:
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(audioManager,
                 am -> am.setRingerMode(ringerMode));
+
+        // Ensure the ringer mode has actually changed before proceeding.
+        // This prevents race conditions with asynchronous system events (like DND restoration).
+        waitUntilConditionIsTrueOrTimeout(new Condition() {
+            @Override
+            public Object expected() {
+                return ringerMode;
+            }
+            @Override
+            public Object actual() throws Exception {
+                return audioManager.getRingerMode();
+            }
+
+        }, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                "Ringer mode should have changed to " + ringerMode);
 
         // Need to register as shell or we will never get callbacks for telecom.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
