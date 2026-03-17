@@ -31,11 +31,11 @@ import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
-import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeNotNull;
 
 import android.annotation.NonNull;
 import android.app.admin.DevicePolicyManager;
@@ -45,6 +45,7 @@ import android.app.admin.ProvisioningException;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.devicepolicy.cts.utils.DevicePolicyManagementRoleUtils;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -584,6 +585,35 @@ public class DevicePolicyManagementRoleHolderTest {
     }
 
     /**
+     * Verifies that the checks for adding a DMRH can be bypassed for the default DMRH package even
+     * when a non-test-only DO exists on the device.
+     */
+    @Test
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts
+    @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    // TODO(b/476350458): enable test for HSUM
+    @RequireNotHeadlessSystemUserMode(reason = "No non-testonly test app which supports headless")
+    public void isPackageQualified_defaultDmrh_nonTestOnlyDeviceOwner_true() {
+        String defaultDmrh =
+                DevicePolicyManagementRoleUtils.getDefaultRoleHolderPackageName(sContext);
+        assumeNotNull(defaultDmrh);
+        TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ false);
+        ComponentName adminComponent = getDeviceAdminComponentName(dpc);
+
+        try (TestAppInstance ignored = dpc.install(TestApis.users().instrumented());
+                DeviceOwner ignored1 = TestApis.devicePolicy().setDeviceOwner(adminComponent)) {
+
+            boolean isQualified =
+                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole(
+                            defaultDmrh);
+
+            assertThat(isQualified).isTrue();
+        }
+    }
+
+    /**
      * Verifies that the checks for adding a DMRH can be bypassed when a test-only DO exists on the
      * device.
      */
@@ -677,7 +707,8 @@ public class DevicePolicyManagementRoleHolderTest {
         android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING,
         android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
     })
-    @RequireRootInstrumentation(reason = "Requires permission MANAGE_MULTIUSER_DEVICE_PROVISIONING_STATE")
+    @RequireRootInstrumentation(
+            reason = "Requires permission MANAGE_MULTIUSER_DEVICE_PROVISIONING_STATE")
     public void testOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_true(
             @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
         TestApis.users().ensureNoOtherUsers();
