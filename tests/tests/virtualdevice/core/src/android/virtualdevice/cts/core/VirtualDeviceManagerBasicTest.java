@@ -279,6 +279,26 @@ public class VirtualDeviceManagerBasicTest {
         assertDeviceClosed(mVirtualDevice.getDeviceId());
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_PUBLIC_DEVICE_PROFILE)
+    @Test
+    public void virtualDevice_getDeviceProfile_returnsDeviceProfile() {
+        VirtualDevice device = mVirtualDeviceManager.getVirtualDevice(mVirtualDevice.getDeviceId());
+        assertThat(device).isNotNull();
+        assertThat(device.getDeviceProfile()).isEqualTo(VirtualDevice.DEVICE_PROFILE_APP_STREAMING);
+
+        final AssociationInfo nearbyDeviceAssociation =
+                mRule.createManagedAssociation(
+                        AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING);
+        VirtualDeviceManager.VirtualDevice nearbyDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        nearbyDeviceAssociation.getId(),
+                        VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS);
+        device = mVirtualDeviceManager.getVirtualDevice(nearbyDevice.getDeviceId());
+        assertThat(device).isNotNull();
+        assertThat(device.getDeviceProfile())
+                .isEqualTo(VirtualDevice.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING);
+    }
+
     @Test
     public void getVirtualDevice_getDisplayIds() {
         VirtualDisplay firstDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice);
