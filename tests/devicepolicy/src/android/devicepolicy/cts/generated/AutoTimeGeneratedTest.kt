@@ -63,7 +63,11 @@ public final class AutoTimePolicy_ScopeDevice
 @EnterprisePolicy(dpc = [], permissions = []) public final class AutoTimePolicy_ScopeParentUser
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+@RequireFlagsEnabled(
+    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+    Flags.FLAG_POLICY_STREAMLINING_AUTO_TIME,
+)
 @UsesEnterprisePolicies(
     scopeUser = AutoTimePolicy_ScopeUser::class,
     scopeDevice = AutoTimePolicy_ScopeDevice::class,

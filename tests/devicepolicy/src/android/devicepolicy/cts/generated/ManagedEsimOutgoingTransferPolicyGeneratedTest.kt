@@ -72,7 +72,7 @@ public final class ManagedEsimOutgoingTransferPolicyScopeParentUser
 @RequireFlagsEnabled(
     Flags.FLAG_POLICY_STREAMLINING,
     Flags.FLAG_POLICY_STREAMLINING_TESTS,
-    Flags.FLAG_MANAGED_ESIM_OUTGOING_TRANSFER_POLICY
+    Flags.FLAG_MANAGED_ESIM_OUTGOING_TRANSFER_POLICY,
 )
 @UsesEnterprisePolicies(
     scopeUser = ManagedEsimOutgoingTransferPolicyScopeUser::class,

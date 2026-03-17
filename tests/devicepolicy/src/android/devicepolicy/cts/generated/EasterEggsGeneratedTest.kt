@@ -78,7 +78,11 @@ public final class EasterEggsPolicy_ScopeDevice
 @EnterprisePolicy(dpc = [], permissions = []) public final class EasterEggsPolicy_ScopeParentUser
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+@RequireFlagsEnabled(
+    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+    Flags.FLAG_POLICY_STREAMLINING_EASTER_EGGS,
+)
 @UsesEnterprisePolicies(
     scopeUser = EasterEggsPolicy_ScopeUser::class,
     scopeDevice = EasterEggsPolicy_ScopeDevice::class,

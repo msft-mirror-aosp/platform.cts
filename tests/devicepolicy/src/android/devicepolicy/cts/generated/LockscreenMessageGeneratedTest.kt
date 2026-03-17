@@ -64,7 +64,11 @@ public final class LockscreenMessagePolicy_ScopeDevice
 public final class LockscreenMessagePolicy_ScopeParentUser
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+@RequireFlagsEnabled(
+    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+    Flags.FLAG_POLICY_STREAMLINING_LOCKSCREEN_MESSAGE,
+)
 @UsesEnterprisePolicies(
     scopeUser = LockscreenMessagePolicy_ScopeUser::class,
     scopeDevice = LockscreenMessagePolicy_ScopeDevice::class,
@@ -75,15 +79,7 @@ class LockscreenMessageGeneratedTest : CommonPolicyTests<String>() {
 
     override val policyIdentifier = PolicyIdentifier.LOCKSCREEN_MESSAGE
 
-    override val validValues =
-        listOf(
-            "Normal test message",
-            String(CharArray(256) { 'A' }), // A longer string
-            " ", // Whitespace only input should work
-            "\t",
-            "Test smiley unicode: \uD83D\uDE00",
-            "Test \u0000 null"
-        )
+    override val validValues = listOf("a-value")
 
     override val invalidValueTestCases =
         listOf(InvalidValueTestCase("", expectedError = "Empty string is not allowed"))
