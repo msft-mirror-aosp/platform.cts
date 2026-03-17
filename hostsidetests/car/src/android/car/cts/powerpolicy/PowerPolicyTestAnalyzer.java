@@ -78,23 +78,30 @@ public final class PowerPolicyTestAnalyzer {
     }
 
     private void parseAndAddTestEntry(TestResultTable results, String line) throws Exception {
-        if (!line.trim().startsWith(TEST_RESULT_PREFIX)) {
-            return;
-        }
+        String[] entries = line.split("(?=" + TEST_RESULT_PREFIX + ")");
 
-        String[] tokens = line.split("##");
-        if (tokens.length != 2) {
-            throw new IllegalArgumentException("malformatted result entry: " + line);
-        }
-        String header = tokens[0].trim();
-        String data = tokens[1].trim();
-        String[] hdrTokens = header.split(":\\s*");
-        if (hdrTokens.length != 3 && hdrTokens.length != 4) {
-            throw new IllegalArgumentException("malformatted result header: " + line);
-        }
+        for (String entry : entries) {
+            String cleanEntry = entry.trim();
+            if (!cleanEntry.startsWith(TEST_RESULT_PREFIX)) {
+                continue;
+            }
 
-        String subject = hdrTokens.length == 3 ? null : hdrTokens[3];
-        results.add(hdrTokens[1], hdrTokens[2], subject, data);
+            String[] tokens = cleanEntry.split("##", -1);
+            if (tokens.length != 2) {
+                throw new IllegalArgumentException("malformatted result entry: " + cleanEntry);
+            }
+
+            String header = tokens[0].trim();
+            String data = tokens[1].trim();
+            String[] hdrTokens = header.split(":\\s*");
+
+            if (hdrTokens.length != 3 && hdrTokens.length != 4) {
+                throw new IllegalArgumentException("malformatted result header: " + cleanEntry);
+            }
+
+            String subject = hdrTokens.length == 3 ? null : hdrTokens[3];
+            results.add(hdrTokens[1], hdrTokens[2], subject, data);
+        }
     }
 
     /**
@@ -153,4 +160,22 @@ public final class PowerPolicyTestAnalyzer {
         }
         return diff;
     }
+
+    /**
+     * Sanity check to ensure the batched-log regex parser isn't fundamentally broken.
+     */
+    public boolean sanityCheck() {
+        try {
+            TestResultTable dummyTable = new TestResultTable();
+            String dummyLog = TEST_RESULT_PREFIX + ": Action1: Subject1 ## Data1 "
+                            + TEST_RESULT_PREFIX + ": Action2: Subject2 ## Data2";
+
+            parseAndAddTestEntry(dummyTable, dummyLog);
+
+            return dummyTable.size() == 2;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

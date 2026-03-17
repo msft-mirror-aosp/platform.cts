@@ -33,6 +33,7 @@ import android.car.cts.powerpolicy.SilentModeInfo;
 import android.car.cts.powerpolicy.SystemInfoParser;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.android.car.power.CarPowerDumpProto;
 import com.android.compatibility.common.util.CommonTestUtils;
@@ -81,6 +82,11 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
 
     @Before
     public void checkPrecondition() throws Exception {
+        // Run the sanity check first to ensure the batched-log regex parser is working
+        assertWithMessage("PowerPolicyTestAnalyzer sanity check failed")
+                .that(mTestAnalyzer.sanityCheck())
+                .isTrue();
+
         PowerPolicyTestHelper testHelper = new PowerPolicyTestHelper(
                 /* testcase= */ "pre-condition", /* step= */ "testStep1",
                 /* frameCpms= */ getCpmsFrameworkLayerStateInfo(),
@@ -252,23 +258,35 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     }
 
     private void checkSilentModeSupported() throws Exception {
-        CarPowerDumpProto proto =
-                ProtoUtils.getProto(
-                        getDevice(),
-                        CarPowerDumpProto.parser(),
-                        CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
-        CpmsFrameworkLayerStateInfo info = CpmsFrameworkLayerStateInfo.parseProto(proto);
+        CpmsFrameworkLayerStateInfo info = getCpmsFrameworkLayerStateInfo();
         assumeTrue("HW does not support silent mode. Skip the test", info.isSilentModeSupported());
     }
 
-    private CpmsFrameworkLayerStateInfo getCpmsFrameworkLayerStateInfo()
-            throws Exception {
-        CarPowerDumpProto proto =
-                ProtoUtils.getProto(
-                        getDevice(),
-                        CarPowerDumpProto.parser(),
-                        CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
-        return CpmsFrameworkLayerStateInfo.parseProto(proto);
+
+    private CpmsFrameworkLayerStateInfo getCpmsFrameworkLayerStateInfo() throws Exception {
+        CpmsFrameworkLayerStateInfo[] infoWrapper = new CpmsFrameworkLayerStateInfo[1];
+        CommonTestUtils.waitUntil(
+                "timed out (" + DEFAULT_TIMEOUT_SEC + "s) fetching CPMS proto",
+                DEFAULT_TIMEOUT_SEC,
+                () -> {
+                    try {
+                        CarPowerDumpProto proto =
+                                ProtoUtils.getProto(
+                                        getDevice(),
+                                        CarPowerDumpProto.parser(),
+                                        CpmsFrameworkLayerStateInfo.COMMAND_PROTO);
+                        infoWrapper[0] = CpmsFrameworkLayerStateInfo.parseProto(proto);
+                        return true; // Success, break the polling loop
+                    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                        // Proto stream was truncated by adb/tradefed due to heavy load.
+                        // Return false to let CommonTestUtils sleep and retry gracefully.
+                        CLog.w("Failed to parse CPMS proto (likely truncated): " + e.getMessage()
+                                + ". Retrying...");
+                        return false;
+                    }
+                });
+
+        return infoWrapper[0];
     }
 
     private CpmsSystemLayerStateInfo getCpmsSystemLayerStateInfo() throws Exception {
@@ -277,8 +295,9 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
     }
 
     private void rebootDevice() throws Exception {
-        executeCommand("svc power reboot");
-        waitForDeviceAvailable();
+        // Use Tradefed's native reboot instead of a raw shell command.
+        // This safely manages the ADB connection state without causing desyncs.
+        getDevice().reboot();
     }
 
     private void enterForcedSilentMode() throws Exception {
@@ -315,6 +334,14 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
 
     private void applyPowerPolicy(String policyId) throws Exception {
         executeCommand("cmd car_service apply-power-policy %s", policyId);
+        // Wait for CPMS to finish asynchronous application of the policy
+        CommonTestUtils.waitUntil("timed out (" + DEFAULT_TIMEOUT_SEC
+                + "s) waiting for policy " + policyId + " to be applied",
+                DEFAULT_TIMEOUT_SEC,
+                () -> {
+                    CpmsFrameworkLayerStateInfo info = getCpmsFrameworkLayerStateInfo();
+                    return info != null && policyId.equals(info.getCurrentPolicyId());
+                });
     }
 
     private void definePowerPolicyGroup(String policyGroupStr) throws Exception {
@@ -456,6 +483,14 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
             return;
         }
         definePowerPolicy(policyDef.toString());
+        // Poll CPMS until it registers the policy, respecting the asynchronous nature of the OS
+        CommonTestUtils.waitUntil("timed out (" + DEFAULT_TIMEOUT_SEC
+                + "s) waiting for policy " + policyDef.getPolicyId() + " to be defined in CPMS",
+                DEFAULT_TIMEOUT_SEC,
+                () -> {
+                    PowerPolicyTestHelper helper = getTestHelper(testcase, stepNo, teststep);
+                    return helper.isPowerPolicyIdDefined(policyDef);
+                });
         testHelper = getTestHelper(testcase, stepNo, teststep);
         testHelper.checkRegisteredPolicy(policyDef);
         testHelper.checkTotalRegisteredPolicies(expectedTotalPolicies);

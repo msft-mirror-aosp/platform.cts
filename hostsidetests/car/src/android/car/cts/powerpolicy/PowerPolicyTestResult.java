@@ -75,6 +75,9 @@ public final class PowerPolicyTestResult {
     public void checkLastTestResultEntry(String testcase, String action,
             String subject, PowerPolicyDef policy) throws Exception {
         TestResultTable.RecordEntry lastEntry = mTestAnalyzer.snapshotTestResult().getLastEntry();
+        assertWithMessage("Failed to retrieve the last test result entry. "
+                + "The log may be missing or the command timed out.")
+                .that(lastEntry).isNotNull();
         assertWithMessage("checkLastTestEntry with policy data")
                 .that(lastEntry.equalsWithPowerPolicyData(testcase, action, subject, policy))
                 .isTrue();
@@ -86,6 +89,12 @@ public final class PowerPolicyTestResult {
         expected.add(testcase, action, subject, data);
         TestResultTable.RecordEntry lastEntry1 = expected.getLastEntry();
         TestResultTable.RecordEntry lastEntry2 = mTestAnalyzer.snapshotTestResult().getLastEntry();
+        assertWithMessage("Failed to retrieve the last test result entry. "
+                + "The log may be missing or the command timed out.")
+                .that(lastEntry1).isNotNull();
+        assertWithMessage("Failed to retrieve the last test result entry. "
+                + "The log may be missing or the command timed out.")
+                .that(lastEntry2).isNotNull();
         assertWithMessage("checkLastTestEntry with string data")
                 .that(lastEntry1.equals(lastEntry2)).isTrue();
     }
@@ -96,6 +105,9 @@ public final class PowerPolicyTestResult {
         expected.add(testcase, action, subject, data);
         TestResultTable.RecordEntry lastEntry1 = expected.getLastEntry();
         TestResultTable.RecordEntry lastEntry2 = mTestAnalyzer.snapshotTestResult().getLastEntry();
+        if ((lastEntry1 == null) || (lastEntry2 == null)) {
+            return false;
+        }
         return lastEntry1.equalsIgnoreSubject(lastEntry2);
     }
 }
