@@ -35,6 +35,9 @@
         <option name="run-command" value="settings put system spen_air_action 0"/>
         <option name="run-command" value="settings put global ble_scan_always_enabled 0"/>
 
+        <!-- Make sure airplane mode is off to not impact Bluetooth toggle state -->
+        <option name="run-command" value="settings put global airplane_mode_on 0"/>
+
         <option name="run-command" value="cmd bluetooth_manager disable" />
         <option name="run-command" value="cmd bluetooth_manager wait-for-state:STATE_OFF" />
         <option name="run-command" value="cmd bluetooth_manager enable" />
