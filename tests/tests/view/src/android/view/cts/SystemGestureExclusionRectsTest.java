@@ -115,9 +115,16 @@ public class SystemGestureExclusionRectsTest {
 
         final List<List<Rect>> results = Collections.synchronizedList(new ArrayList<>());
         final CountDownLatch doneAnimating = new CountDownLatch(1);
+        final CountDownLatch doneReceivingRects = new CountDownLatch(1);
+        final int[] location = new int[2];
 
-        final Consumer<List<Rect>> vtoListener = results::add;
-        int[] location = new int[2];
+        final Consumer<List<Rect>> vtoListener =
+                rects -> {
+                    results.add(rects);
+                    if (rects.getFirst().right == 35 + location[0]) {
+                        doneReceivingRects.countDown();
+                    }
+                };
 
         mActivityRule.runOnUiThread(() -> {
             final View v = activity.findViewById(R.id.animating_view);
@@ -131,6 +138,7 @@ public class SystemGestureExclusionRectsTest {
         });
 
         assertTrue("didn't finish animating", doneAnimating.await(3, SECONDS));
+        assertTrue("didn't receive expected rect", doneReceivingRects.await(1, SECONDS));
 
         // Sloppy size range since these rects are transformed and may straddle pixel boundaries
         List<Integer> sizeRange = Lists.newArrayList(5, 6);
