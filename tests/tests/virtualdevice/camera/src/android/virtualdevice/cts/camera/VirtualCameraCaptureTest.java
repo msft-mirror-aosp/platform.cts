@@ -983,8 +983,8 @@ public class VirtualCameraCaptureTest {
         int requestCountBeforeAbort = 3;
         int fps = 10;
         int frameTimeMillis = 1000 / fps;
-        // 3 frames + 20% of extra time to avoid flakiness.
-        int frameTimeout = (int) ((frameTimeMillis * 3.20) + 0.5f);
+        // 1 frames + 20% of extra time to avoid flakiness.
+        int frameTimeout = (int) ((frameTimeMillis * 1.20) + 0.5f);
         String singleCaptureTag = "single";
         String repeatingCaptureTag = "repeating";
         ArrayList<CaptureResult> results = new ArrayList<>();
