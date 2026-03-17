@@ -690,7 +690,7 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
         private static final String CHANNEL_ID = "NSVA.ProgressStyleSemanticColorTest";
 
         ProgressStyleSemanticColorTest() {
-            super(R.string.progress_style_semantic_color);
+            super(R.string.progress_style_semantic_color, R.drawable.progress_style_semantic_color);
         }
 
         @Override
