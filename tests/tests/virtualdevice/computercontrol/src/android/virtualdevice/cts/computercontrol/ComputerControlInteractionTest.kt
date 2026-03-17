@@ -23,7 +23,7 @@ import android.computercontrol.testapp.common.TestAppInteractionReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.view.WindowManager
+import android.util.Size
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
@@ -56,32 +56,27 @@ class ComputerControlInteractionTest {
         TestAppInteractionReceiver(getInstrumentation().context)
     private val focusRequester = TestAppFocusRequester(getInstrumentation().context)
 
-    private val bounds =
-        getInstrumentation()
-            .context
-            .getSystemService(WindowManager::class.java)
-            .currentWindowMetrics
-            .bounds
+    private fun getSessionSize(testAppAgent: TestAppAgent): Size = testAppAgent.getDisplaySize()
 
-    private val edgeCoordinates =
+    private fun getEdgeCoordinates(size: Size) =
         listOf(
             Pair(0, 0), // Top-left
-            Pair(bounds.width() - 1, 0), // Top-right
-            Pair(0, bounds.height() - 1), // Bottom-left
-            Pair(bounds.width() - 1, bounds.height() - 1), // Bottom-right
-            Pair(bounds.width() / 2, 0), // Top-middle
-            Pair(bounds.width() / 2, bounds.height() - 1), // Bottom-middle
-            Pair(0, bounds.height() / 2), // Left-middle
-            Pair(bounds.width() - 1, bounds.height() / 2), // Right-middle
+            Pair(size.width - 1, 0), // Top-right
+            Pair(0, size.height - 1), // Bottom-left
+            Pair(size.width - 1, size.height - 1), // Bottom-right
+            Pair(size.width / 2, 0), // Top-middle
+            Pair(size.width / 2, size.height - 1), // Bottom-middle
+            Pair(0, size.height / 2), // Left-middle
+            Pair(size.width - 1, size.height / 2), // Right-middle
         )
 
-    private val outOfBoundsCoordinates =
+    private fun getOutOfBoundsCoordinates(size: Size) =
         listOf(
             // Positive out of bounds
-            Pair(bounds.width(), 0),
-            Pair(0, bounds.height()),
-            Pair(bounds.width(), bounds.height()),
-            Pair(bounds.width() + 100, bounds.height() + 100),
+            Pair(size.width, 0),
+            Pair(0, size.height),
+            Pair(size.width, size.height),
+            Pair(size.width + 100, size.height + 100),
             // Negative coordinates
             Pair(-1, -1),
             Pair(-1, 0),
@@ -110,8 +105,9 @@ class ComputerControlInteractionTest {
 
     @Test
     fun testTap() = launchTestApp().use { testAppAgent ->
-        val x = bounds.width() / 2
-        val y = bounds.height() / 2
+        val size = getSessionSize(testAppAgent)
+        val x = size.width / 2
+        val y = size.height / 2
         testAppAgent.tap(x, y)
 
         val tap = testAppInteractions.nextAction<Action.Tap>()
@@ -121,8 +117,9 @@ class ComputerControlInteractionTest {
 
     @Test
     fun testLongPress() = launchTestApp().use { testAppAgent ->
-        val x = bounds.width() / 2
-        val y = bounds.height() / 2
+        val size = getSessionSize(testAppAgent)
+        val x = size.width / 2
+        val y = size.height / 2
         testAppAgent.longPress(x, y)
 
         val longPress = testAppInteractions.nextAction<Action.LongPress>()
@@ -133,7 +130,8 @@ class ComputerControlInteractionTest {
     @Test
     fun testLongPress_edge() = launchTestApp().use { testAppAgent ->
         // Test long pressing at the corners and edges of the screen.
-        for ((x, y) in edgeCoordinates) {
+        val size = getSessionSize(testAppAgent)
+        for ((x, y) in getEdgeCoordinates(size)) {
             testAppAgent.longPress(x, y)
 
             val longPress = testAppInteractions.nextAction<Action.LongPress>()
@@ -145,17 +143,19 @@ class ComputerControlInteractionTest {
     @Test
     fun testLongPress_outOfBounds() = launchTestApp().use { testAppAgent ->
         // Test long pressing outside the screen bounds.
-        for ((x, y) in outOfBoundsCoordinates) {
+        val size = getSessionSize(testAppAgent)
+        for ((x, y) in getOutOfBoundsCoordinates(size)) {
             assertThrows(IllegalArgumentException::class.java) { testAppAgent.longPress(x, y) }
         }
     }
 
     @Test
     fun testSwipe() = launchTestApp().use { testAppAgent ->
-        val x1 = bounds.width() / 2
-        val y1 = bounds.height() / 2
-        val x2 = bounds.width() / 4
-        val y2 = bounds.height() / 4
+        val size = getSessionSize(testAppAgent)
+        val x1 = size.width / 2
+        val y1 = size.height / 2
+        val x2 = size.width / 4
+        val y2 = size.height / 4
         testAppAgent.swipe(x1, y1, x2, y2)
 
         val swipe = testAppInteractions.nextAction<Action.Swipe>()
@@ -167,12 +167,13 @@ class ComputerControlInteractionTest {
 
     @Test
     fun testSwipe_edge() = launchTestApp().use { testAppAgent ->
-        val centerX = bounds.width() / 2
-        val centerY = bounds.height() / 2
+        val size = getSessionSize(testAppAgent)
+        val centerX = size.width / 2
+        val centerY = size.height / 2
 
         // Test swiping from/to the corners and edges of the screen.
         val testCases =
-            edgeCoordinates.flatMap { (x, y) ->
+            getEdgeCoordinates(size).flatMap { (x, y) ->
                 listOf(
                     // From center to edge and back
                     arrayOf(centerX, centerY, x, y),
@@ -181,10 +182,10 @@ class ComputerControlInteractionTest {
             } +
                 listOf(
                     // Edge to edge
-                    arrayOf(0, centerY, bounds.width() - 1, centerY), // Left to Right
-                    arrayOf(bounds.width() - 1, centerY, 0, centerY), // Right to Left
-                    arrayOf(centerX, 0, centerX, bounds.height() - 1), // Top to Bottom
-                    arrayOf(centerX, bounds.height() - 1, centerX, 0) // Bottom to Top
+                    arrayOf(0, centerY, size.width - 1, centerY), // Left to Right
+                    arrayOf(size.width - 1, centerY, 0, centerY), // Right to Left
+                    arrayOf(centerX, 0, centerX, size.height - 1), // Top to Bottom
+                    arrayOf(centerX, size.height - 1, centerX, 0) // Bottom to Top
                 )
 
         for (coords in testCases) {
@@ -201,12 +202,13 @@ class ComputerControlInteractionTest {
 
     @Test
     fun testSwipe_outOfBounds() = launchTestApp().use { testAppAgent ->
-        val centerX = bounds.width() / 2
-        val centerY = bounds.height() / 2
+        val size = getSessionSize(testAppAgent)
+        val centerX = size.width / 2
+        val centerY = size.height / 2
 
         // Swipes that are not entirely within the display bounds should be rejected.
         val outOfBoundsTestCases =
-            outOfBoundsCoordinates.flatMap { (x, y) ->
+            getOutOfBoundsCoordinates(size).flatMap { (x, y) ->
                 listOf(
                     // From center to out-of-bounds and back
                     arrayOf(centerX, centerY, x, y),
@@ -216,16 +218,16 @@ class ComputerControlInteractionTest {
                 listOf(
                     // From one out-of-bounds point to another, intersecting the screen
                     arrayOf(
-                        outOfBoundsCoordinates[5].first,
+                        getOutOfBoundsCoordinates(size)[5].first,
                         centerY,
-                        outOfBoundsCoordinates[0].first,
+                        getOutOfBoundsCoordinates(size)[0].first,
                         centerY
                     ), // Horizontal
                     arrayOf(
                         centerX,
-                        outOfBoundsCoordinates[6].second,
+                        getOutOfBoundsCoordinates(size)[6].second,
                         centerX,
-                        outOfBoundsCoordinates[1].second
+                        getOutOfBoundsCoordinates(size)[1].second
                     ) // Vertical
                 )
 
@@ -246,16 +248,10 @@ class ComputerControlInteractionTest {
     }
 
     @Test
-    fun testGetDisplaySize() = launchTestApp().use { testAppAgent ->
-        val screenSize = testAppAgent.getDisplaySize()
-        assertThat(screenSize.width).isEqualTo(bounds.width())
-        assertThat(screenSize.height).isEqualTo(bounds.height())
-    }
-
-    @Test
     fun testTap_edge() = launchTestApp().use { testAppAgent ->
         // Test tapping at the corners and edges of the screen.
-        for ((x, y) in edgeCoordinates) {
+        val size = getSessionSize(testAppAgent)
+        for ((x, y) in getEdgeCoordinates(size)) {
             testAppAgent.tap(x, y)
 
             val tap = testAppInteractions.nextAction<Action.Tap>()
@@ -267,18 +263,20 @@ class ComputerControlInteractionTest {
     @Test
     fun testTap_outOfBounds() = launchTestApp().use { testAppAgent ->
         // Test tapping outside the screen bounds.
-        for ((x, y) in outOfBoundsCoordinates) {
+        val size = getSessionSize(testAppAgent)
+        for ((x, y) in getOutOfBoundsCoordinates(size)) {
             assertThrows(IllegalArgumentException::class.java) { testAppAgent.tap(x, y) }
         }
     }
 
     @Test
     fun testGetScreenshot() = launchTestApp().use { testAppAgent ->
+        val size = getSessionSize(testAppAgent)
         val screenshot = testAppAgent.getScreenshot()
         assertThat(screenshot).isNotNull()
         screenshot!!.use {
-            assertThat(it.width).isEqualTo(bounds.width())
-            assertThat(it.height).isEqualTo(bounds.height())
+            assertThat(it.width).isEqualTo(size.width)
+            assertThat(it.height).isEqualTo(size.height)
         }
     }
 
