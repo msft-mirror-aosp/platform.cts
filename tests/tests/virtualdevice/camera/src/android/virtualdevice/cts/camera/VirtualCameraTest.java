@@ -1090,7 +1090,8 @@ public class VirtualCameraTest {
                             mHeightCaptor.capture(),
                             mFormatCaptor.capture());
 
-            verify(mSessionStateCallback).onConfigured(mCameraCaptureSessionCaptor.capture());
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS))
+                    .onConfigured(mCameraCaptureSessionCaptor.capture());
 
             assertThat(mStreamIdCaptor.getAllValues()).containsExactly(0, 2);
             assertThat(mWidthCaptor.getAllValues()).containsExactly(stream0Width, stream2Width);

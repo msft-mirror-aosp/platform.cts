@@ -795,7 +795,7 @@ class ItsSession(object):
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
     data, _ = self.__read_response_from_socket()
-    if data['tag'] != 'cameraIds':
+    if data[_TAG_STR] != 'cameraIds':
       raise error_util.CameraItsError('Invalid command response')
     return data['objValue']
 
@@ -1439,7 +1439,7 @@ class ItsSession(object):
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
     data, _ = self.__read_response_from_socket()
-    if data['tag'] != 'supportedExtensions':
+    if data[_TAG_STR] != 'supportedExtensions':
       raise error_util.CameraItsError('Invalid command response')
     if not data['strValue']:
       raise error_util.CameraItsError('No supported extensions')
@@ -1488,7 +1488,7 @@ class ItsSession(object):
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
     data, _ = self.__read_response_from_socket()
-    if data['tag'] != 'displaySize':
+    if data[_TAG_STR] != 'displaySize':
       raise error_util.CameraItsError('Invalid command response')
     if not data['strValue']:
       raise error_util.CameraItsError('No display size')
@@ -1510,7 +1510,7 @@ class ItsSession(object):
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
     data, _ = self.__read_response_from_socket()
-    if data['tag'] != 'maxCamcorderProfileSize':
+    if data[_TAG_STR] != 'maxCamcorderProfileSize':
       raise error_util.CameraItsError('Invalid command response')
     if not data['strValue']:
       raise error_util.CameraItsError('No max camcorder profile size')
@@ -2561,22 +2561,30 @@ class ItsSession(object):
     converged = False
     while True:
       data, _ = self.__read_response_from_socket()
-      vals = data[_STR_VALUE_STR].split()
-      if data[_TAG_STR] == 'aeResult':
-        if do_ae:
-          ae_sens, ae_exp = [int(i) for i in vals]
+      if data[_TAG_STR] == '3aDone':
+        report = data.get('objValue')
+        logging.info('3A Convergence Report: %s', str(report))
+      elif data[_TAG_STR] == 'aeResult':
+        if _STR_VALUE_STR in data:
+          vals = data[_STR_VALUE_STR].split()
+          if do_ae:
+            ae_sens, ae_exp = [int(i) for i in vals]
       elif data[_TAG_STR] == 'afResult':
-        if do_af:
-          af_dist = float(vals[0])
+        if _STR_VALUE_STR in data:
+          vals = data[_STR_VALUE_STR].split()
+          if do_af:
+            af_dist, = [float(v) for v in vals]
       elif data[_TAG_STR] == 'awbResult':
-        awb_gains = [float(f) for f in vals[:4]]
-        awb_transform = [float(f) for f in vals[4:]]
+        if _STR_VALUE_STR in data:
+          vals = data[_STR_VALUE_STR].split()
+          awb_gains = [float(f) for f in vals[:4]]
+          awb_transform = [float(f) for f in vals[4:]]
       elif data[_TAG_STR] == '3aConverged':
         converged = True
-      elif data[_TAG_STR] == '3aDone':
         break
       else:
         raise error_util.CameraItsError('Invalid command response')
+
     if converged and not get_results:
       return None, None, None, None, None
     if (do_ae and ae_sens is None or
@@ -2930,7 +2938,7 @@ class ItsSession(object):
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
     data, _ = self.__read_response_from_socket()
-    if data['tag'] != 'isLowLightBoostAvailable':
+    if data[_TAG_STR] != 'isLowLightBoostAvailable':
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR] == 'true'
 
@@ -2954,7 +2962,7 @@ class ItsSession(object):
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
     data, _ = self.__read_response_from_socket()
-    if data['tag'] != 'isNightModeIndicatorSupported':
+    if data[_TAG_STR] != 'isNightModeIndicatorSupported':
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR] == 'true'
 
@@ -3017,7 +3025,7 @@ class ItsSession(object):
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
     data, _ = self.__read_response_from_socket()
-    if data['tag'] != 'hasHifiSensors':
+    if data[_TAG_STR] != 'hasHifiSensors':
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR] == 'true'
 

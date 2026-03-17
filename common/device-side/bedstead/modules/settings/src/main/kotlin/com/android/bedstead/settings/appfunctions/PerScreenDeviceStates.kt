@@ -80,4 +80,28 @@ data class DeviceStateItemMetadata(
     val possibleValues: String?,
     val purpose: String?,
     val writable: Boolean
+) {
+
+    /**
+     * A list of all possible values for the item.
+     */
+    val possibleValuesList: List<String>? by lazy {
+        possibleValues?.split(',')?.map {
+            val index = it.indexOf(" (")
+            if (index != -1) {
+                it.substring(0, index).trim()
+            } else {
+                it
+            }
+        }
+    }
+}
+
+/**
+ * A human-readable representation of AppFunction's SetDeviceStateItemResponse.
+ */
+data class SetDeviceStateItemResponse(
+    val currentValue: String,
+    val failureReason: String?,
+    val isSuccessful: Boolean
 )

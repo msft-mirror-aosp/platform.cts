@@ -67,21 +67,12 @@ fun clickOnViewCenter(view: View) {
     return clickOnView(view, view.width / 2, view.height / 2)
 }
 
-private fun getViewLocationInWindow(view: View): Pair<Int, Int> {
-    val xy = IntArray(2)
-    view.getLocationInWindow(xy)
-    return Pair(xy[0], xy[1])
-}
-
 private fun clickOnViewOnUiThread(view: View, x: Int, y: Int) {
-    val (viewX, viewY) = getViewLocationInWindow(view)
-    val clickX = viewX + x
-    val clickY = viewY + y
     val event = MotionEventBuilder(
         MotionEvent.ACTION_DOWN,
         InputDevice.SOURCE_TOUCHSCREEN
     ).pointer(
-        PointerBuilder(0, MotionEvent.TOOL_TYPE_FINGER).x(clickX.toFloat()).y(clickY.toFloat())
+        PointerBuilder(0, MotionEvent.TOOL_TYPE_FINGER).x(x.toFloat()).y(y.toFloat())
     ).build()
 
     view.dispatchTouchEvent(event)

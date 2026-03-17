@@ -159,10 +159,9 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
     companion object {
         private val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1)
 
-        const val SESSION_CREATION_TIMEOUT_SECONDS = 5L
+        val SESSION_CREATION_TIMEOUT_SECONDS = 5L * HW_TIMEOUT_MULTIPLIER
 
-        // TODO: b/454903475 - Reduce this timeout once the bug is fixed.
-        val SESSION_CLOSE_TIMEOUT_SECONDS = 120L * HW_TIMEOUT_MULTIPLIER
+        val SESSION_CLOSE_TIMEOUT_SECONDS = 5L * HW_TIMEOUT_MULTIPLIER
 
         /**
          * Creates a proxy object of type T that polls the [provider] every time on each method

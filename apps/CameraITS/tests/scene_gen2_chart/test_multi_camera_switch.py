@@ -165,11 +165,14 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # check SKIP conditions
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
-      camera_properties_utils.skip_unless(
-          vendor_api_level >= its_session_utils.ANDROID16_API_LEVEL)
+      camera_facing = props['android.lens.facing']
+      logging.debug('Camera facing: %s', camera_facing)
+      ultrawide_camera_found = cam.has_ultrawide_camera(
+          facing=camera_facing
+      )
+      logging.debug('Ultrawide camera found: %s', ultrawide_camera_found)
       multi_camera_switch_utils.check_lens_switch_conditions(
-          props, first_api_level, _ZOOM_RANGE_UW_W)
+          props, first_api_level, _ZOOM_RANGE_UW_W, ultrawide_camera_found)
 
       # Initialize rotation rig
       gen2_rig_controller_utils.setup_gen2_rig_with_cam(self, cam)

@@ -50,6 +50,8 @@ public class Activities {
         }
     }
 
+    public static class HandleConfigRegularActivity extends RegularActivity {}
+
     public static class SingleTopActivity extends BaseActivity {
     }
 

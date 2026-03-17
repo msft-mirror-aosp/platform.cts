@@ -48,8 +48,7 @@ import static android.telephony.CarrierConfigManager.KEY_SATELLITE_SOS_MAX_DATAG
 import static android.telephony.CarrierConfigManager.KEY_SUPPORT_PHONE_NUMBER_SOURCE_TS43_BOOL;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 
-import static androidx.test.InstrumentationRegistry.getContext;
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.compatibility.common.util.AppOpsUtils.setOpMode;
 
@@ -79,11 +78,13 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CarrierConfigManager;
+import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionManager.OnSubscriptionsChangedListener;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyRegistryManager;
+import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.satellite.SatelliteManager;
 import android.util.Log;
 
@@ -141,6 +142,7 @@ public class CarrierConfigManagerTest {
     private CarrierConfigManager mConfigManager;
     private TelephonyManager mTelephonyManager;
     private SubscriptionManager mSubscriptionManager;
+    private Context mContext;
 
     // Use a long timeout to accommodate devices with lower amounts of memory, as it will take
     // longer for these devices to receive the broadcast (b/161963269). It is expected that all
@@ -152,17 +154,18 @@ public class CarrierConfigManagerTest {
 
     @Before
     public void setUp() throws Exception {
+        mContext = getInstrumentation().getContext();
         assumeTrue(
                 "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
-                getContext().getPackageManager().hasSystemFeature(
+                mContext.getPackageManager().hasSystemFeature(
                         PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         mTelephonyManager = (TelephonyManager)
-                getContext().getSystemService(Context.TELEPHONY_SERVICE);
+                mContext.getSystemService(Context.TELEPHONY_SERVICE);
         mConfigManager = (CarrierConfigManager)
-                getContext().getSystemService(Context.CARRIER_CONFIG_SERVICE);
+                mContext.getSystemService(Context.CARRIER_CONFIG_SERVICE);
         mSubscriptionManager =
                 (SubscriptionManager)
-                        getContext().getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+                        mContext.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
         mUiAutomation = getInstrumentation().getUiAutomation();
     }
 
@@ -824,7 +827,7 @@ public class CarrierConfigManagerTest {
         try {
             final IntentFilter filter =
                     new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
-            getContext().registerReceiver(receiver, filter);
+            mContext.registerReceiver(receiver, filter);
 
             // verify that carrier config is received
             int subId = SubscriptionManager.getDefaultSubscriptionId();
@@ -836,7 +839,7 @@ public class CarrierConfigManagerTest {
             assertTrue(broadcastReceived);
         } finally {
             // unregister receiver
-            getContext().unregisterReceiver(receiver);
+            mContext.unregisterReceiver(receiver);
             receiver = null;
         }
     }
@@ -906,7 +909,7 @@ public class CarrierConfigManagerTest {
         try {
             mConfigManager.registerCarrierConfigChangeListener(Runnable::run, listener);
 
-            TelephonyRegistryManager telephonyRegistryManager = getContext().getSystemService(
+            TelephonyRegistryManager telephonyRegistryManager = mContext.getSystemService(
                     TelephonyRegistryManager.class);
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyRegistryManager,
                     (trm) -> trm.notifyCarrierConfigChanged(TEST_SLOT_INDEX, TEST_SUB_ID,
@@ -995,9 +998,12 @@ public class CarrierConfigManagerTest {
 
     @Test
     public void testCarrierKeyDownloadTriggered() throws Exception {
-        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             return;
         }
+        ServiceState serviceState = mTelephonyManager.getServiceState();
+        assumeTrue(!isSimCardPresent() || serviceState == null
+                || serviceState.getState() != STATE_IN_SERVICE);
 
         final int subId = SubscriptionManager.getDefaultDataSubscriptionId();
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
@@ -1072,7 +1078,7 @@ public class CarrierConfigManagerTest {
 
             try (UndoableContext p = Permissions.ignoringPermissions()) {
                 ConnectivityManager connectivityManager =
-                        getContext().getSystemService(ConnectivityManager.class);
+                        mContext.getSystemService(ConnectivityManager.class);
                 try {
                     PollingCheck.waitFor(500, () ->
                             connectivityManager.getActiveNetwork() != null);
@@ -1086,7 +1092,7 @@ public class CarrierConfigManagerTest {
 
                 try {
                     // 4. Trigger download via public API
-                    mTelephonyManager.resetCarrierKeysForImsiEncryption();
+                    TelephonyUtils.forceDeleteImsiEncryptionKey(getInstrumentation());
 
                     // 5. Wait for the server thread to process the request
                     assertTrue("Request not received within 10s",

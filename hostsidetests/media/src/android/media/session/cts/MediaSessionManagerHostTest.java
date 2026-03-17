@@ -33,7 +33,6 @@ import android.platform.test.annotations.RequiresDevice;
 import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.RunUtil;
 
@@ -62,12 +61,6 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
             "android.media.session.cts.MediaSessionManagerTest";
 
     private static final int TIMEOUT_MS = 1000;
-
-    /**
-     * Returned by {@link ITestDevice#getCurrentUser()} when there is an error retrieving the
-     * current user id.
-     */
-    private static final int INVALID_USER_ID = -10000;
 
     private final List<Integer> mNotificationListeners = new ArrayList<>();
 
@@ -355,7 +348,8 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     private int getParentUserIdForTesting() throws DeviceNotAvailableException {
         // TODO(b/465724606): ideally should throw an AssumptionViolationException if it's
         // USER_NULL, but that would cause the test to fail.
-        return DevicePolicyUsersPreparer.getProfileParentUserId();
+        return DevicePolicyUsersPreparer.getUsersOracleInstance(getTestInformation())
+                .getProfileParentUserId();
     }
 
     /**

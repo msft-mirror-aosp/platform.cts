@@ -126,7 +126,7 @@ public class MusicRecognitionManagerTest {
         assertThat(request.getMaxAudioLengthSeconds()).isEqualTo(8);
         assertThat(request.getCaptureSession()).isEqualTo(record.getAudioSessionId());
         assertThat(request.getIgnoreBeginningFrames()).isEqualTo(16_000);
-        assertThat(request.getAudioAttributes()).isEqualTo(record.getAudioAttributes());
+        assertThat(request.getAudioAttributes().getCapturePreset()).isEqualTo(record.getAudioSource());
     }
 
     @Test

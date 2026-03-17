@@ -18,6 +18,9 @@ package android.virtualdevice.cts.computercontrol
 
 import android.app.Activity
 import android.app.Service
+import android.companion.virtual.VirtualDevice
+import android.companion.virtual.VirtualDeviceManager
+import android.companion.virtualdevice.flags.Flags
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentSender
@@ -37,6 +40,7 @@ import com.android.extensions.computercontrol.ComputerControlExtensions
 import com.android.extensions.computercontrol.ComputerControlSession
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertThrows
@@ -48,7 +52,7 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_COMPUTER_CONTROL_ACCESS)
+@RequiresFlagsEnabled(Flags.FLAG_COMPUTER_CONTROL_ACCESS)
 class ComputerControlExtensionsTest {
     private class ComputerControlSessionCallbackImpl : ComputerControlSession.Callback {
         private val future = CompletableFuture<ComputerControlSession?>()
@@ -392,6 +396,39 @@ class ComputerControlExtensionsTest {
             assertThat(errorCode).isEqualTo(ComputerControlSession.ERROR_PERMISSION_DENIED)
         } finally {
             SystemUtil.runShellCommand("appops set com.android.shell COMPUTER_CONTROL allow")
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_COMPUTER_CONTROL_ACCESS, Flags.FLAG_PUBLIC_DEVICE_PROFILE)
+    @Test
+    fun testSession_createsVirtualDeviceWithComputerControlProfile() {
+        val latch = CountDownLatch(1)
+        val vdm = context.getSystemService(VirtualDeviceManager::class.java)
+        vdm.registerVirtualDeviceListener(
+            Executors.newSingleThreadExecutor(),
+        object : VirtualDeviceManager.VirtualDeviceListener {
+            override fun onVirtualDeviceCreated(deviceId: Int) {
+                vdm.unregisterVirtualDeviceListener(this)
+                val device = vdm.getVirtualDevice(deviceId)!!
+                latch.countDown()
+                assertThat(
+                    device.deviceProfile
+                ).isEqualTo(VirtualDevice.DEVICE_PROFILE_COMPUTER_CONTROL)
+            }
+        }
+        )
+
+        val params =
+            ComputerControlSession.Params.Builder(context)
+                .setName("${testName.methodName}")
+                .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                .build()
+        val callback = ComputerControlSessionCallbackImpl()
+        extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
+        callback.awaitSessionAndClose { session ->
+            assertThat(
+                latch.await(TestAppAgent.SESSION_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            ).isTrue()
         }
     }
 

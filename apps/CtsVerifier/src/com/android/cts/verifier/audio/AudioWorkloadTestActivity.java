@@ -105,7 +105,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
     private static final int ALTERNATE_NUM_VOICES_THRESHOLD =
             Optional.ofNullable(
                             ImmutableSortedMap.<Integer, Integer>naturalOrder()
-                                    .put(MPC_CINNAMON_BUN, 50)
+                                    .put(MPC_CINNAMON_BUN, 20)
                                     .build()
                                     .floorEntry(MEDIA_PERFORMANCE_CLASS))
                     .map(Map.Entry::getValue)

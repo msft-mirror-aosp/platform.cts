@@ -43,13 +43,72 @@ class AppFunctionsBlockingClient(private val packageName: String = SETTINGS_PACK
         return getResultDocument(functionIdentifier)!!.asDeviceStateResult()
     }
 
-    internal fun getDeviceStateMetadata(): List<PerScreenMetadata> {
+    /**
+     * Returns getDeviceStateMetadata as list of [PerScreenMetadata].
+     */
+    fun getDeviceStateMetadata(): List<PerScreenMetadata> {
         return getResultDocument("getDeviceStateMetadata")!!.asDeviceStateMetadataResult()
     }
 
     private fun getResultDocument(functionIdentifier: String): GenericDocument? {
         val request = ExecuteAppFunctionRequest.Builder(packageName, functionIdentifier).build()
         return executeAppFunction(request)?.resultDocument
+    }
+
+    /**
+     * Executes getDeviceStateItem app function and returns the response.
+     */
+    fun getDeviceStateItem(key: String): ExecuteAppFunctionResponse? {
+        val innerParams = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "getDeviceStateItemParams"
+        )
+            .setPropertyString("key", key)
+            .build()
+
+        val params = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "schemaType"
+        )
+            .setPropertyDocument("getDeviceStateItemParams", innerParams)
+            .build()
+
+        val request = ExecuteAppFunctionRequest.Builder(packageName, "getDeviceStateItem")
+            .setParameters(params)
+            .build()
+
+        return executeAppFunction(request)
+    }
+
+    /**
+     * Executes setDeviceStateItem app function and returns the response.
+     */
+    fun setDeviceStateItem(key: String, value: String): ExecuteAppFunctionResponse? {
+        val innerParams = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "setDeviceStateItemParams"
+        )
+            .setPropertyString("key", key)
+            .setPropertyString("value", value)
+            .build()
+
+        val params = GenericDocument.Builder<GenericDocument.Builder<*>>(
+            "namespace",
+            "id",
+            "schemaType"
+        )
+            .setPropertyDocument("setDeviceStateItemParams", innerParams)
+            .build()
+
+        val request = ExecuteAppFunctionRequest.Builder(
+            packageName,
+            "setDeviceStateItem"
+        ).setParameters(params).build()
+
+        return executeAppFunction(request)
     }
 
     private fun executeAppFunction(

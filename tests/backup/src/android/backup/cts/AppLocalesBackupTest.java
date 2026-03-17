@@ -462,8 +462,6 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
         Thread.sleep(5_000);
     }
 
-    // TODO(b/210593602): Add a test to check staged data removal after the retention period.
-
     private void setApplicationLocalesAndVerify(String packageName, LocaleList locales)
             throws Exception {
         runWithShellPermissionIdentity(() ->
