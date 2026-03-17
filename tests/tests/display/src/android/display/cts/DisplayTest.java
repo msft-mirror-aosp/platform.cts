@@ -150,7 +150,6 @@ public class DisplayTest extends TestBase {
     private static final float REFRESH_RATE_TOLERANCE = 0.001f;
 
     private DisplayManager mDisplayManager;
-    private WindowManager mWindowManager;
     private UiModeManager mUiModeManager;
     private Context mContext;
     private int mTestRunningUserId;
@@ -270,7 +269,6 @@ public class DisplayTest extends TestBase {
                 || MediaUtils.onCuttlefish());
 
         mDisplayManager = mContext.getSystemService(DisplayManager.class);
-        mWindowManager = mContext.getSystemService(WindowManager.class);
         mUiModeManager = mContext.getSystemService(UiModeManager.class);
         mDefaultDisplay = mDisplayManager.getDisplay(DEFAULT_DISPLAY);
         mSupportedWideGamuts = mDefaultDisplay.getSupportedWideColorGamut();
@@ -411,12 +409,16 @@ public class DisplayTest extends TestBase {
     }
 
     /**
-     * Verify that the WindowManager returns the default display.
+     * Verify that the Context returns the correct display.
      */
     @Presubmit
     @Test
-    public void testDefaultDisplay() {
-        assertEquals(DEFAULT_DISPLAY, mWindowManager.getDefaultDisplay().getDisplayId());
+    public void testContextDisplay() {
+        int expectedDisplay = DEFAULT_DISPLAY;
+        if (USER_HELPER.isVisibleBackgroundUser()) {
+            expectedDisplay = USER_HELPER.getMainDisplayId();
+        }
+        assertEquals(expectedDisplay, mContext.getDisplayId());
     }
 
     /**
