@@ -24,9 +24,14 @@ import android.os.Bundle;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.UserHelper;
+
 import org.junit.After;
 
 public class TestBase {
+
+    protected final static UserHelper USER_HELPER =
+            new UserHelper(InstrumentationRegistry.getInstrumentation().getTargetContext());
 
     private Activity mScreenOnActivity;
 
