@@ -1395,6 +1395,48 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testAutomaticSatelliteToggle_NotUser_ReturnsNotSupported() throws Exception {
+        if (!shouldTestSatellite()) return;
+
+        grantSatellitePermission();
+        try {
+            if (!sIsSatelliteSupported) return;
+
+            int[] nonUserReasons = {
+                SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_UNKNOWN,
+                SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_PURCHASE,
+                SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_POWER,
+                SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_CARRIER_CONFIG_UPDATE,
+                SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_ENTITLEMENT
+            };
+
+            for (int reason : nonUserReasons) {
+                LinkedBlockingQueue<Integer> resultQueue = new LinkedBlockingQueue<>(1);
+
+                EnableRequestAttributes enableAttributes =
+                        new EnableRequestAttributes.Builder(true)
+                                .setConnectType(CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC)
+                                .setSatelliteEnablementRequestReason(reason)
+                                .build();
+
+                sSatelliteManager.requestEnabled(
+                        SUB_ID_0,
+                        enableAttributes,
+                        getContext().getMainExecutor(),
+                        resultQueue::offer);
+                Integer errorCode = resultQueue.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+                assertNotNull("Timeout waiting for requestEnabled result", errorCode);
+
+                int expectedCode = SatelliteManager.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED;
+                assertEquals(expectedCode, errorCode.intValue());
+            }
+        } finally {
+            revokeSatellitePermission();
+        }
+    }
+
     /** Helper to query enablement status specifically for the Automatic connection type. */
     private void verifyAutomaticIsEnabledStatus(int subId, boolean expectedEnabled)
             throws Exception {
