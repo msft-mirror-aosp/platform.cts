@@ -307,6 +307,7 @@ public class MediaMetricsAtomHostSideTests {
 
     @Test
     public void testSessionId() throws Exception {
+        turnOnForTesting();
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
 
@@ -315,10 +316,12 @@ public class MediaMetricsAtomHostSideTests {
             assertThat(idObj).isNotEqualTo(null);
             assertThat(idObj.getStringId().length()).isGreaterThan(0);
         }
+        resetProperties();
     }
 
     @Test
     public void testRecordingSession() throws Exception {
+        turnOnForTesting();
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
 
@@ -328,10 +331,12 @@ public class MediaMetricsAtomHostSideTests {
             assertThat(idObj).isNotEqualTo(null);
             assertThat(idObj.getStringId().length()).isGreaterThan(0);
         }
+        resetProperties();
     }
 
     @Test
     public void testEditingSession() throws Exception {
+        turnOnForTesting();
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
 
@@ -341,6 +346,7 @@ public class MediaMetricsAtomHostSideTests {
             assertThat(idObj).isNotEqualTo(null);
             assertThat(idObj.getStringId().length()).isGreaterThan(0);
         }
+        resetProperties();
     }
 
     @Test
@@ -464,6 +470,7 @@ public class MediaMetricsAtomHostSideTests {
 
     @Test
     public void testTranscodingSession() throws Exception {
+        turnOnForTesting();
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
 
@@ -473,10 +480,12 @@ public class MediaMetricsAtomHostSideTests {
             assertThat(idObj).isNotEqualTo(null);
             assertThat(idObj.getStringId().length()).isGreaterThan(0);
         }
+        resetProperties();
     }
 
     @Test
     public void testBundleSession() throws Exception {
+        turnOnForTesting();
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
 
@@ -486,6 +495,7 @@ public class MediaMetricsAtomHostSideTests {
             assertThat(idObj).isNotEqualTo(null);
             assertThat(idObj.getStringId().length()).isGreaterThan(0);
         }
+        resetProperties();
     }
 
     @Test
