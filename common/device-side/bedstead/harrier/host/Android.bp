@@ -7,12 +7,6 @@ java_library_host {
     name: "HarrierHost",
     srcs: [
         "src/main/java/**/*.java",
-        ":harrier-host-srcs",
-    ],
-    static_libs: [
-        "NeneHost",
-        "bedstead-core-annotations",
-        "junit",
     ],
 }
 
@@ -23,7 +17,7 @@ java_test_host {
         "src/test/**/*kt",
     ],
     static_libs: [
-        "HarrierHost",
+        "BedsteadHost",
         "truth",
     ],
     test_options: {

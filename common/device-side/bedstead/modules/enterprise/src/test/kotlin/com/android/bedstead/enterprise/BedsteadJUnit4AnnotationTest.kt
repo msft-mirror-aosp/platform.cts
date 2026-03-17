@@ -70,10 +70,12 @@ class AppliedByOrganizationOwnedProfileOwnerProfile
 @RunWith(JUnit4::class)
 class BedsteadJUnit4AnnotationTest {
 
+    val annotationGenerator = BedsteadAnnotationGenerator(isHeadlessSystemUserMode = false)
+
     @Test
     fun canSetPolicyTest_policy_returnsUnionParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
                         policy =
@@ -100,7 +102,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_policyUnion_returnsUnionParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
                         policyUnion =
@@ -127,7 +129,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_policyIntersection_returnsIntersectParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
                         policyIntersection =
@@ -149,7 +151,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_policyIntersection_singlePolicy_returnsIntersectParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
                         policyIntersection =
@@ -175,7 +177,7 @@ class BedsteadJUnit4AnnotationTest {
     fun canSetPolicyTest_missingUsesEnterprisePoliciesAnnotationOnParentClass_throws() {
         val error =
             assertThrows(IllegalStateException::class.java) {
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(canSetPolicyTest(scope = POLICY_SCOPE_USER)),
                     classAnnotations = listOf(),
                 )
@@ -191,7 +193,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_scopeUser_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(canSetPolicyTest(scope = POLICY_SCOPE_USER)),
                 classAnnotations =
                     listOf(
@@ -209,7 +211,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_scopeDevice_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(canSetPolicyTest(scope = POLICY_SCOPE_DEVICE)),
                 classAnnotations =
                     listOf(
@@ -227,7 +229,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_scopeParentUser_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(canSetPolicyTest(scope = POLICY_SCOPE_PARENT_USER)),
                 classAnnotations =
                     listOf(
@@ -247,7 +249,7 @@ class BedsteadJUnit4AnnotationTest {
     fun canSetPolicyTest_invalidScope_throws() {
         val error =
             assertThrows(IllegalStateException::class.java) {
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(canSetPolicyTest(scope = 123)),
                     classAnnotations =
                         listOf(
@@ -267,7 +269,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_policyIntersection_noIntersectPolicy_returnsIncludeNone() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
                         policyIntersection =
@@ -286,7 +288,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun canSetPolicyTest_noPolicy_throws() {
         assertThrows(IllegalStateException::class.java) {
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(canSetPolicyTest()),
                 classAnnotations = listOf(),
             )
@@ -308,7 +310,7 @@ class BedsteadJUnit4AnnotationTest {
             )
 
         assertThrows(IllegalStateException::class.java) {
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     canSetPolicyTest(
                         policyIntersection = policyIntersectPolicies,
@@ -326,7 +328,7 @@ class BedsteadJUnit4AnnotationTest {
 
         val exception =
             assertThrows(IllegalStateException::class.java) {
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(canSetPolicyTest(policy = arrayOf(policy), scope = POLICY_SCOPE_USER)),
                     classAnnotations = listOf(),
                 )
@@ -340,7 +342,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyAppliesTest_hasPolicy_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     policyAppliesTest(
                         policy =
@@ -367,7 +369,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyAppliesTest_hasNoPolicy_returnsNoAnnotations() {
         assertThrows(IllegalStateException::class.java) {
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(policyAppliesTest(policy = arrayOf())),
                 classAnnotations = listOf(),
             )
@@ -377,7 +379,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyDoesNotApplyTest_hasPolicy_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     policyDoesNotApplyTest(
                         policy =
@@ -403,7 +405,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyDoesNotApplyTest_hasNoPolicy_throws() {
         assertThrows(IllegalStateException::class.java) {
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(policyDoesNotApplyTest(policy = arrayOf())),
                 classAnnotations = listOf(),
             )
@@ -413,7 +415,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun cannotSetPolicyTest_hasPolicy_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     cannotSetPolicyTest(
                         policy =
@@ -445,7 +447,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun cannotSetPolicyTest_hasNoPolicy_throws() {
         assertThrows(IllegalStateException::class.java) {
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(cannotSetPolicyTest(policy = arrayOf())),
                 classAnnotations = listOf(),
             )
@@ -456,7 +458,7 @@ class BedsteadJUnit4AnnotationTest {
     fun cannotSetPolicyTest_missingUsesEnterprisePoliciesAnnotationOnParentClass_throws() {
         val error =
             assertThrows(IllegalStateException::class.java) {
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_USER)),
                     classAnnotations = listOf(),
                 )
@@ -472,7 +474,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun cannotSetPolicyTest_scopeUser_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_USER)),
                 classAnnotations =
                     listOf(
@@ -494,7 +496,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun cannotSetPolicyTest_scopeDevice_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_DEVICE)),
                 classAnnotations =
                     listOf(
@@ -516,7 +518,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun cannotSetPolicyTest_scopeParentUser_returnsParameterizedAnnotations() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(cannotSetPolicyTest(scope = POLICY_SCOPE_PARENT_USER)),
                 classAnnotations =
                     listOf(
@@ -540,7 +542,7 @@ class BedsteadJUnit4AnnotationTest {
     fun cannotSetPolicyTest_invalidScope_throws() {
         val error =
             assertThrows(IllegalStateException::class.java) {
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(cannotSetPolicyTest(scope = 123)),
                     classAnnotations =
                         listOf(
@@ -563,7 +565,7 @@ class BedsteadJUnit4AnnotationTest {
 
         val exception =
             assertThrows(IllegalStateException::class.java) {
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(
                         cannotSetPolicyTest(policy = arrayOf(policy), scope = POLICY_SCOPE_USER)
                     ),
@@ -577,7 +579,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyAppliesTest_userControllerAppliesToOwnUser_userControllerAppliesToOwnUser() {
         assertThat(
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(
                         policyAppliesTest(
                             policy = arrayOf(AppliedByUserControllerToOwnUserPolicy::class.java)
@@ -592,7 +594,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyDoesNotApplyTest_userControllerAppliesToOwnUser_returnsUserControllerRunOnAdditionalUser() {
         assertThat(
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(
                         policyDoesNotApplyTest(
                             policy = arrayOf(AppliedByUserControllerToOwnUserPolicy::class.java)
@@ -607,7 +609,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun cannotSetPolicyTest_noUserControllerInDpc_doesNotReturnUserControllerState() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     cannotSetPolicyTest(
                         policy =
@@ -627,7 +629,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyAppliesTest_deviceControllerAppliesToSystemUser_returnsIncludeRunOnSystemUserWithDeviceController() {
         assertThat(
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(
                         policyAppliesTest(
                             policy =
@@ -643,7 +645,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun policyDoesNotApplyTest_deviceControllerAppliesToSystemUser_returnsIncludeRunOnAdditionalUserWithDeviceController() {
         assertThat(
-                BedsteadAnnotationGenerator.getParameterizedAnnotations(
+                annotationGenerator.getParameterizedAnnotations(
                     arrayOf(
                         policyDoesNotApplyTest(
                             policy =
@@ -659,7 +661,7 @@ class BedsteadJUnit4AnnotationTest {
     @Test
     fun cannotSetPolicyTest_noDeviceControllerInDpc_doesNotReturnDeviceControllerState() {
         val parameterizedAnnotations =
-            BedsteadAnnotationGenerator.getParameterizedAnnotations(
+            annotationGenerator.getParameterizedAnnotations(
                 arrayOf(
                     cannotSetPolicyTest(
                         policy =

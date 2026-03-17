@@ -15,9 +15,6 @@
  */
 package com.android.bedstead.harrier
 
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.isParameterizedAnnotation
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.maybeReplaceUsingParameterizedTestGenerator
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.resolveRecursiveAnnotations
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
@@ -28,7 +25,6 @@ import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
-import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.types.OptionalBoolean
 import com.google.auto.value.AutoAnnotation
@@ -42,7 +38,7 @@ import java.util.function.Function
 import org.junit.runners.model.FrameworkMethod
 
 /** This class exposes a number of annotation-related helper methods. */
-object BedsteadAnnotationGenerator {
+class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
 
     /**
      * Special annotations that get handled at a different level and can therefore be skipped during
@@ -70,32 +66,37 @@ object BedsteadAnnotationGenerator {
             RequireRunOnInitialUser::class.java,
             Function { a: Annotation ->
                 val requireRunOnInitialUserAnnotation = a as RequireRunOnInitialUser
-                if (users().isHeadlessSystemUserMode()) {
-                    return@Function listOf(
-                        a,
-                        ensureHasSecondaryUser(),
-                        requireRunOnSecondaryUser(requireRunOnInitialUserAnnotation.switchedToUser),
-                    )
-                } else {
-                    return@Function listOf(
-                        a,
-                        requireRunOnPrimaryUser(requireRunOnInitialUserAnnotation.switchedToUser),
-                    )
-                }
+                return@Function listOf(
+                    a,
+                    requireRunOnPrimaryUser(requireRunOnInitialUserAnnotation.switchedToUser),
+                )
             },
             RequireRunOnAdditionalUser::class.java,
             Function { a: Annotation? ->
                 val requireRunOnAdditionalUserAnnotation = a as RequireRunOnAdditionalUser
-                if (users().isHeadlessSystemUserMode()) {
-                    return@Function listOf(ensureHasSecondaryUser(), a)
-                } else {
-                    return@Function listOf(
-                        a,
-                        requireRunOnSecondaryUser(
-                            requireRunOnAdditionalUserAnnotation.switchedToUser
-                        ),
-                    )
-                }
+                return@Function listOf(
+                    a,
+                    requireRunOnSecondaryUser(requireRunOnAdditionalUserAnnotation.switchedToUser),
+                )
+            },
+        )
+
+    private val ANNOTATION_REPLACEMENTS_HEADLESS:
+        ImmutableMap<Class<out Annotation>, Function<Annotation, List<Annotation>>> =
+        ImmutableMap.of<Class<out Annotation>, Function<Annotation, List<Annotation>>>(
+            RequireRunOnInitialUser::class.java,
+            Function { a: Annotation ->
+                val requireRunOnInitialUserAnnotation = a as RequireRunOnInitialUser
+                return@Function listOf(
+                    a,
+                    ensureHasSecondaryUser(),
+                    requireRunOnSecondaryUser(requireRunOnInitialUserAnnotation.switchedToUser),
+                )
+            },
+            RequireRunOnAdditionalUser::class.java,
+            Function { a: Annotation? ->
+                val requireRunOnAdditionalUserAnnotation = a as RequireRunOnAdditionalUser
+                return@Function listOf(ensureHasSecondaryUser(), a)
             },
         )
 
@@ -272,8 +273,7 @@ object BedsteadAnnotationGenerator {
                 }
                 .toSet()
 
-        return parameterizedAnnotations +
-            methodAnnotations.filter(BedsteadAnnotationGenerator::isParameterizedAnnotation)
+        return parameterizedAnnotations + methodAnnotations.filter(this::isParameterizedAnnotation)
     }
 
     /**
@@ -337,7 +337,11 @@ object BedsteadAnnotationGenerator {
             return null
         }
 
-        return ANNOTATION_REPLACEMENTS[annotation.annotationClass.java]
+        return if (isHeadlessSystemUserMode) {
+            ANNOTATION_REPLACEMENTS_HEADLESS[annotation.annotationClass.java]
+        } else {
+            ANNOTATION_REPLACEMENTS[annotation.annotationClass.java]
+        }
     }
 
     private fun getReplacementForRepeatingAnnotation(annotation: Annotation): List<Annotation> {
@@ -446,7 +450,7 @@ object BedsteadAnnotationGenerator {
         // [DynamicParameterizedAnnotation].
         val dynamicParameterizedTests =
             parameterizedAnnotations
-                .filterNot(BedsteadAnnotationGenerator::shouldSkipAnnotation)
+                .filterNot(this::shouldSkipAnnotation)
                 .filterIsInstance<DynamicParameterizedAnnotation>()
                 .map { annotation ->
                     constructBedsteadFrameworkMethod(
@@ -460,8 +464,8 @@ object BedsteadAnnotationGenerator {
         // Group all remaining ParameterizedAnnotations by their scope
         val parameterizedAnnotationsByScope =
             parameterizedAnnotations
-                .filterNot(BedsteadAnnotationGenerator::shouldSkipAnnotation)
-                .filter(BedsteadAnnotationGenerator::isAnnotationClassParameterizedAnnotation)
+                .filterNot(this::shouldSkipAnnotation)
+                .filter(this::isAnnotationClassParameterizedAnnotation)
                 .groupBy { annotation ->
                     annotation.annotationClass.java
                         .getAnnotation(ParameterizedAnnotation::class.java)
