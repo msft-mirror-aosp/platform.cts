@@ -15,7 +15,6 @@
  */
 package com.android.cts.devicepolicy.user;
 
-import static com.android.tradefed.device.UserInfo.USER_NULL;
 
 import com.android.compatibility.common.util.BaseSwitchFullUserTargetPreparer;
 import com.android.ddmlib.Log.LogLevel;
@@ -26,8 +25,6 @@ import com.android.tradefed.targetprep.BuildError;
 import com.android.tradefed.targetprep.SwitchUserTargetPreparer;
 import com.android.tradefed.targetprep.TargetSetupError;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
 
@@ -68,82 +65,9 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
         super.tearDown(testInformation, e);
     }
 
-    /**
-     * Gets the id of the current user when the test module started.
-     *
-     * @deprecated should call {@link UsersOracle#getInitialCurrentUserId()} instead.
-     */
-    @Deprecated
-    public static int getInitialCurrentUserId() {
-        return getOracle().getInitialCurrentUserId();
-    }
-
-    /**
-     * Gets the ids of the users that existed before the test module started.
-     *
-     * @deprecated should call {@link UsersOracle#getPreExistingUserIds()} instead.
-     */
-    @Deprecated
-    public static ImmutableSet<Integer> getPreExistingUserIds() {
-        return getOracle().getPreExistingUserIds();
-    }
-
-    /**
-     * Gets the id of the user that *should* be used by tests to set the device's {@code
-     * DeviceOwner}.
-     *
-     * <p>Notice the *should* - it doesn't return which user is the *actual* {@code DeviceOwner}.
-     *
-     * @deprecated should call {@link UsersOracle#getDeviceOwnerUserId(TestInformation)} instead.
-     */
-    @Deprecated
-    public static int getDeviceOwnerUserId() {
-        return getOracle().getDeviceOwnerUserId();
-    }
-
-    /**
-     * Gets the id of a user that *should* be used by tests to set a {@code ProfileOwner} on.
-     *
-     * @deprecated should call {@link UsersOracle#getProfileOwnerUserId()} instead.
-     */
-    @Deprecated
-    public static int getProfileOwnerUserId() {
-        return getOracle().getProfileOwnerUserId();
-    }
-
-    /**
-     * Gets whether device owner could be set on any full user.
-     *
-     * @deprecated should call {@link UsersOracle#getProfileOwnerUserId()} instead.
-     */
-    @Deprecated
-    public static boolean isDeviceOwnerSupportedOnAnyFullUsers() {
-        return getOracle().isDeviceOwnerSupportedOnAnyFullUsers();
-    }
-
-    /**
-     * Gets the id of the user that *could* be used as parent of profiles (created by the test), or
-     * {@link USER_NULL} if none could be used.
-     *
-     * @deprecated should call {@link UsersOracle#getProfileParentUserId()} instead.
-     */
-    @Deprecated
-    public static int getProfileParentUserId() {
-        return getOracle().getProfileParentUserId();
-    }
-
     @FormatMethod
     private static void logAndDisplay(@FormatString String msgFmt, @Nullable Object... msgArgs) {
         CLog.logAndDisplay(LogLevel.INFO, msgFmt, msgArgs);
-    }
-
-    private static UsersOracle getOracle() {
-        var oracle = sOracle.get();
-        Preconditions.checkState(
-                oracle != null,
-                "Not initialized yet - did you include "
-                        + "DevicePolicyUsersTargetPreparer in your AndroidTest.xml?");
-        return oracle;
     }
 
     /**
