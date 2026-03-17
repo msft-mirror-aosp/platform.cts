@@ -19,6 +19,7 @@ package android.app.stubs.shared;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.NotificationRule;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.service.notification.Adjustment;
@@ -61,6 +62,10 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     public Map<String, Integer> mRemoved = new HashMap<>();
     private CountDownLatch mAllowedAdjustmentsLatch = null;
 
+    // Map: rule id -> NotificationRule object
+    public Map<Integer, NotificationRule> mNotificationRules = new HashMap<>();
+    private CountDownLatch mNotificationRulesLatch = null;
+
     /**
      * This controls whether there is a listener connected or not. Depending on the method, if the
      * caller tries to use a listener after it has disconnected, NMS can throw a SecurityException.
@@ -91,6 +96,8 @@ public class TestNotificationAssistant extends NotificationAssistantService {
         mRemoved.clear();
         mSystemAdjustments.clear();
         mSystemAdjustmentsLatch = null;
+        mNotificationRules.clear();
+        mNotificationRulesLatch = null;
     }
 
     @Override
@@ -227,6 +234,24 @@ public class TestNotificationAssistant extends NotificationAssistantService {
         }
     }
 
+    @Override
+    public void onNotificationRuleAdded(NotificationRule rule) {
+        mNotificationRules.put(rule.getId(), rule);
+        maybeUpdateLatch(mNotificationRulesLatch);
+    }
+
+    @Override
+    public void onNotificationRuleModified(NotificationRule rule) {
+        mNotificationRules.replace(rule.getId(), rule);
+        maybeUpdateLatch(mNotificationRulesLatch);
+    }
+
+    @Override
+    public void onNotificationRuleRemoved(int ruleId) {
+        mNotificationRules.remove(ruleId);
+        maybeUpdateLatch(mNotificationRulesLatch);
+    }
+
     public CountDownLatch setSystemAdjustmentsLatch(int count) {
         mSystemAdjustmentsLatch = new CountDownLatch(count);
         return mSystemAdjustmentsLatch;
@@ -235,6 +260,11 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     public CountDownLatch setAllowedAdjustmentCountdown(int countDownNumber) {
         mAllowedAdjustmentsLatch = new CountDownLatch(countDownNumber);
         return mAllowedAdjustmentsLatch;
+    }
+
+    public CountDownLatch setNotificationRulesLatch(int count) {
+        mNotificationRulesLatch = new CountDownLatch(count);
+        return mNotificationRulesLatch;
     }
 
     private void maybeUpdateLatch(CountDownLatch latch) {
