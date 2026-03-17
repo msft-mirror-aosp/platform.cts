@@ -21,10 +21,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.content.Intent;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.WindowContextTestActivity;
 import android.server.wm.WindowManagerState;
 import android.view.WindowManager;
 
@@ -226,6 +228,65 @@ public class DisplayEngagementModeTests extends WindowContextTestBase {
             // The callback should already be unregistered, but we try to unregister again here to
             // ensure that unregistering a non-existent callback doesn't cause a crash.
             wm.unregisterDisplayEngagementModeCallback(callback);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENGAGEMENT_CONTROL_API)
+    @ApiTest(
+            apis = {
+                "android.view.WindowManager#requestEngagementControlState",
+                "android.view.WindowManager#addEngagementControlRequestConsumer",
+                "android.view.WindowManager#removeEngagementControlRequestConsumer"
+            })
+    @Test
+    public void testRequestEngagementControlState_dispatchesToConsumer()
+            throws InterruptedException {
+        final WindowManagerState.DisplayContent display =
+                createManagedVirtualDisplaySession().setSimulateDisplay(true).createDisplay();
+
+        // Launch a real Activity on the virtual display to generate a valid Task ID
+        final Intent intent = new Intent(mContext, WindowContextTestActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        final android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(display.mId);
+
+        final android.app.Activity activity =
+                (android.app.Activity)
+                        mInstrumentation.startActivitySync(intent, options.toBundle());
+        final WindowManager wm = activity.getSystemService(WindowManager.class);
+
+        try {
+            final CountDownLatch latch = new CountDownLatch(1);
+            final int expectedFlags = WindowManager.ENGAGEMENT_CONTROL_FLAG_SUSTAIN_VISUALS;
+            final int expectedTaskId = activity.getTaskId();
+
+            final Consumer<WindowManager.EngagementControlRequest> consumer =
+                    request -> {
+                        if (request.getDisplayId() == display.mId
+                                && request.getEngagementControlFlags() == expectedFlags
+                                && request.getTaskId() == expectedTaskId) {
+                            latch.countDown();
+                        }
+                    };
+
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        wm.addEngagementControlRequestConsumer(Runnable::run, consumer);
+                    });
+
+            try {
+                wm.requestEngagementControlState(expectedFlags);
+                assertTrue(
+                        "Consumer was not invoked within the timeout",
+                        latch.await(5, TimeUnit.SECONDS));
+            } finally {
+                SystemUtil.runWithShellPermissionIdentity(
+                        () -> {
+                            wm.removeEngagementControlRequestConsumer(consumer);
+                        });
+            }
+        } finally {
+            activity.finish();
         }
     }
 }
