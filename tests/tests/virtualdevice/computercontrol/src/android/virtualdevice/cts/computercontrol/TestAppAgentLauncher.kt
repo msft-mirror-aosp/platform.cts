@@ -33,7 +33,15 @@ class TestAppAgentLauncher {
     fun launch(sessionName: String, packageName: String, className: String? = null): TestAppAgent {
         Log.d(TAG, "Requesting ComputerControlSession")
         val session = requestComputerControlSession(sessionName, listOf(packageName))
-        return TestAppAgent(context, session, packageName, className)
+        val agent = TestAppAgent(context, session)
+        // Launch the application in the session, being sure to close the session if the
+        // launch fails.
+        runCatching {
+            agent.launchApplication(packageName, className)
+        }.onFailure {
+            session.close()
+        }.getOrThrow()
+        return agent
     }
 
     fun requestComputerControlSession(
