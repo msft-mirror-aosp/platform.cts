@@ -183,7 +183,11 @@ public class CloseSystemDialogsTest {
         if (mResetAccessibility) {
             setAccessibilityState(mPreviousAccessibilityEnabled, mPreviousAccessibilityServices);
         }
-        mMainHandler.post(() -> mSawWindowManager.removeViewImmediate(mFakeView));
+        // mSawWindowManager might be null if the system is restarting from a crash, causing
+        // the entire test module to terminate (b/473834125).
+        if (mSawWindowManager != null && mFakeView != null) {
+            mMainHandler.post(() -> mSawWindowManager.removeViewImmediate(mFakeView));
+        }
         mContext.unregisterReceiver(mIntentReceiver);
         resetUserFinal();
         setHiddenApiPolicy(mPreviousHiddenApiPolicy);
