@@ -17,7 +17,6 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.telecom.Call.STATE_ACTIVE;
-import static android.telecom.Call.STATE_CONNECTING;
 import static android.telecom.Call.STATE_DIALING;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_HOLDING;
@@ -91,6 +90,7 @@ public class CallAudioRouteTest extends BaseAppVerifier {
         if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         AppControlWrapper managedApp = null;
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
@@ -129,6 +129,7 @@ public class CallAudioRouteTest extends BaseAppVerifier {
         if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         AppControlWrapper managedApp = null;
         try {
             managedApp = bindToApp(ManagedConnectionServiceApp);
@@ -166,6 +167,7 @@ public class CallAudioRouteTest extends BaseAppVerifier {
         if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         AppControlWrapper voipCsApp = null;
 
         try {
@@ -205,6 +207,7 @@ public class CallAudioRouteTest extends BaseAppVerifier {
         if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         AppControlWrapper voipCsApp = null;
 
         try {
@@ -246,6 +249,7 @@ public class CallAudioRouteTest extends BaseAppVerifier {
         if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         AppControlWrapper transactionalApp = null;
 
         try {
@@ -284,6 +288,7 @@ public class CallAudioRouteTest extends BaseAppVerifier {
         if (!mShouldTestTelecom) {
             return;
         }
+        assumeNotAutomotive();
         AppControlWrapper transactionalApp = null;
 
         try {

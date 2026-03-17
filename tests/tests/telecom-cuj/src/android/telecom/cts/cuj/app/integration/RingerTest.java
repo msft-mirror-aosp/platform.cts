@@ -484,6 +484,7 @@ public class RingerTest extends BaseAppVerifier {
     @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
     public void testIncomingSelfManagedVoipCallWithDndOffGainsFocus() throws Exception {
         assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        assumeNotAutomotive();
         AppControlWrapper app = null;
         try {
             app = bindToApp(ConnectionServiceVoipAppMain);
@@ -499,6 +500,7 @@ public class RingerTest extends BaseAppVerifier {
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testIncomingTransactionalVoipCallWithDndOffGainsFocus() throws Exception {
         assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        assumeNotAutomotive();
         AppControlWrapper app = null;
         try {
             app = bindToApp(TransactionalVoipAppMain);
@@ -518,6 +520,7 @@ public class RingerTest extends BaseAppVerifier {
     @RequiresFlagsEnabled(com.android.internal.telecom.flags.Flags.FLAG_VOIP_DND_FOCUS)
     public void testIncomingSelfManagedVoipCallDuringDndDoesntGainFocus() throws Exception {
         assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        assumeNotAutomotive();
         AppControlWrapper app = null;
         try {
             app = bindToApp(ConnectionServiceVoipAppMain);
@@ -537,6 +540,7 @@ public class RingerTest extends BaseAppVerifier {
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall"})
     public void testIncomingTransactionalVoipCallDuringDndDoesntGainFocus() throws Exception {
         assumeTrue("This test requires Telecom to be supported", mShouldTestTelecom);
+        assumeNotAutomotive();
         AppControlWrapper app = null;
         try {
             app = bindToApp(TransactionalVoipAppMain);
