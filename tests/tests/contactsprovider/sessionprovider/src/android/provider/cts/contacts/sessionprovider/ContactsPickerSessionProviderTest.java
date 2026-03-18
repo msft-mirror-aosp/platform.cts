@@ -500,7 +500,7 @@ public class ContactsPickerSessionProviderTest {
     }
 
     @Test
-    public void testQuery_withSelectionAndSort_filtersCorrectly() throws Exception {
+    public void testQuery_withSelection_throwsUnsupportedOperationException() throws Exception {
         long idAlice;
         long idBob;
         try (PermissionContext withPermission =
@@ -525,20 +525,17 @@ public class ContactsPickerSessionProviderTest {
 
             assertNotNull(sessionUri);
 
-            try (Cursor cursor =
-                    mResolver.query(
-                            sessionUri,
-                            new String[] {StructuredName.DISPLAY_NAME},
-                            selection,
-                            selectionArgs,
-                            sortOrder)) {
-
-                assertNotNull(cursor);
-                assertEquals(
-                        "Should only return 1 row matching the selection", 1, cursor.getCount());
-                assertTrue(cursor.moveToFirst());
-                assertEquals("Bob", cursor.getString(0));
-            }
+            assertThrows(
+                    "Query with selection and selection args should throw"
+                            + " UnsupportedOperationException",
+                    UnsupportedOperationException.class,
+                    () ->
+                            mResolver.query(
+                                    sessionUri,
+                                    new String[] {StructuredName.DISPLAY_NAME},
+                                    selection,
+                                    selectionArgs,
+                                    sortOrder));
         }
     }
 
@@ -711,8 +708,8 @@ public class ContactsPickerSessionProviderTest {
             queryIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
 
             // A subquery in projection should trigger an IllegalArgumentException
-            String selectionWithSubquery = "(SELECT 1) > 0";
-            queryIntent.putExtra("selection", selectionWithSubquery);
+            String sortOrderWithSubquery = "(SELECT 1) ASC";
+            queryIntent.putExtra("sortOrder", sortOrderWithSubquery);
 
             mContext.sendOrderedBroadcast(
                     queryIntent,
@@ -732,7 +729,7 @@ public class ContactsPickerSessionProviderTest {
             boolean received = latch.await(10, TimeUnit.SECONDS);
             assertTrue("Timed out waiting for Client App", received);
             assertEquals(
-                    "Expected IllegalArgumentException due to strict SQL check on projection",
+                    "Expected IllegalArgumentException due to strict SQL check on sort order",
                     RESULT_ILLEGAL_ARGUMENT_EXCEPTION,
                     clientAppResult[0]);
         }
