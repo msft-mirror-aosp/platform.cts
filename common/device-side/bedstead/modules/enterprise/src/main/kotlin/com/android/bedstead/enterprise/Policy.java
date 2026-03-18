@@ -958,8 +958,6 @@ public final class Policy {
                 SYSTEM_SUPERVISION_ROLE_PERMISSIONS.containsAll(List.of(permission.appliedWith()));
         // Check if the Supervision role holder is already present, if so do not attempt to assign
         // the role to this test instance.
-        final var systemSupervisionRoleHolder = TestApis.roles().getRoleHolders(
-                RoleManager.ROLE_SYSTEM_SUPERVISION);
         if (isSystemSupervisionPermission
                 && !isSystemSupervisionRoleHolderPresent()
                 && !isInstrumentedAsRoot()) {
