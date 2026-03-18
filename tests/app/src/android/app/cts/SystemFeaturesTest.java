@@ -52,7 +52,6 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
@@ -63,6 +62,7 @@ import org.junit.runners.JUnit4;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -144,6 +144,18 @@ public class SystemFeaturesTest {
         assumeFalse(mUserHelper.isVisibleBackgroundUser());
 
         int numCameras = Camera.getNumberOfCameras();
+        String[] camera2Ids = mCameraManager.getCameraIdList();
+        // Camera1 and Camera2 ids must be both 0, or both non-0.
+        // This assumes that there must be at least a BACKWARD_COMPATIBLE
+        // camera if there is a DEPTH_ONLY or NIR camera. Those cameras won't
+        // show up in Camera1.
+        assertEquals(
+                "Camera1 numberOfCameras is "
+                        + numCameras
+                        + ", but Camera2 CameraIdList is "
+                        + Arrays.toString(camera2Ids),
+                numCameras == 0,
+                camera2Ids.length == 0);
         if (numCameras == 0) {
             assertNotAvailable(PackageManager.FEATURE_CAMERA);
             assertNotAvailable(PackageManager.FEATURE_CAMERA_AUTOFOCUS);
@@ -161,6 +173,14 @@ public class SystemFeaturesTest {
                     mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_EXTERNAL));
         } else {
             assertAvailable(PackageManager.FEATURE_CAMERA_ANY);
+            assertTrue(
+                    "Missing system feature: FEATURE_CAMERA, "
+                            + "FEATURE_CAMERA_FRONT or FEATURE_CAMERA_EXTERNAL",
+                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
+                            || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)
+                            || mPackageManager.hasSystemFeature(
+                                    PackageManager.FEATURE_CAMERA_EXTERNAL));
+
             checkFrontCamera();
             checkRearCamera();
             checkCamera2Features();
