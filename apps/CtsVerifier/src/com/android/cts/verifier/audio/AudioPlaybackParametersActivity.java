@@ -480,8 +480,41 @@ public class AudioPlaybackParametersActivity
             public void run() {
                 super.run();
                 mResultCode = RESULT_CODE_NOT_RUN;
+                mControlRecordingFile = null;
+                mRecording1File = null;
+                mRecording2File = null;
                 enableTestButtons(false);
                 enablePlayButtons(false);
+
+                if (isOffload) {
+                    try {
+                        AudioDataSource audioData = getAudioData(R.raw.speech);
+                        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                .build();
+                        int channelMask = (audioData.channelCount == 1)
+                                ? AudioFormat.CHANNEL_OUT_MONO
+                                : AudioFormat.CHANNEL_OUT_STEREO;
+                        AudioFormat audioFormat = new AudioFormat.Builder()
+                                .setSampleRate(audioData.sampleRate)
+                                .setChannelMask(channelMask)
+                                .setEncoding(audioData.encoding)
+                                .build();
+                        if (!AudioManager.isOffloadedPlaybackSupported(
+                                audioFormat, audioAttributes)) {
+                            mResultCode = RESULT_CODE_OK;
+                            mTestOffloadPassed = true;
+                            sendMessage(AudioTestRunner.TEST_ENDED_OK,
+                                    "Test passed because PCM offload is not supported.");
+                            return;
+                        }
+                    } catch (IOException e) {
+                        sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
+                                "Failed to read audio data");
+                        return;
+                    }
+                }
 
                 // Step 1: Play speech at 1.0x speed and record it as a control.
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
@@ -709,9 +742,15 @@ public class AudioPlaybackParametersActivity
 
     private void enablePlayButtons(boolean enabled) {
         runOnUiThread(() -> {
-            if (mButtonPlayOriginal != null) mButtonPlayOriginal.setEnabled(enabled);
-            if (mButtonPlayRecording1 != null) mButtonPlayRecording1.setEnabled(enabled);
-            if (mButtonPlayRecording2 != null) mButtonPlayRecording2.setEnabled(enabled);
+            if (mButtonPlayOriginal != null) {
+                mButtonPlayOriginal.setEnabled(enabled && mControlRecordingFile != null);
+            }
+            if (mButtonPlayRecording1 != null) {
+                mButtonPlayRecording1.setEnabled(enabled && mRecording1File != null);
+            }
+            if (mButtonPlayRecording2 != null) {
+                mButtonPlayRecording2.setEnabled(enabled && mRecording2File != null);
+            }
         });
     }
 
@@ -725,6 +764,8 @@ public class AudioPlaybackParametersActivity
                 playAudio(data, 1.0f, 1.0f, false /* isOffload */, null);
             } catch (IOException e) {
                 Log.e(TAG, "Error playing raw file", e);
+            }  catch (UnsupportedOperationException e) {
+                Log.e(TAG, "Offload not supported", e);
             }
         }).start();
     }
