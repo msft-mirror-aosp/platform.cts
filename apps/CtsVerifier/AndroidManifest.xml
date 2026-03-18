@@ -2948,8 +2948,8 @@
                        android:value="This is a renaming of an existing test" />
         </activity>
 
-        <activity android:name=".camera.its.FeatureCombinationTestActivity"
-            android:label="@string/camera_its_feature_combination_test"
+        <activity android:name=".camera.its.SensorFusionTestActivity"
+            android:label="@string/camera_its_sensor_fusion_test"
             android:launchMode="singleTop"
             android:configChanges="keyboardHidden|screenSize|screenLayout"
             android:exported="true"

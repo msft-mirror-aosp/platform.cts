@@ -275,19 +275,20 @@ def report_result(device_id, camera_id, tablet_name, results):
             current ITS run. See test_report_result unit test for an example.
   """
 
-  results_feature_combination = {}
+  results_sensor_fusion = {}
   results_other = {}
 
   for scene, result in results.items():
-    if scene.startswith("feature_combination"):
-      results_feature_combination[scene] = result
+    # This must match the scene list in SensorFusionTestActivity.java
+    if scene.startswith("feature_combination") or scene.startswith("sensor_fusion"):
+      results_sensor_fusion[scene] = result
     else:
       results_other[scene] = result
 
-  if results_feature_combination:
+  if results_sensor_fusion:
     report_result_subset(device_id, camera_id,
-                         tablet_name, results_feature_combination,
-                         its_device_utils.ITS_FEATURE_COMBINATION_ACTIVITY)
+                         tablet_name, results_sensor_fusion,
+                         its_device_utils.ITS_SENSOR_FUSION_ACTIVITY)
 
   if results_other:
     report_result_subset(device_id, camera_id, tablet_name,
