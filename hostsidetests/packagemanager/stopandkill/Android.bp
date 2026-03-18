@@ -55,6 +55,20 @@ android_test_helper_app {
     package_name: "com.android.cts.stopandkillapp3",
 }
 
+android_test_helper_app {
+    name: "CtsStopAndKillSharedUidApp1",
+    defaults: ["cts_stopandkill_testapp_defaults"],
+    manifest: "app/AndroidManifest_shared_uid.xml",
+    package_name: "com.android.cts.stopandkillsharedapp1",
+}
+
+android_test_helper_app {
+    name: "CtsStopAndKillSharedUidApp2",
+    defaults: ["cts_stopandkill_testapp_defaults"],
+    manifest: "app/AndroidManifest_shared_uid.xml",
+    package_name: "com.android.cts.stopandkillsharedapp2",
+}
+
 java_test_host {
     name: "CtsStopAndKillHostTest",
     defaults: ["cts_defaults"],
@@ -67,6 +81,8 @@ java_test_host {
         ":CtsStopAndKillTestApp1",
         ":CtsStopAndKillTestApp2",
         ":CtsStopAndKillTestApp3",
+        ":CtsStopAndKillSharedUidApp1",
+        ":CtsStopAndKillSharedUidApp2",
     ],
     libs: [
         "cts-tradefed",
