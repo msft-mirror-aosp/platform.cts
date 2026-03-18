@@ -122,6 +122,13 @@ import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOn
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionDisabledEvent.SupervisionAppServiceOnSupervisionDisabledEventQuery
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionEnabledEvent
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionEnabledEvent.SupervisionAppServiceOnSupervisionEnabledEventQuery
+import com.android.eventlib.events.contentrestrictionappservice.ContentRestrictionAppServiceEvents
+import com.android.eventlib.events.contentrestrictionappservice.ContentRestrictionAppServiceOnContentRestrictionEnabledEvent
+import com.android.eventlib.events.contentrestrictionappservice.ContentRestrictionAppServiceOnContentRestrictionEnabledEvent.ContentRestrictionAppServiceOnContentRestrictionEnabledEventQuery
+import com.android.eventlib.events.contentrestrictionappservice.ContentRestrictionAppServiceOnContentRestrictionDisabledEvent
+import com.android.eventlib.events.contentrestrictionappservice.ContentRestrictionAppServiceOnContentRestrictionDisabledEvent.ContentRestrictionAppServiceOnContentRestrictionDisabledEventQuery
+import com.android.eventlib.events.contentrestrictionappservice.ContentRestrictionAppServiceOnClassifyContentEvent
+import com.android.eventlib.events.contentrestrictionappservice.ContentRestrictionAppServiceOnClassifyContentEvent.ContentRestrictionAppServiceOnClassifyContentEventQuery
 
 /**
  * Quick access to events on this test app.
@@ -134,7 +141,7 @@ import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOn
  */
 class TestAppEvents constructor(private val mTestApp: TestAppInstance) : ActivityEvents,
     BroadcastReceiverEvents, DeviceAdminReceiverEvents, DelegatedAdminReceiverEvents,
-    SupervisionAppServiceEvents, ServiceEvents {
+    SupervisionAppServiceEvents, ContentRestrictionAppServiceEvents, ServiceEvents {
 
     override fun activityCreated(): ActivityCreatedEventQuery =
         ActivityCreatedEvent.queryPackage(mTestApp.packageName()).onUser(mTestApp.user())
@@ -285,4 +292,13 @@ class TestAppEvents constructor(private val mTestApp: TestAppInstance) : Activit
 
     override fun policyChanged(): SupervisionAppServiceOnPolicyChangedEventQuery =
         SupervisionAppServiceOnPolicyChangedEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
+
+    override fun contentRestrictionEnabled(): ContentRestrictionAppServiceOnContentRestrictionEnabledEventQuery =
+        ContentRestrictionAppServiceOnContentRestrictionEnabledEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
+
+    override fun contentRestrictionDisabled(): ContentRestrictionAppServiceOnContentRestrictionDisabledEventQuery =
+        ContentRestrictionAppServiceOnContentRestrictionDisabledEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
+
+    override fun classifyContent(): ContentRestrictionAppServiceOnClassifyContentEventQuery =
+        ContentRestrictionAppServiceOnClassifyContentEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
 }
