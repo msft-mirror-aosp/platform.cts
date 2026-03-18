@@ -287,27 +287,28 @@ abstract class BasePaletteTest(val params: PaletteParams) {
                     .trimIndent()
             val isThemeDifferent = getTheme(context) != jsonString
 
-            if (isModeDifferent || isThemeDifferent) {
+            if (isModeDifferent) {
                 waitForConfigurationChange {
-                    if (isModeDifferent) {
-                        runWithShellPermissionIdentity { uiModeManager.nightMode = MODE_NIGHT_YES }
-                    }
-                    if (isContrastDifferent) {
-                        setContrast(contrast)
-                    }
-                    if (isThemeDifferent) {
-                        runWithShellPermissionIdentity {
-                            Settings.Secure.putString(
-                                context.contentResolver,
-                                Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
-                                jsonString,
-                            )
-                        }
+                    runWithShellPermissionIdentity { uiModeManager.nightMode = MODE_NIGHT_YES }
+                }
+            }
+
+            if (isContrastDifferent) {
+                waitForConfigurationChange {
+                    setContrast(contrast)
+                }
+            }
+
+            if (isThemeDifferent) {
+                waitForConfigurationChange {
+                    runWithShellPermissionIdentity {
+                        Settings.Secure.putString(
+                            context.contentResolver,
+                            Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
+                            jsonString,
+                        )
                     }
                 }
-            } else if (isContrastDifferent) {
-                setContrast(contrast)
-                SystemClock.sleep(1000)
             }
 
             // On underpowered devices like Wear, rapid system-wide configuration changes
