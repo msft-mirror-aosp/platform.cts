@@ -40,28 +40,25 @@ import javax.annotation.Nullable;
  */
 public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPreparer {
 
-    // Singleton - set once, never reset
     private static final AtomicReference<UsersOracle> sOracle = new AtomicReference<>();
-
-    private @Nullable UsersOracle mOracle;
 
     @Override
     public void setUp(TestInformation testInformation)
             throws TargetSetupError, BuildError, DeviceNotAvailableException {
         super.setUp(testInformation);
-        mOracle = sOracle.get();
-        if (mOracle != null) {
-            CLog.w("sOracle singleton already set, using it instead: %s", mOracle);
-        } else {
-            mOracle = createAndSetOracleInstance(testInformation);
+        var oracle = sOracle.get();
+        if (oracle != null) {
+            CLog.w("setUp(): sOracle already set (%s)", oracle);
+            return;
         }
+        createAndSetUsersOracleInstance("setUp()", testInformation);
     }
 
     @Override
     public void tearDown(TestInformation testInformation, Throwable e)
             throws DeviceNotAvailableException {
-        CLog.d("Resetting mOracle (but sOracle will remain)");
-        mOracle = null;
+        CLog.d("tearDown(): resetting sOracle (%s)", sOracle.get());
+        sOracle.set(null);
         super.tearDown(testInformation, e);
     }
 
@@ -79,28 +76,24 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
     public static UsersOracle getUsersOracleInstance(TestInformation testInformation)
             throws DeviceNotAvailableException {
         var oracle = sOracle.get();
-        if (oracle == null) {
-            // Should have been set on setUp()
-            CLog.w(
-                    "getUsersOracleInstance(): static Oracle not set yet - did you include "
-                            + "DevicePolicyUsersTargetPreparer in your AndroidTest.xml?");
-            oracle = createAndSetOracleInstance(testInformation);
+        if (oracle != null) {
+            return oracle;
         }
-        return oracle;
+        return createAndSetUsersOracleInstance("getUsersOracleInstance()", testInformation);
     }
 
-    private static UsersOracle createAndSetOracleInstance(TestInformation testInformation)
-            throws DeviceNotAvailableException {
-        var oracle = UsersOracle.createInstance(testInformation);
-        if (sOracle.compareAndSet(null, oracle)) {
-            logAndDisplay("Set sOracle singleton to %s", oracle);
-        } else {
-            // Not a big deal, but better log it..
-            CLog.w(
-                    "sOracle (%s) was set by another thread in parallel after a new one (%s) was"
-                            + " created",
-                    sOracle, oracle);
+    private static UsersOracle createAndSetUsersOracleInstance(
+            String method, TestInformation testInformation) throws DeviceNotAvailableException {
+        var newOracle = UsersOracle.createInstance(testInformation);
+        if (sOracle.compareAndSet(null, newOracle)) {
+            logAndDisplay("%s: set sOracle (%s)", method, newOracle);
+            return newOracle;
         }
-        return oracle;
+        var existingOracle = sOracle.get();
+        // Not a big deal, but better log it..
+        CLog.w(
+                "%s: sOracle (%s) was set by another thread in parallel after a new one (%s) was "
+                        + "created; returning that one instead");
+        return existingOracle;
     }
 }
