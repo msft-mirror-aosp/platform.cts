@@ -24,6 +24,7 @@ android_test_helper_app {
         "CtsAssistCommon",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
+        "android.app.appfunctions.flags-aconfig-java",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact

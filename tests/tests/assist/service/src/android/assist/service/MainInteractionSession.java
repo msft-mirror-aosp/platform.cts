@@ -192,8 +192,11 @@ public class MainInteractionSession extends VoiceInteractionSession {
         mAssistData.putParcelable(Utils.ASSIST_STRUCTURE_KEY, structure);
         mAssistData.putParcelable(Utils.ASSIST_CONTENT_KEY, content);
         mAssistData.putBundle(Utils.ASSIST_BUNDLE_KEY, data);
-        mAssistData.putParcelable(
-            Utils.APP_FUNCTION_ACTIVITY_ID_KEY, getAppFunctionActivityId(state.getActivityId()));
+        if (android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+            mAssistData.putParcelable(
+                Utils.APP_FUNCTION_ACTIVITY_ID_KEY,
+                getAppFunctionActivityId(state.getActivityId()));
+        }
         hasReceivedAssistData = true;
         maybeBroadcastResults();
     }
