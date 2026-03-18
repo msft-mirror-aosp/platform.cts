@@ -47,11 +47,11 @@ class TestAppInteractionReceiver(private val context: Context) :
     ) :
         Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
-            Log.d(Constants.TAG, "Received message: $msg")
             msg.data?.classLoader = Interaction::class.java.classLoader
             val interaction =
                 msg.data?.getParcelable(Constants.KEY_INTERACTION, Interaction::class.java)
             if (interaction != null) {
+                Log.d(Constants.TAG, "Received message with interaction: $interaction")
                 if (interaction.action is Action.CallbackRemoved) {
                     onClosed()
                     return
