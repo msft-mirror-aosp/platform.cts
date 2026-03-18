@@ -7403,18 +7403,21 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         // Skip the test if the VSR API level is less than 15.
         assumeTrue(PropertyUtil.getVsrApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
         boolean wasWifi7Enabled = false;
+
+        // Make sure device supports Wi-Fi 7
+        assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
+
+        List<WifiConfiguration> savedNetworks =
+                ShellIdentityUtils.invokeWithShellPermissions(sWifiManager::getConfiguredNetworks);
+        wifi7Network =
+                TestHelper.findFirstAvailableSavedNetwork(
+                        sWifiManager, savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
+        // Skip this test if a Wi-Fi 7 AP is not available, as it's not a mandatory CTS
+        // requirement. See b/322011012 for context.
+        assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            // Make sure device supports Wi-Fi 7
-            assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
-
-            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
-            wifi7Network = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
-                    savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
-            // Skip this test if a Wi-Fi 7 AP is not available, as it's not a mandatory CTS
-            // requirement. See b/322011012 for context.
-            assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
-
             // Store original Wi-Fi 7 state and enable it for the test
             wasWifi7Enabled = wifi7Network.isWifi7Enabled();
             if (!wasWifi7Enabled) {
@@ -7487,18 +7490,19 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         WifiConfiguration wifi7Network = null;
         TestActionListener actionListener = new TestActionListener(mLock);
 
+        // Make sure device supports Wi-Fi 7
+        assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
+
+        List<WifiConfiguration> savedNetworks =
+                ShellIdentityUtils.invokeWithShellPermissions(sWifiManager::getConfiguredNetworks);
+        wifi7Network =
+                TestHelper.findFirstAvailableSavedNetwork(
+                        sWifiManager, savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
+        assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+        assertTrue("Wi-Fi 7 is not enabled in the profile", wifi7Network.isWifi7Enabled());
+
         try (PermissionContext p =
                 TestApis.permissions().withPermission("android.permission.OVERRIDE_WIFI_CONFIG")) {
-            // Make sure device supports Wi-Fi 7
-            assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
-
-            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
-            wifi7Network =
-                    TestHelper.findFirstAvailableSavedNetwork(
-                            sWifiManager, savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
-            assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
-            assertTrue("Wi-Fi 7 is not enabled in the profile", wifi7Network.isWifi7Enabled());
-
             // Connect to the Wi-Fi 7 network
             sWifiManager.disconnect();
             waitForDisconnection();
@@ -7603,6 +7607,17 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         TestActionListener actionListener = new TestActionListener(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
+        // Connect to an available TWT responder network
+        // Note: This must be done before adopting shell permissions, as TestHelper internally
+        // adopts and drops permissions, which would revoke permissions for the rest of the test.
+        List<WifiConfiguration> savedNetworks =
+                ShellIdentityUtils.invokeWithShellPermissions(sWifiManager::getConfiguredNetworks);
+        WifiConfiguration twtNetwork =
+                TestHelper.findFirstAvailableSavedNetwork(
+                        sWifiManager, savedNetworks, TestHelper.AP_CAPABILITY_BIT_TWT_RESPONDER);
+        // TODO: Make it an assert once the TWT setup is available for CTS test
+        assumeTrue("Unable to locate TWT capable networks in range.\n", twtNetwork != null);
+
         try {
             uiAutomation.adoptShellPermissionIdentity();
             sWifiManager.getTwtCapabilities(mExecutor, twtCapabilityCallback);
@@ -7627,12 +7642,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             assertTrue(twtCapabilities.get().getLong(
                     WifiManager.TWT_CAPABILITIES_KEY_LONG_MAX_WAKE_INTERVAL_MICROS) >= 0);
 
-            // Connect to an available TWT responder network
-            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
-            WifiConfiguration twtNetwork = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
-                    savedNetworks, TestHelper.AP_CAPABILITY_BIT_TWT_RESPONDER);
-            // TODO: Make it an assert once the TWT setup is available for CTS test
-            assumeTrue("Unable to locate TWT capable networks in range.\n", twtNetwork != null);
             sWifiManager.disconnect();
             waitForDisconnection();
             sWifiManager.connect(twtNetwork.networkId, actionListener);
