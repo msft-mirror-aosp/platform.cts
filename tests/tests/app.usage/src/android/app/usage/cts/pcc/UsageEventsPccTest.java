@@ -29,6 +29,7 @@ import android.app.usage.cts.Activities.ActivityOne;
 import android.content.Context;
 import android.content.Intent;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -43,6 +44,7 @@ import java.util.List;
  * PCC variant of UsageStats tests. Validates that UsageEvents and UsageStats metadata are correctly
  * handled within the Private Compute Core (PCC) sandbox environment.
  */
+@AppModeFull(reason = "No usage events access in instant apps")
 @RunWith(AndroidJUnit4.class)
 public class UsageEventsPccTest {
     private UsageStatsManager mUsageStatsManager;
