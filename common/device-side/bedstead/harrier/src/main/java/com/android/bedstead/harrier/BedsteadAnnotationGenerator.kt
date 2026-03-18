@@ -180,21 +180,16 @@ object BedsteadAnnotationGenerator {
             return false
         }
 
-        if (annotation.annotationClass.java == IncludeNone::class.java) {
+        if (annotation is IncludeNone) {
             return true
         }
 
-        val annotationPackage: String = annotation.annotationClass.java.getPackage().name
-        val annotationName: String = annotation.annotationClass.java.name
+        val annotationType = (annotation as java.lang.annotation.Annotation).annotationType()
+        val annotationPackage: String = annotationType.`package`.name
 
-        if (
-            IGNORED_ANNOTATIONS.contains(annotationName) ||
-                IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage)
-        ) {
-            return true
-        }
-
-        return IGNORED_ANNOTATION_PREFIXES.stream().anyMatch { annotationPackage.startsWith(it) }
+        return IGNORED_ANNOTATIONS.contains(annotationType.name) ||
+            IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage) ||
+            IGNORED_ANNOTATION_PREFIXES.stream().anyMatch { annotationPackage.startsWith(it) }
     }
 
     private fun createRunOnAnnotationsIfNeeded(annotations: List<Annotation>): List<Annotation> {
