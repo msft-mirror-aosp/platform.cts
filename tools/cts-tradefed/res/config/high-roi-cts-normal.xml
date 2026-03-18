@@ -3685,28 +3685,6 @@
     <!-- CtsTelecomAtomHostTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsTelecomAtomHostTestCases[instant] android.cts.statsdatom.telecom.CallStatsTests#testCallStats"/>
     <option name="compatibility:include-filter" value="CtsTelecomAtomHostTestCases[instant] android.cts.statsdatom.telecom.TelecomApiStatsTests#testApiStats"/>
-    <!-- CtsTelecomCujTestCases -->
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallAudioRouteTest#testIncomingCallWhileMusicPlaying_ConnectionServiceVoipAppMain"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingBasicCallTest#testAnswerIncomingDropsFg_BothManaged"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingBasicEmergencyCallTest#testAddEmergencyCallWithManagedCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingManagedHoldRestrictionTest#testActive0_Answer1"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingManagedHoldRestrictionTest#testHeld0Active0_Answer0"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingManagedHoldRestrictionTest#testHeld0Active1_Answer1"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMmiTest#testInCallMmiCodeAllowed"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMmiTest#testInCallMmiCodeBlocked"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallEmergencyCallTest#testMultiCallEcc[[MC,MC,MC], 1st + 2nd call holdable and is 2nd call outgoing: [true,true,true], 1st + 2nd call states after placing 2nd call, 1st + 2nd call states after placing ECC, and expected number of calls disconnected: [4,1,3,7,1]]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallEmergencyCallTest#testMultiCallEcc[[MC,MCC,MC], 1st + 2nd call holdable and is 2nd call outgoing: [true,false,true], 1st + 2nd call states after placing 2nd call, 1st + 2nd call states after placing ECC, and expected number of calls disconnected: [3,4,3,7,1]]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallEmergencyCallTest#testMultiCallEcc[[MC,TC,MC], 1st + 2nd call holdable and is 2nd call outgoing: [true,true,true], 1st + 2nd call states after placing 2nd call, 1st + 2nd call states after placing ECC, and expected number of calls disconnected: [3,4,3,7,1]]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallingTests#testCallSequencing[ISM.ISM.ITC]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingSingleCallingTests#testSingleCallOperations[OMC]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.LocalVoicemailTest#testIncomingCallDuringLocalVoicemailCallRingerOn"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.MultiCallingTest#testMultiCalling_SingleApp_ManagedApp"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.PhoneAccountTest#testRttCapabilities"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.RingerTest#testIncomingTransactionalVoipCallWithDndOffGainsFocus"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.SimultaneousCallingTest#simultaneousCalling_MtMo_OneActiveAccountRestriction"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.SingleCallingTest#testIncomingCallAudioProcessing_ManagedConnectionServiceApp"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.SingleCallingTest#testIncomingCall_TransactionalVoipAppClone"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.SingleCallingTest#testToggleMuteState_ManagedConnectionServiceApp"/>
     <!-- CtsTelecomHostCases -->
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testCallStateChangedAtom_basicTest"/>
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testEmergencyNumberDialedAtom"/>
