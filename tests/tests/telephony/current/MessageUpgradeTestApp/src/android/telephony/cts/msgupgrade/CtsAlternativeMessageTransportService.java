@@ -16,9 +16,15 @@
 
 package android.telephony.cts.msgupgrade;
 
+import static android.telephony.SmsManager.RESULT_ERROR_NO_SERVICE;
+import static android.telephony.cts.msgupgrade.MessageTestParamsHelper.MessageType;
+
+import android.content.ContentValues;
 import android.content.Intent;
 import android.net.Uri;
+import android.provider.Telephony;
 import android.service.messaging.AlternativeMessageTransportService;
+import android.telephony.cts.MessageUpgradeUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -39,26 +45,84 @@ public class CtsAlternativeMessageTransportService extends AlternativeMessageTra
     @Override
     public void onMessageUpgradeRequested(
             @NonNull Uri contentUri, @NonNull final Consumer<Integer> upgradeStatus) {
-        Log.d(TAG, "Received new message upgrade request.");
-        MessageTestParamsHelper params = new MessageTestParamsHelper(getContentResolver());
+        Log.d(TAG, "Received new message upgrade request. Uri: " + contentUri);
+
+        MessageTestParamsHelper paramsHelper = new MessageTestParamsHelper(getContentResolver());
         MessageTestParamsHelper.UpgradeParams upgradeParams =
-                params.getUpgradeParamsIfAvailable(contentUri);
+                paramsHelper.getUpgradeParamsIfAvailable(contentUri);
+        if (upgradeParams == null) {
+            Log.d(TAG, "Unable to parse upgrade parameters for URI: " + contentUri);
+            return;
+        }
+
         Executor delayedExecutor =
                 CompletableFuture.delayedExecutor(upgradeParams.delayMs(), TimeUnit.MILLISECONDS);
         delayedExecutor.execute(
                 () -> {
-                    if (upgradeParams instanceof MessageTestParamsHelper.UpgradeReady) {
-                        int status =
-                                ((MessageTestParamsHelper.UpgradeReady) upgradeParams).status();
-                        upgradeStatus.accept(status);
+                    int status = upgradeParams.status();
+                    upgradeStatus.accept(status);
+                    broadcastUpgradeStatus(contentUri, status);
 
-                        // Send broadcast to notify test after accepting the request
-                        Intent intent = new Intent(ACTION_MESSAGE_UPGRADE_RECEIVED);
-                        intent.putExtra(EXTRA_MESSAGE_URI, contentUri);
-                        intent.putExtra(EXTRA_UPGRADE_STATUS, status);
-                        intent.setPackage("android.telephony.cts");
-                        sendBroadcast(intent);
+                    if (status == UPGRADE_STATUS_ACCEPTED) {
+                        triggerDatabaseUpdate(
+                                contentUri,
+                                upgradeParams.messageState(),
+                                upgradeParams.messageType());
                     }
                 });
+    }
+
+    private void broadcastUpgradeStatus(Uri uri, int status) {
+        Intent intent = new Intent(ACTION_MESSAGE_UPGRADE_RECEIVED);
+        intent.putExtra(EXTRA_MESSAGE_URI, uri);
+        intent.putExtra(EXTRA_UPGRADE_STATUS, status);
+        intent.setPackage("android.telephony.cts");
+        sendBroadcast(intent);
+    }
+
+    private void triggerDatabaseUpdate(
+            Uri uri, MessageUpgradeUtils.MessageState state, MessageType type) {
+        if (type == MessageType.SMS) {
+            simulateSmsUpdate(uri, state);
+        }
+        // TODO(b/481642941): Implement MMS update simulation
+    }
+
+    private void simulateSmsUpdate(Uri smsUri, MessageUpgradeUtils.MessageState state) {
+        if (smsUri == null) return;
+
+        ContentValues values = new ContentValues();
+
+        switch (state) {
+            case MessageUpgradeUtils.MessageState.SENT_AND_DELIVERED -> {
+                values.put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_SENT);
+                values.put(Telephony.Sms.STATUS, Telephony.Sms.STATUS_COMPLETE);
+                values.put(Telephony.Sms.ERROR_CODE, 0);
+            }
+
+            case MessageUpgradeUtils.MessageState.SENT_BUT_PENDING -> {
+                values.put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_SENT);
+                values.put(Telephony.Sms.STATUS, Telephony.Sms.STATUS_PENDING);
+            }
+
+            case MessageUpgradeUtils.MessageState.FAILED_TO_SEND -> {
+                values.put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_FAILED);
+                values.put(Telephony.Sms.ERROR_CODE, RESULT_ERROR_NO_SERVICE);
+            }
+
+            case MessageUpgradeUtils.MessageState.FAILED_TO_DELIVER -> {
+                values.put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_SENT);
+                values.put(Telephony.Sms.STATUS, Telephony.Sms.STATUS_FAILED);
+            }
+        }
+
+        values.put(Telephony.Sms.DATE_SENT, System.currentTimeMillis());
+
+        try {
+            int rows = getContentResolver().update(smsUri, values, null, null);
+            Log.d(TAG, "Simulated " + state + " for " + smsUri + ". Rows: " + rows);
+        } catch (Exception e) {
+            Log.e(TAG, "Simulation failed: " + e.getMessage());
+        }
     }
 }
