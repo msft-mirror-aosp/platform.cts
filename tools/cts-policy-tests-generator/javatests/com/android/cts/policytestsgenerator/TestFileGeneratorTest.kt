@@ -205,7 +205,7 @@ class TestFileGeneratorTest {
                     dpc = [],
                     permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeUser
+                public final class MyPolicyNamePolicyScopeUser
                 """
                     .trimIndent()
             )
@@ -232,7 +232,7 @@ class TestFileGeneratorTest {
                     dpc = [],
                     permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeParentUser
+                public final class MyPolicyNamePolicyScopeParentUser
                 """
                     .trimIndent()
             )
@@ -259,7 +259,7 @@ class TestFileGeneratorTest {
                     dpc = [],
                     permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeDevice
+                public final class MyPolicyNamePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -309,7 +309,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class MyPolicyNamePolicy_ScopeUser
+                public final class MyPolicyNamePolicyScopeUser
                 """
                     .trimIndent()
             )
@@ -350,7 +350,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice
+                public final class TestingDeviceScopePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -390,7 +390,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice
+                public final class TestingDeviceScopePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -436,7 +436,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice
+                public final class TestingDeviceScopePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -476,7 +476,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingParentUserScopePolicy_ScopeParentUser
+                public final class TestingParentUserScopePolicyScopeParentUser
                 """
                     .trimIndent()
             )
@@ -854,7 +854,7 @@ class TestFileGeneratorTest {
         val regex =
             ("// Policy definition that runs with ${scope}" + // first line
                     ".*?" + // body
-                    "public final class [^\n]*Policy_Scope${scopeString}" // last line
+                    "public final class [^\n]*PolicyScope${scopeString}" // last line
                 )
                 .toRegex(RegexOption.DOT_MATCHES_ALL)
 

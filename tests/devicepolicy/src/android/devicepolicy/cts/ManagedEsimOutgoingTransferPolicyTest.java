@@ -49,7 +49,7 @@ public final class ManagedEsimOutgoingTransferPolicyTest {
      * retrieved.
      */
     @Test
-    @CanSetPolicyTest(policy = ManagedEsimOutgoingTransferPolicyScopeDevice.class)
+    @CanSetPolicyTest(policy = ManagedEsimOutgoingTransferPolicyPolicyScopeDevice.class)
     @Postsubmit(reason = "new test")
     public void setAndGetManagedEsimOutgoingTransferPolicy_allowed_returnsAllowed() {
         try {
@@ -68,7 +68,7 @@ public final class ManagedEsimOutgoingTransferPolicyTest {
      * retrieved.
      */
     @Test
-    @CanSetPolicyTest(policy = ManagedEsimOutgoingTransferPolicyScopeDevice.class)
+    @CanSetPolicyTest(policy = ManagedEsimOutgoingTransferPolicyPolicyScopeDevice.class)
     @Postsubmit(reason = "new test")
     public void setAndGetManagedEsimOutgoingTransferPolicy_disallowed_returnsDisallowed() {
         try {
@@ -84,7 +84,7 @@ public final class ManagedEsimOutgoingTransferPolicyTest {
     }
 
     @Test
-    @CanSetPolicyTest(policy = ManagedEsimOutgoingTransferPolicyScopeDevice.class)
+    @CanSetPolicyTest(policy = ManagedEsimOutgoingTransferPolicyPolicyScopeDevice.class)
     @Postsubmit(reason = "new test")
     public void isOutgoingTransferAllowedForSubscription_unmanagedSubscription_returnsTrue() {
         try {
