@@ -31,6 +31,7 @@ import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScopedForUser;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
 import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
+import static android.content.pm.cts.util.PackageTestUtils.setPackageAppLockEnabledScoped;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -451,11 +452,10 @@ public class ApplicationInfoTest {
                         installPackageScoped(
                                 APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
                 AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context);
-                AutoCloseable lockScreen = new LockSettingsUtil(getContext()).withPin("1234")) {
+                AutoCloseable lockScreen = new LockSettingsUtil(getContext()).withPin("1234");
+                AutoCloseable withAppLockEnabled = setPackageAppLockEnabledScoped(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, packageManager)) {
             assertThat(hasLockAppsPermission(context)).isTrue();
-            SystemUtil.runWithShellPermissionIdentity(() -> {
-                packageManager.setPackageAppLockEnabled(APP_LOCK_SUPPORTED_PACKAGE_NAME, true);
-            }, "android.permission.TEST_LOCK_APPS");
 
             // If App Lock is enabled for the package then isAppLockEnabled should be true.
             final ApplicationInfo infoWithPermission =

@@ -17,6 +17,7 @@
 package android.appwidget.cts;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static android.content.pm.cts.util.PackageTestUtils.setPackageAppLockEnabledScoped;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -26,7 +27,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.Manifest;
 import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -200,7 +200,8 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         assertThat(appWidgetManager.isRequestPinAppWidgetSupported()).isTrue();
 
         try (AutoCloseable withLockScreen = new LockSettingsUtil(context).withLockScreen();
-                AutoCloseable withAppLockEnabled = setAppLock(context)) {
+                AutoCloseable withAppLockEnabled = setPackageAppLockEnabledScoped(
+                        context.getPackageName(), context.getPackageManager())) {
             assertThat(appWidgetManager.isRequestPinAppWidgetSupported()).isFalse();
         }
     }
@@ -215,10 +216,10 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     @ApiTest(apis = { "android.appwidget.AppWidgetManager#requestPinAppWidget" })
     public void testRequestPinAppWidget_whenAppLockIsEnabled_returnsFalse() throws Exception {
         final Context context = getInstrumentation().getContext();
+        final String packageName = context.getPackageName();
         final AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
         final String launcherPkg = "android.appwidget.cts.packages.launcher1";
-        final ComponentName provider = new ComponentName(context.getPackageName(),
-                FIRST_WIDGET_CLASS);
+        final ComponentName provider = new ComponentName(packageName, FIRST_WIDGET_CLASS);
 
         // Setup a valid launcher and verify pinning is supported before enabling App Lock.
         setLauncher(launcherPkg + "/" + LAUNCHER_CLASS);
@@ -226,34 +227,11 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
                 /* successCallback= */ null)).isTrue();
 
         try (AutoCloseable withLockScreen = new LockSettingsUtil(context).withLockScreen();
-                AutoCloseable withAppLockEnabled = setAppLock(context)) {
+                AutoCloseable withAppLockEnabled = setPackageAppLockEnabledScoped(
+                        packageName, context.getPackageManager())) {
             assertThat(appWidgetManager.requestPinAppWidget(provider, /* extras= */ null,
                     /* successCallback= */ null)).isFalse();
         }
-    }
-
-    /**
-     * Enables App Lock for the current package and returns an {@link AutoCloseable} that reverts
-     * the state when closed.
-     */
-    private AutoCloseable setAppLock(Context context) {
-        final String packageName = context.getPackageName();
-        final PackageManager packageManager = context.getPackageManager();
-
-        // Enable App Lock.
-        setAppLockState(packageManager, packageName, /* state= */ true);
-
-        // Disable App Lock.
-        return () -> setAppLockState(packageManager, packageName, /* state= */ false);
-    }
-
-    /** Helper method to set the App Lock state. */
-    private void setAppLockState(PackageManager packageManager, String packageName, boolean state) {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            final boolean isAppLockStateChanged =
-                    packageManager.setPackageAppLockEnabled(packageName, state);
-            assertThat(isAppLockStateChanged).isTrue();
-        }, Manifest.permission.TEST_LOCK_APPS);
     }
 
     private String getDefaultLauncher() throws Exception {
