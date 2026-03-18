@@ -58,6 +58,8 @@
             value="CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk" />
         <option name="push"
             value="CtsAppSearchIndexerTestAppBMultipleAppLevelXml.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBMultipleAppLevelXml.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAMultiService.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAMultiService.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
