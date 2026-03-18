@@ -5458,9 +5458,10 @@ You should be prompted to select credentials; choose the ones you just installed
        that a tone is correctly played.
     </string>
 
-    <string name="usb_midi_unsupported_peripheral_title">Unsupported USB Peripheral</string>
-    <string name="usb_midi_unsupported_peripheral_message">
-        Please connect a supported USB Audio Peripheral to run this test.
+    <string name="usb_midi_unvalidated_peripheral_title">Unvalidated USB Audio Interface</string>
+    <string name="usb_midi_unvalidated_peripheral_message">The connected USB Audio Interface has not been validated for use with this test.
+        The test may still pass using this interface. Please use one of the
+        <a href="https://source.android.com/docs/compatibility/cts/usb-audio#usb-audio-interface">recommended USB Audio Peripherals</a>.
     </string>
 
     <string name="midiUSBAudioTestLbl">USB Audio Playback Test:</string>
