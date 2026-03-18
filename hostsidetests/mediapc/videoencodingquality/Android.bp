@@ -26,6 +26,7 @@ java_test_host {
         "cts-media-videoquality-bdrate-lib",
         "codecdb-host-result-reporter",
         "guava",
+        "videoencodingapp-result-proto-lite",
     ],
     libs: [
         "cts-tradefed",
