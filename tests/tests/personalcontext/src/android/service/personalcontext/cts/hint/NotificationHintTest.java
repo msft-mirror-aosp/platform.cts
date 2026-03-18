@@ -39,6 +39,7 @@ import android.provider.Telephony;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.service.personalcontext.Flags;
+import android.service.personalcontext.cts.Util;
 import android.service.personalcontext.hint.ContextHint;
 import android.service.personalcontext.hint.NotificationEvent;
 import android.service.personalcontext.hint.NotificationHint;
@@ -47,6 +48,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.RequiredServiceRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +64,10 @@ import java.io.IOException;
 public class NotificationHintTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final RequiredServiceRule mRequiredServiceRule =
+            new RequiredServiceRule(Util.PERSONAL_CONTEXT_SERVICE_NAME);
 
     static final String STUB_PACKAGE_NAME = "android.personalcontext.cts";
     private static final String NOTIFICATION_CHANNEL_ID = "ContextHintTest";

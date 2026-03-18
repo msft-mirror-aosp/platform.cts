@@ -47,6 +47,7 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.RequiredServiceRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -67,6 +68,10 @@ public class PersonalContextManagerTest {
 
     private static final InlinePresentationSpec INLINE_PRESENTATION_SPEC =
             new InlinePresentationSpec.Builder(new Size(100, 100), new Size(100, 100)).build();
+
+    @Rule
+    public final RequiredServiceRule mRequiredServiceRule =
+            new RequiredServiceRule(Util.PERSONAL_CONTEXT_SERVICE_NAME);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
