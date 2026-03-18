@@ -137,9 +137,6 @@ public class VirtualDeviceRule implements TestRule {
 
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
-    /** A default virtual device for tests that only use the rule to access VDM functionality. */
-    private VirtualDevice mDefaultVirtualDevice = null;
-
     /** Creates a rule with the required permissions for creating virtual devices and displays. */
     public static VirtualDeviceRule createDefault() {
         return new VirtualDeviceRule();
@@ -166,17 +163,6 @@ public class VirtualDeviceRule implements TestRule {
                 .around(mFakeAssociationRule)
                 .around(mTrackerRule)
                 .apply(base, description);
-    }
-
-    /**
-     * Returns a default virtual device.
-     */
-    public VirtualDevice getDefaultVirtualDevice() {
-        if (mDefaultVirtualDevice == null) {
-            acquireNecessaryPermissions();
-            mDefaultVirtualDevice = createManagedVirtualDevice();
-        }
-        return mDefaultVirtualDevice;
     }
 
     /**

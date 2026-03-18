@@ -49,7 +49,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.rules.ExternalResource
 import org.junit.rules.TestName
-import org.junit.rules.TestRule
 
 interface VirtualDisplayActivityScenario<A : Activity> {
     companion object {
@@ -139,7 +138,6 @@ interface VirtualDisplayActivityScenario<A : Activity> {
                 testName: TestName,
                 useSecureDisplay: Boolean = false,
                 size: Size = Size(DEFAULT_WIDTH, DEFAULT_HEIGHT),
-                virtualDeviceRule: TestRule? = null,
             ): Rule<A> = Rule(
                 A::class.java,
                 testName,
