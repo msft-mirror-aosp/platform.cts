@@ -1294,8 +1294,8 @@
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ContentTest#testContentClose"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ContentTest#testContentMethods"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingModelTest#testEmbeddingModelMethods"/>
-    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestResponseTest#testEmbeddingRequestClose"/>
-    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestResponseTest#testEmbeddingRequestResponseMethods"/>
+    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestTest#testEmbeddingRequestClose"/>
+    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestTest#testEmbeddingRequestMethods"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.FeatureTest#testFeatureMethods"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ImageDescriptionModelTest#testCountTokens"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ImageDescriptionModelTest#testDownload"/>
