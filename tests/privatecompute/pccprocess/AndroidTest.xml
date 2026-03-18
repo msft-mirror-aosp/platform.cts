@@ -32,9 +32,19 @@
         <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.processes" />
         <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.appops" />
         <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.checkingvisibilityapp" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.datainit" />
+
+        <option name="run-command" value="am broadcast -a com.android.cts.pcc.datainit.INIT_DATA -n com.android.cts.pcc.datainit/.DataInitReceiver" />
+        <option name="run-command" value="am broadcast -a com.android.cts.pcc.datainit.INIT_DATA -n com.android.cts.pcc.datainit/.PccDataInitReceiver" />
+        <option name="run-command" value="sleep 2" />
+
+        <option name="teardown-command" value="am broadcast -a com.android.cts.pcc.datainit.CLEANUP_DATA -n com.android.cts.pcc.datainit/.DataInitReceiver" />
+        <option name="teardown-command" value="am broadcast -a com.android.cts.pcc.datainit.CLEANUP_DATA -n com.android.cts.pcc.datainit/.PccDataInitReceiver" />
+        <option name="teardown-command" value="sleep 2" />
         <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.processes" />
         <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.appops" />
         <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.checkingvisibilityapp" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.datainit" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -45,11 +55,24 @@
         <option name="test-file-name" value="PccQueryableByPackage.apk" />
         <option name="test-file-name" value="PccQueryableByIntentFilter.apk" />
         <option name="test-file-name" value="PccQueryableByProvider.apk" />
+        <option name="test-file-name" value="DataInitApp.apk" />
     </target_preparer>
+
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+        <option name="package" value="com.android.cts.pcc.processes" />
+        <option name="class" value="com.android.cts.pcc.processes.AppDataSetupTest" />
+    </test>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="com.android.cts.pcc.processes" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="instrument-in-pcc" value="true" />
+        <option name="exclude-filter" value="com.android.cts.pcc.processes.AppDataSetupTest" />
+        <option name="exclude-filter" value="com.android.cts.pcc.processes.AppDataDestroyTest" />
+    </test>
+
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+        <option name="package" value="com.android.cts.pcc.processes" />
+        <option name="class" value="com.android.cts.pcc.processes.AppDataDestroyTest" />
     </test>
 </configuration>

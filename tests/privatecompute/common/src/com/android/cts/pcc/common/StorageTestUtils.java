@@ -30,6 +30,7 @@ public class StorageTestUtils {
     public static void deleteIgnoreException(File file) {
         try {
             boolean ignored = file.delete();
+            Log.i(TAG, "Successfully deleted " + file.getAbsolutePath());
         } catch (SecurityException e) {
             // Ignore exception
         }

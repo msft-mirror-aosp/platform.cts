@@ -18,6 +18,7 @@ package com.android.cts.pcc.featuretests;
 
 import static android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT;
 
+import static com.android.cts.pcc.common.StorageTestUtils.deleteIgnoreException;
 import static com.android.cts.pcc.common.StorageTestUtils.writeFile;
 import static com.android.cts.pcc.featuretests.services.PccStorageService.COMMAND_CLEANUP;
 import static com.android.cts.pcc.featuretests.services.PccStorageService.COMMAND_WRITE_CACHE_FILE;
@@ -27,6 +28,7 @@ import static com.android.cts.pcc.featuretests.services.PccStorageService.EXTRA_
 import static com.android.cts.pcc.featuretests.services.PccStorageService.EXTRA_FILE_SIZE_BYTES;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.app.privatecompute.PccClient;
@@ -59,10 +61,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+// TODO: b/498514368 - Verify StorageStats API behaviour when querying stats for different package
 @RunWith(BedsteadJUnit4.class)
 @RequiresFlagsEnabled(FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
 public class PccStorageStatsTest {
@@ -82,11 +86,20 @@ public class PccStorageStatsTest {
                 public void onServiceDisconnected(ComponentName name) {}
             };
 
-    private static final long TEST_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final long PCC_TEST_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    private static final long APP_TEST_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
     private static final long TEST_BUFFER = 10 * 1024 * 1024; // 10 MB
     private static final String TEST_FILE = "test_file.dat";
     private static final String TEST_CACHE_FILE = "test_cache_file.dat";
     private static final String TEST_DE_FILE = "test_de_file.dat";
+
+    // PCC env has 3 files of size TEST_FILE_SIZE in CE, DE and cache dirs
+    private static final long PCC_UID_DATA_SIZE = 3 * PCC_TEST_FILE_SIZE;
+    // App env has 3 files of size APP_DATA_FILE_SIZE in CE, DE and cache dirs
+    private static final long APP_UID_DATA_SIZE = 3 * APP_TEST_FILE_SIZE;
+    private static final long PCC_UID_CACHE_SIZE = PCC_TEST_FILE_SIZE;
+    private static final long APP_UID_CACHE_SIZE = APP_TEST_FILE_SIZE;
+    private static int sPccUid = -1;
 
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
@@ -94,15 +107,35 @@ public class PccStorageStatsTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mStorageStatsManager = mContext.getSystemService(StorageStatsManager.class);
         mPackageName = mContext.getPackageName();
         assertNotNull(mStorageStatsManager);
+
+        writeFile(mContext.getFilesDir(), TEST_FILE, APP_TEST_FILE_SIZE);
+        writeFile(
+                mContext.createDeviceProtectedStorageContext().getFilesDir(),
+                TEST_DE_FILE,
+                APP_TEST_FILE_SIZE);
+        writeFile(mContext.getCacheDir(), TEST_CACHE_FILE, APP_TEST_FILE_SIZE);
+
+        // Trigger PCC storage writes
+        sendCommand(COMMAND_WRITE_FILE, PCC_TEST_FILE_SIZE);
+        sendCommand(COMMAND_WRITE_DE_FILE, PCC_TEST_FILE_SIZE);
+        sendCommand(COMMAND_WRITE_CACHE_FILE, PCC_TEST_FILE_SIZE);
+        sPccUid = Process.myUid() + 20000;
     }
 
     @After
     public void tearDown() throws Exception {
+        deleteIgnoreException(new File(mContext.getFilesDir(), TEST_FILE));
+        deleteIgnoreException(
+                new File(
+                        mContext.createDeviceProtectedStorageContext().getFilesDir(),
+                        TEST_DE_FILE));
+        deleteIgnoreException(new File(mContext.getCacheDir(), TEST_CACHE_FILE));
+
         sendCommand(COMMAND_CLEANUP, 0);
     }
 
@@ -132,175 +165,140 @@ public class PccStorageStatsTest {
 
     @Test
     @EnsureDoesNotHavePermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageNotCountedForDefiningAppByPackage() throws Exception {
-        // 1. Write files to non-pcc storage
-        writeFile(mContext.getFilesDir(), TEST_FILE, TEST_FILE_SIZE);
-        writeFile(
-                mContext.createDeviceProtectedStorageContext().getFilesDir(),
-                TEST_DE_FILE,
-                TEST_FILE_SIZE);
-        writeFile(mContext.getCacheDir(), TEST_CACHE_FILE, TEST_FILE_SIZE);
-
-        // 2. Get initial storage stats
-        StorageStats initialStats =
+    public void queryStatsForPackage_queryForOwnPackageWithoutPermission_onlyAppStatsReturned()
+            throws Exception {
+        StorageStats stats =
                 mStorageStatsManager.queryStatsForPackage(
                         StorageManager.UUID_DEFAULT, mPackageName, Process.myUserHandle());
 
-        // 3. Trigger PCC storage writes
-        sendCommand(COMMAND_WRITE_FILE, TEST_FILE_SIZE);
-        sendCommand(COMMAND_WRITE_DE_FILE, TEST_FILE_SIZE);
-        sendCommand(COMMAND_WRITE_CACHE_FILE, TEST_FILE_SIZE);
+        long minSize = APP_UID_DATA_SIZE;
+        assertTrue(
+                "Data verification failed. Total data: "
+                        + stats.getDataBytes()
+                        + ". Expected data: "
+                        + minSize,
+                stats.getDataBytes() >= minSize && stats.getDataBytes() < minSize + TEST_BUFFER);
 
-        // 4. Get storage stats again WITHOUT permission
-        StorageStats finalStats =
+        long minCacheSize = APP_UID_CACHE_SIZE;
+        assertTrue(
+                "Cache Data verification failed. Total data: "
+                        + stats.getCacheBytes()
+                        + ". Expected data: "
+                        + minCacheSize,
+                stats.getCacheBytes() >= minCacheSize
+                        && stats.getCacheBytes() < minCacheSize + TEST_BUFFER);
+    }
+
+    @Test
+    @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
+    public void queryStatsForPackage_queryForOwnPackageWithPermission_bothPccAndAppStatsReturned()
+            throws Exception {
+        StorageStats stats =
                 mStorageStatsManager.queryStatsForPackage(
                         StorageManager.UUID_DEFAULT, mPackageName, Process.myUserHandle());
 
-        // 5. Assert that PCC data is NOT included
+        long minSize = PCC_UID_DATA_SIZE + APP_UID_DATA_SIZE;
         assertTrue(
-                "Data bytes should NOT include PCC data without permission. Initial: "
-                        + initialStats.getDataBytes()
-                        + ", Final: "
-                        + finalStats.getDataBytes(),
-                finalStats.getDataBytes() < initialStats.getDataBytes() + TEST_BUFFER);
+                "Data verification failed. Total data: "
+                        + stats.getDataBytes()
+                        + ". Expected data: "
+                        + minSize,
+                stats.getDataBytes() >= minSize && stats.getDataBytes() < minSize + TEST_BUFFER);
 
+        long minCacheSize = PCC_UID_CACHE_SIZE + APP_UID_CACHE_SIZE;
         assertTrue(
-                "Cache bytes should NOT include PCC data without permission. Initial: "
-                        + initialStats.getCacheBytes()
-                        + ", Final: "
-                        + finalStats.getCacheBytes(),
-                finalStats.getCacheBytes() < initialStats.getCacheBytes() + TEST_BUFFER);
+                "Cache Data verification failed. Total data: "
+                        + stats.getCacheBytes()
+                        + ". Expected data: "
+                        + minCacheSize,
+                stats.getCacheBytes() >= minCacheSize
+                        && stats.getCacheBytes() < minCacheSize + TEST_BUFFER);
     }
 
     @Test
     @EnsureDoesNotHavePermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageNotCountedForDefiningAppByUid() throws Exception {
-        // 1. Write files to non-pcc storage
-        writeFile(mContext.getFilesDir(), TEST_FILE, TEST_FILE_SIZE);
-        writeFile(
-                mContext.createDeviceProtectedStorageContext().getFilesDir(),
-                TEST_DE_FILE,
-                TEST_FILE_SIZE);
-        writeFile(mContext.getCacheDir(), TEST_CACHE_FILE, TEST_FILE_SIZE);
-
-        // 2. Get initial storage stats
-        StorageStats initialStats =
-                mStorageStatsManager.queryStatsForPackage(
-                        StorageManager.UUID_DEFAULT, mPackageName, Process.myUserHandle());
-
-        // 3. Trigger PCC storage writes
-        sendCommand(COMMAND_WRITE_FILE, TEST_FILE_SIZE);
-        sendCommand(COMMAND_WRITE_DE_FILE, TEST_FILE_SIZE);
-        sendCommand(COMMAND_WRITE_CACHE_FILE, TEST_FILE_SIZE);
-
-        // 4. Get storage stats again WITHOUT permission
-        StorageStats finalStats =
-                mStorageStatsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, Process.myUid());
-
-        // 5. Assert that PCC data is NOT included
-        assertTrue(
-                "Data bytes should NOT include PCC data without permission. Initial: "
-                        + initialStats.getDataBytes()
-                        + ", Final: "
-                        + finalStats.getDataBytes(),
-                finalStats.getDataBytes() < initialStats.getDataBytes() + TEST_BUFFER);
-
-        assertTrue(
-                "Cache bytes should NOT include PCC data without permission. Initial: "
-                        + initialStats.getCacheBytes()
-                        + ", Final: "
-                        + finalStats.getCacheBytes(),
-                finalStats.getCacheBytes() < initialStats.getCacheBytes() + TEST_BUFFER);
-    }
-
-    @Test
-    @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageCountedWithPermissionByPackage_CE() throws Exception {
-        sendCommand(COMMAND_WRITE_FILE, TEST_FILE_SIZE);
-
-        StorageStats stats =
-                mStorageStatsManager.queryStatsForPackage(
-                        StorageManager.UUID_DEFAULT, mPackageName, Process.myUserHandle());
-
-        assertTrue(
-                "Storage stats should include PCC CE data with permission. Total data: "
-                        + stats.getDataBytes(),
-                stats.getDataBytes() >= TEST_FILE_SIZE);
-    }
-
-    @Test
-    @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageCountedWithPermissionByUid_CE() throws Exception {
-        sendCommand(COMMAND_WRITE_FILE, TEST_FILE_SIZE);
-
+    public void queryStatsForUid_queryForOwnUidWithoutPermission_onlyAppStatsReturned()
+            throws Exception {
         StorageStats stats =
                 mStorageStatsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, Process.myUid());
 
+        long minSize = APP_UID_DATA_SIZE;
         assertTrue(
-                "Storage stats should include PCC CE data with permission. Total data: "
-                        + stats.getDataBytes(),
-                stats.getDataBytes() >= TEST_FILE_SIZE);
-    }
-
-    @Test
-    @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageCountedWithPermissionByPackage_DE() throws Exception {
-        sendCommand(COMMAND_WRITE_DE_FILE, TEST_FILE_SIZE);
-
-        StorageStats stats =
-                mStorageStatsManager.queryStatsForPackage(
-                        StorageManager.UUID_DEFAULT, mPackageName, Process.myUserHandle());
-
-        assertTrue(
-                "Storage stats should include PCC DE data with permission. Total data: "
-                        + stats.getDataBytes(),
-                stats.getDataBytes() >= TEST_FILE_SIZE);
-    }
-
-    @Test
-    @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageCountedWithPermissionByUid_DE() throws Exception {
-        sendCommand(COMMAND_WRITE_DE_FILE, TEST_FILE_SIZE);
-
-        StorageStats stats =
-                mStorageStatsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, Process.myUid());
-
-        assertTrue(
-                "Storage stats should include PCC DE data with permission. Total data: "
-                        + stats.getDataBytes(),
-                stats.getDataBytes() >= TEST_FILE_SIZE);
-    }
-
-    @Test
-    @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageCountedWithPermissionByPackage_Cache() throws Exception {
-        sendCommand(COMMAND_WRITE_CACHE_FILE, TEST_FILE_SIZE);
-
-        StorageStats stats =
-                mStorageStatsManager.queryStatsForPackage(
-                        StorageManager.UUID_DEFAULT, mPackageName, Process.myUserHandle());
-
-        assertTrue(
-                "Storage stats should include PCC cache data with permission. Total data: "
+                "Data verification failed. Total data: "
                         + stats.getDataBytes()
-                        + ", Cache: "
-                        + stats.getCacheBytes(),
-                stats.getDataBytes() >= TEST_FILE_SIZE && stats.getCacheBytes() >= TEST_FILE_SIZE);
+                        + ". Expected data: "
+                        + minSize,
+                stats.getDataBytes() >= minSize && stats.getDataBytes() < minSize + TEST_BUFFER);
+
+        long minCacheSize = APP_UID_CACHE_SIZE;
+        assertTrue(
+                "Cache Data verification failed. Total data: "
+                        + stats.getCacheBytes()
+                        + ". Expected data: "
+                        + minCacheSize,
+                stats.getCacheBytes() >= minCacheSize
+                        && stats.getCacheBytes() < minCacheSize + TEST_BUFFER);
     }
 
     @Test
     @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
-    public void testPccStorageCountedWithPermissionByUid_Cache() throws Exception {
-        sendCommand(COMMAND_WRITE_CACHE_FILE, TEST_FILE_SIZE);
-
+    public void queryStatsForUid_queryForOwnUidWithPermission_onlyAppStatsReturned()
+            throws Exception {
         StorageStats stats =
                 mStorageStatsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, Process.myUid());
 
+        long minSize = APP_UID_DATA_SIZE;
         assertTrue(
-                "Storage stats should include PCC cache data with permission. Total data: "
+                "Data verification failed. Total data: "
                         + stats.getDataBytes()
-                        + ", Cache: "
-                        + stats.getCacheBytes(),
-                stats.getDataBytes() >= TEST_FILE_SIZE && stats.getCacheBytes() >= TEST_FILE_SIZE);
+                        + ". Expected data: "
+                        + minSize,
+                stats.getDataBytes() >= minSize && stats.getDataBytes() < minSize + TEST_BUFFER);
+
+        long minCacheSize = APP_UID_CACHE_SIZE;
+        assertTrue(
+                "Cache Data verification failed. Total data: "
+                        + stats.getCacheBytes()
+                        + ". Expected data: "
+                        + minCacheSize,
+                stats.getCacheBytes() >= minCacheSize
+                        && stats.getCacheBytes() < minCacheSize + TEST_BUFFER);
+    }
+
+    @Test
+    @EnsureDoesNotHavePermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
+    public void queryStatsForUid_queryForPccUidWithoutPermission_throwsSecurityException()
+            throws Exception {
+        assertThrows(
+                "queryStatsForUid should throw SecurityException without PACKAGE_USAGE_STATS "
+                        + "and querying stats for PCC by UID",
+                SecurityException.class,
+                () -> mStorageStatsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, sPccUid));
+    }
+
+    @Test
+    @EnsureHasPermission(android.Manifest.permission.PACKAGE_USAGE_STATS)
+    public void queryStatsForUid_queryForPccUidWithPermission_onlyPccStatsReturned()
+            throws Exception {
+        StorageStats stats =
+                mStorageStatsManager.queryStatsForUid(StorageManager.UUID_DEFAULT, sPccUid);
+
+        // Assert that only Pcc data is included
+        long minSize = PCC_UID_DATA_SIZE;
+        assertTrue(
+                "Data verification failed. Total data: "
+                        + stats.getDataBytes()
+                        + ". Expected data: "
+                        + minSize,
+                stats.getDataBytes() >= minSize && stats.getDataBytes() < minSize + TEST_BUFFER);
+
+        long minCacheSize = PCC_UID_CACHE_SIZE;
+        assertTrue(
+                "Cache Data verification failed. Total data: "
+                        + stats.getCacheBytes()
+                        + ". Expected data: "
+                        + minCacheSize,
+                stats.getCacheBytes() >= minCacheSize
+                        && stats.getCacheBytes() < minCacheSize + TEST_BUFFER);
     }
 }
