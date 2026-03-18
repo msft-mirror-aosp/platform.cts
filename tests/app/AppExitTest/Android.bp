@@ -36,6 +36,9 @@ android_test {
         "cts-wm-util",
         "libprotobuf-java-lite",
     ],
+    jni_libs: [
+        "libcts_jni",
+    ],
     srcs: [
         ":libtombstone_proto-src",
         ":AnrWarningListenerService",
