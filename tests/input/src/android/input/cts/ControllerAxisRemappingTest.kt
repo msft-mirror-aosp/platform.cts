@@ -34,12 +34,15 @@ import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_RZ
 import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_THROTTLE
 import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_X
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_Z
 import com.android.cts.input.EvdevInputEventCodes.Companion.EV_ABS
 import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
 import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 import com.android.cts.input.UinputGamepad
+import android.input.cts.ControllerRemappingApi.Companion.AXIS_DISABLED
 import com.android.cts.input.inputeventmatchers.withAxisValue
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.hardware.input.Flags.FLAG_CONTROLLER_REMAPPING
@@ -269,6 +272,101 @@ class ControllerAxisRemappingTest {
                 allOf(
                     withMotionAction(MotionEvent.ACTION_MOVE),
                     withAxisValue(MotionEvent.AXIS_X, -1f),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun testControllerAxisRemapping_toUnknown_disablesAxis() {
+        UinputGamepad(instrumentation).use { device ->
+            gamepadDevice = inputManager.getInputDevice(device.deviceId)!!
+            val listener = TestInputDeviceListener(device.deviceId)
+            inputManager.registerInputDeviceListener(listener, Handler(Looper.getMainLooper()))
+            remapControllerAxis(
+                gamepadDevice.identifier,
+                MotionEvent.AXIS_X,
+                AXIS_DISABLED
+            )
+            assertEquals(
+                mapOf(MotionEvent.AXIS_X to AXIS_DISABLED),
+                getControllerAxisRemappings(gamepadDevice.identifier)
+            )
+            // Wait for input device to change (i.e. axis remapping applied)
+            assertTrue(
+                "Timed out waiting for axis remapping to be applied",
+                listener.waitForDeviceChanged(1000)
+            )
+
+            device.injectEvents(EV_ABS, ABS_X, 127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            device.injectEvents(EV_ABS, ABS_X, -127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            // Since AXIS_X is disabled, the injected event should not be received
+            verifier.assertNoEvents()
+        }
+    }
+
+    @Test
+    fun testControllerAxisRemapping_multipleAxes_notTransitive() {
+        UinputGamepad(instrumentation).use { device ->
+            gamepadDevice = inputManager.getInputDevice(device.deviceId)!!
+            val listener = TestInputDeviceListener(device.deviceId)
+            inputManager.registerInputDeviceListener(listener, Handler(Looper.getMainLooper()))
+
+            remapControllerAxis(
+                gamepadDevice.identifier,
+                MotionEvent.AXIS_RZ,
+                MotionEvent.AXIS_Z
+            )
+            assertTrue(
+                "Timed out waiting for axis remapping to be applied",
+                listener.waitForDeviceChanged(1000)
+            )
+            remapControllerAxis(
+                gamepadDevice.identifier,
+                MotionEvent.AXIS_Z,
+                AXIS_DISABLED
+            )
+            assertTrue(
+                "Timed out waiting for axis remapping to be applied",
+                listener.waitForDeviceChanged(1000)
+            )
+            assertEquals(
+                mapOf(
+                    MotionEvent.AXIS_RZ to MotionEvent.AXIS_Z,
+                    MotionEvent.AXIS_Z to AXIS_DISABLED
+                ),
+                getControllerAxisRemappings(gamepadDevice.identifier)
+            )
+
+            // Disabled axis.
+            device.injectEvents(EV_ABS, ABS_Z, 127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            device.injectEvents(EV_ABS, ABS_Z, 0)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+            verifier.assertNoEvents()
+
+            device.injectEvents(EV_ABS, ABS_RZ, 127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_Z, 1f),
+                )
+            )
+
+            device.injectEvents(EV_ABS, ABS_RZ, -127)
+            device.injectEvents(EV_SYN, SYN_REPORT, 0)
+
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withAxisValue(MotionEvent.AXIS_Z, -1f),
                 )
             )
         }

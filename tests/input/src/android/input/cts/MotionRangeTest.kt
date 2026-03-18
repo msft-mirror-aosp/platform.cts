@@ -198,4 +198,34 @@ class MotionRangeTest {
             assertNotNull(inputDevice.getMotionRange(MotionEvent.AXIS_RTRIGGER))
         }
     }
+
+    @Test
+    fun axisRemappedToUnknown_removedFromMotionRanges_reappearsWhenRemappedAgain() {
+        UinputGamepad(instrumentation).use { gamepadDevice ->
+            inputDevice = inputManager.getInputDevice(gamepadDevice.deviceId)!!
+            remappingApi = ControllerRemappingApi(inputManager, gamepadDevice.deviceId)
+
+            assertNotNull(inputDevice.getMotionRange(MotionEvent.AXIS_X))
+
+            // Remap AXIS_X to AXIS_DISABLED
+            remappingApi.remapControllerAxisAndWait(
+                inputDevice.identifier,
+                MotionEvent.AXIS_X,
+                ControllerRemappingApi.AXIS_DISABLED,
+            )
+            inputDevice = inputManager.getInputDevice(gamepadDevice.deviceId)!!
+
+            assertNull(inputDevice.getMotionRange(MotionEvent.AXIS_X))
+
+            // Remap another axis to AXIS_X, which should make AXIS_X reappear in motion ranges
+            remappingApi.remapControllerAxisAndWait(
+                inputDevice.identifier,
+                MotionEvent.AXIS_Y,
+                MotionEvent.AXIS_X,
+            )
+            inputDevice = inputManager.getInputDevice(gamepadDevice.deviceId)!!
+
+            assertNotNull(inputDevice.getMotionRange(MotionEvent.AXIS_X))
+        }
+    }
 }

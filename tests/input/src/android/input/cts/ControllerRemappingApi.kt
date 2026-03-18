@@ -26,6 +26,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 class ControllerRemappingApi(val inputManager: InputManager, val deviceId: Int) {
+    companion object {
+        /** See {@link MotionEvent#AXIS_DISABLED} */
+        const val AXIS_DISABLED = -1
+    }
+
     private val listener = TestInputDeviceListener(deviceId)
 
     init {
