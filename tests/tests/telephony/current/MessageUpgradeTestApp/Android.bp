@@ -11,6 +11,7 @@ android_test_helper_app {
     ],
     static_libs: [
         "androidx.core_core",
+        "telephony-cts-utils",
     ],
     platform_apis: true,
     test_suites: [

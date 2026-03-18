@@ -82,8 +82,6 @@ import android.car.hardware.property.WindshieldWipersState;
 import android.car.hardware.property.WindshieldWipersSwitch;
 import android.util.ArraySet;
 
-import com.android.car.internal.util.DebugUtils;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
@@ -556,18 +554,16 @@ public class VehiclePropertyVerifiers {
             assertWithMessage(
                             "WHEEL_TICK configArray["
                                     + configArrayIndex
-                                    + "] must specify the ticks to micrometers for "
-                                    + DebugUtils.constantToString(
-                                            VehicleAreaWheel.class, wheelToVerify))
+                                    + "] must specify the ticks to micrometers for wheel "
+                                    + wheelToVerify)
                     .that(wheelTicksToUm)
                     .isGreaterThan(0);
         } else {
             assertWithMessage(
                             "WHEEL_TICK configArray["
                                     + configArrayIndex
-                                    + "] should be zero since "
-                                    + DebugUtils.constantToString(
-                                            VehicleAreaWheel.class, wheelToVerify)
+                                    + "] should be zero since wheel "
+                                    + wheelToVerify
                                     + " is not supported")
                     .that(wheelTicksToUm)
                     .isEqualTo(0);
@@ -580,9 +576,8 @@ public class VehiclePropertyVerifiers {
             assertWithMessage(
                             "WHEEL_TICK value["
                                     + valueIndex
-                                    + "] should be zero since "
-                                    + DebugUtils.constantToString(
-                                            VehicleAreaWheel.class, wheelToVerify)
+                                    + "] should be zero since wheel "
+                                    + wheelToVerify
                                     + " is not supported")
                     .that(ticks)
                     .isEqualTo(0);

@@ -29,10 +29,12 @@
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsPersonalContextTestCases.apk" />
+        <option name="test-file-name" value="CtsPersonalContextTestApp.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.app.personalcontext.cts.app" />
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.personalcontext.cts.testapp" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

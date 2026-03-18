@@ -292,6 +292,16 @@
             </intent-filter>
         </service>
 
+        <service android:name=".BaseTestContentRestrictionAppService"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":remote"
+            android:permission="android.permission.BIND_CONTENT_RESTRICTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.app.action.CONTENT_RESTRICTION_SERVICE"/>
+            </intent-filter>
+        </service>
+
         <receiver android:name="com.android.bedstead.testapp.TestAppBroadcastController"
                   android:exported="true" />
     </application>

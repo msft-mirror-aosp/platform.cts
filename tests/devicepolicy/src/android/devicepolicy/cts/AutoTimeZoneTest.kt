@@ -47,9 +47,9 @@ import org.junit.runner.RunWith
     Flags.FLAG_POLICY_STREAMLINING_AUTO_TIME_ZONE,
 )
 @UsesEnterprisePolicies(
-    scopeUser = AutoTimeZonePolicy_ScopeUser::class,
-    scopeDevice = AutoTimeZonePolicy_ScopeDevice::class,
-    scopeParentUser = AutoTimeZonePolicy_ScopeParentUser::class,
+    scopeUser = AutoTimeZonePolicyScopeUser::class,
+    scopeDevice = AutoTimeZonePolicyScopeDevice::class,
+    scopeParentUser = AutoTimeZonePolicyScopeParentUser::class,
 )
 @ApiTest(
     apis =

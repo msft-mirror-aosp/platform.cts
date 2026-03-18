@@ -1294,8 +1294,8 @@
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ContentTest#testContentClose"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ContentTest#testContentMethods"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingModelTest#testEmbeddingModelMethods"/>
-    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestResponseTest#testEmbeddingRequestClose"/>
-    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestResponseTest#testEmbeddingRequestResponseMethods"/>
+    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestTest#testEmbeddingRequestClose"/>
+    <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.EmbeddingRequestTest#testEmbeddingRequestMethods"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.FeatureTest#testFeatureMethods"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ImageDescriptionModelTest#testCountTokens"/>
     <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.coveragetests.ImageDescriptionModelTest#testDownload"/>
@@ -1783,27 +1783,6 @@
     <option name="compatibility:include-filter" value="CtsSystemUiTestCases android.systemui.cts.DynamicColorsTest#testDynamicColors[high_FFB9577A_TONAL_SPOT]"/>
     <option name="compatibility:include-filter" value="CtsSystemUiTestCases android.systemui.cts.SystemPaletteTest#testColorsMatchExpectedLuminance[dark_FF007FB4_VIBRANT]"/>
     <option name="compatibility:include-filter" value="CtsSystemUiTestCases android.systemui.cts.WindowInsetsBehaviorTests#systemGesture_notExcludeViewRects_withoutAnyCancel"/>
-    <!-- CtsTelecomCujTestCases -->
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallAudioRouteTest#testIncomingCallWhileMusicPlaying_TransactionalVoipAppMain"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingBasicCallTest#testAnswerIncomingDropsFg_BothManaged"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingBasicEmergencyCallTest#testAddEmergencyCallWithManagedCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingBasicEmergencyCallTest#testAddEmergencyCallWithManagedNonHoldableCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingBasicEmergencyCallTest#testAddEmergencyCallWithSelfManagedCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingBasicEmergencyCallTest#testAddEmergencyCallWithTransactionalCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingManagedHoldRestrictionTest#testActive0_Answer0"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingManagedHoldRestrictionTest#testActive0_Answer1"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMmiTest#testMmiCodeAllowed_DualSim"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallEmergencyCallTest#testMultiCallEcc[[MC,MC,MC], 1st + 2nd call holdable and is 2nd call outgoing: [true,true,true], 1st + 2nd call states after placing 2nd call, 1st + 2nd call states after placing ECC, and expected number of calls disconnected: [3,4,3,7,1]]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallEmergencyCallTest#testMultiCallEcc[[MCC,MC,MC], 1st + 2nd call holdable and is 2nd call outgoing: [true,true,true], 1st + 2nd call states after placing 2nd call, 1st + 2nd call states after placing ECC, and expected number of calls disconnected: [3,4,7,3,1]]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallEmergencyCallTest#testMultiCallEcc[[SMC,MC,MC], 1st + 2nd call holdable and is 2nd call outgoing: [true,false,true], 1st + 2nd call states after placing 2nd call, 1st + 2nd call states after placing ECC, and expected number of calls disconnected: [3,4,7,3,1]]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingMultiCallingTests#testCallSequencing[OSM.ISM.ITC]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.CallSequencingSingleCallingTests#testSingleCallOperations[OMC]"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.LocalVoicemailTest#testIncomingCallDuringLocalVoicemailCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.RingerTest#testIncomingCallVibrateMode_vibrationSettingsSupported_VibrateAndRing"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.SimultaneousCallingTest#simultaneousCalling_MtMo_OneActiveAccountRestriction"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.SingleCallingTest#testIncomingCall_TransactionalVoipAppClone"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.SingleCallingTest#testToggleMuteState_ConnectionServiceVoipAppMain"/>
-    <option name="compatibility:include-filter" value="CtsTelecomCujTestCases android.telecom.cts.cuj.app.integration.UnholdableCallTest#testAnswerIncomingWithOngoingUnholdable_ManagedTransactionalApp"/>
     <!-- CtsTelecomHostCases -->
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testCallStateChangedAtom_basicTest"/>
     <!-- CtsTelecomTestCases2 -->

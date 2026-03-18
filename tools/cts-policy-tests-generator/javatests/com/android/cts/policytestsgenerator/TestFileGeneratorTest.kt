@@ -205,7 +205,7 @@ class TestFileGeneratorTest {
                     dpc = [],
                     permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeUser
+                public final class MyPolicyNamePolicyScopeUser
                 """
                     .trimIndent()
             )
@@ -232,7 +232,7 @@ class TestFileGeneratorTest {
                     dpc = [],
                     permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeParentUser
+                public final class MyPolicyNamePolicyScopeParentUser
                 """
                     .trimIndent()
             )
@@ -259,7 +259,7 @@ class TestFileGeneratorTest {
                     dpc = [],
                     permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeDevice
+                public final class MyPolicyNamePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -309,7 +309,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class MyPolicyNamePolicy_ScopeUser
+                public final class MyPolicyNamePolicyScopeUser
                 """
                     .trimIndent()
             )
@@ -350,7 +350,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice
+                public final class TestingDeviceScopePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -390,7 +390,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice
+                public final class TestingDeviceScopePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -436,7 +436,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice
+                public final class TestingDeviceScopePolicyScopeDevice
                 """
                     .trimIndent()
             )
@@ -476,7 +476,7 @@ class TestFileGeneratorTest {
                             ),
                         ],
                 )
-                public final class TestingParentUserScopePolicy_ScopeParentUser
+                public final class TestingParentUserScopePolicyScopeParentUser
                 """
                     .trimIndent()
             )
@@ -773,6 +773,70 @@ class TestFileGeneratorTest {
             )
     }
 
+    @Test
+    fun supportsUnflaggedPolicies() {
+        val metadata = integerPolicyMetadata("MY_UNFLAGGED_POLICY", flag = null)
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file)
+            .contains(
+                """
+                @RequireFlagsEnabled(
+                    Flags.FLAG_POLICY_STREAMLINING,
+                    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+                )
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun supportsFlaggedPolicies() {
+        val metadata =
+            integerPolicyMetadata(
+                "MY_FLAGGED_POLICY",
+                flag = "the.namespace.of.the_flag_name",
+            )
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file)
+            .contains(
+                """
+                @RequireFlagsEnabled(
+                    Flags.FLAG_POLICY_STREAMLINING,
+                    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+                    the.namespace.of.Flags.FLAG_THE_FLAG_NAME,
+                )
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun stripsNamespaceOfAppAdminFlags() {
+        val metadata =
+            integerPolicyMetadata(
+                "MY_FLAGGED_POLICY",
+                flag = "android.app.admin.flags.the_flag_name",
+            )
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file)
+            .contains(
+                """
+                @RequireFlagsEnabled(
+                    Flags.FLAG_POLICY_STREAMLINING,
+                    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+                    Flags.FLAG_THE_FLAG_NAME,
+                )
+                """
+                    .trimIndent()
+            )
+    }
+
     // Find the test class in the output file.
     private fun String.getTestClass() =
         // Strip everything before the `class XYZ : ... {` line
@@ -790,7 +854,7 @@ class TestFileGeneratorTest {
         val regex =
             ("// Policy definition that runs with ${scope}" + // first line
                     ".*?" + // body
-                    "public final class [^\n]*Policy_Scope${scopeString}" // last line
+                    "public final class [^\n]*PolicyScope${scopeString}" // last line
                 )
                 .toRegex(RegexOption.DOT_MATCHES_ALL)
 
@@ -890,17 +954,21 @@ class TestFileGeneratorTest {
             )
             .build()
 
-    private fun integerPolicyMetadata(identifier: String) =
-        PolicyMetadata.newBuilder()
-            .setIdentifier(fullyQualifiedFieldName(identifier))
-            .setType(integerType)
-            .setTypeSpecificMetadata(
-                TypeSpecificPolicyMetadata.newBuilder()
-                    .setIntegerMetadata(
-                        TypeSpecificPolicyMetadata.IntegerPolicyMetadata.newBuilder()
-                    )
-            )
-            .build()
+    private fun integerPolicyMetadata(identifier: String, flag: String? = null): PolicyMetadata {
+        val builder =
+            PolicyMetadata.newBuilder()
+                .setIdentifier(fullyQualifiedFieldName(identifier))
+                .setType(integerType)
+                .setTypeSpecificMetadata(
+                    TypeSpecificPolicyMetadata.newBuilder()
+                        .setIntegerMetadata(
+                            TypeSpecificPolicyMetadata.IntegerPolicyMetadata.newBuilder()
+                        )
+                )
+
+        if (flag != null) builder.setFlag(flag)
+        return builder.build()
+    }
 
     private fun packagePolicyMetadata(identifier: String) =
         PolicyMetadata.newBuilder()

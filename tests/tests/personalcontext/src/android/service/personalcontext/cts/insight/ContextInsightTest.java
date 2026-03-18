@@ -25,6 +25,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.PersonalContextManager;
 import android.service.personalcontext.Token;
+import android.service.personalcontext.cts.Util;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.PublishedContextHint;
 import android.service.personalcontext.insight.BundleInsight;
@@ -34,6 +35,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.RequiredServiceRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -52,6 +54,10 @@ import javax.crypto.spec.SecretKeySpec;
 public class ContextInsightTest {
     @Rule
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final RequiredServiceRule mRequiredServiceRule =
+            new RequiredServiceRule(Util.PERSONAL_CONTEXT_SERVICE_NAME);
 
     /** Generates a key to use when signing hints. */
     public static SecretKeySpec generateSignedHintKey() {

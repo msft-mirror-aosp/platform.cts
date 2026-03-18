@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
@@ -36,6 +37,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class OrientationTestPlayerListener extends PlayerListener {
+  private static final String TAG = OrientationTestPlayerListener.class.getSimpleName();
   private static final String WM_GET_IGNORE_ORIENTATION_REQUEST =
           "wm get-ignore-orientation-request";
   private static final Pattern IGNORE_ORIENTATION_REQUEST_PATTERN =
@@ -55,7 +57,9 @@ public class OrientationTestPlayerListener extends PlayerListener {
     Matcher matcher = IGNORE_ORIENTATION_REQUEST_PATTERN.matcher(
         executeShellCommand(WM_GET_IGNORE_ORIENTATION_REQUEST));
     assertTrue("get-ignore-orientation-request should match pattern", matcher.find());
-    return Boolean.parseBoolean(matcher.group(1));
+    boolean result = Boolean.parseBoolean(matcher.group(1));
+    Log.i(TAG, "get-ignore-orientation-request is " + result);
+    return result;
   }
 
   /**

@@ -86,7 +86,6 @@ import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.UiccUtil;
-import com.android.internal.telephony.flags.Flags;
 
 import com.google.common.collect.Range;
 
@@ -232,9 +231,11 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     @Before
     public void setUp() throws Exception {
         Context context = getContext();
-        mTelephonyManager = context.getSystemService(TelephonyManager.class);
-        mCarrierConfigManager = context.getSystemService(CarrierConfigManager.class);
         mSubscriptionManager = context.getSystemService(SubscriptionManager.class);
+        mTelephonyManager =
+                context.getSystemService(TelephonyManager.class)
+                        .createForSubscriptionId(getActiveCarrierPrivSubId());
+        mCarrierConfigManager = context.getSystemService(CarrierConfigManager.class);
         selfPackageName = context.getPackageName();
         mVoicemailContentUri = VoicemailContract.Voicemails.buildSourceUri(selfPackageName);
         mVoicemailProvider =
@@ -245,8 +246,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         mPackageManager = context.getPackageManager();
         mImsManager = context.getSystemService(ImsManager.class);
         if (mImsManager != null) {
-            final int subId = SubscriptionManager.getDefaultSubscriptionId();
-            mMmTelManager = mImsManager.getImsMmTelManager(subId);
+            mMmTelManager = mImsManager.getImsMmTelManager(getActiveCarrierPrivSubId());
         }
         mListenerThread = new HandlerThread("CarrierApiTest");
         mListenerThread.start();
@@ -287,7 +287,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 .that(
                         mSubscriptionManager.canManageSubscription(
                                 mSubscriptionManager.getActiveSubscriptionInfo(
-                                        SubscriptionManager.getDefaultSubscriptionId())))
+                                        getActiveCarrierPrivSubId())))
                 .isTrue();
     }
 
@@ -305,26 +305,9 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         assertThat(value).isEqualTo(TelephonyManager.SET_OPPORTUNISTIC_SUB_SUCCESS);
     }
 
-    private int getFirstActivateCarrierPrivilegedSubscriptionId() {
-        int subId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
-        List<SubscriptionInfo> subscriptionInfos =
-                mSubscriptionManager.getActiveSubscriptionInfoList();
-        if (subscriptionInfos != null) {
-            for (SubscriptionInfo info : subscriptionInfos) {
-                TelephonyManager telephonyManager =
-                        mTelephonyManager.createForSubscriptionId(info.getSubscriptionId());
-                if (telephonyManager.hasCarrierPrivileges()) {
-                    subId = info.getSubscriptionId();
-                    return subId;
-                }
-            }
-        }
-        return subId;
-    }
-
     @Test
     public void testUpdateAvailableNetworksWithCarrierPrivilege() {
-        int subIdWithCarrierPrivilege = getFirstActivateCarrierPrivilegedSubscriptionId();
+        int subIdWithCarrierPrivilege = getActiveCarrierPrivSubId();
         int activeSubscriptionInfoCount =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
                         mSubscriptionManager, (tm) -> tm.getActiveSubscriptionInfoCount());
@@ -556,7 +539,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                     .that(bundle.isEmpty())
                     .isFalse();
 
-            int subId = SubscriptionManager.getDefaultSubscriptionId();
+            int subId = getActiveCarrierPrivSubId();
             bundle = mCarrierConfigManager.getConfigForSubId(subId);
             assertWithMessage("CarrierConfigManager#getConfigForSubId() returned null")
                     .that(bundle)
@@ -1350,7 +1333,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testLine1NumberForDisplay() {
-        int subId = SubscriptionManager.getDefaultSubscriptionId();
+        int subId = getActiveCarrierPrivSubId();
         // Cache original alpha tag and number values.
         String originalAlphaTag = mTelephonyManager.getLine1AlphaTag();
         String originalNumber = mTelephonyManager.getLine1Number();
@@ -1421,7 +1404,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     @Test
     public void testCreateAndRemoveSubscriptionGroup() {
         // Set subscription group with current sub Id.
-        int subId = SubscriptionManager.getDefaultSubscriptionId();
+        int subId = getActiveCarrierPrivSubId();
         List<Integer> subGroup = Arrays.asList(subId);
         ParcelUuid uuid = mSubscriptionManager.createSubscriptionGroup(subGroup);
 
@@ -1449,8 +1432,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         }
 
         // Set subscription group with current sub Id.
-        int subId = SubscriptionManager.getDefaultSubscriptionId();
-        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return;
+        int subId = getActiveCarrierPrivSubId();
         ParcelUuid uuid = ShellIdentityUtils.invokeMethodWithShellPermissions(mSubscriptionManager,
                 (sm) -> sm.createSubscriptionGroup(Arrays.asList(subId)));
 
@@ -1488,8 +1470,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC));
         // Set subscription group with current sub Id.
-        int subId = SubscriptionManager.getDefaultSubscriptionId();
-        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return;
+        int subId = getActiveCarrierPrivSubId();
         ParcelUuid uuid = mSubscriptionManager.createSubscriptionGroup(Arrays.asList(subId));
 
         try {
@@ -1518,8 +1499,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testOpportunistic() {
-        int subId = SubscriptionManager.getDefaultSubscriptionId();
-        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return;
+        int subId = getActiveCarrierPrivSubId();
         SubscriptionInfo info = mSubscriptionManager.getActiveSubscriptionInfo(subId);
         boolean oldOpportunistic = info.isOpportunistic();
         boolean newOpportunistic = !oldOpportunistic;
@@ -1909,7 +1889,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
 
     @Test
     public void testSetAndGetSubscriptionPlan() {
-        final int subId = getFirstActivateCarrierPrivilegedSubscriptionId();
+        final int subId = getActiveCarrierPrivSubId();
         // This test case requires subscription with carrier privileges
         assumeFalse(subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
@@ -1933,7 +1913,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
 
     @Test
     public void testSetSubscriptionOverrideUnmetered() {
-        final int subId = getFirstActivateCarrierPrivilegedSubscriptionId();
+        final int subId = getActiveCarrierPrivSubId();
         // This test case requires subscription with carrier privileges
         assumeFalse(subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
@@ -1947,7 +1927,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
 
     @Test
     public void testSetSubscriptionOverrideCongested() {
-        final int subId = getFirstActivateCarrierPrivilegedSubscriptionId();
+        final int subId = getActiveCarrierPrivSubId();
         // This test case requires subscription with carrier privileges
         assumeFalse(subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 

@@ -26,6 +26,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.filters.SdkSuppress;
+
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
@@ -37,6 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@SdkSuppress(minSdkVersion = 37)
 @RunWith(BedsteadJUnit4.class)
 public class PccBackupAgentTest extends BaseBackupCtsTest {
     private static final String PCC_APP_PACKAGE = "android.cts.backup.backupagentprocesspccapp";
@@ -80,6 +83,8 @@ public class PccBackupAgentTest extends BaseBackupCtsTest {
     @Test
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     @EnsureHasPermission(Manifest.permission.BACKUP)
+    @SdkSuppress(minSdkVersion = 37)
+    // TODO(b/493223114): Modify test config to run this test only on Android 37+.
     public void testPccAgent_transportNotEncrypted_backupFails() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -93,6 +98,8 @@ public class PccBackupAgentTest extends BaseBackupCtsTest {
     @Test
     @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     @EnsureHasPermission(Manifest.permission.BACKUP)
+    @SdkSuppress(minSdkVersion = 37)
+    // TODO(b/493223114): Modify test config to run this test only on Android 37+.
     public void testPccAgent_d2d_transportNotEncrypted_backupSucceeds() throws Exception {
         if (!isBackupSupported()) {
             return;

@@ -24,6 +24,8 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.InstrumentationRegistry;
@@ -33,6 +35,8 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.UiccUtil;
 
 import org.junit.Before;
+
+import java.util.List;
 
 /**
  * Common test base to ensure uniform preconditions checking. This class will check for:
@@ -67,6 +71,12 @@ public abstract class BaseCarrierApiTest {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
+    private int mActiveCarrierPrivSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+
+    protected int getActiveCarrierPrivSubId() {
+        return mActiveCarrierPrivSubId;
+    }
+
     private boolean mPreconditionsSatisfied = false;
 
     protected boolean werePreconditionsSatisfied() {
@@ -97,6 +107,21 @@ public abstract class BaseCarrierApiTest {
         // updated the carrier privileges in advance to avoid flakiness.
         AmUtils.waitForBroadcastBarrier();
 
+        TelephonyManager tm = getContext().getSystemService(TelephonyManager.class);
+        SubscriptionManager sm = getContext().getSystemService(SubscriptionManager.class);
+
+        List<SubscriptionInfo> activeSubInfos = sm.getActiveSubscriptionInfoList();
+        if (activeSubInfos != null) {
+            for (SubscriptionInfo info : activeSubInfos) {
+                int subId = info.getSubscriptionId();
+                if (tm.createForSubscriptionId(subId).hasCarrierPrivileges()) {
+                    mActiveCarrierPrivSubId = subId;
+                    mPreconditionsSatisfied = true;
+                    break;
+                }
+            }
+        }
+
         // We must run with carrier privileges. As of 2022, all devices must run CTS with a SIM
         // compliant with the 2021 spec, which has a new certificate. To make results very clear, we
         // still explicitly check for the legacy certificate, and if we don't have carrier
@@ -106,9 +131,8 @@ public abstract class BaseCarrierApiTest {
                         UiccUtil.uiccHasCertificate(CTS_UICC_LEGACY)
                                 ? DEPRECATED_TEST_SIM_FAILURE_MESSAGE
                                 : NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE)
-                .that(getContext().getSystemService(TelephonyManager.class).hasCarrierPrivileges())
+                .that(mPreconditionsSatisfied)
                 .isTrue();
-        mPreconditionsSatisfied = true;
     }
 
     protected boolean hasTelephonyCalling() {

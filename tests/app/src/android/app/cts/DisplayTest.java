@@ -35,9 +35,12 @@ import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,6 +51,8 @@ public class DisplayTest {
     @Rule public SetRequestedOrientationRule mSetRequestedOrientationRule =
             new SetRequestedOrientationRule();
 
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
+
     private static final String TAG = "DisplayTest";
 
     /**
@@ -55,9 +60,13 @@ public class DisplayTest {
      * The method {@link DisplayTestActivity#getDisplay()} fetches the Display directly from the
      * {@link android.view.WindowManager}. A display fetched before the rotation should have the
      * updated adjustments after a rotation.
+     *
+     * <p>TODO(b/433826890): enable this test for visible background users.
      */
     @Test
     @ApiTest(apis = {"android.content.Context#getDisplay"})
+    @RequireNotVisibleBackgroundUsers(
+            reason = "UiAutomation.setRotation() doesn't support visible background users")
     public void testRotation() throws Throwable {
         if (!supportsAutoRotation()) {
             // Skip test if device doesn't support auto rotation as this is needed for rotation

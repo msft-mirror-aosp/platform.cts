@@ -29,6 +29,7 @@ android_test {
         "ctstestrunner-axt",
         "cts-wm-util",
         "junit",
+        "CtsTestPersonalContextControlLib",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -43,6 +44,7 @@ android_test {
         "general-tests",
     ],
     data: [
+        ":CtsPersonalContextTestApp",
         ":CtsAppTestStubs",
     ],
     instrumentation_for: "CtsAppTestStubs",

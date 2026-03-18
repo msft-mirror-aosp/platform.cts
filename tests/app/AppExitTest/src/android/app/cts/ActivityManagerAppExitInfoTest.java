@@ -37,6 +37,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -99,6 +100,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.CpuFeatures;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
@@ -2195,6 +2197,8 @@ public final class ActivityManagerAppExitInfoTest {
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
     public void testNativeServiceExit() throws Exception {
+        assumeFalse(CpuFeatures.isNativeBridgedCpu());
+
         final String servicePackage = AppExitInfoConstants.HELPER_PKG1;
         final String serviceName = servicePackage + ".ExternalNativeService";
         NativeServiceTestConnection conn = bindNativeService(servicePackage, serviceName);
@@ -2246,6 +2250,8 @@ public final class ActivityManagerAppExitInfoTest {
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
     public void testNativeServiceCrash() throws Exception {
+        assumeFalse(CpuFeatures.isNativeBridgedCpu());
+
         final String servicePackage = AppExitInfoConstants.HELPER_PKG1;
         final String serviceName = servicePackage + ".ExternalNativeService";
         NativeServiceTestConnection conn = bindNativeService(servicePackage, serviceName);

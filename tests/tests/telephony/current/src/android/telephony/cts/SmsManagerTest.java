@@ -102,8 +102,10 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -142,12 +144,16 @@ public class SmsManagerTest {
                     + " messages.This is a very long text. This text should be broken into three"
                     + " separate messages.This is a very long text. This text should be broken into"
                     + " three separate messages.";
-    private static final String TEXT_UPGRADE_ACCEPTED =
-            "TEST_UPGRADE:delay=1000;status=" + UPGRADE_STATUS_ACCEPTED;
+
+    private static final String TEXT_UPGRADE_ACCEPTED_SUCCESS =
+            "TEST_UPGRADE:delay=1000;status="
+                    + UPGRADE_STATUS_ACCEPTED
+                    + ";messageState="
+                    + MessageUpgradeUtils.MessageState.SENT_AND_DELIVERED;
+    private static final String LONG_TEXT_UPGRADE_ACCEPTED_SUCCESS =
+            TEXT_UPGRADE_ACCEPTED_SUCCESS + ";text=" + LONG_TEXT;
     private static final String TEXT_UPGRADE_REJECTED =
             "TEST_UPGRADE:delay=1000;status=" + UPGRADE_STATUS_REJECTED;
-    private static final String LONG_TEXT_UPGRADE_ACCEPTED =
-            TEXT_UPGRADE_ACCEPTED + ";text=" + LONG_TEXT;
     private static final String LONG_TEXT_UPGRADE_REJECTED =
             TEXT_UPGRADE_REJECTED + ";text=" + LONG_TEXT;
     private static final String LONG_TEXT_WITH_32BIT_CHARS =
@@ -438,83 +444,133 @@ public class SmsManagerTest {
                 mSmsRetrieverReceiver.waitForCalls(1, TIME_OUT));
     }
 
-    private void sendAndReceiveSms(boolean addMessageId, boolean defaultSmsApp) throws Exception {
-        // send single text sms
+    private void sendAndReceiveSms(boolean addMessageId, String text, Integer expectedUpgradeStatus)
+            throws Exception {
+        Log.d(TAG, "sendAndReceiveSms");
         init();
         if (addMessageId) {
             long fakeMessageId = 19812L;
-            sendTextMessageWithMessageId(mDestAddr,
-                    String.valueOf(SystemClock.elapsedRealtimeNanos()), mSentIntent,
-                    mDeliveredIntent, fakeMessageId);
+            sendTextMessageWithMessageId(
+                    mDestAddr, text, mSentIntent, mDeliveredIntent, fakeMessageId);
         } else {
-            sendTextMessage(mDestAddr, String.valueOf(SystemClock.elapsedRealtimeNanos()),
-                    mSentIntent, mDeliveredIntent);
-        }
-        assertTrue("[RERUN] Could not send SMS. Check signal.",
-                mSendReceiver.waitForCalls(1, TIME_OUT));
-        if (mDeliveryReportSupported) {
-            assertTrue(
-                    "[RERUN] SMS message delivery notification not received. Check signal.",
-                    mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+            sendTextMessage(mDestAddr, text, mSentIntent, mDeliveredIntent);
         }
 
-        assertTrue(
-                "mSmsReceivedReceiver not called", mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
-        // Received SMS should always contain a generated messageId
-        assertNotEquals(0L, sMessageId);
+        verifySendAndDeliveryIntents(1, expectedUpgradeStatus);
+        verifySmsReceipt(expectedUpgradeStatus);
+    }
 
-        if (defaultSmsApp) {
-            // default app should receive SMS_DELIVER_ACTION
+    private void sendAndReceiveMultipartSms(
+            String mccmnc, boolean addMessageId, String text, Integer expectedUpgradeStatus)
+            throws Exception {
+        Log.d(TAG, "sendAndReceiveMultipartSms");
+        sMessageId = 0L;
+        int numPartsSent = sendMultipartTextMessageIfSupported(mccmnc, text, addMessageId);
+
+        if (numPartsSent > 0) {
+            verifySendAndDeliveryIntents(numPartsSent, expectedUpgradeStatus);
+            verifySmsReceipt(expectedUpgradeStatus);
+        }
+        // else: GSM network doesn't support Multipart SMS message. Skip the test.
+    }
+
+    /**
+     * Verifies that the appropriate send and delivery intents are fired for a message.
+     *
+     * <p>The behavior depends on whether the message is a "Legacy SMS" or an "Upgraded Message"
+     * (RCS):
+     *
+     * <ul>
+     *   <li><b>Upgraded:</b> Verifies the upgrade broadcast, the upgrade status, and the specific
+     *       upgrade send/delivery intents.
+     *   <li><b>Legacy:</b> Verifies standard SMS send intents and (if supported) delivery reports.
+     * </ul>
+     *
+     * @param numParts The number of message parts expected.
+     * @param expectedUpgradeStatus The expected RCS upgrade status, or {@code null} if testing
+     *     legacy SMS.
+     */
+    private void verifySendAndDeliveryIntents(int numParts, Integer expectedUpgradeStatus)
+            throws Exception {
+        boolean isUpgrade = (expectedUpgradeStatus != null);
+
+        if (isUpgrade) {
             assertTrue(
-                    "mSmsDeliverReceiver not called",
-                    mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
+                    "Message upgrade broadcast not received.",
+                    mMessageUpgradeReceiver.waitForUpgrade(SHORT_TIME_OUT));
+
+            assertEquals(
+                    "Incorrect message upgrade status received: "
+                            + mMessageUpgradeReceiver.mUpgradeStatus,
+                    (int) expectedUpgradeStatus,
+                    mMessageUpgradeReceiver.mUpgradeStatus.get());
+
+            assertTrue(
+                    "Message upgrade sent intent(s) did not fire.",
+                    mSendReceiver.waitForCalls(numParts, TIME_OUT));
+
+            assertTrue(
+                    "Message upgrade delivery intent(s) did not fire.",
+                    mDeliveryReceiver.waitForCalls(numParts, TIME_OUT));
+
         } else {
-            // non-default app should receive only SMS_RECEIVED_ACTION
             assertTrue(
-                    "mSmsDeliverReceiver should not be called",
-                    mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
+                    "[RERUN] Could not send SMS. Check signal.",
+                    mSendReceiver.waitForCalls(numParts, TIME_OUT));
+
+            if (mDeliveryReportSupported) {
+                assertTrue(
+                        "[RERUN] SMS message delivery notification not received. Check signal.",
+                        mDeliveryReceiver.waitForCalls(numParts, TIME_OUT));
+            }
         }
     }
 
-    private void sendAndReceiveMultipartSms(String mccmnc, boolean addMessageId,
-            boolean defaultSmsApp) throws Exception {
-        sMessageId = 0L;
-        int numPartsSent = sendMultipartTextMessageIfSupported(mccmnc, addMessageId);
-        if (numPartsSent > 0) {
-            assertTrue(
-                    "[RERUN] Could not send multi part SMS. Check signal.",
-                    mSendReceiver.waitForCalls(numPartsSent, TIME_OUT));
-            if (mDeliveryReportSupported) {
-                assertTrue(
-                        "[RERUN] Multi part SMS message delivery notification not received. "
-                                + "Check signal.",
-                        mDeliveryReceiver.waitForCalls(numPartsSent, TIME_OUT));
-            }
+    /**
+     * Verifies the receipt of an SMS on the device.
+     *
+     * <p>Logic Breakdown:
+     *
+     * <ul>
+     *   <li>If a message is <b>successfully upgraded</b> (Accepted), standard SMS receivers should
+     *       not trigger.
+     *   <li>If it's a <b>Legacy SMS</b>, both the 'Received' and 'Deliver' (Default App) intents
+     *       should fire.
+     *   <li>If an <b>upgrade was rejected/failed</b>, the 'Received' intent fires as a fallback,
+     *       but the 'Deliver' intent is suppressed for non-default apps.
+     * </ul>
+     *
+     * @param expectedUpgradeStatus The RCS upgrade status, or {@code null} for legacy SMS.
+     */
+    private void verifySmsReceipt(Integer expectedUpgradeStatus) throws Exception {
+        boolean isUpgrade = (expectedUpgradeStatus != null);
 
-            assertTrue(
-                    "mSmsReceivedReceiver not called",
-                    mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
-            // Received SMS should contain a generated messageId
-            assertNotEquals(0L, sMessageId);
+        // The message is handled via RCS protocols; standard SMS receipt is skipped.
+        if (isUpgrade && expectedUpgradeStatus == UPGRADE_STATUS_ACCEPTED) {
+            return;
+        }
 
-            if (defaultSmsApp) {
-                // default app should receive SMS_DELIVER_ACTION
-                assertTrue(
-                        "mSmsDeliverReceiver not called",
-                        mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
-            } else {
-                // non-default app should receive only SMS_RECEIVED_ACTION
-                assertTrue(
-                        "mSmsDeliverReceiver should not be called",
-                        mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
-            }
+        assertTrue(
+                "SMS_RECEIVED_ACTION not received.",
+                mSmsReceivedReceiver.waitForCalls(1, TIME_OUT));
+        assertNotEquals("Received SMS should contain a generated messageId", 0L, sMessageId);
+
+        if (isUpgrade) {
+            // Rejected Upgrade: The system falls back to SMS, but since the test app
+            // isn't the default SMS app, it should NOT see the DELIVER_ACTION.
+            assertTrue(
+                    "Non-default app received SMS_DELIVER_ACTION unexpectedly on upgrade fallback.",
+                    mSmsDeliverReceiver.verifyNoCalls(NO_CALLS_TIMEOUT_MILLIS));
         } else {
-            // This GSM network doesn't support Multipart SMS message.
-            // Skip the test.
+            // The default SMS app must receive the DELIVER_ACTION.
+            assertTrue(
+                    "Default app did not receive SMS_DELIVER_ACTION.",
+                    mSmsDeliverReceiver.waitForCalls(1, TIME_OUT));
         }
     }
 
     private void sendDataSms(String mccmnc) throws Exception {
+        Log.d(TAG, "sendDataSms");
         if (sendDataMessageIfSupported(mccmnc)) {
             assertTrue("[RERUN] Could not send data SMS. Check signal.",
                     mSendReceiver.waitForCalls(1, TIME_OUT));
@@ -537,44 +593,92 @@ public class SmsManagerTest {
             "android.telephony.SmsManager#sendDataMessage",
             "android.telephony.SmsManager#sendMultipartTextMessage"})
     public void testSendAndReceiveMessages() throws Exception {
-        // Test non-default SMS app
-        testSendAndReceiveMessages(false);
-
-        // Test default SMS app
+        // Test upgrade not supported
         try {
             DefaultSmsAppHelper.ensureDefaultSmsApp();
-            testSendAndReceiveMessages(true);
+            testSendAndReceiveMessages_UpgradeNotSupported();
         } finally {
             DefaultSmsAppHelper.stopBeingDefaultSmsApp();
         }
+
+        // Test upgrade supported
+        Assume.assumeTrue("Skipping message upgrade: Flag is OFF", Flags.messagePromotion());
+        try {
+            DefaultSmsAppHelper.setDefaultSmsApp(mContext, MESSAGE_UPGRADE_APP);
+            SystemClock.sleep(DMA_CHANGE_PROPAGATION_DELAY);
+
+            testSendAndReceiveMessages_UpgradeSupported();
+        } finally {
+            DefaultSmsAppHelper.removeDefaultSmsAppRole(MESSAGE_UPGRADE_APP);
+        }
     }
 
-    private void testSendAndReceiveMessages(boolean defaultSmsApp) throws Exception {
-        assumeFalse("SIM card does not provide phone number. Use a suitable SIM Card.",
-                TextUtils.isEmpty(mDestAddr));
-
-        String mccmnc = mTelephonyManager.getSimOperator();
-        int carrierId = mTelephonyManager.getSimCarrierId();
-        assumeFalse("Carrier [carrier-id: " + carrierId + "] does not support "
-                        + "loop back messages. Use another carrier.",
-                CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
+    private void testSendAndReceiveMessages_UpgradeNotSupported() throws Exception {
+        Log.d(TAG, "testSendAndReceiveMessages_UpgradeNotSupported");
+        String mccmnc = assumeCarrierSupportsLoopback();
 
         // send/receive single text sms with and without messageId
-        sendAndReceiveSms(/* addMessageId= */ true, defaultSmsApp);
-        sendAndReceiveSms(/* addMessageId= */ false, defaultSmsApp);
-
+        sendAndReceiveSms(/* addMessageId= */ true, mText, null);
+        sendAndReceiveSms(/* addMessageId= */ false, mText, null);
 
         if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
             // TODO: temp workaround, OCTET encoding for EMS not properly supported
+            Log.d(TAG, "Phone type is CDMA, skipping data & multipart");
             return;
         }
 
         // send/receive data sms
         sendDataSms(mccmnc);
 
-        // send/receive multi part text sms with and without messageId
-        sendAndReceiveMultipartSms(mccmnc, /* addMessageId= */ true, defaultSmsApp);
-        sendAndReceiveMultipartSms(mccmnc, /* addMessageId= */ false, defaultSmsApp);
+        // send/receive multipart text sms with and without messageId
+        sendAndReceiveMultipartSms(mccmnc, /* addMessageId= */ true, LONG_TEXT, null);
+        sendAndReceiveMultipartSms(mccmnc, /* addMessageId= */ false, LONG_TEXT, null);
+    }
+
+    private void testSendAndReceiveMessages_UpgradeSupported() throws Exception {
+        Log.d(TAG, "testSendAndReceiveMessages_UpgradeSupported");
+        String mccmnc = assumeCarrierSupportsLoopback();
+
+        // send/receive single text sms with and without messageId
+        sendAndReceiveSms(
+                /* addMessageId= */ true, TEXT_UPGRADE_ACCEPTED_SUCCESS, UPGRADE_STATUS_ACCEPTED);
+        sendAndReceiveSms(
+                /* addMessageId= */ false, TEXT_UPGRADE_REJECTED, UPGRADE_STATUS_REJECTED);
+
+        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
+            // TODO: temp workaround, OCTET encoding for EMS not properly supported
+            Log.d(TAG, "Phone type is CDMA, skipping multipart");
+            return;
+        }
+
+        // send/receive multipart text sms with and without messageId
+        sendAndReceiveMultipartSms(
+                mccmnc,
+                /* addMessageId= */ true,
+                LONG_TEXT_UPGRADE_ACCEPTED_SUCCESS,
+                UPGRADE_STATUS_ACCEPTED);
+        sendAndReceiveMultipartSms(
+                mccmnc,
+                /* addMessageId= */ false,
+                LONG_TEXT_UPGRADE_REJECTED,
+                UPGRADE_STATUS_REJECTED);
+    }
+
+    private String assumeCarrierSupportsLoopback() {
+        assumeFalse(
+                "SIM card does not provide phone number. Use a suitable SIM Card.",
+                TextUtils.isEmpty(mDestAddr));
+
+        String mccmnc = mTelephonyManager.getSimOperator();
+        int carrierId = mTelephonyManager.getSimCarrierId();
+
+        assumeFalse(
+                "Carrier [carrier-id: "
+                        + carrierId
+                        + "] does not support "
+                        + "loop back messages. Use another carrier.",
+                CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
+        return mccmnc;
     }
 
     @Test
@@ -588,7 +692,7 @@ public class SmsManagerTest {
 
         // Test upgrade supported, message promoted
         testSendStoredTextMessage_UpgradeSupported(
-                smsManager, TEXT_UPGRADE_ACCEPTED, UPGRADE_STATUS_ACCEPTED);
+                smsManager, TEXT_UPGRADE_ACCEPTED_SUCCESS, UPGRADE_STATUS_ACCEPTED);
 
         // Test upgrade supported, message not promoted
         testSendStoredTextMessage_UpgradeSupported(
@@ -605,13 +709,7 @@ public class SmsManagerTest {
             DefaultSmsAppHelper.ensureDefaultSmsApp();
             smsManager.sendStoredTextMessage(messageUri, mSentIntent, mDeliveredIntent);
 
-            assertTrue(
-                    "Could not send SMS. Check signal.", mSendReceiver.waitForCalls(1, TIME_OUT));
-            if (mDeliveryReportSupported) {
-                assertTrue(
-                        "mDeliveryReceiver not called",
-                        mDeliveryReceiver.waitForCalls(1, TIME_OUT));
-            }
+            verifySendAndDeliveryIntents(1, null);
         } finally {
             DefaultSmsAppHelper.stopBeingDefaultSmsApp();
         }
@@ -636,16 +734,7 @@ public class SmsManagerTest {
                     expectedUpgradeStatus,
                     mMessageUpgradeReceiver.mUpgradeStatus.get());
 
-            if (expectedUpgradeStatus == UPGRADE_STATUS_REJECTED) {
-                assertTrue(
-                        "Could not send SMS. Check signal.",
-                        mSendReceiver.waitForCalls(1, TIME_OUT));
-                if (mDeliveryReportSupported) {
-                    assertTrue(
-                            "mDeliveryReceiver not called",
-                            mDeliveryReceiver.waitForCalls(1, TIME_OUT));
-                }
-            }
+            verifySendAndDeliveryIntents(1, expectedUpgradeStatus);
         } finally {
             DefaultSmsAppHelper.removeDefaultSmsAppRole(MESSAGE_UPGRADE_APP);
         }
@@ -662,7 +751,7 @@ public class SmsManagerTest {
 
         // Test upgrade supported, message promoted
         testSendStoredMultipartTextMessage_UpgradeSupported(
-                smsManager, LONG_TEXT_UPGRADE_ACCEPTED, UPGRADE_STATUS_ACCEPTED);
+                smsManager, LONG_TEXT_UPGRADE_ACCEPTED_SUCCESS, UPGRADE_STATUS_ACCEPTED);
 
         // Test upgrade supported, message not promoted
         testSendStoredMultipartTextMessage_UpgradeSupported(
@@ -693,9 +782,7 @@ public class SmsManagerTest {
             DefaultSmsAppHelper.ensureDefaultSmsApp();
             smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
 
-            assertTrue(
-                    "Could not send multi part SMS. Check signal.",
-                    mSendReceiver.waitForCalls(parts.size(), TIME_OUT));
+            verifySendAndDeliveryIntents(parts.size(), null);
         } finally {
             DefaultSmsAppHelper.stopBeingDefaultSmsApp();
         }
@@ -718,19 +805,7 @@ public class SmsManagerTest {
 
             smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
 
-            assertTrue(
-                    "Message upgrade broadcast not received.",
-                    mMessageUpgradeReceiver.waitForUpgrade(SHORT_TIME_OUT));
-            assertEquals(
-                    "Incorrect message upgrade received: " + mMessageUpgradeReceiver.mUpgradeStatus,
-                    expectedUpgradeStatus,
-                    mMessageUpgradeReceiver.mUpgradeStatus.get());
-
-            if (expectedUpgradeStatus == UPGRADE_STATUS_REJECTED) {
-                assertTrue(
-                        "Could not send SMS. Check signal.",
-                        mSendReceiver.waitForCalls(parts.size(), TIME_OUT));
-            }
+            verifySendAndDeliveryIntents(parts.size(), expectedUpgradeStatus);
         } finally {
             DefaultSmsAppHelper.removeDefaultSmsAppRole(MESSAGE_UPGRADE_APP);
         }
@@ -813,7 +888,8 @@ public class SmsManagerTest {
         }
 
         // multi-part SMS blocking
-        int numPartsSent = sendMultipartTextMessageIfSupported(mccmnc, /* addMessageId= */ false);
+        int numPartsSent =
+                sendMultipartTextMessageIfSupported(mccmnc, LONG_TEXT, /* addMessageId= */ false);
         if (numPartsSent > 0) {
             assertTrue("[RERUN] Could not send multi part SMS. Check signal.",
                     mSendReceiver.waitForCalls(numPartsSent, TIME_OUT));
@@ -1215,14 +1291,15 @@ public class SmsManagerTest {
     }
 
     /**
-     * Returns the number of parts sent in the message. If Multi-part SMS is not supported,
-     * returns 0.
+     * Returns the number of parts sent in the message. If Multi-part SMS is not supported, returns
+     * 0.
      */
-    private int sendMultipartTextMessageIfSupported(String mccmnc, boolean addMessageId) {
+    private int sendMultipartTextMessageIfSupported(
+            String mccmnc, String text, boolean addMessageId) {
         int numPartsSent = 0;
         if (!CarrierCapability.UNSUPPORT_MULTIPART_SMS_MESSAGES.contains(mccmnc)) {
             init();
-            ArrayList<String> parts = divideMessage(LONG_TEXT);
+            ArrayList<String> parts = divideMessage(text);
             numPartsSent = parts.size();
             ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
             ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();

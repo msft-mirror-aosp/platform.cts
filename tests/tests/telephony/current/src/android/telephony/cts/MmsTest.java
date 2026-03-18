@@ -230,11 +230,8 @@ public class MmsTest {
         Log.i(TAG, "afterAllTests");
 
         // Ensure there are no CarrierConfig overrides.
-        try {
-            overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), null);
-        } catch (UnsupportedOperationException ex) {
-            // this device doesn't support messaging
-        }
+        clearOverrideCarrierConfig();
+
         if (sCarrierConfigReceiver != null) {
             getInstrumentation().getContext().unregisterReceiver(sCarrierConfigReceiver);
             sCarrierConfigReceiver = null;
@@ -313,7 +310,7 @@ public class MmsTest {
         assertFalse(doesSupportMMS());
 
         // It takes some time for the new carrier config loaded to MmsConfigManager
-        waitFor(TimeUnit.SECONDS.toMillis(1));
+        waitFor(TimeUnit.SECONDS.toMillis(2));
 
         // Test non-default SMS app
         sendMmsMessage(0L /* messageId */, SmsManager.MMS_ERROR_MMS_DISABLED_BY_CARRIER,
@@ -325,13 +322,9 @@ public class MmsTest {
                 SmsManager.getDefault(), true);
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
 
-        // Restore MMS config
-        if (doesSupportMMS()) {
-            bundle.putBoolean(SmsManager.MMS_CONFIG_MMS_ENABLED, true);
-            assertTrue(
-                    "Failed to override carrier config",
-                    overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), bundle));
-        }
+        // Restore MMS config, Clear the overrides
+        clearOverrideCarrierConfig();
+
     }
 
     @Test
@@ -619,6 +612,16 @@ public class MmsTest {
                     mLatch.countDown();
                 }
             }
+        }
+    }
+
+    private static void clearOverrideCarrierConfig(){
+        try {
+            overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), null);
+             // MMS config is loaded asynchronously. Wait a bit so it will be loaded.
+            waitFor(TimeUnit.SECONDS.toMillis(2));
+        } catch (UnsupportedOperationException ex) {
+            // this device doesn't support messaging
         }
     }
 

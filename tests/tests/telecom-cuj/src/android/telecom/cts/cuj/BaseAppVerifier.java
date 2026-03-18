@@ -29,10 +29,12 @@ import static android.telecom.cts.apps.TelecomTestApp.MANAGED_CLONE_APP_ID;
 
 import static junit.framework.Assert.assertNotNull;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -83,6 +85,7 @@ public class BaseAppVerifier {
     public static final boolean S_IS_TEST_DISABLED = true;
     public boolean mShouldTestTelecom = true;
     public boolean mSupportsManagedCalls = false;
+    public boolean mIsAutomotive = false;
     private BaseAppVerifierImpl mBaseAppVerifierImpl;
     private TelecomManager mTelecomManager;
     protected Context mContext = null;
@@ -167,6 +170,8 @@ public class BaseAppVerifier {
         mShouldTestTelecom = BaseAppVerifierImpl.shouldTestTelecom(mContext);
         mSupportsManagedCalls = TestUtils.hasDialerRole(mContext)
                 && TestUtils.hasTelephonyFeature(mContext);
+        mIsAutomotive =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         assumeTrue(mShouldTestTelecom);
         mBaseAppVerifierImpl =
                 new BaseAppVerifierImpl(
@@ -731,5 +736,10 @@ public class BaseAppVerifier {
             return;
         }
         mBaseAppVerifierImpl.tearDownEmergencyCalling();
+    }
+
+    /** Skip tests on Automotive devices. */
+    public void assumeNotAutomotive() {
+        assumeFalse("Audio focus tests are skipped on Automotive devices", mIsAutomotive);
     }
 }

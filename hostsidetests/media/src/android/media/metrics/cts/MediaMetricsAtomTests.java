@@ -31,6 +31,7 @@ import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.statsd.media.MediaEditingExtensionAtoms;
 import android.os.statsd.media.MediaProcessingExtensionAtoms;
+import android.os.statsd.media.MediaSessionExtensionAtoms;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
@@ -739,66 +740,111 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     @Test
     public void testSessionId() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
-                AtomsProto.Atom.MEDIAMETRICS_PLAYBACK_REPORTED_FIELD_NUMBER);
+                MediaSessionExtensionAtoms.MEDIA_SESSION_CREATION_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaSessionExtensionAtoms.registerAllExtensions(registry);
+
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testSessionId",
                 new LogSessionIdListener());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data).isEmpty();
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaSessionExtensionAtoms.MediaSessionCreationReported atom =
+                data.get(0).getAtom().getExtension(MediaSessionExtensionAtoms.mediaSessionCreationReported);
+
+        assertThat(atom.getLogSessionId()).isNotEmpty();
+        assertThat(atom.getSessionType().toString()).isEqualTo("SESSION_TYPE_PLAYBACK");
+        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getAppUid(getDevice(), TEST_PKG));
     }
 
     @Test
     public void testRecordingSession() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
-                AtomsProto.Atom.MEDIAMETRICS_PLAYBACK_REPORTED_FIELD_NUMBER);
+                MediaSessionExtensionAtoms.MEDIA_SESSION_CREATION_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaSessionExtensionAtoms.registerAllExtensions(registry);
+
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testRecordingSession",
                 new LogSessionIdListener());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data).isEmpty();
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaSessionExtensionAtoms.MediaSessionCreationReported atom =
+                data.get(0).getAtom().getExtension(MediaSessionExtensionAtoms.mediaSessionCreationReported);
+
+        assertThat(atom.getLogSessionId()).isNotEmpty();
+        assertThat(atom.getSessionType().toString()).isEqualTo("SESSION_TYPE_RECORDING");
+        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getAppUid(getDevice(), TEST_PKG));
     }
 
     @Test
     public void testEditingSession() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
-                AtomsProto.Atom.MEDIAMETRICS_PLAYBACK_REPORTED_FIELD_NUMBER);
+                MediaSessionExtensionAtoms.MEDIA_SESSION_CREATION_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaSessionExtensionAtoms.registerAllExtensions(registry);
+
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testEditingSession",
                 new LogSessionIdListener());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data).isEmpty();
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaSessionExtensionAtoms.MediaSessionCreationReported atom =
+                data.get(0).getAtom().getExtension(MediaSessionExtensionAtoms.mediaSessionCreationReported);
+
+        assertThat(atom.getLogSessionId()).isNotEmpty();
+        assertThat(atom.getSessionType().toString()).isEqualTo("SESSION_TYPE_EDITING");
+        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getAppUid(getDevice(), TEST_PKG));
     }
 
     @Test
     public void testTranscodingSession() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
-                AtomsProto.Atom.MEDIAMETRICS_PLAYBACK_REPORTED_FIELD_NUMBER);
+                MediaSessionExtensionAtoms.MEDIA_SESSION_CREATION_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaSessionExtensionAtoms.registerAllExtensions(registry);
+
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testTranscodingSession",
                 new LogSessionIdListener());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data).isEmpty();
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaSessionExtensionAtoms.MediaSessionCreationReported atom =
+                data.get(0).getAtom().getExtension(MediaSessionExtensionAtoms.mediaSessionCreationReported);
+
+        assertThat(atom.getLogSessionId()).isNotEmpty();
+        assertThat(atom.getSessionType().toString()).isEqualTo("SESSION_TYPE_TRANSCODING");
+        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getAppUid(getDevice(), TEST_PKG));
     }
 
     @Test
     public void testSession() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
-                AtomsProto.Atom.MEDIAMETRICS_PLAYBACK_REPORTED_FIELD_NUMBER);
+                MediaSessionExtensionAtoms.MEDIA_SESSION_CREATION_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaSessionExtensionAtoms.registerAllExtensions(registry);
+
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests", "testBundleSession",
                 new LogSessionIdListener());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data).isEmpty();
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaSessionExtensionAtoms.MediaSessionCreationReported atom =
+                data.get(0).getAtom().getExtension(MediaSessionExtensionAtoms.mediaSessionCreationReported);
+
+        assertThat(atom.getLogSessionId()).isNotEmpty();
+        assertThat(atom.getSessionType().toString()).isEqualTo("SESSION_TYPE_BUNDLE");
+        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getAppUid(getDevice(), TEST_PKG));
     }
 
     @Test

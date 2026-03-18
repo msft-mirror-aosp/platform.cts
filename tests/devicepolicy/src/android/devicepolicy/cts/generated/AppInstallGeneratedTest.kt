@@ -69,7 +69,11 @@ public final class AppInstallPolicyScopeUser
 @EnterprisePolicy(dpc = [], permissions = []) public final class AppInstallPolicyScopeParentUser
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+@RequireFlagsEnabled(
+    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+    Flags.FLAG_POLICY_STREAMLINING_APP_INSTALL,
+)
 @UsesEnterprisePolicies(
     scopeUser = AppInstallPolicyScopeUser::class,
     scopeDevice = AppInstallPolicyScopeDevice::class,

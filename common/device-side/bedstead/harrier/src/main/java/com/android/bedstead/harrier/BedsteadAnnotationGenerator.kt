@@ -15,9 +15,6 @@
  */
 package com.android.bedstead.harrier
 
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.isParameterizedAnnotation
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.maybeReplaceUsingParameterizedTestGenerator
-import com.android.bedstead.harrier.BedsteadAnnotationGenerator.resolveRecursiveAnnotations
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
@@ -230,9 +227,7 @@ object BedsteadAnnotationGenerator {
             )
         return parameterizedTestGenerator?.let {
             val generator: ParameterizedTestGenerator = mLocator.get(it.value)
-            val replacementAnnotations: List<Annotation> =
-                generator.generateReplacementAnnotations(annotation, classAnnotations)
-            return replacementAnnotations.sortedByPriority()
+            return generator.generateReplacementAnnotations(annotation, classAnnotations)
         }
     }
 
@@ -249,7 +244,6 @@ object BedsteadAnnotationGenerator {
                 maybeReplaceUsingParameterizedTestGenerator(it, classAnnotations) ?: listOf(it)
             }
             .toList()
-            .sortedByPriority()
     }
 
     /**
@@ -293,19 +287,16 @@ object BedsteadAnnotationGenerator {
     ): ImmutableList<Annotation> {
         val localAnnotations =
             maybeReplaceUsingParameterizedTestGenerator(
-                method.declaringClass.annotations,
+                method.declaringClass.annotations + method.annotations,
                 runtimeClassAnnotations,
-            ) +
-                maybeReplaceUsingParameterizedTestGenerator(
-                    method.annotations,
-                    runtimeClassAnnotations,
-                )
+            )
 
         val resolvedAnnotations =
-            resolveRecursiveAnnotations(localAnnotations, parameterizedAnnotations)
+            resolveRecursiveAnnotationsUnsorted(localAnnotations, parameterizedAnnotations)
 
         return ImmutableList.copyOf(
-            resolvedAnnotations + createRunOnAnnotationsIfNeeded(resolvedAnnotations)
+            (resolvedAnnotations + createRunOnAnnotationsIfNeeded(resolvedAnnotations))
+                .sortedByPriority()
         )
     }
 
@@ -389,18 +380,19 @@ object BedsteadAnnotationGenerator {
     }
 
     /**
-     * Resolves annotations recursively.
+     * Resolves annotations recursively. The output is sorted by annotation priority.
      *
      * @param parameterizedAnnotations The class of the parameterized annotation to expand, if any
      */
-    @JvmOverloads
-    fun resolveRecursiveAnnotations(
+    fun resolveRecursiveAnnotations(annotations: List<Annotation>): List<Annotation> {
+        return resolveRecursiveAnnotationsUnsorted(annotations).sortedByPriority()
+    }
+
+    private fun resolveRecursiveAnnotationsUnsorted(
         annotations: List<Annotation>,
         parameterizedAnnotations: ImmutableList<Annotation> = ImmutableList.of(),
     ): List<Annotation> {
-        return annotations
-            .flatMap { getReplacementAnnotations(it, parameterizedAnnotations).sortedByPriority() }
-            .toList()
+        return annotations.flatMap { getReplacementAnnotations(it, parameterizedAnnotations) }
     }
 
     /**

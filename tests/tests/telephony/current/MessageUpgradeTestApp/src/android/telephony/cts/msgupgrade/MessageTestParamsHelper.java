@@ -22,6 +22,7 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Telephony;
+import android.telephony.cts.MessageUpgradeUtils;
 import android.util.Log;
 
 public final class MessageTestParamsHelper {
@@ -30,9 +31,12 @@ public final class MessageTestParamsHelper {
 
     private static final String KEY_DELAY = "delay";
     private static final String KEY_STATUS = "status";
+    private static final String KEY_MESSAGE_STATE = "messageState";
 
     private static final long DEFAULT_DELAY_MS = 1000;
     private static final int DEFAULT_STATUS = UPGRADE_STATUS_ACCEPTED;
+    private static final MessageUpgradeUtils.MessageState DEFAULT_MESSAGE_STATE =
+            MessageUpgradeUtils.MessageState.SENT_AND_DELIVERED;
 
     private final ContentResolver mContentResolver;
 
@@ -48,22 +52,33 @@ public final class MessageTestParamsHelper {
      * key-value pairs for parameters like 'delay' and 'status'.
      *
      * @param contentUri The content URI of the SMS or MMS message.
-     * @return An {@link UpgradeReady} instance with parsed values if the prefix is found and
-     *     parameters are valid. Otherwise, returns a {@link NoUpgrade} instance with default
-     *     values.
+     * @return An {@link UpgradeParams} instance with parsed values if the prefix is found and
+     *     parameters are valid. Otherwise, returns null.
      */
     public UpgradeParams getUpgradeParamsIfAvailable(Uri contentUri) {
-        String controlString = getStringForControl(contentUri);
+        MessageType type = getMessageType(contentUri);
+        String controlString = getStringForControl(contentUri, type);
+
         if (controlString != null && controlString.startsWith(TEST_UPGRADE_PREFIX)) {
-            return parseParameters(controlString.substring(TEST_UPGRADE_PREFIX.length()));
-        } else {
-            return new NoUpgrade(DEFAULT_DELAY_MS);
+            return parseParameters(controlString.substring(TEST_UPGRADE_PREFIX.length()), type);
         }
+
+        return null;
     }
 
-    private UpgradeParams parseParameters(String paramsPart) {
+    private MessageType getMessageType(Uri uri) {
+        if (uri == null || uri.getAuthority() == null) return null;
+        return switch (uri.getAuthority()) {
+            case "sms" -> MessageType.SMS;
+            case "mms" -> MessageType.MMS;
+            default -> null;
+        };
+    }
+
+    private UpgradeParams parseParameters(String paramsPart, MessageType type) {
         long delayMs = DEFAULT_DELAY_MS;
         int status = DEFAULT_STATUS;
+        MessageUpgradeUtils.MessageState messageState = DEFAULT_MESSAGE_STATE;
 
         String[] params = paramsPart.split(";");
         for (String param : params) {
@@ -87,6 +102,13 @@ public final class MessageTestParamsHelper {
                             Log.w(TAG, "Invalid format for '" + KEY_STATUS + "': " + value);
                         }
                         break;
+                    case KEY_MESSAGE_STATE:
+                        try {
+                            messageState = MessageUpgradeUtils.MessageState.valueOf(value);
+                        } catch (IllegalArgumentException e) {
+                            Log.w(TAG, "Invalid format for '" + KEY_MESSAGE_STATE + "': " + value);
+                        }
+                        break;
                     default:
                         Log.d(TAG, "Unknown parameter key: " + key);
                         break;
@@ -96,38 +118,16 @@ public final class MessageTestParamsHelper {
             }
         }
 
-        return new UpgradeReady(delayMs, status);
+        return new UpgradeParams(delayMs, status, messageState, type);
     }
 
-    private String getStringForControl(Uri contentUri) {
-        if (contentUri == null) return null;
-        String authority = contentUri.getAuthority();
-        if (authority == null) return null;
+    private String getStringForControl(Uri contentUri, MessageType type) {
+        if (type == null) return null;
 
-        return switch (authority) {
-            case "sms" -> getSmsBody(contentUri);
-            case "mms" -> getMmsSubject(contentUri);
-            default -> {
-                Log.w(TAG, "getStringForRejectionCheck: Unknown URI authority for " + contentUri);
-                yield null;
-            }
+        return switch (type) {
+            case SMS -> queryTelephonyStringColumn(contentUri, Telephony.Sms.BODY);
+            case MMS -> queryTelephonyStringColumn(contentUri, Telephony.Mms.SUBJECT);
         };
-    }
-
-    private String getSmsBody(Uri smsUri) {
-        if (smsUri == null || !"sms".equals(smsUri.getAuthority())) {
-            Log.w(TAG, "getSmsBody: Invalid SMS URI: " + smsUri);
-            return null;
-        }
-        return queryTelephonyStringColumn(smsUri, Telephony.Sms.BODY);
-    }
-
-    private String getMmsSubject(Uri mmsUri) {
-        if (mmsUri == null || !"mms".equals(mmsUri.getAuthority())) {
-            Log.w(TAG, "getMmsSubject: Invalid MMS URI: " + mmsUri);
-            return null;
-        }
-        return queryTelephonyStringColumn(mmsUri, Telephony.Mms.SUBJECT);
     }
 
     private String queryTelephonyStringColumn(Uri uri, String columnName) {
@@ -170,28 +170,6 @@ public final class MessageTestParamsHelper {
     }
 
     /**
-     * Represents the parameters for a simulated message upgrade process. This is a sealed
-     * interface, permitting only {@link NoUpgrade} and {@link UpgradeReady} as direct
-     * implementations.
-     */
-    public sealed interface UpgradeParams permits NoUpgrade, UpgradeReady {
-        /**
-         * The delay in milliseconds to wait before completing the simulated upgrade action.
-         *
-         * @return the delay in milliseconds.
-         */
-        long delayMs();
-    }
-
-    /**
-     * Represents a scenario where no specific upgrade parameters are found in the message, or the
-     * message does not trigger the special upgrade path.
-     *
-     * @param delayMs A default delay value.
-     */
-    public record NoUpgrade(long delayMs) implements UpgradeParams {}
-
-    /**
      * Represents a scenario where upgrade parameters have been successfully parsed from the
      * message.
      *
@@ -199,5 +177,14 @@ public final class MessageTestParamsHelper {
      * @param status The status code to return for the simulated upgrade (e.g.,
      *     UPGRADE_STATUS_ACCEPTED, UPGRADE_STATUS_REJECTED).
      */
-    public record UpgradeReady(long delayMs, int status) implements UpgradeParams {}
+    public record UpgradeParams(
+            long delayMs,
+            int status,
+            MessageUpgradeUtils.MessageState messageState,
+            MessageType messageType) {}
+
+    public enum MessageType {
+        SMS,
+        MMS
+    }
 }

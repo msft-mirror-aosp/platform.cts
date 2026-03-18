@@ -38,15 +38,6 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
     var lifecycleCallback: AtomicReference<ComputerControlSession.LifecycleCallback?> =
         AtomicReference(null)
 
-    constructor(
-        context: Context,
-        session: ComputerControlSession,
-        packageName: String,
-        className: String? = null,
-    ) : this(context, session) {
-        launchApplication(packageName, className)
-    }
-
     init {
         val proxyLifecycleCallback = polledDelegate { lifecycleCallback.get() }
         session.setLifecycleCallback(

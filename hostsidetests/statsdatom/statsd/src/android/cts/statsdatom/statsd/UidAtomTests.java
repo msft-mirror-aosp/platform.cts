@@ -723,10 +723,9 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 Atom.APP_USAGE_EVENT_OCCURRED_FIELD_NUMBER, /*useUidAttributionChain=*/false);
 
-        // Overlay may need to sit there a while.
-        final int waitTime = 10_500;
+        final int waitTime = 5_000;
         DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                "StatsdCtsForegroundActivity", "action", ACTION_SHOW_APPLICATION_OVERLAY, waitTime);
+                "StatsdCtsForegroundActivity", "action", "action.sleep_top", waitTime);
 
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         Function<Atom, Integer> appUsageStateFunction =

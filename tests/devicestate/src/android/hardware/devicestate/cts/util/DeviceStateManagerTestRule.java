@@ -30,6 +30,7 @@ import android.server.wm.DeviceStateUtils;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -49,7 +50,8 @@ public class DeviceStateManagerTestRule implements TestRule {
             Objects.requireNonNull(mTargetContext.getSystemService(DeviceStateManager.class));
 
     @Override
-    public Statement apply(Statement base, Description description) {
+    public Statement apply(Statement base, Description description)
+            throws AssumptionViolatedException {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
@@ -69,6 +71,9 @@ public class DeviceStateManagerTestRule implements TestRule {
                                     try {
                                         base.evaluate();
                                     } catch (Throwable e) {
+                                        if (e instanceof AssumptionViolatedException) {
+                                            throw (AssumptionViolatedException) e;
+                                        }
                                         throw new RuntimeException(e);
                                     }
                                 } else {

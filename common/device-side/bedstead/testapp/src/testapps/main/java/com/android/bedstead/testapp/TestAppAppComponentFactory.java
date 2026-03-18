@@ -234,6 +234,14 @@ public final class TestAppAppComponentFactory extends AppComponentFactory {
                         intent);
             }
 
+            if (className.endsWith("ContentRestrictionAppService")) {
+                Log.d(LOG_TAG, "Service class (" + className
+                        + ") not found, routing to BaseTestContentRestrictionAppService");
+                return super.instantiateService(
+                        classLoader,
+                        BaseTestContentRestrictionAppService.class.getName(),
+                        intent);
+            }
             if (className.endsWith("SupervisionAppService")) {
                 Log.d(LOG_TAG, "Service class (" + className
                         + ") not found, routing to TestSupervisionAppService");
