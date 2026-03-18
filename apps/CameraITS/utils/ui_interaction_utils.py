@@ -484,7 +484,17 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
     when the video stabilization mode is OFF
   """
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
-  dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  scrollable_menu = dut.ui(scrollable=True)
+  if scrollable_menu.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    logging.debug('Scrolling down to find settings button.')
+    found = scrollable_menu.scroll.down(res=SETTINGS_BUTTON_RESOURCE_ID)
+    if not found:
+      dut.take_screenshot(log_path, prefix='failed_to_find_settings_button')
+      raise AssertionError(
+            'Settings button not found even after scrolling!')
+    else:
+      logging.debug('Found settings button after scrolling.')
+      dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
   dut.ui(scrollable=True).scroll.down(
       res=SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID)
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
