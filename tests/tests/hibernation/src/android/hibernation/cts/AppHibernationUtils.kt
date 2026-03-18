@@ -34,8 +34,6 @@ import android.util.Log
 import androidx.test.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
-import androidx.test.uiautomator.Condition
-import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiScrollable
@@ -58,6 +56,7 @@ import java.util.concurrent.TimeUnit
 import org.hamcrest.Matcher
 import org.hamcrest.Matchers
 import org.junit.Assert
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThat
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
@@ -73,7 +72,7 @@ const val ACTION_SET_UP_HIBERNATION =
 const val SYSUI_PKG_NAME = "com.android.systemui"
 const val NOTIF_LIST_ID = "notification_stack_scroller"
 const val NOTIF_LIST_ID_AUTOMOTIVE = "notifications"
-const val BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE = "car_bottom_bar_window"
+const val NOTIF_ICON_ID_AUTOMOTIVE = "notifications"
 const val CLEAR_ALL_BUTTON_ID = "dismiss_text"
 const val MANAGE_BUTTON_AUTOMOTIVE = "manage_button"
 // Time to find a notification. Unlikely, but in cases with a lot of notifications, it may take
@@ -302,7 +301,7 @@ fun openUnusedAppsNotification() {
             // Eventually clause because clicking is sometimes inconsistent if the screen is
             // scrolling
             if (isVisibleBackgroundUser) {
-                expandNotificationsForVisibleBackgroundUser(context, userHelper.getMainDisplayId())
+                expandNotificationsForVisibleBackgroundUser(userHelper.getMainDisplayId())
             } else {
                 runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
             }
@@ -365,21 +364,16 @@ private fun expandAndClickNotificationWatch(uiDevice: UiDevice, clickRunnable: R
     }
 }
 
-private fun expandNotificationsForVisibleBackgroundUser(context: Context, displayId: Int) {
+private fun expandNotificationsForVisibleBackgroundUser(displayId: Int) {
     val uiDevice = UiAutomatorUtils2.getUiDevice()
-    val searchCondition = object : Condition<UiDevice, Boolean> {
-        override fun apply(device: UiDevice): Boolean {
-            return device.findObjects(
-                By.res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE)
-            ).size > 0
-        }
-    }
-    uiDevice.wait(searchCondition, JOB_RUN_WAIT_TIME)
-    val navigationBarFrame = uiDevice.findObject(
-                By.pkg(SYSUI_PKG_NAME).res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE)
-                    .displayId(displayId))
-    // swipe up the car bottom bar to expand the notification panel of visible background user
-    navigationBarFrame.swipe(Direction.UP, 1.0f)
+    val iconSelector = By.pkg(SYSUI_PKG_NAME)
+            .res(SYSUI_PKG_NAME, NOTIF_ICON_ID_AUTOMOTIVE)
+            .displayId(displayId)
+    val notificationsIcon = uiDevice.wait(Until.findObject(iconSelector), VIEW_WAIT_TIMEOUT)
+    assertNotNull("Notifications icon cannot be found on display $displayId", notificationsIcon)
+
+    // Tap on the notifications icon to expand the notification panel of visible background user
+    notificationsIcon.click()
 }
 
 /**
