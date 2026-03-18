@@ -26,6 +26,7 @@ import static org.junit.Assume.assumeTrue;
 
 import static java.util.Collections.EMPTY_LIST;
 
+import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
 import android.app.Activity;
 import android.content.ComponentName;
@@ -103,6 +104,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
 
     @After
     public void tearDown() throws Exception {
+        InstrumentedAccessibilityService.disableAllServices();
         mWmState.setSuppressAccessibilityServices(true);
         Components.forceStopPackage();
     }
