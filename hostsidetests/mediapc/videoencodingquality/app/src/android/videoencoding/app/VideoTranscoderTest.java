@@ -29,6 +29,8 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.os.Environment;
+import android.videoencoding.app.proto.VideoEncodingAppResultProto.VideoEncodingAppResult;
+import android.videoencoding.transcoders.TranscodeStats;
 import android.videoencoding.transcoders.TransformerTranscoder;
 
 import androidx.media3.common.Effect;
@@ -76,6 +78,7 @@ public class VideoTranscoderTest {
     private static final String SDCARD_MOUNT_POINT =
             Environment.getExternalStorageDirectory().getAbsolutePath();
     private static final String MEDIA_DIR = SDCARD_MOUNT_POINT + "/veq/input/";
+    public static final String VIDEO_ENCODING_APP_RESULT_FILE = "VideoEncodingAppResult.pb";
     public static final String ENC_CONFIG_JSON = "conf-json";
     private static final String ENC_CONFIG_FILE;
     private static String PATH_PREFIX;
@@ -210,6 +213,7 @@ public class VideoTranscoderTest {
         ImmutableList<Effect> effects = effectsBuilder.build();
 
         PATH_PREFIX = dir.getAbsolutePath() + File.separator;
+        VideoEncodingAppResult.Builder resultBuilder = VideoEncodingAppResult.newBuilder();
         for (int i = 0; i < mEncCfgParams.length; i++) {
             TransformerTranscoder transformerTranscoder =
                     new TransformerTranscoder(
@@ -220,7 +224,13 @@ public class VideoTranscoderTest {
                             TransformerTranscoder.convertEncoderConfigParamsToSettings(
                                     mEncCfgParams[i]),
                             effects);
-            transformerTranscoder.transcode();
+            TranscodeStats stats = transformerTranscoder.transcode();
+            resultBuilder.putTranscodingFpsMap(mOutputFileNames[i], stats.transcodingFps);
+            resultBuilder.putEncodeFpsMap(mOutputFileNames[i], stats.encodeFps);
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(PATH_PREFIX + VIDEO_ENCODING_APP_RESULT_FILE)) {
+            resultBuilder.build().writeTo(fos);
         }
     }
 }

@@ -16,9 +16,11 @@
 package android.videoencoding.transcoders;
 
 import android.content.Context;
+import android.media.MediaMetadataRetriever;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 
 import androidx.media3.common.Effect;
 import androidx.media3.common.MediaItem;
@@ -33,6 +35,7 @@ import androidx.media3.transformer.VideoEncoderSettings;
 
 import com.google.common.collect.ImmutableList;
 
+import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -85,8 +88,11 @@ public final class TransformerTranscoder implements Transformer.Listener {
      * Performs a transcode based on the constructor-provided input parameters. While this
      * <i>can</i> be called multiple times, there is no reason to do so as the result should be the
      * same.
+     *
+     * @throws IOException If the transcode fails.
+     * @return The statistics of the transcode operation.
      */
-    public void transcode() {
+    public TranscodeStats transcode() throws IOException {
         HandlerThread handlerThread = new HandlerThread("TransformerTranscoder");
         handlerThread.start();
 
@@ -110,10 +116,26 @@ public final class TransformerTranscoder implements Transformer.Listener {
                                 new Effects(/* audioProcessors= */ ImmutableList.of(), mEffects))
                         .build();
 
+        long startTime = SystemClock.elapsedRealtimeNanos();
         handler.post(() -> transformer.start(item, mOutputFilePath));
 
         // Sleep the test thread until Transformer finishes.
         awaitTranscodeBarrier();
+        long endTime = SystemClock.elapsedRealtimeNanos();
+
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(mOutputFilePath);
+        String frameCountStr =
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT);
+        long frameCount = Long.parseLong(frameCountStr);
+        String durationStr =
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+        long durationMs = Long.parseLong(durationStr);
+        retriever.release();
+
+        double durationSec = (endTime - startTime) / 1_000_000_000.0;
+        double encodeFps = frameCount / (durationMs / 1000.0);
+        return new TranscodeStats(frameCount, durationSec, encodeFps);
     }
 
     private void awaitTranscodeBarrier() {
