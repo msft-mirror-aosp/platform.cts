@@ -18,6 +18,7 @@ id: "7.5/H-1-5"
 group: GROUP_CAMERA
 name: "Camera Capture Latency"
 description: "Capture latencies"
+comment: "This requirement is split into 7.5/H-1-5-1 and 7.5/H-1-5-2 for independent grading."
 specs {
   key: 10
   value {
