@@ -620,14 +620,14 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
         // Mask off SYNTHETIC, VARARGS and BRIDGE as they are not represented in the API.
         int ignoredMods = (Modifier.NATIVE | Modifier.SYNCHRONIZED | Modifier.STRICT |
                 METHOD_MODIFIER_SYNTHETIC | METHOD_MODIFIER_VAR_ARGS | METHOD_MODIFIER_BRIDGE);
+
+        // We can ignore FINAL for final classes
+        if ((classDescription.getModifier() & Modifier.FINAL) != 0) {
+            ignoredMods |= Modifier.FINAL;
+        }
+
         int reflectionModifiers = reflectedMethod.getModifiers() & ~ignoredMods;
         int apiModifiers = apiMethod.mModifier & ~ignoredMods;
-
-        // We can ignore FINAL for classes
-        if ((classDescription.getModifier() & Modifier.FINAL) != 0) {
-            reflectionModifiers &= ~Modifier.FINAL;
-            apiModifiers &= ~Modifier.FINAL;
-        }
 
         String genericString = reflectedMethod.toGenericString();
 
