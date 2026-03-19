@@ -18,9 +18,13 @@ package android.server.wm.draganddrop;
 
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.platform.test.annotations.Presubmit;
 
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,6 +40,10 @@ public class DragDropCompatTest extends DragDropTest {
     @Before
     @Override
     public void setUp() throws Exception {
+        assumeFalse(
+                "Drag and Drop is blocked for visible background users",
+                new UserHelper().isVisibleBackgroundUser());
+
         executeShellCommand("am compat enable --no-kill DOWNSCALED" + " " + PACKAGE_NAME);
         executeShellCommand("am compat enable --no-kill DOWNSCALE_50" + " " + PACKAGE_NAME);
         mInvCompatScale = 1 / 0.5f;
