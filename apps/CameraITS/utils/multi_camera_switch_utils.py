@@ -23,8 +23,14 @@ import image_fov_utils
 import its_session_utils
 import opencv_processing_utils
 
+
 _CH_FULL_SCALE = 255
+_CONTROL_AF_STATE_PASSIVE_SCAN = 1
+_CONTROL_AF_STATE_PASSIVE_FOCUSED = 2
 _CONVERGED_STATE = 2
+
+_AF_CONVERGED_STATE = [_CONTROL_AF_STATE_PASSIVE_SCAN,
+                       _CONTROL_AF_STATE_PASSIVE_FOCUSED]
 
 
 def check_orientation_and_flip(props, img, img_name_stem, suffix):
@@ -284,7 +290,8 @@ def find_crossover_point(cam, capture_results):
     physical_id = capture_result[
         'android.logicalMultiCamera.activePhysicalId']
     zoom_ratio = float(capture_result['android.control.zoomRatio'])
-    logging.debug('Active physical id %s frame %s', physical_id, counter)
+    logging.debug('Active physical id %s frame %s AE, AWB, AF: %s, %s, %s',
+                  physical_id, counter, ae_state, awb_state, af_state)
     if not physical_id_before:
       physical_id_before = physical_id
     if physical_id_before == physical_id:
@@ -306,11 +313,15 @@ def find_crossover_point(cam, capture_results):
     if camera_fov_before != camera_fov:
       logging.debug('Cameras with different field of view (%s != %s) crossed.',
                     camera_fov_before, camera_fov)
-      if ae_state == awb_state == af_state == _CONVERGED_STATE:
+      if (ae_state == awb_state == _CONVERGED_STATE) and (
+          af_state in _AF_CONVERGED_STATE):
         lens_changed = True
-        logging.debug('3A converged at crossover.')
+        logging.debug('3A converged at crossover. AE, AWB, AF state: '
+                      '%s, %s, %s', ae_state, awb_state, af_state)
         break
       else:
+        logging.debug('AE, AWB, AF state: %s, %s, %s',
+                      ae_state, awb_state, af_state)
         raise AssertionError('3A did not converge at crossover.')
 
   return lens_changed, counter
