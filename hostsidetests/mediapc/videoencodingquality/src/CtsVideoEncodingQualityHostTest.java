@@ -25,6 +25,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.media.cts.codecdb.CodecDbResultReporter;
 import android.media.cts.codecdb.VideoEncoderConfig;
 import android.media.cts.codecdb.VideoEncoderResult;
+import android.videoencoding.app.proto.VideoEncodingAppResultProto.VideoEncodingAppResult;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.ddmlib.IDevice;
@@ -60,6 +61,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -68,6 +70,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -122,6 +125,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
     private static final String DEVICE_SIDE_TEST_PACKAGE = "android.videoencoding.app";
     private static final String DEVICE_SIDE_TEST_CLASS =
             "android.videoencoding.app.VideoTranscoderTest";
+    private static final String VIDEO_ENCODING_APP_RESULT_FILE = "VideoEncodingAppResult.pb";
     private static final String RUNNER = "androidx.test.runner.AndroidJUnitRunner";
     private static final String TEST_CONFIG_INST_ARGS_KEY = "conf-json";
     private static final long DEFAULT_SHELL_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
@@ -152,7 +156,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
             description =
                     "Force to run the test even if the device is not"
                             + " a right performance class device.")
-    private boolean mForceToRun = false;
+    private boolean mForceToRun = true;
 
     @Option(name = "skip-avc", description = "Skip avc encoder testing")
     private boolean mSkipAvc = false;
@@ -611,12 +615,27 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
             ImmutableList.Builder<Long> targetBitratesBuilder = ImmutableList.builder();
             ImmutableList.Builder<Double> actualBitratesBuilder = ImmutableList.builder();
             ImmutableList.Builder<Double> vmafScoresBuilder = ImmutableList.builder();
+            ImmutableList.Builder<Double> transcodingFpsBuilder = ImmutableList.builder();
+            ImmutableList.Builder<Double> encodeFpsBuilder = ImmutableList.builder();
+
+            Map<String, Double> transcodingFpsMap = new HashMap<>();
+            Map<String, Double> encodeFpsMap = new HashMap<>();
+            File fpsFile = new File(outHostPath, VIDEO_ENCODING_APP_RESULT_FILE);
+            if (fpsFile.exists()) {
+                try (FileInputStream fis = new FileInputStream(fpsFile)) {
+                    VideoEncodingAppResult result = VideoEncodingAppResult.parseFrom(fis);
+                    transcodingFpsMap = result.getTranscodingFpsMapMap();
+                    encodeFpsMap = result.getEncodeFpsMapMap();
+                }
+            }
 
             try (FileWriter writer =
                     new FileWriter(outHostPath.getPath() + "/" + "all_vmafs.txt")) {
                 for (int i = 0; i < codecConfigs.length(); i++) {
                     JSONObject codecConfig = codecConfigs.getJSONObject(i);
                     String outputName = codecConfig.getString("EncodedFileName");
+                    double fpsVal = transcodingFpsMap.getOrDefault(outputName, 0.0);
+                    double encodeFpsVal = encodeFpsMap.getOrDefault(outputName, 0.0);
                     outputName = outputName.substring(0, outputName.lastIndexOf("."));
                     String outputVmafPath = outDir + "/" + outputName + ".txt";
 
@@ -654,10 +673,14 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
                     long totalBits_kbps = totalBits / 1000;
                     long bitrate_kbps = totalBits_kbps / clipDuration;
                     writer.write("Bitrate kbps = " + bitrate_kbps + "\n");
+                    writer.write("Transcoding FPS = " + fpsVal + "\n");
+                    writer.write("Encode FPS = " + encodeFpsVal + "\n");
 
                     targetBitratesBuilder.add(codecConfig.optLong("BitRate", 0));
                     actualBitratesBuilder.add((double) bitrate_kbps);
                     vmafScoresBuilder.add(vmafValue);
+                    transcodingFpsBuilder.add(fpsVal);
+                    encodeFpsBuilder.add(encodeFpsVal);
                 }
             }
 
@@ -692,6 +715,8 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceive
                 VideoEncoderResult resultData = VideoEncoderResult.builder()
                         .addBitrates(actualBitratesBuilder.build())
                         .addVmafs(vmafScoresBuilder.build())
+                        .addTranscodingFpsList(transcodingFpsBuilder.build())
+                        .addEncodeFpsList(encodeFpsBuilder.build())
                         .build();
 
                 CodecDbResultReporter reporter = CodecDbResultReporter.create(

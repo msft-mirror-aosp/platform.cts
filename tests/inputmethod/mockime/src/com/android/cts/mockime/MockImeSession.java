@@ -1954,11 +1954,6 @@ public class MockImeSession implements AutoCloseable {
     }
 
     @NonNull
-    public ImeCommand callVerifyGetViewConfiguration() {
-        return callCommandInternal("verifyGetViewConfiguration", new Bundle());
-    }
-
-    @NonNull
     public ImeCommand callVerifyGetGestureDetector() {
         return callCommandInternal("verifyGetGestureDetector", new Bundle());
     }
@@ -1966,11 +1961,6 @@ public class MockImeSession implements AutoCloseable {
     @NonNull
     public ImeCommand callVerifyGetWindowManagerOnDisplayContext() {
         return callCommandInternal("verifyGetWindowManagerOnDisplayContext", new Bundle());
-    }
-
-    @NonNull
-    public ImeCommand callVerifyGetViewConfigurationOnDisplayContext() {
-        return callCommandInternal("verifyGetViewConfigurationOnDisplayContext", new Bundle());
     }
 
     @NonNull

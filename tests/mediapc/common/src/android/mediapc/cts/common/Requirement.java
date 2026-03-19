@@ -42,6 +42,8 @@ public abstract class Requirement {
     public final @Nullable String configId;
     public final @Nullable String variantId;
 
+    private boolean mHasBeenSubmitted = false;
+
     protected Requirement(String id, String cddId, RequiredMeasurement<?>[] reqs) {
         this(id, cddId, null, null, reqs);
     }
@@ -67,6 +69,33 @@ public abstract class Requirement {
 
     public String id() {
         return this.id;
+    }
+
+    /**
+     * Returns whether the requirement is ready to be evaluated.
+     *
+     * @return true if all required measurements are set, false otherwise.
+     */
+    public boolean isReady() {
+        return allMeasuredValuesSet();
+    }
+
+    /**
+     * Returns whether the requirement has been submitted.
+     *
+     * @return true if the requirement has been submitted, false otherwise.
+     */
+    public boolean hasBeenSubmitted() {
+        return mHasBeenSubmitted;
+    }
+
+    /**
+     * Sets whether the requirement has been submitted.
+     *
+     * @param submitted whether the requirement has been submitted.
+     */
+    public void setSubmitted(boolean submitted) {
+        mHasBeenSubmitted = submitted;
     }
 
     boolean allMeasuredValuesSet() {

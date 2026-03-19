@@ -29,7 +29,7 @@ import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.IntTestParameter
-import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
@@ -103,8 +103,7 @@ class AutoTimeZoneTest {
 
         setPolicy(POLICY_SCOPE_DEVICE, policyValue)
 
-        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE))
-            .isEqualTo(1)
+        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE)).isEqualTo(1)
     }
 
     @Test
@@ -118,8 +117,7 @@ class AutoTimeZoneTest {
 
         setPolicy(POLICY_SCOPE_DEVICE, policyValue)
 
-        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE))
-            .isEqualTo(0)
+        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE)).isEqualTo(0)
     }
 
     @Test
@@ -130,6 +128,34 @@ class AutoTimeZoneTest {
 
         assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE))
             .isEqualTo(originalSetting)
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @RequireFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ZONE_ENABLED_COEXISTENCE)
+    @ApiTest(apis = ["android.app.manager.DevicePolicyManager#getAutoTimeZonePolicy"])
+    @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
+    fun getAutoTimeZonePolicy_newDisabledEnumValues_returnsOldAutoTimeDisabledValue(
+        @AutoTimeZonePolicyDisabled disabledPolicyValue: Int
+    ) {
+        setPolicy(POLICY_SCOPE_DEVICE, disabledPolicyValue)
+
+        assertThat(dpcDPM.getAutoTimeZonePolicy())
+            .isEqualTo(DevicePolicyManager.AUTO_TIME_ZONE_DISABLED)
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @RequireFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ZONE_ENABLED_COEXISTENCE)
+    @ApiTest(apis = ["android.app.manager.DevicePolicyManager#getAutoTimeZonePolicy"])
+    @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
+    fun getAutoTimeZonePolicy_newEnabledEnumValues_returnsOldAutoTimeEnabledValue(
+        @AutoTimeZonePolicyEnabled enabledPolicyValue: Int
+    ) {
+        setPolicy(POLICY_SCOPE_DEVICE, enabledPolicyValue)
+
+        assertThat(dpcDPM.getAutoTimeZonePolicy())
+            .isEqualTo(DevicePolicyManager.AUTO_TIME_ZONE_ENABLED)
     }
 
     fun setPolicy(scope: Int, policy: Int) {

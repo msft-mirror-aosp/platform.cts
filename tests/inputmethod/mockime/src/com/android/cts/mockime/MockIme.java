@@ -52,7 +52,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Window;
@@ -574,14 +573,6 @@ public final class MockIme extends InputMethodService {
                                 attrContext.getSystemService(WindowManager.class);
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
-                    case "verifyGetViewConfiguration": {
-                        final ViewConfiguration imsViewConfig = ViewConfiguration.get(this);
-                        final ViewConfiguration configContextViewConfig =
-                                ViewConfiguration.get(configContext);
-                        final ViewConfiguration attrContextViewConfig =
-                                ViewConfiguration.get(attrContext);
-                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
-                    }
                     case "verifyGetGestureDetector": {
                         GestureDetector.SimpleOnGestureListener listener =
                                 new GestureDetector.SimpleOnGestureListener();
@@ -598,14 +589,6 @@ public final class MockIme extends InputMethodService {
                         // violation.
                         final WindowManager wm = displayContext
                                 .getSystemService(WindowManager.class);
-
-                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
-                    }
-                    case "verifyGetViewConfigurationOnDisplayContext": {
-                        // Obtaining a ViewConfiguration on a display context must throw a strict
-                        // mode violation.
-                        final ViewConfiguration viewConfiguration =
-                                ViewConfiguration.get(displayContext);
 
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }

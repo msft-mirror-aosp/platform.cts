@@ -137,6 +137,7 @@ public class ExtraAssistDataTest extends AssistTestBase {
 
     @Test
     @ApiTest(apis = {"android.service.voice.VoiceInteractionSession#getAppFunctionActivityId"})
+    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     public void testAppFunctionActivityIdSameForSameActivity() throws Exception {
         assumeIsNotLowRamDevice();
         startTest(TEST_CASE_TYPE);
@@ -157,6 +158,7 @@ public class ExtraAssistDataTest extends AssistTestBase {
 
     @Test
     @ApiTest(apis = {"android.service.voice.VoiceInteractionSession#getAppFunctionActivityId"})
+    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     public void testAppFunctionActivityIdDifferentForDifferentActivities() throws Exception {
         assumeIsNotLowRamDevice();
         startTest(TEST_CASE_TYPE);

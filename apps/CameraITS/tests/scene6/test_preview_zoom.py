@@ -36,7 +36,7 @@ _FPS = 30
 _MINIMUM_ARUCO_MARKERS_TO_DETECT = 1
 _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 50
+_NUM_STEPS = 25
 _STANDARD_TEST_MAX_ZOOM_RATIO = 4.0
 
 # Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.

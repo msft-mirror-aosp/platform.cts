@@ -151,11 +151,6 @@ enum class TestPointerDevice {
         override fun toString(): String = "TOUCHPAD"
     };
 
-    fun setUp(
-        ignored: AutoCloseable,
-        display: Display,
-    ) = setUp(display)
-
     abstract fun setUp(
         display: Display,
     )

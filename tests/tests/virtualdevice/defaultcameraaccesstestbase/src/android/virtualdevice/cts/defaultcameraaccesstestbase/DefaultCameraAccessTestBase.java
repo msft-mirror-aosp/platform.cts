@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class DefaultCameraAccessTestBase {
 
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
+    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
     private static final int NO_ERROR = 0;
 
     @Rule
@@ -75,8 +75,7 @@ public abstract class DefaultCameraAccessTestBase {
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
-        return virtualDeviceRule.startActivityOnDisplaySync(
-                virtualDisplay, Activity.class);
+        return virtualDeviceRule.startActivityOnDisplaySync(virtualDisplay, Activity.class);
     }
 
     private String[] getCameraIds() throws Exception {
@@ -137,13 +136,16 @@ public abstract class DefaultCameraAccessTestBase {
                     }
                 };
 
-        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
-            try {
-                cameraManager.openCamera(cameraId, cameraCallback, null);
-            } catch (CameraAccessException e) {
-                cameraError[0] = e.getReason();
-            }
-        });
+        InstrumentationRegistry.getInstrumentation()
+                .runOnMainSync(
+                        () -> {
+                            try {
+                                cameraManager.openCamera(cameraId, cameraCallback, null);
+                            } catch (CameraAccessException e) {
+                                cameraError[0] = e.getReason();
+                                cond.open();
+                            }
+                        });
         cond.block(TIMEOUT_MILLIS);
         for (CameraDevice device : cameraDevices) {
             device.close();

@@ -17,6 +17,7 @@
 package android.suspendapps.cts;
 
 import static android.content.Intent.EXTRA_PACKAGE_NAME;
+import static android.content.pm.PackageManager.RESTRICTION_CONFIRM_WITH_SPEEDBUMP;
 import static android.content.pm.PackageManager.RESTRICTION_HIDE_FROM_SUGGESTIONS;
 import static android.content.pm.PackageManager.RESTRICTION_HIDE_NOTIFICATIONS;
 import static android.suspendapps.cts.Constants.ALL_TEST_PACKAGES;
@@ -49,6 +50,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
@@ -56,10 +58,14 @@ import androidx.test.filters.SmallTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.internal.util.ArrayUtils;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -75,6 +81,9 @@ import java.util.Arrays;
 public class DistractingPackageTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private PackageManager mPackageManager;
@@ -119,6 +128,28 @@ public class DistractingPackageTest {
         assertTrue("shouldHideFromSuggestions false after setting the flag",
                 launcherApps.shouldHideFromSuggestions(TEST_APP_PACKAGE_NAME,
                         UserHandle.of(userId)));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_START_INTERCEPTOR_SPEEDBUMPS)
+    @ApiTest(apis = {"android.content.pm.PackageManager#RESTRICTION_CONFIRM_WITH_SPEEDBUMP"})
+    public void testShouldConfirmWithSpeedbump() throws Exception {
+        setDistractionFlagsAndAssertResult(TEST_PACKAGE_ARRAY, RESTRICTION_CONFIRM_WITH_SPEEDBUMP,
+                ArrayUtils.emptyArray(String.class));
+
+        // Start the test app's activity and assert it does not start since the package is
+        // restricted with speedbump. ActivityStartInterceptor should redirect the intent
+        // to the Wellbeing app instead of directly starting this activity.
+        final TestAppInterface testAppInterface = new TestAppInterface(mContext);
+        try {
+            android.suspendapps.cts.SuspendTestUtils.startTestAppActivity(null);
+            // We use a short timeout because we expect it NOT to start
+            if (testAppInterface.awaitTestActivityStart(2000) != null) {
+                fail("Test app's activity started despite being restricted with speedbump");
+            }
+        } finally {
+            testAppInterface.disconnect();
+        }
     }
 
     // This test is skipped for visible background users since it sets the component

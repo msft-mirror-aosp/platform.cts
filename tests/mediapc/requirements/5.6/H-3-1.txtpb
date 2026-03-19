@@ -23,12 +23,12 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
-      "MUST be able to handle switching from playing 1 sine wave to 50 sine "
+      "MUST be able to handle switching from playing 1 sine wave to 20 sine "
       "waves with no underrun of audio buffers."
     required_values {
       key: "alternate_num_voices"
       value {
-        int_value: 50
+        int_value: 20
       }
     }
     required_values {
