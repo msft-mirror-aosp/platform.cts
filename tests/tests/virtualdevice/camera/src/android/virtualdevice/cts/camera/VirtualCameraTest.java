@@ -49,6 +49,7 @@ import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
@@ -1417,6 +1418,9 @@ public class VirtualCameraTest {
         } else if (lensFacing == LENS_FACING_FRONT) {
             cameraId = FRONT_CAMERA_ID;
         } else {
+            // Wait for the external virtual camera to be available in the CameraManager.
+            verify(mMockVdContextCameraAvailabilityCallback, timeout(TIMEOUT_MILLIS))
+                    .onCameraAvailable(anyString());
             // get the mapped cameraId from the list of cameras in the CameraManager
             // there should be only one
             cameraId = mCameraManager.getCameraIdList()[0];
