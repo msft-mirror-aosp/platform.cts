@@ -433,7 +433,7 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
         formatter.format("<%s", m);
         String sep = m.isEmpty() ? "" : " ";
         if ((modifiers & BRIDGE) != 0) {
-            formatter.format("%senum", sep);
+            formatter.format("%sbridge", sep);
             sep = " ";
         }
         if ((modifiers & VARARGS) != 0) {
