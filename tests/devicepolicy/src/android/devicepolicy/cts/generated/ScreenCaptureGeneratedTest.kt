@@ -89,7 +89,7 @@ public final class ScreenCapturePolicyScopeDevice
 @RequireFlagsEnabled(
     Flags.FLAG_POLICY_STREAMLINING,
     Flags.FLAG_POLICY_STREAMLINING_TESTS,
-    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_SCREEN_CAPTURE_API,
 )
 @UsesEnterprisePolicies(
     scopeUser = ScreenCapturePolicyScopeUser::class,
