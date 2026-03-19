@@ -33,6 +33,9 @@ import co.nstant.in.cbor.CborException;
  */
 public abstract class Attestation {
     static final String EAT_OID = "1.3.6.1.4.1.11129.2.1.25";
+    // OID for the Pixel Production state extension. The corresponding OCTET STRING holds an ASN.1
+    // DER-encoded ENUMERATED value. 0:UNKNOWN, 1:NOT_PRODUCTION, 2:PRODUCTION
+    static final String PIXEL_PROD_OID = "1.3.6.1.4.1.11129.2.1.59";
     static final String ASN1_OID = "1.3.6.1.4.1.11129.2.1.17";
     static final String KEY_USAGE_OID = "2.5.29.15"; // Standard key usage extension.
 
@@ -51,7 +54,7 @@ public abstract class Attestation {
     //
     // OEM extensions should not include device-specific identifiers.
     static final Set<String> ALLOWED_NON_CRITICAL_OIDS =
-            Collections.unmodifiableSet(Set.of(ASN1_OID, EAT_OID));
+            Collections.unmodifiableSet(Set.of(ASN1_OID, EAT_OID, PIXEL_PROD_OID));
 
     static final String CRL_DP_OID = "2.5.29.31"; // Standard CRL Distribution Points extension.
 
