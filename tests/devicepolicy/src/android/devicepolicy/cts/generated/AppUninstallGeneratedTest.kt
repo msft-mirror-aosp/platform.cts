@@ -69,7 +69,11 @@ public final class AppUninstallPolicyScopeUser
 @EnterprisePolicy(dpc = [], permissions = []) public final class AppUninstallPolicyScopeParentUser
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+@RequireFlagsEnabled(
+    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+    Flags.FLAG_POLICY_STREAMLINING_APP_UNINSTALL,
+)
 @UsesEnterprisePolicies(
     scopeUser = AppUninstallPolicyScopeUser::class,
     scopeDevice = AppUninstallPolicyScopeDevice::class,
