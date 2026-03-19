@@ -37,6 +37,7 @@ import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEM
 import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEMA_VERSION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_MULTI_SERVICE_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH;
@@ -62,6 +63,7 @@ import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchMobileAp
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.uninstallPackage;
 import static android.app.appsearch.testutil.FrameworkFlagUtils.isFlagEnabled;
 import static android.app.appsearch.testutil.FrameworkFlagUtils.assumeFlagIsEnabled;
+import static android.app.appsearch.testutil.FrameworkFlagUtils.assumeFlagIsDisabled;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -80,6 +82,7 @@ import com.android.appsearch.flags.Flags;
 
 import com.google.common.collect.Iterables;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -811,8 +814,10 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML)
-    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML,
+        Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER
+    })
     public void indexApp_multipleAppLevelXml_functionsIndexed() throws Throwable {
         // Platform flag for app level app functions.
         assumeFlagIsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
@@ -829,6 +834,171 @@ public class AppFunctionCtsTest {
                             .containsExactly(
                                     TEST_APP_B_PKG + "/com.example.utils#print1",
                                     TEST_APP_B_PKG + "/com.example.utils#print2");
+                });
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML,
+        Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER
+    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void indexApp_multiService_functionsIndexed() throws Throwable {
+        // Platform flag for app level app functions.
+        assumeFlagIsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
+
+        installAndAssertMultiServiceApk();
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML,
+        Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER
+    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void indexApp_updateToAppWithMultiService_functionsIndexed() throws Throwable {
+        // Platform flag for app level app functions.
+        assumeFlagIsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
+        {
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+            // Retry till the indexer has completed a run.
+            retryAssert(
+                    () -> {
+                        // AppFunctions for App A should be indexed.
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap.keySet())
+                                .contains(TEST_APP_A_PKG + "/com.example.utils#print1");
+                    });
+        }
+
+        {
+            installAndAssertMultiServiceApk();
+        }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML,
+        Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER
+    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void indexApp_downgradeFromAppWithMultiService_functionsRemoved() throws Throwable {
+        // Platform flag for app level app functions.
+        assumeFlagIsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
+        {
+            installAndAssertMultiServiceApk();
+        }
+
+        {
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+            // Retry till the indexer has completed a run.
+            retryAssert(
+                    () -> {
+                        // AppFunctions for App A should be indexed.
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap.keySet())
+                                .contains(TEST_APP_A_PKG + "/com.example.utils#print1");
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER,
+        Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML
+    })
+    @Test
+    public void indexApp_onlyDynamicAppFunctionsFlagDisabled_onlyIndexesLastServiceFunctions()
+            throws Throwable {
+        // Ensure platform flag is disabled indicating below Android 37.
+        assumeFlagIsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
+        installPackage(mContext, TEST_APP_A_MULTI_SERVICE_PATH);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // AppFunctions of a service with the least priority in App A should be
+                    // indexed.
+                    Map<String, GenericDocument> appFnMap =
+                            searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                    assertThat(appFnMap.keySet())
+                            .containsExactly(
+                                    TEST_APP_A_PKG + "/com.example.utils#printServiceC",
+                                    TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema");
+                    assertThat(
+                                    appFnMap.get(
+                                                    TEST_APP_A_PKG
+                                                            + "/com.example.utils#printServiceC")
+                                            .getPropertyString("serviceName"))
+                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceC");
+                });
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER})
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML)
+    @Test
+    public void
+            indexApp_onlyHandlingMultipleAppFunctionXmlFlagDisabled_onlyIndexesLastServiceFunctions()
+                    throws Throwable {
+        assumeFlagIsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
+        installPackage(mContext, TEST_APP_A_MULTI_SERVICE_PATH);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // AppFunctions of a service with the least priority in App A should be
+                    // indexed.
+                    Map<String, GenericDocument> appFnMap =
+                            searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                    assertThat(appFnMap.keySet())
+                            .containsExactly(
+                                    TEST_APP_A_PKG + "/com.example.utils#printServiceC",
+                                    TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema");
+                    assertThat(
+                                    appFnMap.get(
+                                                    TEST_APP_A_PKG
+                                                            + "/com.example.utils#printServiceC")
+                                            .getPropertyString("serviceName"))
+                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceC");
+                });
+    }
+
+    private void installAndAssertMultiServiceApk() throws Throwable {
+        installPackage(mContext, TEST_APP_A_MULTI_SERVICE_PATH);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // AppFunctions for App A should be indexed.
+                    Map<String, GenericDocument> appFnMap =
+                            searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                    assertThat(appFnMap.keySet())
+                            .containsAtLeast(
+                                    TEST_APP_A_PKG + "/com.example.utils#printServiceA",
+                                    TEST_APP_A_PKG + "/com.example.utils#printServiceB",
+                                    TEST_APP_A_PKG + "/com.example.utils#printServiceC",
+                                    TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema");
+                    assertThat(
+                                    appFnMap.get(
+                                                    TEST_APP_A_PKG
+                                                            + "/com.example.utils#printServiceA")
+                                            .getPropertyString("serviceName"))
+                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceA");
+                    assertThat(
+                                    appFnMap.get(
+                                                    TEST_APP_A_PKG
+                                                            + "/com.example.utils#printServiceB")
+                                            .getPropertyString("serviceName"))
+                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceB");
+                    assertThat(
+                                    appFnMap.get(
+                                                    TEST_APP_A_PKG
+                                                            + "/com.example.utils#printServiceC")
+                                            .getPropertyString("serviceName"))
+                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceC");
                 });
     }
 
