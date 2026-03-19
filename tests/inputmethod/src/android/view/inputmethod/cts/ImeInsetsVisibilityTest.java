@@ -372,6 +372,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
     private void runEditorWontCoveredByImeWhenInputWindowBehindPanel(int windowingMode)
             throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
