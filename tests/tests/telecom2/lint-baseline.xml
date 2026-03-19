@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha01" type="baseline" client="sbox" variant="all" version="8.4.0-alpha01">
+
+    <issue
+        id="FlaggedApi"
+        message="Method getCallCapablePhoneAccountsAcrossProfiles() is a flagged API and should be inside an if (Flags.workProfileApiSplit()) check (or annotate the surrounding method testGetCallCapablePhoneAccountsAcrossProfilesPermission with @FlaggedApi(Flags.FLAG_WORK_PROFILE_API_SPLIT) to transfer requirement to caller)"
+        errorLine1="            mTelecomManager.getCallCapablePhoneAccountsAcrossProfiles();"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/telecom2/src/android/telecom/cts/TelecomManagerNoPermissionsTest.java"
+            line="131"/>
+    </issue>
+
+    <issue
+        id="FlaggedApi"
+        message="Method getCallCapablePhoneAccountsAcrossProfiles() is a flagged API and should be inside an if (Flags.workProfileApiSplit()) check (or annotate the surrounding method testGetCallCapablePhoneAccountsAcrossProfilesPermission with @FlaggedApi(Flags.FLAG_WORK_PROFILE_API_SPLIT) to transfer requirement to caller)"
+        errorLine1="                (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(),"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/telecom2/src/android/telecom/cts/TelecomManagerNoPermissionsTest.java"
+            line="143"/>
+    </issue>
+
+    <issue
+        id="FlaggedApi"
+        message="Method getCallCapablePhoneAccountsAcrossProfiles() is a flagged API and should be inside an if (Flags.workProfileApiSplit()) check (or annotate the surrounding method testGetCallCapablePhoneAccountsAcrossProfilesPermission with @FlaggedApi(Flags.FLAG_WORK_PROFILE_API_SPLIT) to transfer requirement to caller)"
+        errorLine1="                (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(),"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/telecom2/src/android/telecom/cts/TelecomManagerNoPermissionsTest.java"
+            line="156"/>
+    </issue>
+
+    <issue
+        id="FlaggedApi"
+        message="Method getCallCapablePhoneAccountsAcrossProfiles() is a flagged API and should be inside an if (Flags.workProfileApiSplit()) check (or annotate the surrounding method testGetCallCapablePhoneAccountsAcrossProfilesPermission with @FlaggedApi(Flags.FLAG_WORK_PROFILE_API_SPLIT) to transfer requirement to caller)"
+        errorLine1="                (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(true),"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/telecom2/src/android/telecom/cts/TelecomManagerNoPermissionsTest.java"
+            line="169"/>
+    </issue>
+
+    <issue
+        id="FlaggedApi"
+        message="Method getCallCapablePhoneAccountsAcrossProfiles() is a flagged API and should be inside an if (Flags.workProfileApiSplit()) check (or annotate the surrounding method testGetCallCapablePhoneAccountsAcrossProfilesPermission with @FlaggedApi(Flags.FLAG_WORK_PROFILE_API_SPLIT) to transfer requirement to caller)"
+        errorLine1="                (tm) -> tm.getCallCapablePhoneAccountsAcrossProfiles(true),"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/tests/tests/telecom2/src/android/telecom/cts/TelecomManagerNoPermissionsTest.java"
+            line="182"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 28 (current min is 23): android.telecom.TelecomManager#endCall"
+        errorLine1="            mTelecomManager.endCall();"
+        errorLine2="                            ~~~~~~~">
+        <location
+            file="cts/tests/tests/telecom2/src/android/telecom/cts/TelecomManagerNoPermissionsTest.java"
+            line="67"/>
+    </issue>
+
+</issues>

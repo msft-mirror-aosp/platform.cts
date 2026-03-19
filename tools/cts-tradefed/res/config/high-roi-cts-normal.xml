@@ -3688,10 +3688,6 @@
     <!-- CtsTelecomHostCases -->
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testCallStateChangedAtom_basicTest"/>
     <option name="compatibility:include-filter" value="CtsTelecomHostCases android.telecom.cts.TelecomHostStatsTest#testEmergencyNumberDialedAtom"/>
-    <!-- CtsTelecomTestCases2 -->
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases2 android.telecom.cts.DefaultDialerOperationsNoPermissionsTest#testGetCallCapableAccountsPermissions"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases2 android.telecom.cts.TelecomManagerNoPermissionsTest#testCallStateCompatPermissions"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases2 android.telecom.cts.TelecomManagerNoPermissionsTest#testGetCallCapablePhoneAccountsAcrossProfilesPermission"/>
     <!-- CtsTelecomTestCases3 -->
     <option name="compatibility:include-filter" value="CtsTelecomTestCases3 android.telecom.cts.SelfManagedAwareInCallServiceTest#testInCallServiceIncoming"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases3 android.telecom.cts.SelfManagedAwareInCallServiceTest#testSelfManagedSignalling"/>

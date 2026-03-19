@@ -17,8 +17,14 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsTelecomTestCases2",
+filegroup {
+    name: "cts-telecom2-test-manifest",
+    srcs: ["AndroidManifest.xml"],
+    visibility: ["//packages/modules/Telephony:__subpackages__"],
+}
+
+android_library {
+    name: "CtsTelecomTestCases2Lib",
     defaults: ["cts_defaults"],
     static_libs: [
         "compatibility-device-util-axt",
@@ -30,17 +36,12 @@ android_test {
     srcs: [
         "src/**/*.java",
     ],
-    aaptflags: [
-        "--auto-add-overlay",
-        "--extra-packages",
-        "android.telecom.cts",
-        "--rename-manifest-package",
-        "android.telecom2.cts",
-    ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
     sdk_version: "test_current",
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
+    min_sdk_version: "23",
+    visibility: [
+        "//packages/modules/Telephony:__subpackages__",
     ],
 }

@@ -16,7 +16,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      package="android.telecom2.cts">
-    <uses-sdk android:minSdkVersion="21"/>
+    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="33" />
 
     <!--
                 This app contains tests to verify Telecom's behavior when the app is missing certain
