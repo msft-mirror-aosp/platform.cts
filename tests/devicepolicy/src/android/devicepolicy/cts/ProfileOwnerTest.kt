@@ -31,11 +31,13 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
+import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
+import com.android.bedstead.nene.packages.CommonPackages.FEATURE_MANAGED_USERS
 import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
@@ -106,6 +108,7 @@ class ProfileOwnerTest {
     @EnsureHasNoDpc
     @EnsureHasNoAccounts(onUser = UserType.ANY)
     @EnsureHasAccount(features = [FEATURE_DISALLOW], onUser = UserType.INITIAL_USER)
+    @RequireFeature(FEATURE_MANAGED_USERS)
     @Test
     fun setProfileOwnerViaAdb_invalidAccountOnParent_sets() {
         TestApis.users().createUser()
