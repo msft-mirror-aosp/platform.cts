@@ -627,6 +627,12 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
             ignoredMods |= Modifier.FINAL;
         }
 
+        // Mask off ABSTRACT if this is an annotation (all methods are abstract) or an enum (whether
+        // it is abstract or not is an implementation detail and not part of the API).
+        if (classDescription.isAnnotation() || classDescription.isEnumType()) {
+            ignoredMods |= Modifier.ABSTRACT;
+        }
+
         int reflectionModifiers = reflectedMethod.getModifiers() & ~ignoredMods;
         int apiModifiers = apiMethod.mModifier & ~ignoredMods;
 

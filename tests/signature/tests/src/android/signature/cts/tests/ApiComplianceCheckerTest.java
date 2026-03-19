@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 
@@ -395,11 +396,48 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         checkSignatureCompliance(clz);
     }
 
+    /**
+     * Always treat annotations as if they are abstract, even when the modifiers do not specify
+     * that.
+     */
+    @Test
+    public void testAnnotationAlwaysTreatAsAbstract() {
+        JDiffClassDescription clz = createClass("TestAnnotation");
+        clz.addImplInterface(Annotation.class.getName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
+        clz.addMethod(method("value", Modifier.ABSTRACT | Modifier.PUBLIC, "java.lang.String"));
+        checkSignatureCompliance(clz);
+    }
+
+    /**
+     * Always treat annotation methods as if they are abstract, even when the modifiers do not
+     * specify that.
+     */
+    @Test
+    public void testAnnotationMethodsAlwaysTreatedAsAbstract() {
+        JDiffClassDescription clz = createClass("TestAnnotation");
+        clz.addImplInterface(Annotation.class.getName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
+        // Intentionally does not set ABSTRACT here.
+        clz.addMethod(method("value", Modifier.PUBLIC, "java.lang.String"));
+        checkSignatureCompliance(clz);
+    }
+
     @Test
     public void testComplexEnum() {
         JDiffClassDescription clz = createClass(ComplexEnum.class.getSimpleName());
         clz.setExtendsClass(Enum.class.getName());
         clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
+        checkSignatureCompliance(clz);
+    }
+
+    @Test
+    public void testAbstractMethodInComplexEnum() {
+        JDiffClassDescription clz = createClass(ComplexEnum.class.getSimpleName());
+        clz.setExtendsClass(Enum.class.getName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
+        // Intentionally does not set ABSTRACT here.
+        clz.addMethod(method("doSomething", Modifier.PUBLIC, "void"));
         checkSignatureCompliance(clz);
     }
 
