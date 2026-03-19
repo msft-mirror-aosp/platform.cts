@@ -44,6 +44,7 @@ import android.jobscheduler.MockJobService.TestEnvironment.Event;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
 import android.os.Temperature;
+import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -1170,7 +1171,8 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
 
     private String getJobWakelockTag() throws Exception {
         return SystemUtil.runShellCommand(
-                        "cmd jobscheduler get-job-wakelock-tag --user cur "
+                        "cmd jobscheduler get-job-wakelock-tag --user "
+                                + UserHandle.myUserId() + " "
                                 + kJobServiceComponent.getPackageName()
                                 + " "
                                 + JOB_ID)
@@ -1195,11 +1197,13 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
 
     private void makeTestPackageIdle() throws Exception {
         UiDevice.getInstance(getInstrumentation())
-                .executeShellCommand("am make-uid-idle --user current " + TEST_APP_PACKAGE);
+                .executeShellCommand("am make-uid-idle --user " + UserHandle.myUserId() + " "
+                        + TEST_APP_PACKAGE);
     }
 
     private void makeTestPackageActive() throws Exception {
         UiDevice.getInstance(getInstrumentation())
-                .executeShellCommand("am make-uid-active --user current " + TEST_APP_PACKAGE);
+                .executeShellCommand("am make-uid-active --user " + UserHandle.myUserId() + " "
+                        + TEST_APP_PACKAGE);
     }
 }
