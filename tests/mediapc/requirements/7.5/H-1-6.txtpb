@@ -18,6 +18,7 @@ id: "7.5/H-1-6"
 group: GROUP_CAMERA
 name: "Camera Startup Latency"
 description: "Startup latencies"
+comment: "This requirement is split into 7.5/H-1-6-1 and 7.5/H-1-6-2 for independent grading."
 specs {
   key: 10
   value {
