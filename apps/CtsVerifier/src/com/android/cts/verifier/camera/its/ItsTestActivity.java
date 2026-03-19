@@ -25,11 +25,13 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirement;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.CameraCaptureLatencyRequirement;
 import android.mediapc.cts.common.Requirements.CameraStartupLatencyRequirement;
@@ -51,14 +53,15 @@ import androidx.core.content.FileProvider;
 
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
+import com.android.compatibility.common.util.TestResultHistory;
 import com.android.cts.verifier.ArrayTestListAdapter;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
 import com.android.cts.verifier.TestResultHistoryCollection;
-import com.android.compatibility.common.util.TestResultHistory;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 
 import org.json.JSONArray;
@@ -370,12 +373,9 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
-    CameraCaptureLatencyRequirement mJpegLatencyReq =
-            Requirements.addR7_5__H_1_5().to(mPce);
-    CameraStartupLatencyRequirement mLaunchLatencyReq =
-            Requirements.addR7_5__H_1_6().to(mPce);
-    CameraUltraHDRRequirement mUltraHdrReq =
-            Requirements.addR7_5__H_1_20().to(mPce);
+    CameraCaptureLatencyRequirement mJpegLatencyReq = null;
+    CameraStartupLatencyRequirement mLaunchLatencyReq = null;
+    CameraUltraHDRRequirement mUltraHdrReq = null;
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
     // stored in the report log
@@ -518,6 +518,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                     if (mIsFoldableDevice) {
                         camJsonObj.put(FOLDED_STATE_KEY, mIsDeviceFolded ? "folded" : "unfolded");
                     }
+
+                    Set<Requirement> updatedMpcReqs = new HashSet<>();
                     // Update test execution results
                     for (String scene : scenes) {
                         JSONObject sceneResult = jsonResults.getJSONObject(scene);
@@ -573,8 +575,11 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                         for (int i = 0; i < metrics.length(); i++) {
                             String mpcResult = metrics.getString(i);
                             try {
-                                if (!matchMpcResult(cameraId, mpcResult)) {
+                                Requirement updatedReq = matchMpcResult(cameraId, mpcResult);
+                                if (updatedReq == null) {
                                     Log.e(TAG, "Error parsing MPC result string:" + mpcResult);
+                                } else {
+                                    updatedMpcReqs.add(updatedReq);
                                 }
                             } catch (Exception e) {
                                 Log.e(TAG, "Error parsing MPC result string:" + mpcResult, e);
@@ -618,6 +623,20 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                                     FEATURE_COMBINATION_QUERY_KEY, protoStrBuilder.toString());
                         }
                     }
+
+                    // Save MPC info for any requirements that are ready.
+                    List<Requirement> readyToSubmit = new ArrayList<>();
+                    for (Requirement req : mPce.getRequirements()) {
+                        // Submit if ready and (not yet submitted OR updated in this broadcast)
+                        if (req.isReady()
+                                && (!req.hasBeenSubmitted() || updatedMpcReqs.contains(req))) {
+                            readyToSubmit.add(req);
+                        }
+                    }
+                    if (!readyToSubmit.isEmpty()) {
+                        mPce.submitAndVerify(readyToSubmit);
+                    }
+
                     // Add performance metrics for all scenes along with camera_id as json arr
                     // to CtsVerifierReportLog for each camera.
                     appendJsonObjToMetrics(camJsonObj);
@@ -760,7 +779,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             }
         }
 
-        private boolean matchMpcResult(String cameraId, String mpcResult) {
+        private Requirement matchMpcResult(String cameraId, String mpcResult) {
             Matcher launchMatcher = MPC12_CAMERA_LAUNCH_PATTERN.matcher(mpcResult);
             boolean launchMatches = launchMatcher.matches();
 
@@ -772,13 +791,14 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             Log.i(TAG, "mpcResult: " + mpcResult);
 
             if (!launchMatches && !jpegMatches && !gainmapMatches) {
-                return false;
+                return null;
             }
             if (!cameraId.equals(mPrimaryRearCameraId)
                     && !cameraId.equals(mPrimaryFrontCameraId)) {
-                return false;
+                return null;
             }
 
+            Requirement updatedReq = null;
             if (launchMatches) {
                 float latency = Float.parseFloat(launchMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
@@ -786,6 +806,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 } else {
                     mLaunchLatencyReq.setFrontCameraLatency(latency);
                 }
+                updatedReq = mLaunchLatencyReq;
             } else if (jpegMatches) {
                 float latency = Float.parseFloat(jpegMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
@@ -793,6 +814,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 } else {
                     mJpegLatencyReq.setFrontCameraLatency(latency);
                 }
+                updatedReq = mJpegLatencyReq;
             } else {
                 Log.i(TAG, "Gainmap pattern matches");
                 String result = mpcResult.split(":")[1];
@@ -805,13 +827,9 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 } else {
                     mUltraHdrReq.setFrontCameraUltraHdrSupported(hasGainMap);
                 }
+                updatedReq = mUltraHdrReq;
             }
-
-            // Save MPC info once both front primary and rear primary data are collected.
-            if (mPce.isReadyToSubmitItsResults()) {
-                mPce.submitAndVerify();
-            }
-            return true;
+            return updatedReq;
         }
 
         private void validatePerfMetrics() throws JSONException {
@@ -1269,6 +1287,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 mToBeTestedCameraIds = cameraIdList.mCameraIdCombos;
                 mPrimaryRearCameraId = cameraIdList.mPrimaryRearCameraId;
                 mPrimaryFrontCameraId = cameraIdList.mPrimaryFrontCameraId;
+                initMpcRequirements();
             } catch (ItsException e) {
                 Toast.makeText(ItsTestActivity.this,
                         "Received error from camera service while checking device capabilities: "
@@ -1323,6 +1342,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             toBeTestedCameraIds = cameraIdList.mCameraIdCombos;
             mPrimaryRearCameraId = cameraIdList.mPrimaryRearCameraId;
             mPrimaryFrontCameraId = cameraIdList.mPrimaryFrontCameraId;
+            initMpcRequirements();
             mUnavailablePhysicalCameras = getUnavailablePhysicalCameras();
             Log.i(TAG, "unavailablePhysicalCameras:"
                     + mUnavailablePhysicalCameras.toString());
@@ -1531,6 +1551,68 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
         setPassFailButtonClickListeners();
         // Changing folded state can incorrectly enable pass button
         ItsTestActivity.this.getPassButton().setEnabled(false);
+    }
+
+    /** Initializes the MPC requirements for the identified primary cameras. */
+    private void initMpcRequirements() {
+        // 1. Quick exit if no cameras exist
+        if (mPrimaryRearCameraId == null && mPrimaryFrontCameraId == null) {
+            Log.w(TAG, "No primary cameras identified. Skipping MPC requirement initialization.");
+            return;
+        }
+
+        // 2. Initialize or reset requirements
+        mJpegLatencyReq = resetRequirement(mJpegLatencyReq, Requirements.addR7_5__H_1_5()::to);
+        mLaunchLatencyReq = resetRequirement(mLaunchLatencyReq, Requirements.addR7_5__H_1_6()::to);
+
+        if (ItsUtils.isAtLeastV()) {
+            mUltraHdrReq = resetRequirement(mUltraHdrReq, Requirements.addR7_5__H_1_20()::to);
+        }
+
+        // 3. Apply failure values for missing hardware
+        if (mPrimaryRearCameraId == null) {
+            applyMissingCameraFailures(CameraMetadata.LENS_FACING_BACK);
+        }
+        if (mPrimaryFrontCameraId == null) {
+            applyMissingCameraFailures(CameraMetadata.LENS_FACING_FRONT);
+        }
+    }
+
+    /** Helper to initialize/re-initialize a requirement if needed */
+    private <T extends Requirement> T resetRequirement(
+            T req, Function<PerformanceClassEvaluator, T> to) {
+        return (req == null || req.hasBeenSubmitted()) ? to.apply(mPce) : req;
+    }
+
+    /** Centralized logic for marking a camera as non-compliant due to absence */
+    private void applyMissingCameraFailures(int lensFacing) {
+        switch (lensFacing) {
+            case CameraMetadata.LENS_FACING_FRONT -> {
+                if (mJpegLatencyReq != null) {
+                    mJpegLatencyReq.setFrontCameraLatency(Float.MAX_VALUE);
+                }
+                if (mLaunchLatencyReq != null) {
+                    mLaunchLatencyReq.setFrontCameraLatency(Float.MAX_VALUE);
+                }
+                if (mUltraHdrReq != null) {
+                    mUltraHdrReq.setFrontCameraUltraHdrSupported(false);
+                }
+            }
+            case CameraMetadata.LENS_FACING_BACK -> {
+                if (mJpegLatencyReq != null) {
+                    mJpegLatencyReq.setRearCameraLatency(Float.MAX_VALUE);
+                }
+                if (mLaunchLatencyReq != null) {
+                    mLaunchLatencyReq.setRearCameraLatency(Float.MAX_VALUE);
+                }
+                if (mUltraHdrReq != null) {
+                    mUltraHdrReq.setRearCameraUltraHdrSupported(false);
+                }
+            }
+            default -> {
+                throw new IllegalArgumentException("Invalid lens facing " + lensFacing);
+            }
+        }
     }
 
     @Override

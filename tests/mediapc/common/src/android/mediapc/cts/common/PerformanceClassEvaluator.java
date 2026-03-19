@@ -32,13 +32,13 @@ import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.cts.verifier.CtsVerifierReportLog;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 import org.junit.rules.TestName;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /** Logs a set of measurements and results for defined performance class requirements. */
 public class PerformanceClassEvaluator {
@@ -58,6 +58,11 @@ public class PerformanceClassEvaluator {
         this(testName, Utils.isPerfClass(), Utils.getPerfClass());
     }
 
+    /**
+     * Creates a PerformanceClassEvaluator with the given test name.
+     *
+     * @param testName the test name.
+     */
     public PerformanceClassEvaluator(@Nullable String testName) {
         this(testName, Utils.isPerfClass(), Utils.getPerfClass());
     }
@@ -78,6 +83,13 @@ public class PerformanceClassEvaluator {
 
     String getTestName() {
         return mTestName;
+    }
+
+    /**
+     * @return the set of requirements added to the evaluator.
+     */
+    public ImmutableSet<Requirement> getRequirements() {
+        return ImmutableSet.copyOf(mRequirements);
     }
 
     public <R extends Requirement> R addRequirement(R req) {
@@ -144,9 +156,21 @@ public class PerformanceClassEvaluator {
      * <p>The set of requirements are cleared after submission.
      */
     public void submitAndVerify() {
-        // submit clears the requirements so compute before submitting
-        Map<Requirement, Integer> grades = computeGrades();
-        boolean perfClassMet = submit(SubmitType.VERIFIER);
+        submitAndVerify(mRequirements);
+    }
+
+    /**
+     * Submits the evaluation results for a list of requirements and logs warnings if requirements
+     * are not met for the declared performance class.
+     *
+     * <p>Each requirement is removed from the internal requirements list as it is submitted.
+     *
+     * @param requirements the requirements to submit.
+     */
+    public void submitAndVerify(Iterable<? extends Requirement> requirements) {
+        // compute before submitting
+        Map<Requirement, Integer> grades = computeGrades(requirements);
+        boolean perfClassMet = submit(SubmitType.VERIFIER, requirements);
 
         if (!perfClassMet && mIsPerfClass) {
             String msg = "Declared performance class %s but requirement [%s] grades as %s";
@@ -155,23 +179,34 @@ public class PerformanceClassEvaluator {
     }
 
     @NonNull
-    @VisibleForTesting // Prevents warning about using computePerformanceClass
     private Map<Requirement, Integer> computeGrades() {
-        return mRequirements.stream()
-                .collect(Collectors.toMap(r -> r, Requirement::computePerformanceClass));
+        return computeGrades(mRequirements);
+    }
+
+    @NonNull
+    @VisibleForTesting // Prevents warning about using computePerformanceClass
+    Map<Requirement, Integer> computeGrades(Iterable<? extends Requirement> requirements) {
+        Map<Requirement, Integer> grades = new java.util.HashMap<>();
+        for (Requirement r : requirements) {
+            grades.put(r, r.computePerformanceClass());
+        }
+        return grades;
     }
 
     private boolean submit(SubmitType type) {
-        if (mRequirements.isEmpty()) {
-            Log.w(
-                    TAG,
-                    String.format(
-                            "No requirements added to PerformanceClassEvaluator for test %s."
-                                    + " Submission skipped.", mTestName));
-            return true;
-        }
+        return submit(type, mRequirements);
+    }
+
+    /**
+     * submits the requirements
+     *
+     * <p>Each requirement is removed from the internal requirements list as it is submitted.
+     */
+    private boolean submit(SubmitType type, Iterable<? extends Requirement> requirements) {
+        boolean hasRequirements = false;
         boolean perfClassMet = true;
-        for (Requirement req : this.mRequirements) {
+        for (Requirement req : ImmutableSet.copyOf(requirements)) {
+            hasRequirements = true;
             switch (type) {
                 case VERIFIER:
                     CtsVerifierReportLog verifierLog = new CtsVerifierReportLog(
@@ -188,8 +223,19 @@ public class PerformanceClassEvaluator {
                     tradefedLog.submit(InstrumentationRegistry.getInstrumentation());
                     break;
             }
+            req.setSubmitted(true);
+            mRequirements.remove(req);
         }
-        this.mRequirements.clear(); // makes sure report isn't submitted twice
+
+        if (!hasRequirements) {
+            Log.w(
+                    TAG,
+                    String.format(
+                            "No requirements provided to PerformanceClassEvaluator for test %s."
+                                    + " Submission skipped.",
+                            mTestName));
+            return true;
+        }
         return perfClassMet;
     }
 }

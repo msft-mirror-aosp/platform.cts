@@ -145,18 +145,35 @@ public final class Requirements {
       */
     public static final class {{UpperCamelCase $r.GetName}}Requirement extends Requirement {
 
+        /**
+         * Builder for {{UpperCamelCase $r.GetName}}Requirement.
+         */
         public static final class With {
             private With() {}
             {{- range $t_id, $t := $r.GetTestConfigs }}
             {{- if ne $t_id "" }}
+
+            /**
+             * Configuration for {{UpperCamelCase $r.GetName}}Requirement.
+             */
             public static final class Config{{ SafeTestConfigID $t_id | UpperCamelCase}} {
                 private Config{{ SafeTestConfigID $t_id | UpperCamelCase}}() {}
+
+                /**
+                 * Adds the requirement to the evaluator.
+                 * @param pce the evaluator.
+                 * @return the added requirement.
+                 */
                 public {{UpperCamelCase $r.GetName}}Requirement to(PerformanceClassEvaluator pce) {
                     return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create
                             {{- SafeTestConfigID $t_id | UpperCamelCase}}());
                 }
                 {{- range $v_id, $v := $r.GetVariants }}
                 {{- if HasConfigVariant $r $t_id $v_id }}
+
+                /**
+                 * @return a builder for the variant {{UpperCamelCase $v_id}}.
+                 */
                 public Config{{ SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
                         {{- UpperCamelCase $v_id}} withVariant{{- UpperCamelCase $v_id}}() {
                     return new Config{{SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
@@ -169,16 +186,30 @@ public final class Requirements {
             {{- end }}{{/* range $t_id, $t */}}
 
             {{- range $v_id, $v := $r.GetVariants }}
+
+            /**
+             * Variant for {{UpperCamelCase $r.GetName}}Requirement.
+             */
             public static final class Variant{{UpperCamelCase $v_id}} {
                 private Variant{{UpperCamelCase $v_id}}() {}
                 {{- range $t_id, $t := $r.GetTestConfigs }}
                 {{- if HasConfigVariant $r $t_id $v_id }}
                 {{- if eq $t_id "" }}
+
+                /**
+                 * Adds the requirement to the evaluator.
+                 * @param pce the evaluator.
+                 * @return the added requirement.
+                 */
                 public {{UpperCamelCase $r.GetName}}Requirement to(PerformanceClassEvaluator pce) {
                     return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create
                             {{- UpperCamelCase $v_id}}());
                 }
                 {{- else }}
+
+                /**
+                 * @return a builder for the configuration {{SafeTestConfigID $t_id | UpperCamelCase}}.
+                 */
                 public Config{{ SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
                         {{- UpperCamelCase $v_id}} withConfig
                         {{- SafeTestConfigID $t_id | UpperCamelCase}}() {
@@ -195,10 +226,20 @@ public final class Requirements {
             {{- if ne $t_id "" }}
             {{- range $v_id, $v := $r.GetVariants }}
             {{- if HasConfigVariant $r $t_id $v_id }}
+
+            /**
+             * Configuration and variant for {{UpperCamelCase $r.GetName}}Requirement.
+             */
             public static final class Config{{SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
                     {{- UpperCamelCase $v_id}} {
                 private Config{{ SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
                     {{- UpperCamelCase $v_id}}() {}
+
+                /**
+                 * Adds the requirement to the evaluator.
+                 * @param pce the evaluator.
+                 * @return the added requirement.
+                 */
                 public {{UpperCamelCase $r.GetName}}Requirement to(PerformanceClassEvaluator pce) {
                     return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create
                         {{- SafeTestConfigID $t_id | UpperCamelCase}}
@@ -212,10 +253,20 @@ public final class Requirements {
 
             {{- range $t_id, $t := $r.GetTestConfigs }}
             {{- if eq $t_id "" }}
+
+            /**
+             * Adds the requirement to the evaluator.
+             * @param pce the evaluator.
+             * @return the added requirement.
+             */
             public {{UpperCamelCase $r.GetName}}Requirement to(PerformanceClassEvaluator pce) {
                 return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create());
             }
             {{- else }}
+
+            /**
+             * @return a builder for the configuration {{SafeTestConfigID $t_id | UpperCamelCase}}.
+             */
             public Config{{ SafeTestConfigID $t_id | UpperCamelCase}} withConfig
                     {{- SafeTestConfigID $t_id | UpperCamelCase}}() {
                 return new Config{{ SafeTestConfigID $t_id | UpperCamelCase}}();
@@ -224,6 +275,10 @@ public final class Requirements {
             {{- end }}{{/* range $t_id, $t */}}
 
             {{- range $v_id, $v := $r.GetVariants }}
+
+            /**
+             * @return a builder for the variant {{UpperCamelCase $v_id}}.
+             */
             public Variant{{UpperCamelCase $v_id}} withVariant{{UpperCamelCase $v_id}}() {
                 return new Variant{{UpperCamelCase $v_id}}();
             }

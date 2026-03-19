@@ -203,4 +203,25 @@ public class RequirementTest {
             IllegalStateException.class,
             () -> testReq.writeLogAndCheck(testLog, "writeLogAndCheck_UnsetMeasurement"));
     }
+
+    @Test
+    public void isReady_measurementSet_returnsTrue() {
+        TestReq testReq = TestReq.create();
+        assertThat(testReq.isReady()).isFalse();
+
+        testReq.setMeasurement1(100);
+        assertThat(testReq.isReady()).isTrue();
+    }
+
+    @Test
+    public void submissionStatusTracking() {
+        TestReq testReq = TestReq.create();
+        assertThat(testReq.hasBeenSubmitted()).isFalse();
+
+        testReq.setSubmitted(true);
+        assertThat(testReq.hasBeenSubmitted()).isTrue();
+
+        testReq.setSubmitted(false);
+        assertThat(testReq.hasBeenSubmitted()).isFalse();
+    }
 }
