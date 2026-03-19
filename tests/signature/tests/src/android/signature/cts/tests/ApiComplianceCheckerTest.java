@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 
@@ -392,6 +393,19 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         JDiffClassDescription clz = createInterface("NormalInterface");
         clz.setModifier(Modifier.PUBLIC);
         clz.addMethod(method("doSomething", Modifier.ABSTRACT | Modifier.PUBLIC, "void"));
+        checkSignatureCompliance(clz);
+    }
+
+    /**
+     * Always treat annotations as if they are abstract, even when the modifiers do not specify
+     * that.
+     */
+    @Test
+    public void testAnnotationAlwaysTreatAsAbstract() {
+        JDiffClassDescription clz = createClass("TestAnnotation");
+        clz.addImplInterface(Annotation.class.getName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
+        clz.addMethod(method("value", Modifier.ABSTRACT | Modifier.PUBLIC, "java.lang.String"));
         checkSignatureCompliance(clz);
     }
 
