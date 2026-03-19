@@ -79,6 +79,10 @@ public final class TransformerTranscoder implements Transformer.Listener {
         settingsBuilder.setBitrate(params.mBitRate);
         settingsBuilder.setiFrameIntervalSeconds(params.mKeyFrameInterval);
         settingsBuilder.setMaxBFrames(params.mMaxBFrames);
+
+        // Disable Transformer's automatic performance tuning which generally improves throughput at
+        // the expense of quality.
+        settingsBuilder.setEncoderPerformanceParameters(VideoEncoderSettings.RATE_UNSET, VideoEncoderSettings.RATE_UNSET);
         settingsBuilder.setEncodingProfileLevel(params.mProfile, params.mLevel);
 
         return settingsBuilder.build();
