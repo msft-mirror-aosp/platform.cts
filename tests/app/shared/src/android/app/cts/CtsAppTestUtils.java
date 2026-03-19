@@ -21,6 +21,7 @@ import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.os.PowerManager;
+import android.os.Process;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -77,6 +78,12 @@ public class CtsAppTestUtils {
         executeShellCmd(instrumentation, cmd);
     }
 
+    /** Clear the bad process state for the given process name for the current user. */
+    public static void clearBadProcess(String processName) throws Exception {
+        clearBadProcess(processName, Process.myUserHandle().getIdentifier());
+    }
+
+    /** Clear the bad process state for the given process name and user ID. */
     public static void clearBadProcess(String processName, int userId) throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final String cmd =
