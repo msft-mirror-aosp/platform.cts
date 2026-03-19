@@ -21,6 +21,9 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
+import static org.junit.Assert.assertEquals;
+
+import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -103,5 +106,20 @@ public final class TestAppAppComponentFactoryTest {
         assertThat(ServiceCreatedEvent.queryPackage(sContext.getPackageName())
                         .whereService().serviceClass().className()
                             .isEqualTo(GENERATED_SERVICE_CLASS_NAME)).eventOccurred();
+    }
+
+    @Test
+    public void instantiateService_contentRestrictionAppService_routesToBaseTestContentRestrictionAppService() throws Exception {
+        TestAppAppComponentFactory factory = new TestAppAppComponentFactory();
+        Intent intent = new Intent();
+
+        // Verifies that a non-existent service ending with ContentRestrictionAppService 
+        // is correctly caught and routed to BaseTestContentRestrictionAppService
+        Service service = factory.instantiateService(
+                getClass().getClassLoader(),
+                "com.android.NonExistentContentRestrictionAppService",
+                intent);
+
+        assertEquals(BaseTestContentRestrictionAppService.class.getName(), service.getClass().getName());
     }
 }
