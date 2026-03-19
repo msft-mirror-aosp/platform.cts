@@ -16,8 +16,11 @@
 
 package android.telephony.cts;
 
+import static android.service.messaging.AlternativeMessageTransportService.UPGRADE_STATUS_ACCEPTED;
+import static android.service.messaging.AlternativeMessageTransportService.UPGRADE_STATUS_REJECTED;
+
 import static androidx.test.InstrumentationRegistry.getContext;
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -66,6 +69,7 @@ import com.google.android.mms.pdu.SendReq;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -77,6 +81,7 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Test sending MMS using {@link android.telephony.SmsManager}.
@@ -88,11 +93,20 @@ public class MmsTest {
     private static final String ACTION_MMS_DOWNLOAD = "CTS_MMS_DOWNLOAD_ACTION";
     public static final String ACTION_WAP_PUSH_DELIVER_DEFAULT_APP =
             "CTS_WAP_PUSH_DELIVER_DEFAULT_APP_ACTION";
+    public static final String MESSAGE_UPGRADE_APP = "android.telephony.cts.msgupgrade";
+    private static final String ACTION_MESSAGE_UPGRADE_RECEIVED =
+            "android.telephony.cts.msgupgrade.ACTION_MESSAGE_UPGRADE_RECEIVED";
+    private static final String EXTRA_UPGRADE_STATUS =
+            "android.telephony.cts.msgupgrade.EXTRA_UPGRADE_STATUS";
     private static final long DEFAULT_EXPIRY_TIME = 7 * 24 * 60 * 60;
     private static final int DEFAULT_PRIORITY = PduHeaders.PRIORITY_NORMAL;
     private static final long MESSAGE_ID = 912412L;
 
     private static final String SUBJECT = "CTS MMS Test";
+    private static final String SUBJECT_UPGRADE_ACCEPTED =
+            "TEST_UPGRADE:delay=1000;status=" + UPGRADE_STATUS_ACCEPTED;
+    private static final String SUBJECT_UPGRADE_REJECTED =
+            "TEST_UPGRADE:delay=1000;status=" + UPGRADE_STATUS_REJECTED;
     private static final String MESSAGE_BODY = "CTS MMS test message body";
     private static final String TEXT_PART_FILENAME = "text_0.txt";
     private static final String sSmilText =
@@ -101,13 +115,18 @@ public class MmsTest {
                 + " src=\"%s\" region=\"Text\"/></par></body></smil>";
 
     private static final long SENT_TIMEOUT = 1000 * 60 * 5; // 5 minutes
+    private static final int SHORT_TIME_OUT = 1000 * 5; // 5 seconds
     private static final long NO_CALLS_TIMEOUT = 1000; // 1 second
+    // TODO(b/492408141): Remove this delay once DMA broadcasts are deterministic.
+    private static final int DMA_CHANGE_PROPAGATION_DELAY = 100;
 
     private static final String PROVIDER_AUTHORITY = "telephonyctstest";
 
+    private Context mContext;
     private Random mRandom;
     private SentReceiver mSentReceiver;
     private SentReceiver mDeliveryReceiver;
+    private MessageUpgradeBroadcastReceiver mMessageUpgradeReceiver;
     private TelephonyManager mTelephonyManager;
     @Nullable private String mOriginalDefaultSmsApp;
     private static CarrierConfigReceiver sCarrierConfigReceiver;
@@ -118,13 +137,15 @@ public class MmsTest {
         private boolean mDone;
         private int mExpectedErrorResultCode;
         private String mAction;
+        private boolean mSkipSendConfPduParsing;
 
-        SentReceiver(int expectedErrorResultCode, String action) {
+        SentReceiver(String action) {
             mLock = new Object();
             mSuccess = false;
             mDone = false;
-            mExpectedErrorResultCode = expectedErrorResultCode;
+            mExpectedErrorResultCode = Activity.RESULT_OK;
             mAction = action;
+            mSkipSendConfPduParsing = false;
         }
 
         @Override
@@ -135,6 +156,10 @@ public class MmsTest {
                 case ACTION_MMS_SENT:
                     final int resultCode = getResultCode();
                     if (resultCode == Activity.RESULT_OK) {
+                        if (mSkipSendConfPduParsing) {
+                            mSuccess = true;
+                            break;
+                        }
                         final byte[] response = intent.getByteArrayExtra(SmsManager.EXTRA_MMS_DATA);
                         if (response != null) {
                             final GenericPdu pdu = new PduParser(
@@ -208,6 +233,21 @@ public class MmsTest {
                 return (!mDone && !mSuccess);
             }
         }
+
+        private void setExpectedErrorResultCode(int expectedErrorResultCode) {
+            mExpectedErrorResultCode = expectedErrorResultCode;
+        }
+
+        private void setSkipSendConfPduParsing(boolean skipSendConfPduParsing) {
+            mSkipSendConfPduParsing = skipSendConfPduParsing;
+        }
+
+        private void reset() {
+            mSuccess = false;
+            mDone = false;
+            mExpectedErrorResultCode = Activity.RESULT_OK;
+            mSkipSendConfPduParsing = false;
+        }
     }
 
     /**
@@ -240,40 +280,80 @@ public class MmsTest {
 
     @Before
     public void setUp() throws Exception {
+        mContext = getContext();
         mRandom = new Random();
-        mTelephonyManager =
-                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        IntentFilter messageUpgradeIntentFilter = new IntentFilter(ACTION_MESSAGE_UPGRADE_RECEIVED);
+
+        mSentReceiver = new SentReceiver(ACTION_MMS_SENT);
+        mDeliveryReceiver = new SentReceiver(ACTION_WAP_PUSH_DELIVER_DEFAULT_APP);
+        mMessageUpgradeReceiver =
+                new MessageUpgradeBroadcastReceiver(ACTION_MESSAGE_UPGRADE_RECEIVED);
+
+        mContext.registerReceiver(
+                mSentReceiver, new IntentFilter(ACTION_MMS_SENT), Context.RECEIVER_EXPORTED);
+        mContext.registerReceiver(
+                mDeliveryReceiver,
+                new IntentFilter(ACTION_WAP_PUSH_DELIVER_DEFAULT_APP),
+                Context.RECEIVER_EXPORTED);
+        mContext.registerReceiver(
+                mMessageUpgradeReceiver,
+                messageUpgradeIntentFilter,
+                Context.RECEIVER_EXPORTED_UNAUDITED);
+
+        mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
         assumeTrue(
                 "Device does not have FEATURE_TELEPHONY_MESSAGING",
-                getContext()
-                        .getPackageManager()
+                mContext.getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
-        mOriginalDefaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(getContext());
+        mOriginalDefaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(mContext);
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
     @After
     public void tearDown() throws Exception {
         if (!TextUtils.isEmpty(mOriginalDefaultSmsApp)) {
-            assertTrue(
-                    "Failed to restore default SMS app",
-                    DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
+            assertTrue(DefaultSmsAppHelper.setDefaultSmsApp(mContext, mOriginalDefaultSmsApp));
+        }
+        if (mSentReceiver != null) {
+            mContext.unregisterReceiver(mSentReceiver);
+            mSentReceiver = null;
+        }
+        if (mDeliveryReceiver != null) {
+            mContext.unregisterReceiver(mDeliveryReceiver);
+            mDeliveryReceiver = null;
+        }
+        if (mMessageUpgradeReceiver != null) {
+            mContext.unregisterReceiver(mMessageUpgradeReceiver);
+            mMessageUpgradeReceiver = null;
         }
     }
 
     @Test
     @Ignore("b/443345141 - Need to fix and re-enable this test.")
     @ApiTest(apis = "android.telephony.SmsManager#sendMultimediaMessage")
-    public void testSendMmsMessage() {
+    public void testSendMmsMessage() throws Exception {
         Log.i("MmsTest", "testSendMmsMessage");
+        SmsManager smsManager = mContext.getSystemService(SmsManager.class);
 
-        // Test non-default SMS app
-        sendMmsMessage(0L /* messageId */, Activity.RESULT_OK, SmsManager.getDefault(), false);
-
-        // Test default SMS app
+        // Testing the flow with CTS set as DMA
         DefaultSmsAppHelper.ensureDefaultSmsApp();
-        sendMmsMessage(0L /* messageId */, Activity.RESULT_OK, SmsManager.getDefault(), true);
+        sendMmsMessage(0L /* messageId */, Activity.RESULT_OK, smsManager, true);
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+
+        // Testing the flow with MessageUpgradeApp set as DMA, which will promote the message
+        Assume.assumeTrue("Skipping message upgrade: Flag is OFF", Flags.messagePromotion());
+        try {
+            DefaultSmsAppHelper.setDefaultSmsApp(mContext, MESSAGE_UPGRADE_APP);
+            SystemClock.sleep(DMA_CHANGE_PROPAGATION_DELAY);
+
+            // Message upgraded by DMA
+            sendUpgradeMmsMessage(smsManager, SUBJECT_UPGRADE_ACCEPTED, UPGRADE_STATUS_ACCEPTED);
+
+            // Message not upgraded, fallback to standard mms
+            sendUpgradeMmsMessage(smsManager, SUBJECT_UPGRADE_REJECTED, UPGRADE_STATUS_REJECTED);
+        } finally {
+            DefaultSmsAppHelper.removeDefaultSmsAppRole(MESSAGE_UPGRADE_APP);
+        }
     }
 
     @Test
@@ -343,58 +423,37 @@ public class MmsTest {
             SmsManager smsManager, boolean defaultSmsApp) {
         if (!doesSupportMMS()
                 && expectedErrorResultCode != SmsManager.MMS_ERROR_MMS_DISABLED_BY_CARRIER) {
-            Log.i(TAG, "testSendMmsMessage skipped: no telephony available or MMS not supported");
+            Log.i(TAG, "sendMmsMessage skipped: no telephony available or MMS not supported");
             return;
         }
+        resetBroadcastReceivers();
+        mSentReceiver.setExpectedErrorResultCode(expectedErrorResultCode);
+        mDeliveryReceiver.setExpectedErrorResultCode(expectedErrorResultCode);
 
-        String selfNumber;
-        getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-        try {
-            int subId = mTelephonyManager.getSubscriptionId();
-            SubscriptionManager subscriptionManager = getContext()
-                    .getSystemService(SubscriptionManager.class);
-            selfNumber = subscriptionManager.getPhoneNumber(subId);
-        } finally {
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
-        }
-        assumeFalse("SIM card does not provide phone number. Use a suitable SIM Card.",
-                TextUtils.isEmpty(selfNumber));
+        String selfNumber = getValidSelfNumber();
 
-        Log.i(TAG, "testSendMmsMessage");
-
-        final Context context = getContext();
-        // Register sent receiver
-        mSentReceiver = new SentReceiver(expectedErrorResultCode, ACTION_MMS_SENT);
-        context.registerReceiver(mSentReceiver, new IntentFilter(ACTION_MMS_SENT),
-                Context.RECEIVER_EXPORTED);
-
-        mDeliveryReceiver = new SentReceiver(expectedErrorResultCode,
-                ACTION_WAP_PUSH_DELIVER_DEFAULT_APP);
-        context.registerReceiver(mDeliveryReceiver,
-                new IntentFilter(ACTION_WAP_PUSH_DELIVER_DEFAULT_APP), Context.RECEIVER_EXPORTED);
+        Log.i(TAG, "sendMmsMessage");
 
         // Create local provider file for sending PDU
-        final String fileName = "send." + String.valueOf(Math.abs(mRandom.nextLong())) + ".dat";
-        final File sendFile = new File(context.getCacheDir(), fileName);
-        final byte[] pdu = buildPdu(context, selfNumber, SUBJECT, MESSAGE_BODY);
-        assertNotNull("PDU should not be null", pdu);
-        assertTrue("Failed to write PDU to file", writePdu(sendFile, pdu));
-        final Uri contentUri = (new Uri.Builder())
-                .authority(PROVIDER_AUTHORITY)
-                .path(fileName)
-                .scheme(ContentResolver.SCHEME_CONTENT)
-                .build();
+        final String fileName = "send." + Long.toUnsignedString(mRandom.nextLong()) + ".dat";
+        final File sendFile = new File(mContext.getCacheDir(), fileName);
+        final Uri contentUri = setupMmsPdu(sendFile, selfNumber, SUBJECT);
+        final PendingIntent pendingIntent = getMmsSentPendingIntent();
         // Send
-        final PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, 0, new Intent(ACTION_MMS_SENT).setPackage(context.getPackageName()),
-                PendingIntent.FLAG_MUTABLE);
         if (messageId == 0L) {
-            smsManager.sendMultimediaMessage(context,
-                    contentUri, null/*locationUrl*/, null/*configOverrides*/, pendingIntent);
+            smsManager.sendMultimediaMessage(
+                    mContext,
+                    contentUri,
+                    null /*locationUrl*/,
+                    null /*configOverrides*/,
+                    pendingIntent);
         } else {
-            smsManager.sendMultimediaMessage(context,
-                    contentUri, null/*locationUrl*/, null/*configOverrides*/, pendingIntent,
+            smsManager.sendMultimediaMessage(
+                    mContext,
+                    contentUri,
+                    null /*locationUrl*/,
+                    null /*configOverrides*/,
+                    pendingIntent,
                     messageId);
         }
         assertTrue("Timeout waiting for MMS sent", mSentReceiver.waitForSuccess(SENT_TIMEOUT));
@@ -421,6 +480,109 @@ public class MmsTest {
                     mDeliveryReceiver.verifyNoCalls(NO_CALLS_TIMEOUT));
         }
         sendFile.delete();
+    }
+
+    private void sendUpgradeMmsMessage(
+            SmsManager smsManager, String subject, int expectedUpgradeStatus) {
+        if (!doesSupportMMS()) {
+            Log.i(
+                    TAG,
+                    "sendUpgradeMmsMessage skipped: no telephony available or MMS not supported");
+            return;
+        }
+        Log.i(TAG, "sendUpgradeMmsMessage");
+        resetBroadcastReceivers();
+        mSentReceiver.setSkipSendConfPduParsing(expectedUpgradeStatus == UPGRADE_STATUS_ACCEPTED);
+
+        String selfNumber = getValidSelfNumber();
+
+        // Create local provider file for sending PDU
+        final String fileName = "send." + Long.toUnsignedString(mRandom.nextLong()) + ".dat";
+        final File sendFile = new File(mContext.getCacheDir(), fileName);
+        final Uri contentUri = setupMmsPdu(sendFile, selfNumber, subject);
+        final PendingIntent pendingIntent = getMmsSentPendingIntent();
+
+        // Send
+        smsManager.sendMultimediaMessage(
+                mContext,
+                contentUri,
+                null /*locationUrl*/,
+                null /*configOverrides*/,
+                pendingIntent);
+
+        assertTrue(
+                "Message upgrade broadcast not received.",
+                mMessageUpgradeReceiver.waitForUpgrade(SHORT_TIME_OUT));
+        assertEquals(
+                "Incorrect message upgrade received: " + mMessageUpgradeReceiver.mUpgradeStatus,
+                expectedUpgradeStatus,
+                mMessageUpgradeReceiver.mUpgradeStatus.get());
+
+        assertTrue(
+                "Could not send MMS message. Check signal.",
+                mSentReceiver.waitForSuccess(SENT_TIMEOUT));
+
+        if (expectedUpgradeStatus == UPGRADE_STATUS_REJECTED) {
+            int carrierId = mTelephonyManager.getSimCarrierId();
+            assumeFalse(
+                    "Carrier [carrier-id: "
+                            + carrierId
+                            + "] does not support "
+                            + "loop back messages. Use another carrier.",
+                    CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
+        }
+        assertTrue(mDeliveryReceiver.verifyNoCalls(NO_CALLS_TIMEOUT));
+        sendFile.delete();
+    }
+
+    /** Retrieves the device's phone number and verifies it exists. */
+    private String getValidSelfNumber() {
+        String selfNumber;
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        try {
+            int subId = mTelephonyManager.getSubscriptionId();
+            SubscriptionManager subscriptionManager =
+                    mContext.getSystemService(SubscriptionManager.class);
+            selfNumber = subscriptionManager.getPhoneNumber(subId);
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+
+        assumeFalse(
+                "SIM card does not provide phone number. Use a suitable SIM Card.",
+                TextUtils.isEmpty(selfNumber));
+
+        return selfNumber;
+    }
+
+    /** Builds the PDU, writes it to the provided file, and returns the Content Uri. */
+    private Uri setupMmsPdu(File sendFile, String selfNumber, String subject) {
+        final byte[] pdu = buildPdu(mContext, selfNumber, subject, MESSAGE_BODY);
+        assertNotNull(pdu);
+        assertTrue(writePdu(sendFile, pdu));
+
+        return new Uri.Builder()
+                .authority(PROVIDER_AUTHORITY)
+                .path(sendFile.getName())
+                .scheme(ContentResolver.SCHEME_CONTENT)
+                .build();
+    }
+
+    /** Creates the PendingIntent used to track the MMS sent status. */
+    private PendingIntent getMmsSentPendingIntent() {
+        return PendingIntent.getBroadcast(
+                mContext,
+                0,
+                new Intent(ACTION_MMS_SENT).setPackage(mContext.getPackageName()),
+                PendingIntent.FLAG_MUTABLE);
+    }
+
+    private void resetBroadcastReceivers() {
+        mSentReceiver.reset();
+        mDeliveryReceiver.reset();
+        mMessageUpgradeReceiver.reset();
     }
 
     private static boolean writePdu(File file, byte[] pdu) {
@@ -552,32 +714,38 @@ public class MmsTest {
         // MMS config is loaded asynchronously. Wait a bit so it will be loaded.
         waitFor(TimeUnit.SECONDS.toMillis(1));
 
-        final Context context = getContext();
         // Create local provider file
-        final String fileName = "download." + String.valueOf(Math.abs(mRandom.nextLong())) + ".dat";
-        final File sendFile = new File(context.getCacheDir(), fileName);
+        final String fileName = "download." + Long.toUnsignedString(mRandom.nextLong()) + ".dat";
         final Uri contentUri = (new Uri.Builder())
                 .authority(PROVIDER_AUTHORITY)
                 .path(fileName)
                 .scheme(ContentResolver.SCHEME_CONTENT)
                 .build();
 
-        final PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, 0, new Intent(ACTION_MMS_DOWNLOAD).setPackage(context.getPackageName()),
-                PendingIntent.FLAG_MUTABLE);
+        final PendingIntent pendingIntent =
+                PendingIntent.getBroadcast(
+                        mContext,
+                        0,
+                        new Intent(ACTION_MMS_DOWNLOAD).setPackage(mContext.getPackageName()),
+                        PendingIntent.FLAG_MUTABLE);
 
         if (messageId == 0L) {
             // Verify the downloadMultimediaMessage function without messageId exists. This test
             // doesn't actually verify downloading is successful, just that the function to
             // initiate the downloading has been implemented.
-            smsManager.downloadMultimediaMessage(context, "foo/fake", contentUri,
-                    null /* configOverrides */, pendingIntent);
+            smsManager.downloadMultimediaMessage(
+                    mContext, "foo/fake", contentUri, null /* configOverrides */, pendingIntent);
         } else {
             // Verify the downloadMultimediaMessage function with messageId exists. This test
             // doesn't actually verify downloading is successful, just that the function to
             // initiate the downloading has been implemented.
-            smsManager.downloadMultimediaMessage(context, "foo/fake", contentUri,
-                    null /* configOverrides */, pendingIntent, MESSAGE_ID);
+            smsManager.downloadMultimediaMessage(
+                    mContext,
+                    "foo/fake",
+                    contentUri,
+                    null /* configOverrides */,
+                    pendingIntent,
+                    MESSAGE_ID);
         }
     }
 
@@ -627,16 +795,16 @@ public class MmsTest {
 
     private static boolean overrideCarrierConfig(int subId, PersistableBundle bundle) {
         try {
-            CarrierConfigManager carrierConfigManager = getInstrumentation()
-                    .getContext().getSystemService(CarrierConfigManager.class);
+            CarrierConfigManager carrierConfigManager =
+                    getInstrumentation().getContext().getSystemService(CarrierConfigManager.class);
             if (carrierConfigManager == null) {
                 Log.d(TAG, "CarrierConfigManager is not present on this device.");
                 return false;
             }
             sCarrierConfigReceiver.clearQueue();
             sCarrierConfigReceiver.setSubId(subId);
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(carrierConfigManager,
-                    (m) -> m.overrideConfig(subId, bundle));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    carrierConfigManager, (m) -> m.overrideConfig(subId, bundle));
             return sCarrierConfigReceiver.waitForChanged();
         } catch (Exception ex) {
             Log.e(TAG, "overrideCarrierConfig()", ex);
@@ -653,6 +821,40 @@ public class MmsTest {
                 // Ignore the exception
                 Log.d(TAG, "waitFor: delayTimeout ex=" + ex);
             }
+        }
+    }
+
+    private static class MessageUpgradeBroadcastReceiver extends BroadcastReceiver {
+        private CountDownLatch mLatch = new CountDownLatch(1);
+        private final String mAction;
+        private final AtomicInteger mUpgradeStatus = new AtomicInteger(-1);
+
+        MessageUpgradeBroadcastReceiver(String action) {
+            mAction = action;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (mAction.equals(action)) {
+                int status = intent.getIntExtra(EXTRA_UPGRADE_STATUS, -1);
+                Log.i(TAG, "onReceive: " + action + ", status: " + status);
+                mUpgradeStatus.set(status);
+                mLatch.countDown();
+            }
+        }
+
+        private boolean waitForUpgrade(long timeoutMs) {
+            try {
+                return mLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted while waiting for upgrade", e);
+                return false;
+            }
+        }
+
+        private void reset() {
+            mLatch = new CountDownLatch(1);
         }
     }
 }

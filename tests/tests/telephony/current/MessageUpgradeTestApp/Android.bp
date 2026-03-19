@@ -9,6 +9,9 @@ android_test_helper_app {
     srcs: [
         "src/**/*.java",
     ],
+    libs: [
+        "telephony-common",
+    ],
     static_libs: [
         "androidx.core_core",
         "telephony-cts-utils",
@@ -17,5 +20,4 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
     ],
-    sdk_version: "test_current",
 }
