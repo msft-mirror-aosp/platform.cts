@@ -317,6 +317,12 @@ public class ManagedAppControl extends Service {
                                 Log.i(TAG, "transitionCallStateTo: setRinging");
                             }
                             case STATE_ACTIVE -> {
+                                for (ManagedConnection c : mIdToConnection.values()) {
+                                    if (c != connection
+                                            && c.getState() == Connection.STATE_ACTIVE) {
+                                        c.setCallToInactive();
+                                    }
+                                }
                                 connection.setCallToActive();
                                 Log.i(TAG, "transitionCallStateTo: setActive");
                             }
