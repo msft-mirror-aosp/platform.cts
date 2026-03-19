@@ -78,23 +78,31 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
                 new FieldValuePair("1.1754944E-38", "1.17549435E-38"));
     }
 
+    // Some inaccessible values defined in Modifier.
+    private static final int BRIDGE = 0x00000040;
+    private static final int VARARGS = 0x00000080;
+    private static final int SYNTHETIC = 0x00001000;
+    private static final int ANNOTATION = 0x00002000;
+    private static final int ENUM = 0x00004000;
+    private static final int MANDATED = 0x00008000;
+
     /** Indicates that the class is an annotation. */
-    private static final int CLASS_MODIFIER_ANNOTATION = 0x00002000;
+    private static final int CLASS_MODIFIER_ANNOTATION = ANNOTATION;
 
     /** Indicates that the class is an enum. */
-    private static final int CLASS_MODIFIER_ENUM       = 0x00004000;
+    private static final int CLASS_MODIFIER_ENUM = ENUM;
 
     /** Indicates that the method is a bridge method. */
-    private static final int METHOD_MODIFIER_BRIDGE    = 0x00000040;
+    private static final int METHOD_MODIFIER_BRIDGE = BRIDGE;
 
     /** Indicates that the method is takes a variable number of arguments. */
-    private static final int METHOD_MODIFIER_VAR_ARGS  = 0x00000080;
+    private static final int METHOD_MODIFIER_VAR_ARGS = VARARGS;
 
     /** Indicates that the method is a synthetic method. */
-    private static final int METHOD_MODIFIER_SYNTHETIC = 0x00001000;
+    private static final int METHOD_MODIFIER_SYNTHETIC = SYNTHETIC;
 
     /** Indicates that a field is an enum value. */
-    public static final int FIELD_MODIFIER_ENUM_VALUE = 0x00004000;
+    public static final int FIELD_MODIFIER_ENUM_VALUE = ENUM;
 
     private final InterfaceChecker interfaceChecker;
 
@@ -419,13 +427,6 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
                     message);
         }
     }
-
-    private static final int BRIDGE    = 0x00000040;
-    private static final int VARARGS   = 0x00000080;
-    private static final int SYNTHETIC = 0x00001000;
-    private static final int ANNOTATION  = 0x00002000;
-    private static final int ENUM      = 0x00004000;
-    private static final int MANDATED  = 0x00008000;
 
     private static String getModifierString(int modifiers) {
         Formatter formatter = new Formatter();
