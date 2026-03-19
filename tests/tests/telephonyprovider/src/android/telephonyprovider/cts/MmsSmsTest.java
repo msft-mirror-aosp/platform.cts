@@ -89,6 +89,7 @@ public class MmsSmsTest {
     private static void cleanup() {
         ContentResolver contentResolver = CONTEXT.getContentResolver();
         contentResolver.delete(Telephony.Sms.CONTENT_URI, null, null);
+        contentResolver.delete(Telephony.Mms.CONTENT_URI, null, null);
     }
 
     private static void ensureDefaultSmsApp() {
