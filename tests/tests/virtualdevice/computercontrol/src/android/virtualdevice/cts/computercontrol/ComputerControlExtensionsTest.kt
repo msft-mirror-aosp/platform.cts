@@ -119,7 +119,8 @@ class ComputerControlExtensionsTest {
     @get:Rule val computerControlRule = ComputerControlRule()
 
     private val context = getInstrumentation().context
-    private var extension: ComputerControlExtensions? = null
+    private var extension: ComputerControlExtensions? =
+        ComputerControlExtensions.getInstance(context)
 
     @Test
     fun testGetInstance_nullContext() {
