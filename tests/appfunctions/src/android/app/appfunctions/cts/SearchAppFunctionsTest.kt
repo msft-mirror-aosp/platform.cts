@@ -24,6 +24,7 @@ import android.app.appfunctions.AppFunctionSearchSpec
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.MultiServicesHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.assertAppFunctionMetadataEquals
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
@@ -889,6 +890,47 @@ class SearchAppFunctionsTest {
             result[DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION]!!,
             DynamicSchemaHelperApp.FunctionMetadata.HIGH_SCHEMA_VERSION,
         )
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+    )
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MULTI_SERVICE_BUGFIX)
+    fun searchAppFunctions_multiServiceApp_indexesBothServices() = doBlocking {
+        installPackage(
+            MultiServicesHelperApp.APK_PATH,
+            MultiServicesHelperApp.PACKAGE_NAME,
+            context,
+            true,
+        )
+
+        try {
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(setOf(MultiServicesHelperApp.PACKAGE_NAME))
+                .build()
+            retryAssert {
+                val result = manager.searchAppFunctions(searchSpec)
+
+                val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
+                    result.associateBy { it.name }
+
+                assertThat(resultAppFunctionsByName.keys)
+                    .containsExactlyElementsIn(MultiServicesHelperApp.FunctionNames.ALL_FUNCTIONS)
+                assertAppFunctionMetadataEquals(
+                    resultAppFunctionsByName[MultiServicesHelperApp.Service1.FunctionNames.ADD]!!,
+                    MultiServicesHelperApp.Service1.FunctionMetadata.ADD,
+                )
+                assertAppFunctionMetadataEquals(
+                    resultAppFunctionsByName[MultiServicesHelperApp.Service2.FunctionNames.ECHO]!!,
+                    MultiServicesHelperApp.Service2.FunctionMetadata.ECHO,
+                )
+        }
+        } finally {
+            uninstallPackage(MultiServicesHelperApp.PACKAGE_NAME, context)
+        }
     }
 
     @Test

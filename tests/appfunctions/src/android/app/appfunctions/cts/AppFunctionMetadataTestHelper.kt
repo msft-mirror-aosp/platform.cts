@@ -473,6 +473,116 @@ class AppFunctionMetadataTestHelper {
         }
     }
 
+    object MultiServicesHelperApp {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.helper.multiservices"
+        const val CERTIFICATE = "a90b80bd307b71bb4029674c5c4fe18066994e352eac933b7b68266210cafb53"
+        const val APK_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestAppMultiServices.apk"
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
+
+        object Components {
+            val TOP_LEVEL_COMPONENT_1 =
+                GenericDocument.Builder<GenericDocument.Builder<*>>(
+                        "app_functions",
+                        "$PACKAGE_NAME/testTopLevelComponentId",
+                        "CustomTopLevelComponent1-$PACKAGE_NAME",
+                    )
+                    .setPropertyString("packageName", PACKAGE_NAME)
+                    .setPropertyString("customStringProperty", "testValue")
+                    .build()
+        }
+        val PACKAGE_METADATA =
+            AppFunctionPackageMetadata.create(
+                PACKAGE_NAME,
+                listOf(Components.TOP_LEVEL_COMPONENT_1),
+            )
+
+        object Service1 {
+            const val TEST_SERVICE_NAME =
+                "android.app.appfunctions.testutils.TestAppFunctionService"
+
+            object FunctionNames {
+                val ADD = AppFunctionName(PACKAGE_NAME, "add")
+
+                val ALL_FUNCTIONS = setOf(ADD)
+            }
+
+            object FunctionMetadata {
+                val ADD =
+                    AppFunctionMetadata.Builder(
+                            GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                    "app_functions",
+                                    "$PACKAGE_NAME/add",
+                                    "AppFunctionStaticMetadata-$PACKAGE_NAME",
+                                )
+                                .setPropertyString("packageName", PACKAGE_NAME)
+                                .setPropertyLong(
+                                    "packageNameHash",
+                                    PACKAGE_NAME.hashCode().toLong(),
+                                )
+                                .setPropertyBoolean(
+                                    AppFunctionStaticMetadataHelper
+                                        .STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                    true,
+                                )
+                                .setPropertyString("functionId", "add")
+                                .setPropertyString("scope", "global")
+                                .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                                .build(),
+                            PACKAGE_METADATA,
+                        )
+                        .build()
+            }
+
+            val ALL_FUNCTIONS = setOf(FunctionMetadata.ADD)
+        }
+
+        object Service2 {
+            private const val TEST_SERVICE_NAME =
+                "android.app.appfunctions.testutils.TestAppFunctionService2"
+
+            object FunctionNames {
+                val ECHO = AppFunctionName(PACKAGE_NAME, "echo")
+                val ALL_FUNCTIONS = setOf(ECHO)
+            }
+
+            object FunctionMetadata {
+                val ECHO =
+                    AppFunctionMetadata.Builder(
+                            GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                    "app_functions",
+                                    "$PACKAGE_NAME/echo",
+                                    "AppFunctionStaticMetadata-$PACKAGE_NAME",
+                                )
+                                .setPropertyString("packageName", PACKAGE_NAME)
+                                .setPropertyLong(
+                                    "packageNameHash",
+                                    PACKAGE_NAME.hashCode().toLong(),
+                                )
+                                .setPropertyString("functionId", "echo")
+                                .setPropertyLong("customIntProperty", 255L)
+                                .setPropertyBoolean(
+                                    AppFunctionStaticMetadataHelper
+                                        .STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                    true,
+                                )
+                                .setPropertyString("scope", "global")
+                                .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                                .build(),
+                            PACKAGE_METADATA,
+                        )
+                        .build()
+            }
+
+            val ALL_FUNCTIONS = setOf(FunctionMetadata.ECHO)
+        }
+
+        object FunctionNames {
+            val ALL_FUNCTIONS =
+                Service1.FunctionNames.ALL_FUNCTIONS + Service2.FunctionNames.ALL_FUNCTIONS
+        }
+        val ALL_FUNCTIONS = Service1.ALL_FUNCTIONS + Service2.ALL_FUNCTIONS
+    }
+
     companion object {
         private const val TEST_SERVICE_NAME =
             "android.app.appfunctions.testutils.TestAppFunctionService"
