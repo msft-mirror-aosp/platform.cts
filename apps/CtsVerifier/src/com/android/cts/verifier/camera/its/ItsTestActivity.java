@@ -33,9 +33,11 @@ import android.hardware.devicestate.DeviceStateManager;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirement;
 import android.mediapc.cts.common.Requirements;
-import android.mediapc.cts.common.Requirements.CameraCaptureLatencyRequirement;
-import android.mediapc.cts.common.Requirements.CameraStartupLatencyRequirement;
 import android.mediapc.cts.common.Requirements.CameraUltraHDRRequirement;
+import android.mediapc.cts.common.Requirements.FrontCameraCaptureLatencyRequirement;
+import android.mediapc.cts.common.Requirements.FrontCameraStartupLatencyRequirement;
+import android.mediapc.cts.common.Requirements.RearCameraCaptureLatencyRequirement;
+import android.mediapc.cts.common.Requirements.RearCameraStartupLatencyRequirement;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -373,8 +375,11 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
-    CameraCaptureLatencyRequirement mJpegLatencyReq = null;
-    CameraStartupLatencyRequirement mLaunchLatencyReq = null;
+
+    RearCameraCaptureLatencyRequirement mRearJpegLatencyReq = null;
+    FrontCameraCaptureLatencyRequirement mFrontJpegLatencyReq = null;
+    RearCameraStartupLatencyRequirement mRearLaunchLatencyReq = null;
+    FrontCameraStartupLatencyRequirement mFrontLaunchLatencyReq = null;
     CameraUltraHDRRequirement mUltraHdrReq = null;
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
@@ -802,19 +807,23 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             if (launchMatches) {
                 float latency = Float.parseFloat(launchMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
-                    mLaunchLatencyReq.setRearCameraLatency(latency);
+                    mRearLaunchLatencyReq.setLatencyMs(latency);
+                    updatedReq = mRearLaunchLatencyReq;
                 } else {
-                    mLaunchLatencyReq.setFrontCameraLatency(latency);
+                    mFrontLaunchLatencyReq.setLatencyMs(latency);
+                    updatedReq = mFrontLaunchLatencyReq;
                 }
-                updatedReq = mLaunchLatencyReq;
+
             } else if (jpegMatches) {
                 float latency = Float.parseFloat(jpegMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
-                    mJpegLatencyReq.setRearCameraLatency(latency);
+                    mRearJpegLatencyReq.setLatencyMs(latency);
+                    updatedReq = mRearJpegLatencyReq;
                 } else {
-                    mJpegLatencyReq.setFrontCameraLatency(latency);
+                    mFrontJpegLatencyReq.setLatencyMs(latency);
+                    updatedReq = mFrontJpegLatencyReq;
                 }
-                updatedReq = mJpegLatencyReq;
+
             } else {
                 Log.i(TAG, "Gainmap pattern matches");
                 String result = mpcResult.split(":")[1];
@@ -1562,8 +1571,14 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
         }
 
         // 2. Initialize or reset requirements
-        mJpegLatencyReq = resetRequirement(mJpegLatencyReq, Requirements.addR7_5__H_1_5()::to);
-        mLaunchLatencyReq = resetRequirement(mLaunchLatencyReq, Requirements.addR7_5__H_1_6()::to);
+        mFrontJpegLatencyReq =
+                resetRequirement(mFrontJpegLatencyReq, Requirements.addR7_5__H_1_5_1()::to);
+        mRearJpegLatencyReq =
+                resetRequirement(mRearJpegLatencyReq, Requirements.addR7_5__H_1_5_2()::to);
+        mFrontLaunchLatencyReq =
+                resetRequirement(mFrontLaunchLatencyReq, Requirements.addR7_5__H_1_6_1()::to);
+        mRearLaunchLatencyReq =
+                resetRequirement(mRearLaunchLatencyReq, Requirements.addR7_5__H_1_6_2()::to);
 
         if (ItsUtils.isAtLeastV()) {
             mUltraHdrReq = resetRequirement(mUltraHdrReq, Requirements.addR7_5__H_1_20()::to);
@@ -1588,22 +1603,22 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private void applyMissingCameraFailures(int lensFacing) {
         switch (lensFacing) {
             case CameraMetadata.LENS_FACING_FRONT -> {
-                if (mJpegLatencyReq != null) {
-                    mJpegLatencyReq.setFrontCameraLatency(Float.MAX_VALUE);
+                if (mFrontJpegLatencyReq != null) {
+                    mFrontJpegLatencyReq.setLatencyMs(Float.MAX_VALUE);
                 }
-                if (mLaunchLatencyReq != null) {
-                    mLaunchLatencyReq.setFrontCameraLatency(Float.MAX_VALUE);
+                if (mFrontLaunchLatencyReq != null) {
+                    mFrontLaunchLatencyReq.setLatencyMs(Float.MAX_VALUE);
                 }
                 if (mUltraHdrReq != null) {
                     mUltraHdrReq.setFrontCameraUltraHdrSupported(false);
                 }
             }
             case CameraMetadata.LENS_FACING_BACK -> {
-                if (mJpegLatencyReq != null) {
-                    mJpegLatencyReq.setRearCameraLatency(Float.MAX_VALUE);
+                if (mRearJpegLatencyReq != null) {
+                    mRearJpegLatencyReq.setLatencyMs(Float.MAX_VALUE);
                 }
-                if (mLaunchLatencyReq != null) {
-                    mLaunchLatencyReq.setRearCameraLatency(Float.MAX_VALUE);
+                if (mRearLaunchLatencyReq != null) {
+                    mRearLaunchLatencyReq.setLatencyMs(Float.MAX_VALUE);
                 }
                 if (mUltraHdrReq != null) {
                     mUltraHdrReq.setRearCameraUltraHdrSupported(false);
