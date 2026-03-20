@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2026 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+     package="android.telephony.satellite.cts">
+
+    <uses-sdk android:minSdkVersion="24"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.CONNECTIVITY_USE_RESTRICTED_NETWORKS"/>
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS"/>
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_BASIC_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_MMS"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.WRITE_EMBEDDED_SUBSCRIPTIONS" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.SATELLITE_COMMUNICATION"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.MANAGE_ROLE_HOLDERS" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
+    <application android:debuggable="true">
+
+        <receiver android:name="android.telephony.cts.SatelliteReceiver"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.action.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED"/>
+            </intent-filter>
+        </receiver>
+
+        <service android:name="android.telephony.cts.InCallServiceStateValidator"
+             android:permission="android.permission.BIND_INCALL_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telecom.InCallService"/>
+            </intent-filter>
+            <meta-data android:name="android.telecom.IN_CALL_SERVICE_UI"
+                 android:value="true"/>
+        </service>
+
+        <service android:name="android.telephony.ims.cts.TestImsService"
+             android:directBootAware="true"
+             android:persistent="true"
+             android:permission="android.permission.BIND_IMS_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.ims.ImsService"/>
+            </intent-filter>
+        </service>
+
+        <service android:name="android.telephony.satellite.cts.MockSatelliteService"
+             android:directBootAware="true"
+             android:persistent="true"
+             android:permission="android.permission.BIND_SATELLITE_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.satellite.SatelliteService"/>
+            </intent-filter>
+        </service>
+
+        <service android:name="android.telephony.satellite.cts.MockSatelliteGatewayService"
+             android:directBootAware="true"
+             android:persistent="true"
+             android:permission="android.permission.BIND_SATELLITE_GATEWAY_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.satellite.SatelliteGatewayService"/>
+            </intent-filter>
+        </service>
+
+        <activity android:name="android.telephony.satellite.cts.MockPointingUiActivity"
+             android:exported="true">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <uses-library android:name="android.test.runner"/>
+
+        <meta-data
+            android:name="android.telephony.PROPERTY_SATELLITE_DATA_OPTIMIZED"
+            android:value="android.telephony.satellite.cts"/>
+    </application>
+
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+         android:targetPackage="android.telephony.satellite.cts"
+         android:label="CTS tests of android.telephony.satellite">
+    </instrumentation>
+
+    <queries>
+        <package android:name="android.telephony.cts.externalimsservice" />
+        <package android:name="android.telephony.cts.externalsatellitegatewayservice" />
+        <package android:name="android.telephony.cts.externalsatelliteservice" />
+        <package android:name="android.telephony.cts.externalpointingui" />
+    </queries>
+</manifest>

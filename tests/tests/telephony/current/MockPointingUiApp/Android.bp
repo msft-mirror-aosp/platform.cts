@@ -9,13 +9,10 @@ android_test_helper_app {
     srcs: [
         "src/**/*.java",
     ],
-    libs: [
-        "telephony-common",
-    ],
+    libs: [],
     static_libs: [
         "compatibility-device-util-axt",
     ],
-    platform_apis: true,
     test_suites: [
         "general-tests",
     ],

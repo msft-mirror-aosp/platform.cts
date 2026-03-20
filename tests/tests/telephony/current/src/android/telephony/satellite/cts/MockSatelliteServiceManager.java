@@ -70,7 +70,10 @@ import java.util.stream.Collectors;
  */
 class MockSatelliteServiceManager {
     private static final String TAG = "MockSatelliteServiceManager";
-    public static final String PACKAGE = "android.telephony.cts";
+    @NonNull private final String PACKAGE;
+    public String getPackageName() {
+        return PACKAGE;
+    }
     private static final String EXTERNAL_SATELLITE_GATEWAY_PACKAGE =
             ExternalMockSatelliteGatewayService.class.getPackage().getName();
     private static final String EXTERNAL_SATELLITE_PACKAGE =
@@ -445,6 +448,7 @@ class MockSatelliteServiceManager {
 
     MockSatelliteServiceManager(Instrumentation instrumentation) {
         mInstrumentation = instrumentation;
+        PACKAGE = mInstrumentation.getContext().getPackageName();
         mIsSatelliteServicePackageConfigured = !TextUtils.isEmpty(getSatelliteServicePackageName());
     }
 

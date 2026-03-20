@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;

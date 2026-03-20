@@ -920,7 +920,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
      * duration of the tests in this class.
      */
     public static void addCtsPackageToSupportedSmsApps(int subId) {
-        final String ctsPackageName = "android.telephony.cts";
+        final String ctsPackageName = getContext().getPackageName();
 
         // Get the current list of supported messaging apps from the carrier config.
         String[] originalSupportedMsgApps =
