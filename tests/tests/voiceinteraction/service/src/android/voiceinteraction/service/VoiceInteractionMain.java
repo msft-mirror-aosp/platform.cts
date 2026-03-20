@@ -21,6 +21,8 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewTreeObserver;
 import android.voiceinteraction.common.Utils;
 import android.widget.TextView;
 
@@ -36,8 +38,33 @@ public class VoiceInteractionMain extends Activity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Ensure that when the activity is reused (e.g., across multiple test iterations),
+        // it always uses the latest intent extras provided by the test suite.
+        setIntent(intent);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        // We use an OnGlobalLayoutListener to ensure the view hierarchy is fully established,
+        // attached, and laid out before starting the interaction service.
+        // This prevents a race condition where the system's AssistStructure capture might
+        // find an empty window if it's triggered before the first layout pass completes.
+        final View decor = getWindow().getDecorView();
+        decor.getViewTreeObserver()
+                .addOnGlobalLayoutListener(
+                        new ViewTreeObserver.OnGlobalLayoutListener() {
+                            @Override
+                            public void onGlobalLayout() {
+                                decor.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                                startInteractionService();
+                            }
+                        });
+    }
+
+    private void startInteractionService() {
         Intent intent = new Intent();
         String targetService = getIntent().getStringExtra("target_service");
         if (targetService != null) {

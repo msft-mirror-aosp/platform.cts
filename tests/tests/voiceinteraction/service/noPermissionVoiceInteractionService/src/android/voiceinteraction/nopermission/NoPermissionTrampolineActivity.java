@@ -21,6 +21,8 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 public class NoPermissionTrampolineActivity extends Activity {
@@ -35,8 +37,32 @@ public class NoPermissionTrampolineActivity extends Activity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Ensure that when the activity is reused, it always uses the latest intent extras
+        // provided by the test suite for consistent test results across iterations.
+        setIntent(intent);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        // Defer starting the interaction service until the first global layout pass.
+        // This ensures the window is fully added and views are laid out before a session
+        // starts, preventing race conditions where AssistStructure captures an empty window.
+        final View decor = getWindow().getDecorView();
+        decor.getViewTreeObserver()
+                .addOnGlobalLayoutListener(
+                        new ViewTreeObserver.OnGlobalLayoutListener() {
+                            @Override
+                            public void onGlobalLayout() {
+                                decor.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                                startInteractionService();
+                            }
+                        });
+    }
+
+    private void startInteractionService() {
         Intent intent = new Intent();
         intent.setComponent(new ComponentName(this, NoPermissionInteractionService.class));
 

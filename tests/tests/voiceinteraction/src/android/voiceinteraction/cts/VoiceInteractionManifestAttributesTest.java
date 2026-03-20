@@ -92,6 +92,16 @@ public class VoiceInteractionManifestAttributesTest {
         runShellCommand("am compat enable " + ENABLE_RESTRICT_ASSIST_STRUCTURE + " " + SERVICE_PKG);
         runShellCommand(
                 "am compat enable " + ENABLE_RESTRICT_ASSIST_STRUCTURE + " " + NO_PERMISSION_PKG);
+        runShellCommand(
+                "am compat enable "
+                        + VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID
+                        + " "
+                        + SERVICE_PKG);
+        runShellCommand(
+                "am compat enable "
+                        + VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID
+                        + " "
+                        + NO_PERMISSION_PKG);
         VoiceInteractionTestReceiver.reset();
         mOriginalService =
                 Settings.Secure.getString(
@@ -104,6 +114,16 @@ public class VoiceInteractionManifestAttributesTest {
         runShellCommand("am compat reset " + ENABLE_RESTRICT_ASSIST_STRUCTURE + " " + SERVICE_PKG);
         runShellCommand(
                 "am compat reset " + ENABLE_RESTRICT_ASSIST_STRUCTURE + " " + NO_PERMISSION_PKG);
+        runShellCommand(
+                "am compat reset "
+                        + VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID
+                        + " "
+                        + SERVICE_PKG);
+        runShellCommand(
+                "am compat reset "
+                        + VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID
+                        + " "
+                        + NO_PERMISSION_PKG);
         // Restore service
         if (mOriginalService != null) {
             runShellCommand(
