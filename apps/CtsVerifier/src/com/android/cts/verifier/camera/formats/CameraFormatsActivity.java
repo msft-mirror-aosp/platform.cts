@@ -343,7 +343,7 @@ public class CameraFormatsActivity extends PassFailButtons.Activity
             new AdapterView.OnItemSelectedListener() {
                 public void onItemSelected(AdapterView<?> parent,
                         View view, int position, long id) {
-                    if (mPreviewSizes.get(position) != mPreviewSize) {
+                    if (!mPreviewSizes.get(position).equals(mNextPreviewSize)) {
                         mNextPreviewSize = mPreviewSizes.get(position);
                         startPreview();
                     }
