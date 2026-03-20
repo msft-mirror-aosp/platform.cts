@@ -38,6 +38,9 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Test list activity that supports showing dialogs with pass/fail buttons instead of
  * starting new activities.
@@ -262,14 +265,14 @@ public abstract class DialogTestListActivity extends PassFailButtons.TestListAct
         getListView().smoothScrollToPosition(mCurrentTestPosition + 1);
     }
 
-    /* Sets NOT_EXECUTED test result for all tests listed in the adapter. */
+    /* Sets NOT_EXECUTED test result for all non-executed tests listed in the adapter. */
     protected void setNotExecutedTestResults(ArrayTestListAdapter adapter) {
-        for (TestListAdapter.TestListItem testItem: adapter.getRows()) {
+        for (String testName : getTestsWithEmptyHistory(adapter)) {
             Intent resultIntent = new Intent();
             TestResult.addResultData(
                     resultIntent,
                     TestResult.TEST_RESULT_NOT_EXECUTED,
-                    testItem.testName,
+                    testName,
                     /* testDetails */ null,
                     /* reportLog */ null,
                     null
@@ -358,5 +361,15 @@ public abstract class DialogTestListActivity extends PassFailButtons.TestListAct
             ((TextView) view.findViewById(R.id.message)).setText(getManualTestInstruction());
             return view;
         }
+    }
+
+    private List<String> getTestsWithEmptyHistory(ArrayTestListAdapter adapter) {
+        List<String> testNames = new ArrayList<>();
+        for (TestListAdapter.TestListItem testItem: adapter.getRows()) {
+            if (mAdapter.getHistoryCollection(testItem.testName) == null) {
+                testNames.add(testItem.testName);
+            }
+        }
+        return testNames;
     }
 }
