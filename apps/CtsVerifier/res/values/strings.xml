@@ -4409,60 +4409,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="disallow_outgoing_beam">Disallow outgoing beam</string>
     <string name="disallow_outgoing_beam_action">Switching on android beam</string>
     <string name="disallow_remove_user">Disallow remove user</string>
-    <string name="check_new_user_disclaimer">Check new user disclaimer</string>
-    <string name="check_new_user_disclaimer_info">
-        Please do the following: \n\n
-        0. Grant a permission to CtsVerifier by running \n
-        adb shell pm grant --user current com.android.cts.verifier android.permission.INTERACT_ACROSS_USERS\n\n
-        1. Check persistent notification for managed device \n\n
-        a). Open the notification UI, verify that there is a notification saying the device is managed.\n
-        b). Tap the notification\n
-        c). It should show a dialog explaining the device is managed and asking the user to accept \n
-        d). Don\'t accept initially and tap outside the dialog \n
-        e). Open the notification UI again, verify that the managed device notification is still shown \n
-        \n
-        f). Click \"Set Org\", and open the notification UI again, verify that the organization name
-        \"Foo, Inc\" is shown on the dialog \n
-        \n\n
-        2. Check adding account is restricted\n\n
-        a) Click \"Go\" to launch the \"Profiles &amp; accounts\" setting \n
-        b) navigate to \"Add account\" \n
-        \n
-        Expected: \n
-        - \"Add account\" is disabled \n
-        - Click the button will launch the new user disclaimer dialog\n
-        \n
-        c) Click accept button\n
-        \n
-        Expected: \n
-        - the screen will be dismissed \n
-        - \"Add account\" will be enabled\n
-        - Click the button will take user to the screen to add account \n
-    </string>
-    <string name="device_owner_disallow_remove_user_info">
-        Please press \'Create uninitialized user\' to create a user that is not set up. Then press the
-        \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Users\' setting. \n
-        Click the managed user to open settings.\n\n
 
-        Mark this test as passed if:\n\n
-        - \"Delete User\" is disabled.\n
-        - Tapping \"Delete user\" shows an \"Action not allowed\" dialog.\n
-        \n
-        Use the Back button to return to this page.
-    </string>
-    <string name="managed_user_disallow_remove_user_info">
-        Please press the \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Users\' setting. \n\n
-
-        Mark this test as passed if all of the following conditions are met:\n\n
-        - The \"Delete managed user from this device\" option in the overflow menu is disabled\n
-        - Clicking \"Delete managed user from this device\" in the overflow menu results in an \"Action not allowed\" dialog.\n
-        \n
-        Use the Back button to return to this page.
-    </string>
-    <string name="device_owner_disallow_remove_user_create_user">Create uninitialized user</string>
-    <string name="device_owner_remove_secondary_user">Remove uninitialized user</string>
     <string name="disallow_remove_managed_profile">Disallow remove managed profile</string>
     <string name="disallow_remove_managed_profile_action">Removing the work profile. It shouldn\'t be possible neither from the Accounts screen nor the Device Administrators screen (after selecting the Device Administrator that corresponds to the badged version of \"CTS Verifier\")</string>
     <string name="disallow_share_location">Disallow share location</string>
@@ -4880,47 +4827,6 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="set_medium_required_password_complexity">Set medium required password complexity</string>
     <string name="set_high_required_password_complexity">Set high required password complexity</string>
     <string name="remove_required_password_complexity">Remove required password complexity</string>
-
-
-
-    <string name="device_owner_disallow_user_switch">Disallow user switch</string>
-    <string name="device_owner_disallow_user_switch_info">
-        Press \'Create uninitialized user\' to create a user that is not setup.
-        Then press \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Users\' settings.
-        Confirm that:\n
-        \n
-        - Main switch is disabled and in off position\n
-        - Tapping main switch shows a \"Blocked by work policy\" dialog.\n
-        \n
-        In addition, if quick settings is available, confirm that user switcher is hidden or
-        disabled.\n
-        \n
-        The following steps apply only if the created user is visible on Users page. Confirm that:\n
-        \n
-        - Pressing on managed user opens user details page.\n
-        - \"Switch to managed user\" is disabled\n
-        - Tapping \"Switch to managed user\" shows a \"Blocked by work policy\" dialog.\n
-        \n
-        Use the Back button to return to this page.
-    </string>
-    <string name="device_owner_disallow_user_switch_info" product="automotive">
-        Press \'Create uninitialized user\' to create a user that is not setup.
-        Then press \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Users\' settings.
-        In Quick Settings, confirm that user switcher is hidden or disabled.\n
-        \n
-        The following steps apply only if the created user is visible on Users page. Confirm that:\n
-        \n
-        - Pressing on managed user opens user details page.\n
-        - \"Switch to managed user\" is disabled\n
-        - Tapping \"Switch to managed user\" shows a \"Blocked by work policy\" dialog.\n
-        \n
-        Use the Back button to return to this page.
-    </string>
-    <string name="device_owner_disallow_user_switch_create_user">Create uninitialized user</string>
-
-
 
 
 

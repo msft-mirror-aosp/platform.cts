@@ -201,20 +201,6 @@ public class UserRestrictions {
                     UserManager.DISALLOW_MODIFY_ACCOUNTS, UserManager.DISALLOW_SHARE_LOCATION,
                     UserManager.DISALLOW_UNIFIED_PASSWORD,
                     UserManager.DISALLOW_CONFIG_LOCATION);
-    private static final List<String> ALSO_VALID_FOR_MANAGED_USER_POLICY_TRANSPARENCY =
-            Arrays.asList(
-                    UserManager.DISALLOW_ADJUST_VOLUME,
-                    UserManager.DISALLOW_APPS_CONTROL,
-                    UserManager.DISALLOW_CONFIG_WIFI,
-                    UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES,
-                    UserManager.DISALLOW_MODIFY_ACCOUNTS,
-                    UserManager.DISALLOW_OUTGOING_BEAM,
-                    UserManager.DISALLOW_SHARE_LOCATION,
-                    UserManager.DISALLOW_UNINSTALL_APPS,
-                    UserManager.DISALLOW_CONFIG_DATE_TIME,
-                    UserManager.DISALLOW_CONFIG_LOCATION,
-                    UserManager.DISALLOW_CONFIG_SCREEN_TIMEOUT,
-                    UserManager.DISALLOW_CONFIG_BRIGHTNESS);
 
     private static final String ACTION_CREDENTIALS_INSTALL = "com.android.credentials.INSTALL";
 
@@ -249,8 +235,6 @@ public class UserRestrictions {
             return result;
         } else if (mode == PolicyTransparencyTestListActivity.MODE_MANAGED_PROFILE) {
             return ALSO_VALID_FOR_MANAGED_PROFILE_POLICY_TRANSPARENCY;
-        } else if (mode == PolicyTransparencyTestListActivity.MODE_MANAGED_USER) {
-            return ALSO_VALID_FOR_MANAGED_USER_POLICY_TRANSPARENCY;
         }
         throw new RuntimeException("Invalid mode " + mode);
     }
