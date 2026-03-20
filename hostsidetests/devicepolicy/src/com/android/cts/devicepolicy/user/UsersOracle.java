@@ -18,7 +18,7 @@ package com.android.cts.devicepolicy.user;
 import static android.app.admin.flags.Flags.FLAG_DEVICE_OWNER_FOR_ALL;
 import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
 
-import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER;
+import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER;
 import static com.android.tradefed.device.UserInfo.USER_NULL;
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 import static com.android.tradefed.targetprep.BaseSwitchUserTargetPreparer.PROPERTY_PREPARED_USER;
@@ -61,7 +61,7 @@ public final class UsersOracle {
     private final int mInitialCurrentUserId;
     private final Set<Integer> mPreExistingUserIds;
     private final @Nullable Integer mMainUserId;
-    private final boolean mSupportsProfilesForAll;
+    private final boolean mSupportsManagedProfilesForAll;
     private final boolean mSupportsDeviceOwnerForAll;
     // TODO(b/35372278): temporary workaround until flag is ramped up
     private final boolean mIsAutomotive;
@@ -80,7 +80,8 @@ public final class UsersOracle {
         mInitialCurrentUserId = initialCurrentUserId;
         mPreExistingUserIds = device.getUserInfos().keySet();
         mMainUserId = device.getMainUserId();
-        mSupportsProfilesForAll = new UserUtil(device).isProfilesOnNonMainUserSupported();
+        mSupportsManagedProfilesForAll =
+                new UserUtil(device).isManagedProfileOnNonMainUserSupported();
         mIsAutomotive = device.hasFeature("android.hardware.type.automotive");
         mFlagsUtil = new FlagsUtil(device);
         mSupportsDeviceOwnerForAll = mFlagsUtil.getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
@@ -159,11 +160,11 @@ public final class UsersOracle {
             return USER_NULL;
         }
         Preconditions.checkState(
-                mSupportsProfilesForAll,
+                mSupportsManagedProfilesForAll,
                 "PO not supported on mainless-user device (either flag %s is disabled or "
                         + "device doesn't define %s - check logs)",
                 FLAG_PROFILES_FOR_ALL,
-                CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
+                CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER);
         return mInitialCurrentUserId;
     }
 
@@ -188,7 +189,7 @@ public final class UsersOracle {
                 mMainUserId,
                 FLAG_PROFILES_FOR_ALL,
                 getFlagValueForDebuggingPurposes(FLAG_PROFILES_FOR_ALL),
-                mSupportsProfilesForAll,
+                mSupportsManagedProfilesForAll,
                 FLAG_DEVICE_OWNER_FOR_ALL,
                 mSupportsDeviceOwnerForAll,
                 mIsAutomotive,

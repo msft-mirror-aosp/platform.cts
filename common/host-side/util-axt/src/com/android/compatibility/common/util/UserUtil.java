@@ -26,8 +26,8 @@ import com.android.tradefed.log.LogUtil.CLog;
  */
 public final class UserUtil {
 
-    public static final String CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER =
-            "config_supportProfilesOnNonMainUser";
+    public static final String CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER =
+            "config_supportManagedProfileOnNonMainUser";
 
     private final ITestDevice mTestDevice;
 
@@ -35,11 +35,11 @@ public final class UserUtil {
         mTestDevice = testDevice;
     }
 
-    /** Checks whether the device supports profile on non-main user. */
-    public boolean isProfilesOnNonMainUserSupported() throws DeviceNotAvailableException {
+    /** Checks whether the device supports managed profile on non-main user. */
+    public boolean isManagedProfileOnNonMainUserSupported() throws DeviceNotAvailableException {
         boolean flagValue = new FlagsUtil(mTestDevice).getBooleanFlag(FLAG_PROFILES_FOR_ALL);
         CLog.v(
-                "isProfilesOnNonMainUserSupported(): flag %s is %s",
+                "isManagedProfileOnNonMainUserSupported(): flag %s is %s",
                 FLAG_PROFILES_FOR_ALL, flagValue);
         // If the flag's disabled, it doesn't need to check the config
         if (!flagValue) {
@@ -48,10 +48,10 @@ public final class UserUtil {
 
         boolean configValue =
                 new OverlayUtil(mTestDevice)
-                        .getBooleanFrameworkConfig(CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
+                        .getBooleanFrameworkConfig(CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER);
         CLog.v(
-                "isProfilesOnNonMainUserSupported(): config %s is %b",
-                CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER, configValue);
+                "isManagedProfileOnNonMainUserSupported(): config %s is %b",
+                CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER, configValue);
         return configValue;
     }
 
