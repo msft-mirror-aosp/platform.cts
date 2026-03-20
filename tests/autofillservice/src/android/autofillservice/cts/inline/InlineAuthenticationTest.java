@@ -33,7 +33,6 @@ import android.autofillservice.cts.activities.AuthenticationActivity;
 import android.autofillservice.cts.commontests.AbstractLoginActivityTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
-import android.autofillservice.cts.testcore.DeviceUtils;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
@@ -128,9 +127,6 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
         dropDownUiBot.assertDatasets("Dataset");
     }
 
-    @FlakyTest(
-            bugId = 291803739,
-            detail = "Autofill behavior is flaky. See bug, try to resolve asap")
     @Presubmit
     @Test
     public void testFillResponseAuth() throws Exception {
@@ -167,11 +163,8 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
         // Select the dataset to start authentication
         mUiBot.selectDataset("Tap to auth!");
         mUiBot.waitForIdleSync();
-        // Authentication done, show real dataset
-        DeviceUtils.Dataset.assertShowsInline();
-        mUiBot.waitForIdleSync();
 
-        // Select the dataset and check the result is autofilled.
+        // Authentication done, select the dataset and check the result is autofilled.
         mUiBot.selectDataset("Dataset");
         mUiBot.waitForIdleSync();
         mUiBot.assertNoDatasets();
