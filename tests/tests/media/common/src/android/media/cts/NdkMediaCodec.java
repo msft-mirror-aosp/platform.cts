@@ -304,7 +304,6 @@ public class NdkMediaCodec implements MediaCodecWrapper {
                 new String[] {
                     MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME,
                     MediaCodec.PARAMETER_KEY_VIDEO_BITRATE,
-                    MediaFormat.KEY_TEMPORAL_LAYER_ID,
                 };
 
         String[] stringKeysToCheck =
