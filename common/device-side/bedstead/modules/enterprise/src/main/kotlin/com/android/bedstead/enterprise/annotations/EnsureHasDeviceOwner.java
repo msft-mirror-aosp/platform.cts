@@ -24,7 +24,7 @@ import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 import com.android.bedstead.harrier.annotations.RequireNotWatch;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.queryable.annotations.Query;
 

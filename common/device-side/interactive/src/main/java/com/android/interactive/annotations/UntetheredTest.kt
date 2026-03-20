@@ -19,7 +19,7 @@ package com.android.interactive.annotations
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.FIRST
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 
 /**
  * Mark that a test requires the device to be untethered from the host.

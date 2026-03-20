@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.harrier.annotations
+
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 
 /**
  * Mark that a test should only run when a device has at least the specified

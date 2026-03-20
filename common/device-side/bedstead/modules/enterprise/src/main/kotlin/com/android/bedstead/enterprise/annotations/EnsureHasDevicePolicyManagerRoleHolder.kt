@@ -18,7 +18,7 @@ package com.android.bedstead.enterprise.annotations
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.google.auto.value.AutoAnnotation
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.ANNOTATION_CLASS

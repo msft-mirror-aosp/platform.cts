@@ -19,6 +19,7 @@ package com.android.bedstead.harrier.annotations;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 
 import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

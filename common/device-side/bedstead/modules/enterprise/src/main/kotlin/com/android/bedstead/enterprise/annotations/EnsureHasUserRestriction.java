@@ -22,7 +22,7 @@ import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_A
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;

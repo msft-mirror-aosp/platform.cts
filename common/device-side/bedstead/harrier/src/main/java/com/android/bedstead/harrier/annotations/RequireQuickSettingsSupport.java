@@ -16,6 +16,7 @@
 
 package com.android.bedstead.harrier.annotations;
 
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

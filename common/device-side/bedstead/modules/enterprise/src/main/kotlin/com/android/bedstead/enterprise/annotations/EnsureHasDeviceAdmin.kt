@@ -15,13 +15,12 @@
  */
 package com.android.bedstead.enterprise.annotations
 
+import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
-
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
-import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.android.bedstead.nene.packages.CommonPackages
 import com.android.queryable.annotations.Query
 import java.lang.annotation.Repeatable

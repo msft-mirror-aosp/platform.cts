@@ -19,7 +19,7 @@ package com.android.bedstead.bluetooth.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -21,7 +21,7 @@ import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN
 import com.android.queryable.annotations.Query
 import com.google.auto.value.AutoAnnotation
