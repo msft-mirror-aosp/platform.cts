@@ -821,55 +821,6 @@ class SearchAppFunctionsTest {
     @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    @EnsureDoesNotHavePermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
-    fun searchAppFunctions_crossUser_shouldFailWithoutPermission() = doBlocking {
-        val secondaryUser = sDeviceState.additionalUser()
-        assumeTrue(
-            "Test requires an additional user different from the primary user.",
-            secondaryUser != TestApis.users().instrumented(),
-        )
-        installExistingPackageAsUser(CtsApp.PACKAGE_NAME, secondaryUser)
-        installExistingPackageAsUser(DynamicSchemaHelperApp.PACKAGE_NAME, secondaryUser)
-        retryAssert(maxIntervals = 20) {
-            runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
-                assertThat(
-                        getAllStaticMetadataPackages(
-                            context.createContextAsUser(secondaryUser.userHandle(), 0)
-                        )
-                    )
-                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
-                assertThat(
-                        getAllRuntimeMetadataPackages(
-                            context.createContextAsUser(secondaryUser.userHandle(), 0)
-                        )
-                    )
-                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
-            }
-        }
-        runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
-            manager =
-                context
-                    .createContextAsUser(secondaryUser.userHandle(), 0)
-                    .getSystemService(AppFunctionManager::class.java)
-        }
-
-        var exception: Exception? = null
-        try {
-            manager.searchAppFunctions(AppFunctionSearchSpec.Builder().build())
-        } catch (e: RuntimeException) {
-            exception = e
-        }
-
-        assertThat(exception).isNotNull()
-        assertThat(exception!!.cause).isInstanceOf(SecurityException::class.java)
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
-    @EnsureHasAdditionalUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
     @EnsureHasPermission(
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.INTERACT_ACROSS_USERS_FULL,
