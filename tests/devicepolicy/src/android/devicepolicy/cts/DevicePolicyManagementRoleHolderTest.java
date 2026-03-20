@@ -375,8 +375,8 @@ public class DevicePolicyManagementRoleHolderTest {
                         .create()) {
             // The packageName is only used for checking if the application is marked as testOnly,
             // which is not relevant for this test case.
-            boolean qualified =
-                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole("package");
+            boolean qualified = sDevicePolicyManager
+                    .isPackageAllowedToBypassDevicePolicyManagementRoleQualification("package");
             assertThat(qualified).isFalse();
         }
     }
@@ -401,9 +401,8 @@ public class DevicePolicyManagementRoleHolderTest {
                         .forTesting(false)
                         .create()) {
             String packageName = dpmRoleHolder(sDeviceState).packageName();
-            boolean qualified =
-                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole(
-                            packageName);
+            boolean qualified = sDevicePolicyManager
+                    .isPackageAllowedToBypassDevicePolicyManagementRoleQualification(packageName);
             assertThat(qualified).isTrue();
         }
     }
@@ -606,8 +605,9 @@ public class DevicePolicyManagementRoleHolderTest {
                 DeviceOwner ignored1 = TestApis.devicePolicy().setDeviceOwner(adminComponent)) {
 
             boolean isQualified =
-                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole(
-                            defaultDmrh);
+                    sDevicePolicyManager
+                            .isPackageAllowedToBypassDevicePolicyManagementRoleQualification(
+                                    defaultDmrh);
 
             assertThat(isQualified).isTrue();
         }
@@ -744,7 +744,8 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
     @EnsureHasPermission({
         CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
-        CommonPermissions.MANAGE_ROLE_HOLDERS
+        CommonPermissions.MANAGE_ROLE_HOLDERS,
+        MANAGE_MULTIUSER_DEVICE_PROVISIONING_STATE
     })
     @RequireHeadlessSystemUserMode(
             reason =
@@ -759,6 +760,8 @@ public class DevicePolicyManagementRoleHolderTest {
         android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING,
         android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
     })
+    @RequireRootInstrumentation(
+            reason = "Requires permission MANAGE_MULTIUSER_DEVICE_PROVISIONING_STATE")
     public void nonTestOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_false(
             @EnumTestParameter(DmrhQualificationApi.class) DmrhQualificationApi api) {
         TestApp nonTestOnlyTestApp = getDeviceAdminTestApp(/* isTestOnly */ false);
@@ -845,8 +848,9 @@ public class DevicePolicyManagementRoleHolderTest {
                         .shouldAllowBypassingDevicePolicyManagementRoleQualification();
             }
             case IS_PACKAGE_QUALIFIED_FOR_DEVICE_POLICY_MANAGEMENT_ROLE ->
-                    sDevicePolicyManager.isPackageQualifiedForDevicePolicyManagementRole(
-                            packageName);
+                    sDevicePolicyManager
+                            .isPackageAllowedToBypassDevicePolicyManagementRoleQualification(
+                                    packageName);
         };
     }
 
