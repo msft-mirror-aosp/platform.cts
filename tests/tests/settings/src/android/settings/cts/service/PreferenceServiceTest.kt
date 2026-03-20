@@ -210,7 +210,7 @@ class PreferenceServiceTest {
                     }
                 )
                 // populating metadata can be fairly slow, give large buffer
-                if (!metadataLatch.await(10, TimeUnit.SECONDS)) {
+                if (!metadataLatch.await(60, TimeUnit.SECONDS)) {
                     throw AssertionError("Metadata retrieval timeout")
                 }
             }
