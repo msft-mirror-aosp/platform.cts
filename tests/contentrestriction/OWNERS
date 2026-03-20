@@ -1,0 +1,3 @@
+# Bug component: 1840798
+
+include platform/frameworks/base:/CONTENT_RESTRICTION_OWNERS
