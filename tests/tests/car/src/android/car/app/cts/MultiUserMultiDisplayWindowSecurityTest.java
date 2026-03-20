@@ -270,7 +270,7 @@ public class MultiUserMultiDisplayWindowSecurityTest {
 
     private String getPassengerLauncherPackageName() {
         Intent queryIntent = new Intent(Intent.ACTION_MAIN);
-        queryIntent.addCategory(Intent.CATEGORY_SECONDARY_HOME);
+        queryIntent.addCategory(Intent.CATEGORY_HOME);
         List<ResolveInfo> resolveInfo = mContext.getPackageManager()
                 .queryIntentActivities(queryIntent, /* flags= */ 0);
         assertThat(resolveInfo).isNotNull();
