@@ -50,6 +50,7 @@
         </service>
         <service android:name="com.android.cts.appsearch.helper.TestAppFunctionServiceC"
             android:exported="true"
+            android:enabled="false"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE">
             <property android:name="android.app.appfunctions.v2"
                 android:value="appfunctions_serviceC.xml" />
