@@ -81,6 +81,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -1390,8 +1391,10 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     @Nullable
     protected static List<NetworkInfo> getAllowedSatelliteNetworkInfoListConfigured(int slotId) {
         if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_4) {
-            loge(TAG, "getAllowedSatelliteNetworkInfoListConfigured: not supported on HAL < 2.4");
-            return null;
+            android.telephony.satellite.stub.SatelliteNetworkInfo info =
+                    sMockSatelliteServiceManager.getSatelliteNetworkInfo();
+            if (info == null) return null;
+            return fromStubNetworkInfoArray(info.allowedPlmns);
         }
 
         return sMockModemManager.getAllowedSatelliteNetworkInfoList(slotId);
@@ -1420,12 +1423,35 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     @Nullable
     protected static List<NetworkInfo> getDisallowedSatelliteNetworkInfoListConfigured(int slotId) {
         if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_4) {
-            loge(
-                    TAG,
-                    "getDisallowedSatelliteNetworkInfoListConfigured: not supported on HAL < 2.4");
-            return null;
+            android.telephony.satellite.stub.SatelliteNetworkInfo info =
+                    sMockSatelliteServiceManager.getSatelliteNetworkInfo();
+            if (info == null) return null;
+            return fromStubNetworkInfoArray(info.disallowedPlmns);
         }
         return sMockModemManager.getDisallowedSatelliteNetworkInfoList(slotId);
+    }
+
+    @Nullable
+    private static List<NetworkInfo> fromStubNetworkInfoArray(
+            android.telephony.satellite.stub.NetworkInfo[] stubInfos) {
+        if (stubInfos == null) return null;
+        List<NetworkInfo> list = new ArrayList<>();
+        for (android.telephony.satellite.stub.NetworkInfo stubInfo : stubInfos) {
+            list.add(fromStubNetworkInfo(stubInfo));
+        }
+        return list;
+    }
+
+    @NonNull
+    private static NetworkInfo fromStubNetworkInfo(
+            @NonNull android.telephony.satellite.stub.NetworkInfo stubInfo) {
+        NetworkInfo info = new NetworkInfo();
+        info.plmn = stubInfo.plmn;
+        info.arfcns = stubInfo.arfcns;
+        info.accessNetwork = stubInfo.accessNetwork;
+        info.satelliteTechnology = stubInfo.satelliteTechnology;
+        info.hasSamePriorityAsTn = stubInfo.hasSamePriorityAsTn;
+        return info;
     }
 
     /** Get the list of disallowed satellite PLMNs configured in the mock modem. */
@@ -1719,6 +1745,9 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         try {
             logd(TAG, "testNotifyEntitlementStatusChanged: test entitlement disabled");
+
+            grantSatellitePermission();
+            requestAttachEnabledForCarrier(subId, true);
 
             prepareValidDisabledEntitlementStatus();
             enableSatelliteEntitlementSupport(subId);
@@ -2183,18 +2212,21 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
     protected static void waitForCarrierPlmnListConfigured(
             int slotId, List<String> expectedCarrierPlmnList) {
-        logd(TAG, "waitForCarrierPlmnListConfigured: slotId=" + slotId
+        int subId = SubscriptionManager.getSubscriptionId(slotId);
+        logd(TAG, "waitForCarrierPlmnListConfigured: slotId=" + slotId + ", subId=" + subId
                 + ", expectedCarrierPlmnList=" + String.join(", ", expectedCarrierPlmnList));
         int i = 0;
         int maxRetry = 5;
         for (; i < maxRetry; i++) {
-            assertTrue("Timed out waiting for set satellite PLMN event",
-                    waitForEventOnSetSatellitePlmn(1));
-            List<String> carrierPlmnListConfigured = getCarrierPlmnListConfigured(slotId);
-            logd(TAG, "carrierPlmnListConfigured=" + carrierPlmnListConfigured);
-            if (expectedCarrierPlmnList.size() == carrierPlmnListConfigured.size()
-                    && carrierPlmnListConfigured.containsAll(expectedCarrierPlmnList)) {
-                break;
+            if (waitForEventOnSetSatellitePlmn(1)) {
+                List<String> carrierPlmnListConfigured = getCarrierPlmnListConfigured(slotId);
+                logd(TAG, "carrierPlmnListConfigured=" + carrierPlmnListConfigured);
+                if (expectedCarrierPlmnList.size() == carrierPlmnListConfigured.size()
+                        && carrierPlmnListConfigured.containsAll(expectedCarrierPlmnList)) {
+                    break;
+                }
+            } else {
+                logd(TAG, "Timed out waiting for set satellite PLMN event, iteration " + i);
             }
         }
         assertThat(i).isLessThan(maxRetry);
@@ -2242,5 +2274,18 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         restoreNtnOnlySubscriptions();
         cleanUpMockSim(slotId, simProfileId, true);
         sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    protected static void requestAttachEnabledForCarrier(int subId, boolean enabled)
+            throws Exception {
+        logd(TAG, "requestAttachEnabledForCarrier subId:" + subId + " enabled:" + enabled);
+        LinkedBlockingQueue<Integer> callback = new LinkedBlockingQueue<>(1);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(sSatelliteManager,
+                (sm) -> sm.requestAttachEnabledForCarrier(subId, enabled,
+                        getContext().getMainExecutor(), callback::offer));
+        Integer error = callback.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        assertNotNull("Timed out waiting for requestAttachEnabledForCarrier result", error);
+        assertTrue("Failed to requestAttachEnabledForCarrier, error=" + error,
+                error == SatelliteManager.SATELLITE_RESULT_SUCCESS);
     }
 }

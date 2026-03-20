@@ -40,6 +40,8 @@ import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.telephony.satellite.stub.SatelliteService;
 import android.telephony.satellite.stub.SystemSelectionSpecifier;
+import android.telephony.satellite.stub.SatelliteNetworkInfo;
+import android.telephony.satellite.stub.PrioritizedNetworkScanRequest;
 import android.util.Log;
 
 import com.android.internal.util.FunctionalUtils;
@@ -118,6 +120,9 @@ public class MockSatelliteService extends SatelliteImplBase {
     private final Object mRequestSatelliteEnabledLock = new Object();
     private boolean mIsEmergency;
     private List<SystemSelectionSpecifier> mSystemSelectionSpecifierList = new ArrayList<>();
+    private SatelliteNetworkInfo mSatelliteNetworkInfo;
+    private PrioritizedNetworkScanRequest mPrioritizedNetworkScanRequest;
+    private boolean mIsPrioritizedNetworkScanDisabled;
 
     /**
      * Create MockSatelliteService using the Executor specified for methods being called from
@@ -586,6 +591,87 @@ public class MockSatelliteService extends SatelliteImplBase {
         if (mShouldRespondTelephony.get()) {
             runWithExecutor(() -> resultCallback.accept(mErrorCode));
         }
+    }
+
+    @Override
+    public void setSatelliteNetworkInfo(int simSlot,
+            @NonNull SatelliteNetworkInfo satelliteNetworkInfo,
+            @NonNull IIntegerConsumer resultCallback) {
+        logd("setSatelliteNetworkInfo: simSlot=" + simSlot + ", mErrorCode=" + mErrorCode);
+        if (mErrorCode == SatelliteResult.SATELLITE_RESULT_SUCCESS) {
+            mSatelliteNetworkInfo = satelliteNetworkInfo;
+        }
+        if (mShouldRespondTelephony.get()) {
+            runWithExecutor(() -> resultCallback.accept(mErrorCode));
+        }
+        if (mLocalListener != null) {
+            runWithExecutor(() -> mLocalListener.onSetSatelliteNetworkInfo());
+        } else {
+            loge("setSatelliteNetworkInfo: mLocalListener is null");
+        }
+    }
+
+    @Override
+    public void enablePrioritizedNetworkScan(int simSlot,
+            @NonNull PrioritizedNetworkScanRequest scanRequest,
+            @NonNull IIntegerConsumer resultCallback) {
+        logd("enablePrioritizedNetworkScan: simSlot=" + simSlot + ", mErrorCode=" + mErrorCode);
+        if (mErrorCode == SatelliteResult.SATELLITE_RESULT_SUCCESS) {
+            mPrioritizedNetworkScanRequest = scanRequest;
+            mIsPrioritizedNetworkScanDisabled = false;
+        }
+        if (mShouldRespondTelephony.get()) {
+            runWithExecutor(() -> resultCallback.accept(mErrorCode));
+        }
+        if (mLocalListener != null) {
+            runWithExecutor(() -> mLocalListener.onEnablePrioritizedNetworkScan());
+        } else {
+            loge("enablePrioritizedNetworkScan: mLocalListener is null");
+        }
+    }
+
+    @Override
+    public void disablePrioritizedNetworkScan(int simSlot,
+            @NonNull IIntegerConsumer resultCallback) {
+        logd("disablePrioritizedNetworkScan: simSlot=" + simSlot + ", mErrorCode=" + mErrorCode);
+        if (mErrorCode == SatelliteResult.SATELLITE_RESULT_SUCCESS) {
+            mIsPrioritizedNetworkScanDisabled = true;
+        }
+        if (mShouldRespondTelephony.get()) {
+            runWithExecutor(() -> resultCallback.accept(mErrorCode));
+        }
+        if (mLocalListener != null) {
+            runWithExecutor(() -> mLocalListener.onDisablePrioritizedNetworkScan());
+        } else {
+            loge("disablePrioritizedNetworkScan: mLocalListener is null");
+        }
+    }
+
+    /**
+     * Returns the configured SatelliteNetworkInfo.
+     *
+     * @return the configured SatelliteNetworkInfo.
+     */
+    public SatelliteNetworkInfo getSatelliteNetworkInfo() {
+        return mSatelliteNetworkInfo;
+    }
+
+    /**
+     * Returns the configured PrioritizedNetworkScanRequest.
+     *
+     * @return the configured PrioritizedNetworkScanRequest.
+     */
+    public PrioritizedNetworkScanRequest getPrioritizedNetworkScanRequest() {
+        return mPrioritizedNetworkScanRequest;
+    }
+
+    /**
+     * Returns whether the prioritized network scan is disabled.
+     *
+     * @return {@code true} if the prioritized network scan is disabled, {@code false} otherwise.
+     */
+    public boolean isPrioritizedNetworkScanDisabled() {
+        return mIsPrioritizedNetworkScanDisabled;
     }
 
 
