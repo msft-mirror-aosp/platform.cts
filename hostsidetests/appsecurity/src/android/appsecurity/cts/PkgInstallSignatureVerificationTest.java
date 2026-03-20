@@ -1855,6 +1855,7 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
 
     @CddTest(requirement = "4/C-0-2")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
     public void testInstallV31_multipleSignersTargetingSameRelease_installFails() throws Exception {
         // To support new signature algorithms targeting the same SDK version as the previous
         // rotated signer, the V3 signature verification had to be updated to handle two signers
