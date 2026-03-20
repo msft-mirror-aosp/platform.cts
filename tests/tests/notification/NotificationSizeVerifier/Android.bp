@@ -33,6 +33,7 @@ android_test_helper_app {
     ],
     srcs: ["src/**/*.kt"],
     manifest: "AndroidManifest.xml",
-    sdk_version: "36",
+    sdk_version: "current",
+    target_sdk_version: "36",
     resource_dirs: ["res"],
 }
