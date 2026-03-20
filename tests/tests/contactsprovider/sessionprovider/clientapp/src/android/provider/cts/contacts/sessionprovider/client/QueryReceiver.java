@@ -30,7 +30,7 @@ public class QueryReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Uri targetUri = intent.getParcelableExtra("target_uri");
-        String selection = intent.getStringExtra("selection");
+        String sortOrder = intent.getStringExtra("sortOrder");
 
         if (targetUri == null) {
             setResultCode(Activity.RESULT_CANCELED);
@@ -38,9 +38,9 @@ public class QueryReceiver extends BroadcastReceiver {
         }
 
         // If the grant is valid, this succeeds. If not, it throws a SecurityException. If the query
-        // or selection arguments are malformed, IllegalArgumentException is thrown.
+        // or sortOrder arguments are malformed, IllegalArgumentException is thrown.
         try (Cursor cursor =
-                context.getContentResolver().query(targetUri, null, selection, null, null)) {
+                context.getContentResolver().query(targetUri, null, null, null, sortOrder)) {
             if (cursor != null && cursor.moveToFirst()) {
                 setResultCode(Activity.RESULT_OK);
             } else {
