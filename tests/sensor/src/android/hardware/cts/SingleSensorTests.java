@@ -24,9 +24,12 @@ import android.hardware.cts.helpers.SensorCtsHelper;
 import android.hardware.cts.helpers.SensorStats;
 import android.hardware.cts.helpers.TestSensorEnvironment;
 import android.hardware.cts.helpers.sensoroperations.TestSensorOperation;
+import android.os.Build.VERSION_CODES;
 import android.platform.test.annotations.PlatinumTest;
+import android.util.Log;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.PropertyUtil;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -812,6 +815,15 @@ public class SingleSensorTests extends SensorTestCase {
                                     environment.getFrequencyString());
                 }
                 stats.logToFile(environment.getContext(), fileName);
+            }
+
+            if (PropertyUtil.getFirstApiLevel() < VERSION_CODES.CINNAMON_BUN) {
+                Log.i(
+                        TAG,
+                        "Skipping subsequent sensor instances for type "
+                                + sensorType
+                                + " on pre-Android 17 devices.");
+                break;
             }
         }
     }
