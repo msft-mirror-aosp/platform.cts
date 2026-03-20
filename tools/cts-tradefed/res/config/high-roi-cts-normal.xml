@@ -282,10 +282,7 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#isAppFunctionEnabled_otherPackage_noPermission[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#setAppFunctionEnabled_functionDefaultDisabled[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerV2Test#executeAppFunction_deviceOwnerRestricted_fail[IncludeRunOnProfileOwnerPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionPackageMetadataTest#parcelAndUnparcel_squashedUsesLessMemory"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionPackageMetadataTest#parcelAndUnparcel_squashed_differentInstance"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionPackageMetadataTest#parcelAndUnparcel_squashed_sameInstance"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionPackageMetadataTest#parcelAndUnparcel_withoutSquashed"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionPackageMetadataTest#parcelAndUnparcel"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionRegistrationTest#execute_functionFromFrozenProcess_fail[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionRegistrationTest#execute_functionFromUnfrozenProcess_success[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionRegistrationTest#execute_getUrisFunction_hasAccessToReturnedUris[IncludeRunOnPrimaryUser]"/>
