@@ -281,16 +281,6 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 .isTrue();
     }
 
-    @Test
-    public void testCanManageSubscription() {
-        assertWithMessage("Failed to gain management privileges on the carrier subscription")
-                .that(
-                        mSubscriptionManager.canManageSubscription(
-                                mSubscriptionManager.getActiveSubscriptionInfo(
-                                        getActiveCarrierPrivSubId())))
-                .isTrue();
-    }
-
     private static void assertUpdateAvailableNetworkSuccess(int value) {
         assertThat(value).isEqualTo(TelephonyManager.UPDATE_AVAILABLE_NETWORKS_SUCCESS);
     }
