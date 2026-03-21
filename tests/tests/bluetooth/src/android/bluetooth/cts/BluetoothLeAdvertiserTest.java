@@ -205,4 +205,32 @@ public class BluetoothLeAdvertiserTest {
 
         assertThat(captor.getValue().getAdvertiserId()).isAtLeast(0);
     }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void enableAdvertisingSet_triggersOnAdvertisingEnabledCallback() {
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                mCallback,
+                new Handler(Looper.getMainLooper()));
+        ArgumentCaptor<AdvertisingSet> captor = ArgumentCaptor.forClass(AdvertisingSet.class);
+
+        verify(mCallback, timeout(TIMEOUT_MS))
+                .onAdvertisingSetStarted(captor.capture(), anyInt(), eq(ADVERTISE_SUCCESS));
+
+        var advertisingSet = captor.getValue();
+        assertThat(advertisingSet).isNotNull();
+
+        // Enabled by default when started, so disable it now to test the state change callback
+        advertisingSet.enableAdvertising(false, 0, 0);
+
+        verify(mCallback, timeout(TIMEOUT_MS))
+                .onAdvertisingEnabled(eq(advertisingSet), eq(false), eq(ADVERTISE_SUCCESS));
+    }
 }
