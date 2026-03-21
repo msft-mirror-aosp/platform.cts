@@ -25,6 +25,10 @@ import android.provider.Telephony;
 import android.telephony.cts.MessageUpgradeUtils;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 public final class MessageTestParamsHelper {
     private static final String TAG = MessageTestParamsHelper.class.getSimpleName();
     public static final String TEST_UPGRADE_PREFIX = "TEST_UPGRADE:";
@@ -121,6 +125,23 @@ public final class MessageTestParamsHelper {
         return new UpgradeParams(delayMs, status, messageState, type);
     }
 
+    /**
+     * Retrieves the identifying string content from a message to be used for verification or
+     * control flow during the upgrade process.
+     *
+     * <p>The string varies by message type:
+     *
+     * <ul>
+     *   <li><b>SMS:</b> Returns the message body.
+     *   <li><b>MMS:</b> Returns the message subject from the Telephony provider.
+     *   <li><b>CTS_MMS:</b> Extracts the subject directly from the CTS-provided PDU.
+     * </ul>
+     *
+     * @param contentUri The {@link Uri} of the message to query.
+     * @param type The {@link MessageType} (SMS, MMS, or CTS_MMS).
+     * @return The identifying string (Body or Subject), or {@code null} if the type is null or the
+     *     column could not be found.
+     */
     private String getStringForControl(Uri contentUri, MessageType type) {
         if (type == null) return null;
 
@@ -167,6 +188,18 @@ public final class MessageTestParamsHelper {
 
         Log.d(TAG, "queryTelephonyStringColumn: " + value);
         return value;
+    }
+
+    // Helper method to read InputStream to byte array
+    private byte[] readAllBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[16384]; // Read in chunks
+        while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
     }
 
     /**

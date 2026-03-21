@@ -71,6 +71,9 @@ public final class AppFunctionTestUtils {
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBDynamicSchema.apk";
     public static final String TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk";
+    public static final String TEST_APP_A_MULTI_SERVICE_PATH =
+            TEST_APP_ROOT_FOLDER
+                    + "CtsAppSearchIndexerTestAppAMultiService.apk";
     public static final String TEST_APP_B_MULTIPLE_APP_LEVEL_XML_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBMultipleAppLevelXml.apk";
 

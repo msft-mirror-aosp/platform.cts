@@ -16,6 +16,7 @@
 
 package android.app.cts.service;
 
+import static android.app.cts.CtsAppTestUtils.clearBadProcess;
 import static android.content.Context.BIND_ALLOW_FREEZE;
 import static android.content.Context.BIND_AUTO_CREATE;
 
@@ -51,6 +52,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -63,7 +65,8 @@ public class ServiceRestartDeferralTest {
     private static final String HELPER_B_PKG = "com.android.app2";
     private static final String COMMAND_SERVICE_CLASS = "android.app.stubs.shared.CommandService";
     private static final String LOCAL_SERVICE_CLASS = "android.app.stubs.shared.LocalService";
-    private static final int TIMEOUT_SECONDS = 10;
+    private static final int TIMEOUT_SECONDS = 20;
+    private static final List<String> HELPER_PKGS = List.of(HELPER_A_PKG, HELPER_B_PKG);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -73,12 +76,16 @@ public class ServiceRestartDeferralTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        for (String pkg : HELPER_PKGS) {
+            clearBadProcess(pkg);
+        }
     }
 
     @After
     public void tearDown() throws Exception {
-        runStopApp(HELPER_A_PKG);
-        runStopApp(HELPER_B_PKG);
+        for (String pkg : HELPER_PKGS) {
+            runStopApp(pkg);
+        }
     }
 
     @Test

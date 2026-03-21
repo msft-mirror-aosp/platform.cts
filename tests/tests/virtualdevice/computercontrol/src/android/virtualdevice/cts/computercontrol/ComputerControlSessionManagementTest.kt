@@ -136,6 +136,8 @@ class ComputerControlSessionManagementTest {
 
     @get:Rule val testName = TestName()
 
+    @get:Rule val computerControlRule = ComputerControlRule()
+
     private val context = getInstrumentation().context
     private val windowManagerStateHelper = WindowManagerStateHelper()
     private val launcher = TestAppAgentLauncher()

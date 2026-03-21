@@ -16,8 +16,8 @@
 
 package android.telephony.cts.externalsatellitegatewayservice;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;

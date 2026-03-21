@@ -48,6 +48,9 @@ import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -60,6 +63,7 @@ import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.view.flags.Flags;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
@@ -126,6 +130,9 @@ public class AbsListViewTest {
             Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule(order = 2)
     public ActivityTestRule<ListViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(ListViewCtsActivity.class);
 
@@ -220,6 +227,75 @@ public class AbsListViewTest {
 
         mListView.setScrollingCacheEnabled(true);
         assertTrue(mListView.isScrollingCacheEnabled());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testAccessScrollToTopEnabled() {
+        // Default should be true
+        assertTrue(mListView.isScrollToTopEnabled());
+
+        mListView.setScrollToTopEnabled(false);
+        assertFalse(mListView.isScrollToTopEnabled());
+
+        mListView.setScrollToTopEnabled(true);
+        assertTrue(mListView.isScrollToTopEnabled());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testOnScrollToTop_scrollToTop() throws Throwable {
+        final int itemCount = mCountriesAdapter.getCount();
+        setAdapter(mCountriesAdapter);
+
+        setListSelection(itemCount - 1);
+        assertEquals(itemCount - 1, mListView.getLastVisiblePosition());
+
+        OnScrollListener mockScrollListener = mock(OnScrollListener.class);
+        mListView.setOnScrollListener(mockScrollListener);
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    boolean consumed = mListView.onScrollToTop(0);
+                    assertTrue("Should consume event when scrolled down and enabled", consumed);
+                });
+
+        verify(mockScrollListener, within(10000))
+                .onScrollStateChanged(mListView, OnScrollListener.SCROLL_STATE_IDLE);
+        assertEquals(0, mListView.getFirstVisiblePosition());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testOnScrollToTop_ignoredWhenAlreadyAtTop() throws Throwable {
+        setAdapter(mCountriesAdapter);
+
+        setListSelection(0);
+        assertEquals(0, mListView.getFirstVisiblePosition());
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    boolean consumed = mListView.onScrollToTop(0);
+                    assertFalse("Should not consume event when already at top", consumed);
+                });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testOnScrollToTop_ignoredWhenDisabled() throws Throwable {
+        final int itemCount = mCountriesAdapter.getCount();
+        setAdapter(mCountriesAdapter);
+        mListView.setScrollToTopEnabled(false);
+        setListSelection(itemCount - 1);
+        assertEquals(itemCount - 1, mListView.getLastVisiblePosition());
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    boolean consumed = mListView.onScrollToTop(0);
+                    assertFalse("Should not consume event when disabled", consumed);
+                });
+
+        assertEquals(itemCount - 1, mListView.getLastVisiblePosition());
     }
 
     private void setAdapter() throws Throwable {

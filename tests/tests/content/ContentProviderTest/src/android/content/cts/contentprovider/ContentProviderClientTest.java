@@ -633,6 +633,20 @@ public final class ContentProviderClientTest {
         verify(mContentResolver).unstableProviderDied(mIContentProvider);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTENT_PROVIDER_CLIENT_ANR_ON_CANCEL)
+    public void testNoTimeoutAfterSuccessfulCall() throws RemoteException {
+        mContentProviderClient.setDetectNotRespondingOnCancel(25, 1);
+        mContentProviderClient.query(URI, /* projection = */ null, ARGS, mCancellationSignal);
+
+        // Cancel after the call should not trigger ANR
+        mCancellationSignal.cancel();
+        mCalledCancel = true;
+
+        // Wait a short duration to ensure ANR is not triggered
+        verify(mContentResolver, after(150).never()).appNotRespondingViaProvider(mIContentProvider);
+    }
+
     private void testTimeout(Function function) throws InterruptedException {
         mContentProviderClient.setDetectNotResponding(1);
         CountDownLatch latch = new CountDownLatch(1);

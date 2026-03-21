@@ -120,6 +120,9 @@ public abstract class DefaultCameraAccessTestBase {
                         } catch (CameraAccessException e) {
                             cameraError[0] = e.getReason();
                             cond.open();
+                        } catch (IllegalStateException e) {
+                            cameraError[0] = CameraDevice.StateCallback.ERROR_CAMERA_DEVICE;
+                            cond.open();
                         }
                     }
 

@@ -145,6 +145,22 @@ class CodecAsyncHandlerResource extends CodecAsyncHandler {
             mLock.unlock();
         }
     }
+
+    public void waitForDetailedErrDiagnostic() throws InterruptedException {
+        long totalWaitNs = TimeUnit.MICROSECONDS.toNanos(
+                CodecTestBase.Q_DEQ_TIMEOUT_US * CodecTestBase.RETRY_LIMIT);
+        mLock.lock();
+        try {
+            long deadline = System.nanoTime() + totalWaitNs;
+            while (!mSignalledError) {
+                long remainingNs = deadline - System.nanoTime();
+                if (remainingNs <= 0) break;
+                mCondition.awaitNanos(remainingNs);
+            }
+        } finally {
+            mLock.unlock();
+        }
+    }
 }
 
 /**
@@ -575,8 +591,11 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     currResourceChangeCbCount);
         }
 
-        public Pair<Boolean, RuntimeException> getCodecErrState() {
-            return Pair.create(mAsyncHandle.hasSeenError(), mAsyncHandle.getErrorException());
+        public void checkForCodecErrors() throws InterruptedException {
+            ((CodecAsyncHandlerResource) mAsyncHandle).waitForDetailedErrDiagnostic();
+            if (mAsyncHandle.hasSeenError()) {
+                throw mAsyncHandle.getErrorException();
+            }
         }
 
         public void updateOpMode(int priority, int operatingRate) {
@@ -620,7 +639,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
 
     private void validateMaxInstances(String codecName, String mediaType, boolean testRTMode,
             boolean testOperatingModeSwitch) throws IOException, InterruptedException {
-        int frameCount = 10;
+        int frameCount = 25;
         // TODO:
         // if multiple instances are started in nrt mode until resource exhaustion, switching a
         // codec to rt mode may or may not succeed due to lack of resources. In this scenario,
@@ -678,23 +697,14 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     codec = new DecodeToSurfaceWrapper(codecName, mediaType, testInput,
                             obj.second);
                     codec.launchInstance(configFormat);
-                    // launchInstance internally calls start() and this is expected to raise
-                    // MediaCodec.CodecException.ERROR_INSUFFICIENT_RESOURCE if required resources
-                    // are not available. However, on some devices, it is observed that the actual
-                    // resources required for the current configuration is not computed at start but
-                    // deferred till first input process. So start() call might succeed but after
-                    // queueing inputs, CodecException.ERROR_INSUFFICIENT_RESOURCE could be raised
-                    // and communicated to the client via onError callback. So check for error
-                    // before proceeding.
-                    int cbCount = codec.getResourceChangeCbCount();
-                    codec.decode(0, 1);
-                    // wait for onRequiredResourcesChanged/onError cb.
-                    codec.waitOnResourceChange(cbCount);
-                    Pair<Boolean, RuntimeException> errState = codec.getCodecErrState();
-                    if (errState.first) {
-                        throw errState.second;
+                    int offset = 0;
+                    if (testInput != null) {
+                        for (; offset < 2; offset++) {
+                            codec.decode(offset, 1);
+                            codec.checkForCodecErrors();
+                        }
+                        codec.decode(offset, frameCount - offset);
                     }
-                    codec.decode(1, frameCount - 1);
                     codecs.add(codec);
                     surfaces.add(obj);
                     numInstances++;

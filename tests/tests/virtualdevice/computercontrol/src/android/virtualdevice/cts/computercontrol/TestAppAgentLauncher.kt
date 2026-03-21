@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertNotNull
-import org.junit.Assume.assumeNotNull
 
 class TestAppAgentLauncher {
     private val context = InstrumentationRegistry.getInstrumentation().context
@@ -51,7 +50,7 @@ class TestAppAgentLauncher {
     ): ComputerControlSession {
         val future = CompletableFuture<Result<ComputerControlSession>>()
         val extension = ComputerControlExtensions.getInstance(context)
-        assumeNotNull(extension)
+        assertNotNull(extension)
         val params =
             ComputerControlSession.Params.Builder(context)
                 .setName(sessionName)
@@ -97,7 +96,8 @@ class TestAppAgentLauncher {
                 }
             },
         )
-        return future.get(TestAppAgent.SESSION_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        return future
+            .get(TestAppAgent.SESSION_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .getOrThrow()
     }
 

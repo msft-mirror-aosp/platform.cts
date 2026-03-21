@@ -69,7 +69,7 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.SatelliteReceiver;
-import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
+import android.telephony.cts.ServiceStateRadioStateListener;
 import android.telephony.satellite.EarfcnRange;
 import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;

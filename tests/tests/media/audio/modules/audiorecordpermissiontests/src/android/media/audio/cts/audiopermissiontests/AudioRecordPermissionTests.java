@@ -28,6 +28,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.AppOpsManager;
 import android.app.Instrumentation;
@@ -50,6 +51,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
@@ -577,7 +579,22 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
-    public void testIfAttemptChangeCapabilities_isNotSilenced() throws Exception {
+    @ApiTest(apis = {"android.app.Service#startForeground"})
+    public void testAfterFgsTypeRemoved_isSilenced() throws Exception {
+        var TEST_PACKAGE = API_34_PACKAGE;
+        // Go foreground with the right capabilities
+        startForeground(TEST_PACKAGE);
+        // Change FGS type from record to media
+        UtilsKt.bounceService(mContext, TEST_PACKAGE, true, SERVICE_NAME);
+
+        assumeFalse(startServiceRecording(TEST_PACKAGE));
+
+        assumeFalse(getOpState(TEST_PACKAGE));
+    }
+
+    @Test
+    @ApiTest(apis = {"android.app.Service#startForeground"})
+    public void testAfterFgsTypeAdded_isNotSilenced() throws Exception {
         var TEST_PACKAGE = API_34_PACKAGE;
         // Go foreground without WIU caps. Note: if we attempt to start with record here, AMS throws
         UtilsKt.bounceService(mContext, TEST_PACKAGE, true, SERVICE_NAME);

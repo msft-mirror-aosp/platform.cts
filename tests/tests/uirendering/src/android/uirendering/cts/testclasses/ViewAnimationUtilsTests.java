@@ -26,12 +26,19 @@ import android.view.ViewAnimationUtils;
 import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.OverrideAnimationScaleRule;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class ViewAnimationUtilsTests extends ActivityTestBase {
+    @Rule
+    public OverrideAnimationScaleRule mOverrideAnimationScaleRule =
+            new OverrideAnimationScaleRule(1f);
+
     @Test
     public void testCreateCircularReveal() {
         createTest()

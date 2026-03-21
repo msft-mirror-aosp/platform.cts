@@ -2564,6 +2564,7 @@ class ItsSession(object):
       if data[_TAG_STR] == '3aDone':
         report = data.get('objValue')
         logging.info('3A Convergence Report: %s', str(report))
+        break
       elif data[_TAG_STR] == 'aeResult':
         if _STR_VALUE_STR in data:
           vals = data[_STR_VALUE_STR].split()
@@ -2581,7 +2582,6 @@ class ItsSession(object):
           awb_transform = [float(f) for f in vals[4:]]
       elif data[_TAG_STR] == '3aConverged':
         converged = True
-        break
       else:
         raise error_util.CameraItsError('Invalid command response')
 

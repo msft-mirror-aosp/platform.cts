@@ -22,8 +22,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
-
 /**
  * A mock pointing UI activity, which will be started by
  * {@link com.android.internal.telephony.satellite.PointingAppController#startPointingUI(boolean)}.
@@ -45,11 +43,7 @@ public class MockPointingUiActivity extends Activity {
         Intent intent = new Intent();
         intent.putExtra(EXTRA_IS_EMERGENCY, isEmergency);
         intent.setAction(ACTION_MOCK_POINTING_UI_ACTIVITY_STARTED);
-        getContext().sendBroadcast(intent);
+        sendBroadcast(intent);
         finish();
-    }
-
-    private static Context getContext() {
-        return InstrumentationRegistry.getContext();
     }
 }

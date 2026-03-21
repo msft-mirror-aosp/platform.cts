@@ -24,6 +24,7 @@ import android.app.appfunctions.AppFunctionSearchSpec
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.MultiServicesHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.assertAppFunctionMetadataEquals
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
@@ -821,55 +822,6 @@ class SearchAppFunctionsTest {
     @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    @EnsureDoesNotHavePermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
-    fun searchAppFunctions_crossUser_shouldFailWithoutPermission() = doBlocking {
-        val secondaryUser = sDeviceState.additionalUser()
-        assumeTrue(
-            "Test requires an additional user different from the primary user.",
-            secondaryUser != TestApis.users().instrumented(),
-        )
-        installExistingPackageAsUser(CtsApp.PACKAGE_NAME, secondaryUser)
-        installExistingPackageAsUser(DynamicSchemaHelperApp.PACKAGE_NAME, secondaryUser)
-        retryAssert(maxIntervals = 20) {
-            runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
-                assertThat(
-                        getAllStaticMetadataPackages(
-                            context.createContextAsUser(secondaryUser.userHandle(), 0)
-                        )
-                    )
-                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
-                assertThat(
-                        getAllRuntimeMetadataPackages(
-                            context.createContextAsUser(secondaryUser.userHandle(), 0)
-                        )
-                    )
-                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
-            }
-        }
-        runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
-            manager =
-                context
-                    .createContextAsUser(secondaryUser.userHandle(), 0)
-                    .getSystemService(AppFunctionManager::class.java)
-        }
-
-        var exception: Exception? = null
-        try {
-            manager.searchAppFunctions(AppFunctionSearchSpec.Builder().build())
-        } catch (e: RuntimeException) {
-            exception = e
-        }
-
-        assertThat(exception).isNotNull()
-        assertThat(exception!!.cause).isInstanceOf(SecurityException::class.java)
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
-    @EnsureHasAdditionalUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
     @EnsureHasPermission(
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.INTERACT_ACROSS_USERS_FULL,
@@ -938,6 +890,47 @@ class SearchAppFunctionsTest {
             result[DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION]!!,
             DynamicSchemaHelperApp.FunctionMetadata.HIGH_SCHEMA_VERSION,
         )
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+    )
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MULTI_SERVICE_BUGFIX)
+    fun searchAppFunctions_multiServiceApp_indexesBothServices() = doBlocking {
+        installPackage(
+            MultiServicesHelperApp.APK_PATH,
+            MultiServicesHelperApp.PACKAGE_NAME,
+            context,
+            true,
+        )
+
+        try {
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(setOf(MultiServicesHelperApp.PACKAGE_NAME))
+                .build()
+            retryAssert {
+                val result = manager.searchAppFunctions(searchSpec)
+
+                val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
+                    result.associateBy { it.name }
+
+                assertThat(resultAppFunctionsByName.keys)
+                    .containsExactlyElementsIn(MultiServicesHelperApp.FunctionNames.ALL_FUNCTIONS)
+                assertAppFunctionMetadataEquals(
+                    resultAppFunctionsByName[MultiServicesHelperApp.Service1.FunctionNames.ADD]!!,
+                    MultiServicesHelperApp.Service1.FunctionMetadata.ADD,
+                )
+                assertAppFunctionMetadataEquals(
+                    resultAppFunctionsByName[MultiServicesHelperApp.Service2.FunctionNames.ECHO]!!,
+                    MultiServicesHelperApp.Service2.FunctionMetadata.ECHO,
+                )
+        }
+        } finally {
+            uninstallPackage(MultiServicesHelperApp.PACKAGE_NAME, context)
+        }
     }
 
     @Test

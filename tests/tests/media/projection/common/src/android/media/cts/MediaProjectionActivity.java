@@ -373,7 +373,7 @@ public class MediaProjectionActivity extends Activity {
         if (optionString != null) {
             if (!selectScreenOption(uiDevice, optionString)) {
                 Log.e(TAG, "Couldn't select screen option: " + optionString);
-        }
+            }
         }
         pressStartRecording(uiDevice);
     }
@@ -425,6 +425,7 @@ public class MediaProjectionActivity extends Activity {
         UiObject2 optionItem = waitForObject(uiDevice, By.text(optionString));
         if (optionItem == null) {
             Log.e(TAG, "Couldn't find entire screen option");
+            uiDevice.pressBack();
             return false;
         }
         optionItem.click();

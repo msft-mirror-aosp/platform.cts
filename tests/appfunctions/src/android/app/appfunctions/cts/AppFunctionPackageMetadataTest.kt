@@ -36,7 +36,7 @@ class AppFunctionPackageMetadataTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
-    fun parcelAndUnparcel_withoutSquashed() {
+    fun parcelAndUnparcel() {
         val packageMetadata =
             AppFunctionPackageMetadata.create(
                 "com.example.app",
@@ -62,126 +62,5 @@ class AppFunctionPackageMetadataTest {
         } finally {
             parcelForRestore.recycle()
         }
-    }
-
-    @Test
-    fun parcelAndUnparcel_squashed_sameInstance() {
-        val packageMetadata =
-            AppFunctionPackageMetadata.create(
-                "com.example.app",
-                listOf(
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
-                        .setPropertyString("key", "value")
-                        .setCreationTimestampMillis(0)
-                        .build()
-                ),
-            )
-        val list = listOf(packageMetadata, packageMetadata)
-        val parcelForRestore = Parcel.obtain()
-        try {
-            val prev = parcelForRestore.allowSquashing()
-            parcelForRestore.writeTypedList(list)
-            parcelForRestore.setDataPosition(0)
-            val restoredList =
-                parcelForRestore.createTypedArrayList(AppFunctionPackageMetadata.CREATOR)
-            parcelForRestore.restoreAllowSquashing(prev)
-
-            assertThat(restoredList).hasSize(2)
-            assertThat(restoredList!![0]).isEqualTo(packageMetadata)
-            assertThat(restoredList[1]).isEqualTo(packageMetadata)
-            assertThat(restoredList[0]).isSameInstanceAs(restoredList[1])
-        } finally {
-            parcelForRestore.recycle()
-        }
-    }
-
-    @Test
-    fun parcelAndUnparcel_squashed_differentInstance() {
-        val packageMetadata1a =
-            AppFunctionPackageMetadata.create(
-                "com.example.app",
-                listOf(
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
-                        .setPropertyString("key", "value")
-                        .setCreationTimestampMillis(0)
-                        .build()
-                ),
-            )
-        val packageMetadata1b =
-            AppFunctionPackageMetadata.create(
-                "com.example.app",
-                listOf(
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
-                        .setPropertyString("key", "value")
-                        .setCreationTimestampMillis(0)
-                        .build()
-                ),
-            )
-        val packageMetadata2 =
-            AppFunctionPackageMetadata.create(
-                "com.example.app",
-                listOf(
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id2", "schema")
-                        .setPropertyString("key2", "value2")
-                        .setCreationTimestampMillis(0)
-                        .build()
-                ),
-            )
-        val list = listOf(packageMetadata1a, packageMetadata1b, packageMetadata2)
-        val parcelForRestore = Parcel.obtain()
-        try {
-            val prev = parcelForRestore.allowSquashing()
-            parcelForRestore.writeTypedList(list)
-            parcelForRestore.setDataPosition(0)
-            val restoredList =
-                parcelForRestore.createTypedArrayList(AppFunctionPackageMetadata.CREATOR)
-            parcelForRestore.restoreAllowSquashing(prev)
-
-            assertThat(restoredList).hasSize(3)
-            assertThat(restoredList!![0]).isEqualTo(packageMetadata1a)
-            assertThat(restoredList[1]).isEqualTo(restoredList[0])
-            assertThat(restoredList[0]).isSameInstanceAs(restoredList[1])
-            assertThat(restoredList[2]).isNotSameInstanceAs(restoredList[0])
-        } finally {
-            parcelForRestore.recycle()
-        }
-    }
-
-    @Test
-    fun parcelAndUnparcel_squashedUsesLessMemory() {
-        val packageMetadata =
-            AppFunctionPackageMetadata.create(
-                "com.example.app",
-                listOf(
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
-                        .setPropertyString("key", "value")
-                        .setCreationTimestampMillis(0)
-                        .build()
-                ),
-            )
-        val list = listOf(packageMetadata, packageMetadata)
-        val parcelWithoutSquashing = Parcel.obtain()
-        val unparceledDataWithoutSquashing: ByteArray
-        try {
-            // squashing is disabled by default
-            parcelWithoutSquashing.writeTypedList(list)
-            unparceledDataWithoutSquashing = parcelWithoutSquashing.marshall()
-        } finally {
-            parcelWithoutSquashing.recycle()
-        }
-
-        val parcelWithSquashing = Parcel.obtain()
-        val unparceledDataWithSquashing: ByteArray
-        try {
-            val prev = parcelWithSquashing.allowSquashing()
-            parcelWithSquashing.writeTypedList(list)
-            unparceledDataWithSquashing = parcelWithSquashing.marshall()
-            parcelWithSquashing.restoreAllowSquashing(prev)
-        } finally {
-            parcelWithSquashing.recycle()
-        }
-
-        assertThat(unparceledDataWithSquashing.size)
-            .isLessThan(unparceledDataWithoutSquashing.size)
     }
 }

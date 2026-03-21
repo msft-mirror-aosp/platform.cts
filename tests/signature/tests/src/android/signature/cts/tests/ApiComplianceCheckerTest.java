@@ -34,12 +34,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 
-/**
- * Test class for JDiffClassDescription.
- */
+/** Test class for JDiffClassDescription. */
+@SuppressWarnings("UnnecessaryUnicodeEscape")
 @RunWith(JUnit4.class)
 public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplianceChecker> {
 
@@ -65,7 +65,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     public void testNormalClassCompliance() {
         JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
         checkSignatureCompliance(clz);
-        assertEquals(clz.toSignatureString(), "public class NormalClass");
+        assertEquals("public class NormalClass", clz.toSignatureString());
     }
 
     @Test
@@ -84,7 +84,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         JDiffClassDescription.JDiffConstructor constructor = ctor("NormalClass", Modifier.PUBLIC);
         clz.addConstructor(constructor);
         checkSignatureCompliance(clz);
-        assertEquals(constructor.toSignatureString(), "public NormalClass()");
+        assertEquals("public NormalClass()", constructor.toSignatureString());
     }
 
     @Test
@@ -94,7 +94,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         constructor.addParam("java.lang.String");
         clz.addConstructor(constructor);
         checkSignatureCompliance(clz);
-        assertEquals(constructor.toSignatureString(), "private NormalClass(java.lang.String)");
+        assertEquals("private NormalClass(java.lang.String)", constructor.toSignatureString());
     }
 
     @Test
@@ -107,9 +107,10 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         constructor.addException("android.signature.cts.tests.data.NormalException");
         clz.addConstructor(constructor);
         checkSignatureCompliance(clz);
-        assertEquals(constructor.toSignatureString(),
-                "protected NormalClass(java.lang.String, java.lang.String) " +
-                        "throws android.signature.cts.tests.data.NormalException");
+        assertEquals(
+                "protected NormalClass(java.lang.String, java.lang.String) "
+                        + "throws android.signature.cts.tests.data.NormalException",
+                constructor.toSignatureString());
     }
 
     @Test
@@ -121,8 +122,9 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         constructor.addParam("java.lang.String");
         clz.addConstructor(constructor);
         checkSignatureCompliance(clz);
-        assertEquals(constructor.toSignatureString(),
-                "NormalClass(java.lang.String, java.lang.String, java.lang.String)");
+        assertEquals(
+                "NormalClass(java.lang.String, java.lang.String, java.lang.String)",
+                constructor.toSignatureString());
     }
 
     @Test
@@ -132,7 +134,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.STATIC | Modifier.PUBLIC, "void");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "public static void staticMethod()");
+        assertEquals("public static void staticMethod()", method.toSignatureString());
     }
 
     @Test
@@ -142,7 +144,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.SYNCHRONIZED | Modifier.PUBLIC, "void");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "public synchronized void syncMethod()");
+        assertEquals("public synchronized void syncMethod()", method.toSignatureString());
     }
 
     @Test
@@ -151,7 +153,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         JDiffClassDescription.JDiffMethod method = method("packageProtectedMethod", 0, "boolean");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "boolean packageProtectedMethod()");
+        assertEquals("boolean packageProtectedMethod()", method.toSignatureString());
     }
 
     @Test
@@ -161,7 +163,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "void");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "private void privateMethod()");
+        assertEquals("private void privateMethod()", method.toSignatureString());
     }
 
     @Test
@@ -171,7 +173,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "java.lang.String");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "protected java.lang.String protectedMethod()");
+        assertEquals("protected java.lang.String protectedMethod()", method.toSignatureString());
     }
 
     @Test
@@ -181,8 +183,10 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         method.addException("android.signature.cts.tests.data.NormalException");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "public void throwsMethod() " +
-                "throws android.signature.cts.tests.data.NormalException");
+        assertEquals(
+                "public void throwsMethod() "
+                        + "throws android.signature.cts.tests.data.NormalException",
+                method.toSignatureString());
     }
 
     @Test
@@ -192,7 +196,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.PUBLIC | Modifier.NATIVE, "void");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "public native void nativeMethod()");
+        assertEquals("public native void nativeMethod()", method.toSignatureString());
     }
 
     /**
@@ -205,7 +209,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.PUBLIC, "void");
         method.addParam("java.lang.String...");
         clz.addMethod(method);
-        assertEquals(method.toSignatureString(), "public void varargs(java.lang.String...)");
+        assertEquals("public void varargs(java.lang.String...)", method.toSignatureString());
 
         checkSignatureCompliance(clz);
     }
@@ -223,9 +227,10 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.PUBLIC, NormalClass.class.getName());
         method.addException(CloneNotSupportedException.class.getName());
         clz.addMethod(method);
-        assertEquals(method.toSignatureString(),
+        assertEquals(
                 "public android.signature.cts.tests.data.NormalClass clone()"
-                        + " throws java.lang.CloneNotSupportedException");
+                        + " throws java.lang.CloneNotSupportedException",
+                method.toSignatureString());
 
         // The synthetic bridge method:
         //     Object clone() throws CloneNotSupportedException
@@ -233,9 +238,9 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.PUBLIC, Object.class.getName());
         method.addException(CloneNotSupportedException.class.getName());
         clz.addMethod(method);
-        assertEquals(method.toSignatureString(),
-                "public java.lang.Object clone()"
-                        + " throws java.lang.CloneNotSupportedException");
+        assertEquals(
+                "public java.lang.Object clone()" + " throws java.lang.CloneNotSupportedException",
+                method.toSignatureString());
 
         checkSignatureCompliance(clz);
     }
@@ -247,7 +252,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "FINAL_FIELD", "java.lang.String", Modifier.PUBLIC | Modifier.FINAL, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(), "public final java.lang.String FINAL_FIELD");
+        assertEquals("public final java.lang.String FINAL_FIELD", field.toSignatureString());
     }
 
     @Test
@@ -257,7 +262,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "STATIC_FIELD", "java.lang.String", Modifier.PUBLIC | Modifier.STATIC, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(), "public static java.lang.String STATIC_FIELD");
+        assertEquals("public static java.lang.String STATIC_FIELD", field.toSignatureString());
     }
 
     @Test
@@ -267,7 +272,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "VOLATILE_FIELD", "java.lang.String", Modifier.PUBLIC | Modifier.VOLATILE, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(), "public volatile java.lang.String VOLATILE_FIELD");
+        assertEquals("public volatile java.lang.String VOLATILE_FIELD", field.toSignatureString());
     }
 
     @Test
@@ -278,18 +283,18 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.PUBLIC | Modifier.TRANSIENT, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(),
-                "public transient java.lang.String TRANSIENT_FIELD");
+        assertEquals(
+                "public transient java.lang.String TRANSIENT_FIELD", field.toSignatureString());
     }
 
     @Test
     public void testPackageField() {
         JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
-        JDiffClassDescription.JDiffField field = new JDiffClassDescription.JDiffField(
-                "PACAKGE_FIELD", "java.lang.String", 0, VALUE);
+        JDiffClassDescription.JDiffField field =
+                new JDiffClassDescription.JDiffField("PACKAGE_FIELD", "java.lang.String", 0, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(), "java.lang.String PACAKGE_FIELD");
+        assertEquals("java.lang.String PACKAGE_FIELD", field.toSignatureString());
     }
 
     @Test
@@ -299,7 +304,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "PRIVATE_FIELD", "java.lang.String", Modifier.PRIVATE, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(), "private java.lang.String PRIVATE_FIELD");
+        assertEquals("private java.lang.String PRIVATE_FIELD", field.toSignatureString());
     }
 
     @Test
@@ -309,7 +314,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "PROTECTED_FIELD", "java.lang.String", Modifier.PROTECTED, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(), "protected java.lang.String PROTECTED_FIELD");
+        assertEquals("protected java.lang.String PROTECTED_FIELD", field.toSignatureString());
     }
 
     @Test
@@ -320,7 +325,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.PUBLIC | Modifier.FINAL | Modifier.STATIC, "\u2708");
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(field.toSignatureString(), "public static final java.lang.String VALUE_FIELD");
+        assertEquals("public static final java.lang.String VALUE_FIELD", field.toSignatureString());
     }
 
     @Test
@@ -332,8 +337,8 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                     Modifier.PUBLIC | Modifier.FINAL | Modifier.STATIC, "\"&#9992;\"");
             clz.addField(field);
             checkSignatureCompliance(clz, observer);
-            assertEquals(field.toSignatureString(),
-                    "public static final java.lang.String VALUE_FIELD");
+            assertEquals(
+                    "public static final java.lang.String VALUE_FIELD", field.toSignatureString());
         }
     }
 
@@ -344,7 +349,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "innerClassData", "java.lang.String", Modifier.PRIVATE, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(clz.toSignatureString(), "public class NormalClass.InnerClass");
+        assertEquals("public class NormalClass.InnerClass", clz.toSignatureString());
     }
 
     @Test
@@ -355,8 +360,8 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 "innerInnerClassData", "java.lang.String", Modifier.PRIVATE, VALUE);
         clz.addField(field);
         checkSignatureCompliance(clz);
-        assertEquals(clz.toSignatureString(),
-                "public class NormalClass.InnerClass.InnerInnerClass");
+        assertEquals(
+                "public class NormalClass.InnerClass.InnerInnerClass", clz.toSignatureString());
     }
 
     @Test
@@ -368,7 +373,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         clz.addMethod(
                 method("doSomething", Modifier.PUBLIC | Modifier.ABSTRACT, "void"));
         checkSignatureCompliance(clz);
-        assertEquals(clz.toSignatureString(), "public interface NormalClass.InnerInterface");
+        assertEquals("public interface NormalClass.InnerInterface", clz.toSignatureString());
     }
 
     @Test
@@ -377,7 +382,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         clz.addMethod(
                 method("doSomething", Modifier.ABSTRACT | Modifier.PUBLIC, "void"));
         checkSignatureCompliance(clz);
-        assertEquals(clz.toSignatureString(), "public interface NormalInterface");
+        assertEquals("public interface NormalInterface", clz.toSignatureString());
     }
 
     /**
@@ -391,11 +396,48 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         checkSignatureCompliance(clz);
     }
 
+    /**
+     * Always treat annotations as if they are abstract, even when the modifiers do not specify
+     * that.
+     */
+    @Test
+    public void testAnnotationAlwaysTreatAsAbstract() {
+        JDiffClassDescription clz = createClass("TestAnnotation");
+        clz.addImplInterface(Annotation.class.getName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
+        clz.addMethod(method("value", Modifier.ABSTRACT | Modifier.PUBLIC, "java.lang.String"));
+        checkSignatureCompliance(clz);
+    }
+
+    /**
+     * Always treat annotation methods as if they are abstract, even when the modifiers do not
+     * specify that.
+     */
+    @Test
+    public void testAnnotationMethodsAlwaysTreatedAsAbstract() {
+        JDiffClassDescription clz = createClass("TestAnnotation");
+        clz.addImplInterface(Annotation.class.getName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
+        // Intentionally does not set ABSTRACT here.
+        clz.addMethod(method("value", Modifier.PUBLIC, "java.lang.String"));
+        checkSignatureCompliance(clz);
+    }
+
     @Test
     public void testComplexEnum() {
         JDiffClassDescription clz = createClass(ComplexEnum.class.getSimpleName());
         clz.setExtendsClass(Enum.class.getName());
         clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
+        checkSignatureCompliance(clz);
+    }
+
+    @Test
+    public void testAbstractMethodInComplexEnum() {
+        JDiffClassDescription clz = createClass(ComplexEnum.class.getSimpleName());
+        clz.setExtendsClass(Enum.class.getName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
+        // Intentionally does not set ABSTRACT here.
+        clz.addMethod(method("doSomething", Modifier.PUBLIC, "void"));
         checkSignatureCompliance(clz);
     }
 
@@ -406,7 +448,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         clz.setType(JDiffClassDescription.JDiffType.CLASS);
         clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
         checkSignatureCompliance(clz);
-        assertEquals(clz.toSignatureString(), "public final class FinalClass");
+        assertEquals("public final class FinalClass", clz.toSignatureString());
     }
 
     @Test
@@ -428,7 +470,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      * Test that if the API class is final but the runtime is abstract (and not final) that it is
      * an error.
      *
-     * http://b/181019981
+     * @see <a href="http://b/181019981">Bug 181019981</a>
      */
     @Test
     public void testRemovingFinalFromAClassSwitchToAbstract() {
@@ -443,7 +485,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      * Test that if the API class in a previous release is final but the runtime is abstract (and
      * not final) that it is not an error.
      *
-     * http://b/181019981
+     * @see <a href="http://b/181019981">Bug 181019981</a>
      */
     @Test
     public void testRemovingFinalFromAClassSwitchToAbstract_PreviousApi() {
@@ -456,8 +498,8 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     /**
      * Test that if the API class in a previous release is final but the runtime is abstract (and
      * not final) and has constructors then it is an error.
-     * 
-     * http://b/181019981
+     *
+     * @see <a href="http://b/181019981">Bug 181019981</a>
      */
     @Test
     public void testRemovingFinalFromAClassWithCtorSwitchToAbstract_PreviousApi() {
@@ -471,10 +513,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         }
     }
 
-    /**
-     * Test the case where the API declares the method is synchronized, but it
-     * actually is not.
-     */
+    /** Test the case where the API declares the method is synchronized, but it actually is not. */
     @Test
     public void testRemovingSync() {
         JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
@@ -485,7 +524,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     }
 
     /**
-     * API says method is not native, but it actually is. http://b/1839558
+     * API says method is not native, but it actually is. <a href="http://b/1839558">Bug 1839558</a>
      */
     @Test
     public void testAddingNative() {
@@ -496,7 +535,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     }
 
     /**
-     * API says method is native, but actually isn't. http://b/1839558
+     * API says method is native, but actually isn't. <a href="http://b/1839558">Bug 1839558</a>
      */
     @Test
     public void testRemovingNative() {
@@ -514,11 +553,11 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
         clz.setType(JDiffClassDescription.JDiffType.CLASS);
         clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
         checkSignatureCompliance(clz);
-        assertEquals(clz.toSignatureString(), "public abstract class AbstractClass");
+        assertEquals("public abstract class AbstractClass", clz.toSignatureString());
     }
 
     /**
-     * API lists class as abstract, reflection does not. http://b/1839622
+     * API lists class as abstract, reflection does not. <a href="http://b/1839622">Bug 1839622</a>
      */
     @Test
     public void testRemovingAbstractFromAClass() {
@@ -530,7 +569,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     }
 
     /**
-     * Previous API lists class as abstract, reflection does not. http://b/1839622
+     * Previous API lists class as abstract, reflection does not. <a href="http://b/1839622">Bug 1839622</a>
      */
     @Test
     public void testRemovingAbstractFromAClass_PreviousApi() {
@@ -543,7 +582,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     }
 
     /**
-     * reflection lists class as abstract, api does not. http://b/1839622
+     * reflection lists class as abstract, api does not. <a href="http://b/1839622">Bug 1839622</a>
      */
     @Test
     public void testAddingAbstractToAClass() {
@@ -643,7 +682,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
 
     /**
      * Compatible (no change):
-     *
+     * <p>
      * public abstract void AbstractClass#abstractMethod()
      * -> public abstract void AbstractClass#abstractMethod()
      */
@@ -658,7 +697,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
 
     /**
      * Incompatible (provide implementation for abstract method):
-     *
+     * <p>
      * public abstract void Normal#notSyncMethod()
      * -> public void Normal#notSyncMethod()
      */
@@ -674,9 +713,9 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     /**
      * A previously released API lists the method as being abstract but the runtime class does not.
      *
-     * <p>While adding an abstract modifier to a method is not strictly backwards compatible it is 
+     * <p>While adding an abstract modifier to a method is not strictly backwards compatible it is
      * when the class has no accessible constructors and so cannot be instantiated or extended, as
-     * is the case in this test.</p>
+     * is the case in this test.
      */
     @Test
     public void testRemovingAbstractFromMethodOnClassNoCtor_PreviousApi() {
@@ -691,8 +730,8 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     /**
      * Not compatible (overridden method is not overridable anymore):
      *
-     * public abstract void AbstractClass#finalMethod()
-     * -> public final void AbstractClass#finalMethod()
+     * <p>public abstract void AbstractClass#finalMethod() -> public final void
+     * AbstractClass#finalMethod()
      */
     @Test
     public void testAbstractToFinalMethod() {
@@ -708,8 +747,8 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     /**
      * Not compatible (previously implemented method becomes abstract):
      *
-     * public void AbstractClass#abstractMethod()
-     * -> public abstract void AbstractClass#abstractMethod()
+     * <p>public void AbstractClass#abstractMethod() -> public abstract void
+     * AbstractClass#abstractMethod()
      */
     @Test
     public void testAddingAbstractToMethod() {
@@ -729,12 +768,12 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
                 Modifier.PUBLIC | Modifier.FINAL, "void");
         clz.addMethod(method);
         checkSignatureCompliance(clz);
-        assertEquals(method.toSignatureString(), "public final void finalMethod()");
+        assertEquals("public final void finalMethod()", method.toSignatureString());
     }
 
     /**
      * Final Class, API lists methods as non-final, reflection has it as final.
-     * http://b/1839589
+     * @see <a href="http://b/1839589">Bug 1839589</a>
      */
     @Test
     public void testAddingFinalToAMethodInAFinalClass() {
@@ -749,7 +788,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
 
     /**
      * Final Class, API lists methods as final, reflection has it as non-final.
-     * http://b/1839589
+     * @see <a href="http://b/1839589">Bug 1839589</a>
      */
     @Test
     public void testRemovingFinalToAMethodInAFinalClass() {
@@ -765,7 +804,7 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
 
     /**
      * non-final Class, API lists methods as non-final, reflection has it as
-     * final. http://b/1839589
+     * final. <a href="http://b/1839589">Bug 1839589</a>
      */
     @Test
     public void testAddingFinalToAMethodInANonFinalClass() {

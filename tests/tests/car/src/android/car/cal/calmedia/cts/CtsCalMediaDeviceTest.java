@@ -37,6 +37,7 @@ import androidx.test.uiautomator.Until;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.CddTest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,6 +65,11 @@ public class CtsCalMediaDeviceTest {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = instrumentation.getTargetContext();
         mUiDevice = UiDevice.getInstance(instrumentation);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        TestApis.packages().find(CAL_MEDIA_TEST_APP_PACKAGE).forceStop();
     }
 
     /** Tests that the Template Host is installed, and all required permission are granted. */

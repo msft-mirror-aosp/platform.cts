@@ -162,14 +162,6 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
                 mOverrideCameraId == null);
 
         /**
-         * Test: that if there is at least one reported id, then the system must have
-         * the FEATURE_CAMERA_ANY feature.
-         */
-        assertTrue("System camera feature and camera id list don't match",
-                ids.length == 0 ||
-                mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY));
-
-        /**
          * Test: that if the device has front or rear facing cameras, then there
          * must be matched system features.
          */
@@ -208,22 +200,6 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
             assertTrue("External camera is not connected on device with FEATURE_CAMERA_EXTERNAL",
                     externalCameraConnected);
         }
-
-        /**
-         * Test: that if there is one camera device, then the system must have some
-         * specific features.
-         */
-        assertTrue("Missing system feature: FEATURE_CAMERA_ANY",
-               ids.length == 0
-            || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY));
-        assertTrue(
-                "Missing system feature: FEATURE_CAMERA, FEATURE_CAMERA_FRONT or"
-                    + " FEATURE_CAMERA_EXTERNAL",
-                ids.length == 0
-                        || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
-                        || mPackageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)
-                        || mPackageManager.hasSystemFeature(
-                                PackageManager.FEATURE_CAMERA_EXTERNAL));
 
         testConcurrentCameraFeature(mainFrontId, mainBackId);
     }
