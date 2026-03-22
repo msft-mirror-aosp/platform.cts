@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.SystemClock;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.telephony.data.NetworkSlicingConfig;
@@ -45,22 +46,24 @@ public class SimRestrictedApisTest {
 
         mTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        assumeTrue("The test case requires a valid SIM card", isSimCardPresent());
     }
 
     private boolean isSimCardPresent() {
-        Log.i(
-                "SimRestrictedApiTest",
-                "PhoneType = "
-                        + mTelephonyManager.getPhoneType()
-                        + " SimState = "
-                        + mTelephonyManager.getSimState());
-        if (mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE
-                && mTelephonyManager.getSimState() == TelephonyManager.SIM_STATE_READY) {
-            return true;
+        int maxRetries = 30;
+        int count = 0;
+        int simState = TelephonyManager.SIM_STATE_UNKNOWN;
+        while (count < maxRetries) {
+            simState = mTelephonyManager.getSimState();
+            Log.i("SimRestrictedApiTest", "PhoneType = " + mTelephonyManager.getPhoneType()
+                    + " SimState = " + simState);
+            if (mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE
+                    && simState == TelephonyManager.SIM_STATE_READY) {
+                return true;
+            }
+            SystemClock.sleep(1000);
+            count++;
         }
-        fail(
-                "The test case requires a valid SIM card, please use the valid SIM card to perform "
-                        + "the tests");
         return false;
     }
 
@@ -73,10 +76,8 @@ public class SimRestrictedApisTest {
         assumeTrue(getContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_MESSAGING));
         try {
-            if (isSimCardPresent()) {
-                SmsManager.getDefault().injectSmsPdu(TEST_PDU, "3gpp", null);
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            SmsManager.getDefault().injectSmsPdu(TEST_PDU, "3gpp", null);
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -89,10 +90,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testSetLine1NumberForDisplay() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.setLine1NumberForDisplay("", "");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.setLine1NumberForDisplay("", "");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -105,11 +104,9 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccOpenLogicalChannel() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccCloseLogicalChannel(
-                        mTelephonyManager.iccOpenLogicalChannel("").getChannel());
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccCloseLogicalChannel(
+                    mTelephonyManager.iccOpenLogicalChannel("").getChannel());
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -122,11 +119,9 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccOpenLogicalChannelBySlot() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccCloseLogicalChannelBySlot(0,
-                        mTelephonyManager.iccOpenLogicalChannel("").getChannel());
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccCloseLogicalChannelBySlot(0,
+                    mTelephonyManager.iccOpenLogicalChannel("").getChannel());
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -139,10 +134,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccCloseLogicalChannel() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccCloseLogicalChannel(0);
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccCloseLogicalChannel(0);
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -155,10 +148,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccCloseLogicalChannelBySlot() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccCloseLogicalChannelBySlot(0, 0);
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccCloseLogicalChannelBySlot(0, 0);
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -171,10 +162,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccTransmitApduBasicChannel() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccTransmitApduBasicChannel(0, 0, 0, 0, 0, "");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccTransmitApduBasicChannel(0, 0, 0, 0, 0, "");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -187,10 +176,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccTransmitApduBasicChannelBySlot() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccTransmitApduBasicChannelBySlot(0, 0, 0, 0, 0, 0, "");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccTransmitApduBasicChannelBySlot(0, 0, 0, 0, 0, 0, "");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -203,10 +190,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccTransmitApduLogicalChannel() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccTransmitApduLogicalChannel(0, 0, 0, 0, 0, 0, "");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccTransmitApduLogicalChannel(0, 0, 0, 0, 0, 0, "");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -219,10 +204,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testIccTransmitApduLogicalChannelBySlot() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.iccTransmitApduLogicalChannelBySlot(0, 0, 0, 0, 0, 0, 0, "");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.iccTransmitApduLogicalChannelBySlot(0, 0, 0, 0, 0, 0, 0, "");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -235,10 +218,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testSendEnvelopeWithStatus() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.sendEnvelopeWithStatus("");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.sendEnvelopeWithStatus("");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -250,10 +231,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testNvResetConfig() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.nvResetConfig(1);
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.nvResetConfig(1);
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -266,10 +245,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testGetPreferredNetworkType() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.getPreferredNetworkType(0);
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.getPreferredNetworkType(0);
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -282,10 +259,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testSetPreferredNetworkTypeToGlobal() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.setPreferredNetworkTypeToGlobal();
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.setPreferredNetworkTypeToGlobal();
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -308,10 +283,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testSetOperatorBrandOverride() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.setOperatorBrandOverride("");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.setOperatorBrandOverride("");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -324,11 +297,9 @@ public class SimRestrictedApisTest {
     @Test
     public void testGetIccAuthentication() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.getIccAuthentication(TelephonyManager.APPTYPE_USIM,
-                        TelephonyManager.AUTHTYPE_EAP_AKA, "");
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.getIccAuthentication(TelephonyManager.APPTYPE_USIM,
+                    TelephonyManager.AUTHTYPE_EAP_AKA, "");
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
@@ -341,10 +312,8 @@ public class SimRestrictedApisTest {
     @Test
     public void testGetUiccCardsInfo() {
         try {
-            if (isSimCardPresent()) {
-                mTelephonyManager.getUiccCardsInfo();
-                fail("Expected SecurityException. App doesn't have carrier privileges.");
-            }
+            mTelephonyManager.getUiccCardsInfo();
+            fail("Expected SecurityException. App doesn't have carrier privileges.");
         } catch (SecurityException expected) {
         }
     }
