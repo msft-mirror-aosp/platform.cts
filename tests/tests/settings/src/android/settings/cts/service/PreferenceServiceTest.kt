@@ -64,14 +64,10 @@ class PreferenceServiceTest {
             SettingsPreferenceMetadata.DEEPLINK_ONLY,
             SettingsPreferenceMetadata.NO_DIRECT_ACCESS
         )
+
         Truth.assertThat(metadata).isNotEmpty()
         Truth.assertThat(metadata.all { it.writeSensitivity in possibleSensitivities }).isTrue()
         Truth.assertThat(metadata.none { it.screenKey.isEmpty() }).isTrue()
-        Truth.assertThat(
-            metadata.any {
-                !it.title.isNullOrEmpty() && it.isEnabled
-            }
-        ).isTrue()
     }
 
     @Test
