@@ -459,7 +459,7 @@ public class AudioTap2ToneActivity
         mLatencySumSamples[mActiveTestAPI] += latencySamples;
         mNumMeasurements[mActiveTestAPI]++;
 
-        double latencyMillis = 1000 * latencySamples / result.frameRate;
+        double latencyMillis = (1000.0 * Double.valueOf(latencySamples)) / result.frameRate;
         mLatencyMillis[mTestPhase] = latencyMillis;
 
         if (mLatencyMin[mActiveTestAPI] == 0
@@ -478,8 +478,8 @@ public class AudioTap2ToneActivity
 
         mTestPhase++;
 
-        mLatencyAve[mActiveTestAPI] = 1000
-                * (mLatencySumSamples[mActiveTestAPI] / mNumMeasurements[mActiveTestAPI])
+        mLatencyAve[mActiveTestAPI] = 1000.0
+                * (Double.valueOf(mLatencySumSamples[mActiveTestAPI]) / mNumMeasurements[mActiveTestAPI])
                 / result.frameRate;
         mResultsView.setText("Phase: " + mTestPhase + " : " + latencyMillis
                 + " ms, Ave: " + mLatencyAve[mActiveTestAPI] + " ms");
