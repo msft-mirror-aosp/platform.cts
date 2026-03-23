@@ -865,6 +865,12 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
             RunUtil.getDefault().sleep(3_000);
             getDevice().reboot();
 
+            // Pruning is done asynchronously in PackageManagerService's handler, so it might not be
+            // finished when the device just rebooting, especially if the handler is busy, so we
+            // need to wait for the job to complete before checking the results.
+            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "Waiting for the handler to idle");
+            getDevice().executeShellCommand("pm wait-for-handler --timeout 2000");
+
             // Waits for the uninstallation of the unused library to ensure the job has be executed
             // correctly.
             PollingCheck.check("Library " + STATIC_LIB_PROVIDER_RECURSIVE_NAME
