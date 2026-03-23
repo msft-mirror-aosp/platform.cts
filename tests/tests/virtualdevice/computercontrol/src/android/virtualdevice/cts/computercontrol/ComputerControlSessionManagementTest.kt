@@ -19,13 +19,16 @@ package android.virtualdevice.cts.computercontrol
 import android.computercontrol.testapp.common.Action
 import android.computercontrol.testapp.common.TestAppInteractionReceiver
 import android.content.ComponentName
+import android.hardware.display.DisplayManager
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.server.wm.WindowManagerState
 import android.server.wm.WindowManagerStateHelper
+import android.text.TextUtils
 import android.util.Log
 import android.view.Display
+import android.view.Surface
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
@@ -37,6 +40,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertThrows
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -417,6 +421,8 @@ class ComputerControlSessionManagementTest {
     @FlakyTest(bugId = 491587958)
     @Test
     fun testHandOver() {
+        assumeReferenceDisplayInPortrait()
+
         launchTestAppAgent().use { testAppAgent ->
             val lifecycleCallback = LifecycleCallbackImpl()
             testAppAgent.lifecycleCallback.set(lifecycleCallback)
@@ -516,6 +522,35 @@ class ComputerControlSessionManagementTest {
             testAppInteractions.nextAction<Action.Tap>()
             testAppAgent.close()
         }
+    }
+
+    private fun getReferenceDisplay(): Display {
+        val displayManager = context.getSystemService(DisplayManager::class.java)!!
+        val resId =
+            context.resources.getIdentifier(
+                "config_computerControlReferenceDisplayPhysicalAddress",
+                "string",
+                "android",
+            )
+        val referenceDisplayAddress = if (resId != 0) context.getString(resId) else ""
+
+        return if (TextUtils.isEmpty(referenceDisplayAddress)) {
+            displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+        } else {
+            val configAddress = referenceDisplayAddress.toLong()
+            displayManager.displays.firstOrNull { display: Display ->
+                display.getAddress()?.getPhysicalDisplayId() == configAddress
+            } ?: throw IllegalStateException("Invalid display set as reference display")
+        }
+    }
+
+    private fun assumeReferenceDisplayInPortrait() {
+        val referenceDisplay = getReferenceDisplay()
+        assumeTrue(
+            "Reference display is not portrait",
+            referenceDisplay.rotation == Surface.ROTATION_0 ||
+                    referenceDisplay.rotation == Surface.ROTATION_180,
+        )
     }
 
     companion object {
