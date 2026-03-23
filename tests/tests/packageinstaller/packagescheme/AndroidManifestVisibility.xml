@@ -23,7 +23,8 @@
 
     <application>
         <uses-library android:name="android.test.runner"/>
-        <activity android:name="android.packageinstaller.packagescheme.cts.PackageSchemeTestBase$TestActivity" />
+        <activity android:name="android.packageinstaller.packagescheme.cts.PackageSchemeTestBase$TestActivity"
+            android:configChanges="resourcesUnused" />
     </application>
 
     <instrumentation
