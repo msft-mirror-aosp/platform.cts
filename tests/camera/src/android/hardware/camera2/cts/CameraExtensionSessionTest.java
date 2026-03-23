@@ -153,16 +153,26 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
             // Default value
             mOriginalFallbackValue = 0;
         }
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                Settings.Secure.putInt(mContext.getContentResolver(),
-                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, 1));
+        if (mAdoptShellPerm) {
+            Settings.Secure.putInt(mContext.getContentResolver(),
+                    Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, 1);
+        } else {
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    Settings.Secure.putInt(mContext.getContentResolver(),
+                            Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, 1));
+        }
     }
 
     @Override
     public void tearDown() throws Exception {
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                Settings.Secure.putInt(mContext.getContentResolver(),
-                        Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, mOriginalFallbackValue));
+        if (mAdoptShellPerm) {
+            Settings.Secure.putInt(mContext.getContentResolver(),
+                    Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, mOriginalFallbackValue);
+        } else {
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    Settings.Secure.putInt(mContext.getContentResolver(),
+                            Settings.Secure.CAMERA_EXTENSIONS_FALLBACK, mOriginalFallbackValue));
+        }
         if (mTestRule != null) {
             mTestRule.after();
         }
