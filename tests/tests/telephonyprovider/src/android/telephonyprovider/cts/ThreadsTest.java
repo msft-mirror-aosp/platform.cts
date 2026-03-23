@@ -74,6 +74,7 @@ public class ThreadsTest {
         ContentResolver contentResolver = getInstrumentation().getContext().getContentResolver();
         contentResolver.delete(Telephony.Threads.CONTENT_URI, null, null);
         contentResolver.delete(Telephony.Sms.CONTENT_URI, null, null);
+        contentResolver.delete(Telephony.Mms.CONTENT_URI, null, null);
     }
 
     @Before
