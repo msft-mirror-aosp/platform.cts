@@ -6,6 +6,9 @@
   ],
   "presubmit" : [
     {
+      "name" : "CtsStatsdAtomHostRebootTestCases"
+    },
+    {
       "name" : "CtsTelecomAtomHostTestCases"
     }
   ]
