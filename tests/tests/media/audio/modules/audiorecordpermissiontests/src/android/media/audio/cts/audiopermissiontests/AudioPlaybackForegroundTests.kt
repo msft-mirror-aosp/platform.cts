@@ -21,8 +21,11 @@ import android.media.audio.cts.audiopermissiontests.common.*
 import android.Manifest.permission.MODIFY_AUDIO_ROUTING
 import android.content.Intent
 import android.media.AudioManager
+import android.media.AudioFormat;
+import android.media.AudioTrack;
 import android.media.AudioManager.AudioPlaybackCallback
 import android.media.AudioPlaybackConfiguration
+import android.os.Process
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -40,6 +43,13 @@ import com.android.media.mediatestutils.TestUtils.getFutureForIntent
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.SettableFuture
+
+import kotlin.coroutines.CoroutineContext
+import kotlin.random.Random
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -116,6 +126,54 @@ class AudioPlaybackForegroundTests {
         }
         for (future in mFutures.toSet()) {
             future.cancel(false)
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HARDENING_PARTIAL)
+    fun testShellInstrumentedPlayback_isNotMuted() {
+        val channelConfig = AudioFormat.CHANNEL_OUT_STEREO
+        val sampleRate = 48000
+        val format = AudioFormat.ENCODING_PCM_16BIT
+        val audioTrack = AudioTrack.Builder()
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(format)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(channelConfig)
+                        .build())
+                .build()
+
+        var isPlaying = false
+        val data = ShortArray(audioTrack.getBufferSizeInFrames() * 2)
+
+        val future = getPlayerFutureForPred{ x ->
+            x.getClientUid() == Process.myUid() &&
+            x.isMuted() &&
+            x.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO == MUTED_BY_OP_CONTROL_AUDIO
+        }
+
+        val playbackJob = CoroutineScope(Dispatchers.Default).launch {
+            try {
+                audioTrack.play()
+                while (coroutineContext.isActive) {
+                    for (i in data.indices) {
+                        data[i] = Random.nextInt(-2000, 2000).toShort()
+                    }
+                    audioTrack.write(data, 0, data.size)
+                }
+            } finally {
+                audioTrack.stop()
+                audioTrack.release()
+            }
+        }
+
+        try {
+            assertThrows(TimeoutException::class.java) {
+                future.get(FALSE_NEG_SECS, TimeUnit.SECONDS)
+            }
+        } finally {
+            playbackJob.cancel()
         }
     }
 

@@ -15,7 +15,7 @@
  */
 package android.host.multiuser;
 
-import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER;
+import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER;
 
 import static org.junit.Assume.assumeFalse;
 
@@ -31,21 +31,21 @@ import org.junit.runner.RunWith;
 public final class BuildTimeConstraintsTest extends BaseHostJUnit4Test {
 
     @Test
-    public void testGetConfigSupportProfilesOnNonMainUser() throws Exception {
+    public void testGetConfigSupportManagedProfileOnNonMainUser() throws Exception {
         // Must be checked on host-side, as device-side would always return the default value
         boolean configValue =
                 new OverlayUtil(getDevice())
-                        .getBooleanFrameworkConfig(CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
+                        .getBooleanFrameworkConfig(CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER);
 
         // This test is not valid anymore because it's ok to override the config, as the DPM tests
         // are (mostly) fixed. So, in theory we could delete this class, but that might cause issues
         // on server-side procedures that are expecting it to be part of CTS. And regardless, it
         // could be a good place for similar tests in the future.
         assumeFalse(
-                CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER + " is enabled, but that's fine",
+                CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER + " is enabled, but that's fine",
                 configValue);
         CLog.d(
                 "value of %s is %b as expected",
-                CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER, configValue);
+                CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER, configValue);
     }
 }

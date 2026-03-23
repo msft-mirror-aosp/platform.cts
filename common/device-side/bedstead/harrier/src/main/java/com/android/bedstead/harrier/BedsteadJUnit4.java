@@ -103,15 +103,18 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
         long startTime = System.currentTimeMillis();
 
+        BedsteadAnnotationGenerator annotationGenerator =
+                new BedsteadAnnotationGenerator(getHarrierRule().isHeadlessSystemUserMode());
         List<FrameworkMethod> modifiedTests =
                 getBasicTests(getTestClass()).stream()
                         .flatMap(
                                 m ->
-                                        BedsteadAnnotationGenerator.INSTANCE
+                                        annotationGenerator
                                                 .computeTestMethodsForBasicTest(
                                                         m, getRuntimeClassAnnotations())
                                                 .stream())
-                        .flatMap(this::generateGeneralParameterizationMethods)
+                        .flatMap(
+                                m -> generateGeneralParameterizationMethods(m, annotationGenerator))
                         .collect(Collectors.toList());
 
         modifiedTests = FrameworkMethodSorter.sort(modifiedTests);
@@ -132,7 +135,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         return modifiedTests;
     }
 
-    private Stream<FrameworkMethod> generateGeneralParameterizationMethods(FrameworkMethod method) {
+    private Stream<FrameworkMethod> generateGeneralParameterizationMethods(
+            FrameworkMethod method, BedsteadAnnotationGenerator annotationGenerator) {
         Stream<FrameworkMethod> expandedMethods = Stream.of(method);
         if (method.getMethod().getParameterCount() == 0) {
             return expandedMethods;
@@ -140,7 +144,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         for (Parameter parameter : method.getMethod().getParameters()) {
             List<Annotation> annotations =
-                    BedsteadAnnotationGenerator.INSTANCE.resolveRecursiveAnnotations(
+                    annotationGenerator.resolveRecursiveAnnotations(
                             Arrays.asList(parameter.getAnnotations()));
 
             boolean hasParameterised = false;

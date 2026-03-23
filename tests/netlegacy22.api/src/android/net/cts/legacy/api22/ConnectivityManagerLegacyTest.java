@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
 
 import android.content.BroadcastReceiver;
@@ -38,6 +39,7 @@ import android.net.LinkAddress;
 import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.ConditionVariable;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -80,6 +82,8 @@ public class ConnectivityManagerLegacyTest {
 
     @Before
     public void setUp() throws Exception {
+        assumeTrue(Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN);
+
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mCm = mContext.getSystemService(ConnectivityManager.class);
 

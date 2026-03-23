@@ -137,5 +137,6 @@ java_library_host {
     name: "NeneHost",
     srcs: [
         "src/main/java/com/android/bedstead/nene/exceptions/NeneException.java",
+        "src/main/java/com/android/bedstead/nene/types/OptionalBoolean.kt",
     ],
 }

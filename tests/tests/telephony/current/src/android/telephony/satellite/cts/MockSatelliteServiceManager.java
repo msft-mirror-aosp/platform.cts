@@ -49,6 +49,8 @@ import android.telephony.satellite.SatelliteSubscriptionInfo;
 import android.telephony.satellite.SystemSelectionSpecifier;
 import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteDatagram;
+import android.telephony.satellite.stub.SatelliteNetworkInfo;
+import android.telephony.satellite.stub.PrioritizedNetworkScanRequest;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.IntArray;
@@ -167,6 +169,9 @@ class MockSatelliteServiceManager {
     private final Semaphore mSetSatellitePlmnSemaphore = new Semaphore(0);
     private final Semaphore mSetSatelliteEnabledForCarrierSemaphore = new Semaphore(0);
     private final Semaphore mSatelliteEnabledForCarrierStateChangedSemaphore = new Semaphore(0);
+    private final Semaphore mSetSatelliteNetworkInfoSemaphore = new Semaphore(0);
+    private final Semaphore mEnablePrioritizedNetworkScanSemaphore = new Semaphore(0);
+    private final Semaphore mDisablePrioritizedNetworkScanSemaphore = new Semaphore(0);
     @Nullable
     private SatelliteModemEnableRequestAttributes mRequestSatelliteEnabledAttributes = null;
 
@@ -280,6 +285,36 @@ class MockSatelliteServiceManager {
                         mRequestSatelliteEnabledSemaphore.release();
                     } catch (Exception ex) {
                         logd("onRequestSatelliteEnabled: Got exception, ex=" + ex);
+                    }
+                }
+
+                @Override
+                public void onSetSatelliteNetworkInfo() {
+                    logd("onSetSatelliteNetworkInfo()");
+                    try {
+                        mSetSatelliteNetworkInfoSemaphore.release();
+                    } catch (Exception ex) {
+                        logd("onSetSatelliteNetworkInfo: Got exception, ex=" + ex);
+                    }
+                }
+
+                @Override
+                public void onEnablePrioritizedNetworkScan() {
+                    logd("onEnablePrioritizedNetworkScan()");
+                    try {
+                        mEnablePrioritizedNetworkScanSemaphore.release();
+                    } catch (Exception ex) {
+                        logd("onEnablePrioritizedNetworkScan: Got exception, ex=" + ex);
+                    }
+                }
+
+                @Override
+                public void onDisablePrioritizedNetworkScan() {
+                    logd("onDisablePrioritizedNetworkScan()");
+                    try {
+                        mDisablePrioritizedNetworkScanSemaphore.release();
+                    } catch (Exception ex) {
+                        logd("onDisablePrioritizedNetworkScan: Got exception, ex=" + ex);
                     }
                 }
             };
@@ -822,6 +857,54 @@ class MockSatelliteServiceManager {
                 }
             } catch (Exception ex) {
                 loge("OnRequestSatelliteEnabled: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    boolean waitForEventOnSetSatelliteNetworkInfo(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mSetSatelliteNetworkInfoSemaphore.tryAcquire(
+                        TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge("Timeout to receive onSetSatelliteNetworkInfo");
+                    return false;
+                }
+            } catch (Exception ex) {
+                loge("onSetSatelliteNetworkInfo: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    boolean waitForEventOnEnablePrioritizedNetworkScan(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mEnablePrioritizedNetworkScanSemaphore.tryAcquire(
+                        TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge("Timeout to receive onEnablePrioritizedNetworkScan");
+                    return false;
+                }
+            } catch (Exception ex) {
+                loge("onEnablePrioritizedNetworkScan: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    boolean waitForEventOnDisablePrioritizedNetworkScan(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mDisablePrioritizedNetworkScanSemaphore.tryAcquire(
+                        TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge("Timeout to receive onDisablePrioritizedNetworkScan");
+                    return false;
+                }
+            } catch (Exception ex) {
+                loge("onDisablePrioritizedNetworkScan: Got exception=" + ex);
                 return false;
             }
         }
@@ -2075,5 +2158,31 @@ class MockSatelliteServiceManager {
         return new SatelliteSubscriptionInfo(
                 halSatelliteSubscriptionInfo.iccId,
                 halSatelliteSubscriptionInfo.niddApn);
+    }
+
+    @Nullable
+    public SatelliteNetworkInfo getSatelliteNetworkInfo() {
+        if (mSatelliteService == null) {
+            loge("getSatelliteNetworkInfo: mSatelliteService is null");
+            return null;
+        }
+        return mSatelliteService.getSatelliteNetworkInfo();
+    }
+
+    @Nullable
+    public PrioritizedNetworkScanRequest getPrioritizedNetworkScanRequest() {
+        if (mSatelliteService == null) {
+            loge("getPrioritizedNetworkScanRequest: mSatelliteService is null");
+            return null;
+        }
+        return mSatelliteService.getPrioritizedNetworkScanRequest();
+    }
+
+    public boolean isPrioritizedNetworkScanDisabled() {
+        if (mSatelliteService == null) {
+            loge("isPrioritizedNetworkScanDisabled: mSatelliteService is null");
+            return false;
+        }
+        return mSatelliteService.isPrioritizedNetworkScanDisabled();
     }
 }

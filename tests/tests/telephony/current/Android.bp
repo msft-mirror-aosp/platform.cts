@@ -83,6 +83,7 @@ android_test {
         "TestExternalImsServiceApp/**/*.java",
         "TestExternalImsServiceApp/**/I*.aidl",
         "src/android/telephony/satellite/cts/I*.aidl",
+        ":satellite-stub-aidl",
         "MessageUpgradeTestApp/**/*.java",
     ],
     aidl: {

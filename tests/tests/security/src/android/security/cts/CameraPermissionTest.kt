@@ -56,8 +56,9 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.android.bedstead.nene.TestApis
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.UserHelper
 import com.android.cts.install.lib.Install
 import com.android.cts.install.lib.TestApp
 import com.android.cts.install.lib.Uninstall
@@ -150,6 +151,11 @@ class CameraPermissionTest {
 
   @Before
   fun setUp() {
+    val userHelper = UserHelper()
+    assumeFalse(
+        "Camera is not supported for visible background users.",
+        userHelper.isVisibleBackgroundUser())
+
     TestApis.packages()
         .find(OPEN_CAMERA_APP.packageName)
         .grantPermission(Manifest.permission.CAMERA)

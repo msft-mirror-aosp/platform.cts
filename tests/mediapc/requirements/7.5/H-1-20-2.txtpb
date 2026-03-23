@@ -1,0 +1,66 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: cts/tests/mediapc/requirements/requirements.proto
+# proto-message: Requirement
+
+# Split from 7.5/H-1-20 for independent grading.
+id: "7.5/H-1-20-2"
+group: GROUP_CAMERA
+name: "Rear Camera Ultra HDR"
+description: "Ultra HDR support for rear primary camera"
+comment: "Split from 7.5/H-1-20 for independent grading."
+specs {
+  key: 35
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_35
+    specification: "MUST by default output JPEG_R for the primary rear camera in the native camera app."
+    required_values {
+      key: "ultra_hdr_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_37
+    specification: "MUST by default output JPEG_R for the primary rear camera in the native camera app."
+    required_values {
+      key: "ultra_hdr_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "ultra_hdr_supported"
+  value {
+    description: "Is the rear primary camera Ultra HDR supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+is_non_cts_test: true
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 105
+  }
+}

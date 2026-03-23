@@ -21,6 +21,8 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.app.NotificationChannel.NEWS_ID;
 import static android.app.NotificationChannel.PROMOTIONS_ID;
+import static android.app.NotificationRule.Action.PRIMARY_ACTION_HIGHLIGHT;
+import static android.app.NotificationRule.Action.PRIMARY_ACTION_LOW;
 import static android.service.notification.Adjustment.KEY_CONTEXTUAL_ACTIONS;
 import static android.service.notification.Adjustment.KEY_IMPORTANCE;
 import static android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT;
@@ -68,7 +70,6 @@ import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
@@ -1623,12 +1624,157 @@ public class NotificationAssistantServiceTest {
 
     @Test
     @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
-    public void testGetNotificationRules() throws Exception {
+    public void testGetNotificationRules_fromNM() throws Exception {
         try (PermissionContext permission =
                      TestApis.permissions()
                              .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             List<NotificationRule> rules = mNotificationManager.getNotificationRules();
             assertThat(rules).isNotEmpty();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testGetNotificationRules_fromNAS() throws Exception {
+        setUpListeners();
+        NotificationRule rule1 =
+                new NotificationRule.Builder(
+                        123,
+                        new NotificationRule.Action.Builder(PRIMARY_ACTION_HIGHLIGHT)
+                                .build())
+                        .setEnabled(false)
+                        .build();
+        NotificationRule rule2 =
+                new NotificationRule.Builder(
+                        111,
+                        new NotificationRule.Action.Builder(PRIMARY_ACTION_LOW).build())
+                        .setEnabled(true)
+                        .build();
+
+        try {
+            CountDownLatch notifRulesLatch = mAssistant.setNotificationRulesLatch(2);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        // add both rules
+                        mNotificationManager.addNotificationRule(rule1, 0);
+                        mNotificationManager.addNotificationRule(rule2, 1);
+                    });
+            notifRulesLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            List<NotificationRule> rules = mAssistant.getNotificationRules();
+            assertThat(rules).isNotEmpty();
+            assertThat(rules).containsAtLeast(rule1, rule2);
+        } finally {
+            CountDownLatch cleanupLatch = mAssistant.setNotificationRulesLatch(2);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mNotificationManager.removeNotificationRule(123);
+                        mNotificationManager.removeNotificationRule(111);
+                    });
+            cleanupLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testOnNotificationRuleAdded() throws Exception {
+        setUpListeners();
+        NotificationRule rule =
+                new NotificationRule.Builder(
+                                123,
+                                new NotificationRule.Action.Builder(PRIMARY_ACTION_HIGHLIGHT)
+                                        .build())
+                        .build();
+        try {
+            CountDownLatch notifRulesLatch = mAssistant.setNotificationRulesLatch(1);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mNotificationManager.addNotificationRule(rule, 0));
+
+            // confirm that the assistant received the added rule
+            notifRulesLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+            assertThat(mAssistant.mNotificationRules).containsKey(123);
+            assertThat(mAssistant.mNotificationRules.get(123)).isEqualTo(rule);
+        } finally {
+            CountDownLatch cleanupLatch = mAssistant.setNotificationRulesLatch(1);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mNotificationManager.removeNotificationRule(123));
+            cleanupLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testOnNotificationRuleModified() throws Exception {
+        setUpListeners();
+        NotificationRule rule =
+                new NotificationRule.Builder(
+                                123,
+                                new NotificationRule.Action.Builder(PRIMARY_ACTION_HIGHLIGHT)
+                                        .build())
+                        .setEnabled(false)
+                        .build();
+        NotificationRule modified = new NotificationRule.Builder(rule).setEnabled(true).build();
+
+        try {
+            // expect two operations, one for add and one for update
+            CountDownLatch notifRulesLatch = mAssistant.setNotificationRulesLatch(2);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mNotificationManager.addNotificationRule(rule, 0);
+                        mNotificationManager.updateNotificationRule(modified);
+                    });
+
+            // resulting notification rule should be the modified version
+            notifRulesLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+            assertThat(mAssistant.mNotificationRules).containsKey(123);
+            assertThat(mAssistant.mNotificationRules.get(123)).isEqualTo(modified);
+        } finally {
+            CountDownLatch cleanupLatch = mAssistant.setNotificationRulesLatch(1);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mNotificationManager.removeNotificationRule(123));
+            cleanupLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testOnNotificationRuleRemoved() throws Exception {
+        setUpListeners();
+        NotificationRule rule1 =
+                new NotificationRule.Builder(
+                                123,
+                                new NotificationRule.Action.Builder(PRIMARY_ACTION_HIGHLIGHT)
+                                        .build())
+                        .setEnabled(false)
+                        .build();
+        NotificationRule rule2 =
+                new NotificationRule.Builder(
+                                111,
+                                new NotificationRule.Action.Builder(PRIMARY_ACTION_LOW).build())
+                        .setEnabled(true)
+                        .build();
+
+        try {
+            CountDownLatch notifRulesLatch = mAssistant.setNotificationRulesLatch(3);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        // add both rules
+                        mNotificationManager.addNotificationRule(rule1, 0);
+                        mNotificationManager.addNotificationRule(rule2, 1);
+
+                        // remove only rule 1
+                        mNotificationManager.removeNotificationRule(123);
+                    });
+
+            // expect that rule 1 was removed, rule 2 remains
+            notifRulesLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+            assertThat(mAssistant.mNotificationRules).doesNotContainKey(123);
+            assertThat(mAssistant.mNotificationRules).containsKey(111);
+        } finally {
+            CountDownLatch cleanupLatch = mAssistant.setNotificationRulesLatch(1);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mNotificationManager.removeNotificationRule(111));
+            cleanupLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
         }
     }
 }

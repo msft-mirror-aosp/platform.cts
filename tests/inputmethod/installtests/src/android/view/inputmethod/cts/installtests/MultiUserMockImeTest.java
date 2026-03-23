@@ -70,6 +70,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -344,6 +345,7 @@ public final class MultiUserMockImeTest {
     @EnsureHasWorkProfile
     @EnsureHasAdditionalUser
     @RequireMaxRunningUsersAtLeast(3)
+    @FlakyTest(bugId = 479811266)
     public void testProfileSwitchingThenFullUserSwitching() throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
         final UserReference workUser = workProfile(sDeviceState, currentUser);

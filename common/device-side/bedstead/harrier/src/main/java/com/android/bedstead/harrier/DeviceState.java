@@ -130,6 +130,7 @@ public final class DeviceState extends HarrierRule {
     private Thread mTestThread;
 
     private final DeviceStateLocator mLocator = new DeviceStateLocator();
+    private final BedsteadAnnotationGenerator mAnnotationGenerator;
     private final Context mContext = TestApis.context().instrumentedContext();
     private TestClass mTestClass = null;
 
@@ -147,6 +148,7 @@ public final class DeviceState extends HarrierRule {
                 SDK_INT);
         mAdditionalFeatures = Arrays.asList(TestApis.instrumentation().arguments().getString(
                 ADDITIONAL_FEATURES_KEY, "").split(","));
+        mAnnotationGenerator = new BedsteadAnnotationGenerator(isHeadlessSystemUserMode());
     }
 
     public DeviceState() {
@@ -374,7 +376,7 @@ public final class DeviceState extends HarrierRule {
 
         checkAnnotations(annotations);
 
-        annotations = BedsteadAnnotationGenerator.INSTANCE.resolveRecursiveAnnotations(annotations);
+        annotations = mAnnotationGenerator.resolveRecursiveAnnotations(annotations);
 
         checkAnnotations(annotations);
 
