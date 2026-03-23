@@ -20,6 +20,7 @@ import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionService
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appsearch.GenericDocument
 import android.content.pm.SigningInfo
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
@@ -51,7 +52,10 @@ class TestAppFunctionService2 : AppFunctionService() {
         callback: OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException>,
     ) {
         val message = request.parameters.getPropertyString("message")
-        val response = ExecuteAppFunctionResponse(message)
-        callback.onResult(response)
+        val resultDocument: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyString(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, message)
+                .build()
+        callback.onResult(ExecuteAppFunctionResponse(resultDocument))
     }
 }
