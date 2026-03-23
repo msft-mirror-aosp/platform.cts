@@ -1286,13 +1286,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.button);
         final Button button = mActivity.findViewById(R.id.button);
-
-        // Scroll so the buttons are entirely on screen, with no animation to help with flakiness
-        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
-        scrollView.setSmoothScrollingEnabled(false);
-        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(button));
-        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
-
+        scrollToView(mActivity.findViewById(R.id.scrollParent), button);
         final int[] buttonLocation = new int[2];
         button.getLocationOnScreen(buttonLocation);
         final int buttonX = button.getWidth() / 2;
@@ -1374,13 +1368,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
-        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
-        // disable scrollView animation to make the test less flaky
-        scrollView.setSmoothScrollingEnabled(false);
-        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
-        sUiAutomation.waitForIdle(
-                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
-
+        scrollToView(mActivity.findViewById(R.id.scrollParent), buttonTarget);
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;
@@ -1414,13 +1402,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
-        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
-        // disable scrollView animation to make the test less flaky
-        scrollView.setSmoothScrollingEnabled(false);
-        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
-        sUiAutomation.waitForIdle(
-                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
-
+        scrollToView(mActivity.findViewById(R.id.scrollParent), buttonTarget);
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;
@@ -2350,7 +2332,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
-    public void testOnMotionEvent_interceptsEventFromRequestedSource_observesMotionEvents() {
+    public void testOnMotionEvent_interceptsEventFromRequestedSource_observesMotionEvents()
+            throws Exception {
         // Don't run this test on systems without a touchscreen.
         PackageManager pm = sInstrumentation.getTargetContext().getPackageManager();
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN));
@@ -2379,6 +2362,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
         // Simulate a tap on the center of the button.
         final Button button = (Button) mActivity.findViewById(R.id.button);
+        scrollToView(mActivity.findViewById(R.id.scrollParent), button);
         final EventCapturingMotionEventListener listener = new EventCapturingMotionEventListener();
         button.setOnTouchListener(listener);
         int[] buttonLocation = new int[2];
@@ -3248,6 +3232,13 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             final View tooltipView = viewWithTooltip.getTooltipView();
             return (tooltipView != null) && (tooltipView.getParent() != null);
         });
+    }
+
+    private void scrollToView(ScrollView parent, View child) throws Exception {
+        // Scroll so the child is entirely on screen, with no animation to help with flakiness
+        parent.setSmoothScrollingEnabled(false);
+        mActivity.runOnUiThread(() -> parent.scrollToDescendant(child));
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
     }
 
     private void awaitDispatchGesture(
