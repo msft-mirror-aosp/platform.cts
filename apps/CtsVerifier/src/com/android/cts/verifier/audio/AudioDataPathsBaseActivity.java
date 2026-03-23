@@ -815,7 +815,7 @@ public abstract class AudioDataPathsBaseActivity
                         ? BuilderBase.SHARING_MODE_EXCLUSIVE : BuilderBase.SHARING_MODE_SHARED);
                 mDuplexAudioManager.setRecorderPerformanceMode(mInPerformanceMode);
 
-                boolean enableMMAP = mTransferType != TRANSFER_LEGACY;
+                final boolean enableMMAP = mTransferType != TRANSFER_LEGACY;
                 Globals.setMMapEnabled(enableMMAP);
                 // This should never happen as MMAP TestModules will not get allocated
                 // in the case that MMAP isn't supported on the device.
@@ -886,8 +886,7 @@ public abstract class AudioDataPathsBaseActivity
                 // Validate MMAP
                 boolean playerIsMMap = false;
                 boolean recorderIsMMap = false;
-                if (mTransferType != TRANSFER_LEGACY) {
-                    Log.w(TAG, "  Invalid Transfer Mode - " + getDescription());
+                if (enableMMAP) {
                     // This is (should be) an MMAP stream
                     playerIsMMap = mDuplexAudioManager.isPlayerStreamMMap();
                     recorderIsMMap = mDuplexAudioManager.isRecorderStreamMMap();
@@ -923,9 +922,14 @@ public abstract class AudioDataPathsBaseActivity
                 }
 
                 BadMMAPTestState mmapState = null;
-                if (mTransferType != TRANSFER_LEGACY && (!playerIsMMap || !recorderIsMMap)) {
+                if (enableMMAP && (!playerIsMMap || !recorderIsMMap)) {
                     // asked for MMAP, but at least one route is Legacy
-                    Log.w(TAG, "  Both streams aren't MMAP - " + getDescription());
+                    if (!playerIsMMap) {
+                        Log.w(TAG, "  Player stream isn't MMAP - " + getDescription());
+                    }
+                    if (!recorderIsMMap) {
+                        Log.w(TAG, "  Recorder stream isn't MMAP - " + getDescription());
+                    }
                     mmapState = new BadMMAPTestState(this, !playerIsMMap, !recorderIsMMap);
                 }
 
