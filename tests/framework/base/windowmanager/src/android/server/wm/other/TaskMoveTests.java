@@ -807,7 +807,10 @@ public class TaskMoveTests extends TaskMoveTestBase {
 
     private void launchMovableActivityOnDisplayWithSafetyMargins(
             ComponentName activityName, int displayId) {
-        launchMovableActivityOnDisplayWithSafetyMargins(activityName, displayId, 100);
+        mWmState.computeState();
+        final WindowManagerState.DisplayContent dc = mWmState.getDisplay(displayId);
+        final int safetyMargin = WindowManagerState.dpToPx(70f, dc.getDpi());
+        launchMovableActivityOnDisplayWithSafetyMargins(activityName, displayId, safetyMargin);
     }
 
     private void launchMovableActivityOnDisplayWithSafetyMargins(
