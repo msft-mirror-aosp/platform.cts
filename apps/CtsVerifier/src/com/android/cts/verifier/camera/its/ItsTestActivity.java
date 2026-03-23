@@ -33,11 +33,12 @@ import android.hardware.devicestate.DeviceStateManager;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirement;
 import android.mediapc.cts.common.Requirements;
-import android.mediapc.cts.common.Requirements.CameraUltraHDRRequirement;
 import android.mediapc.cts.common.Requirements.FrontCameraCaptureLatencyRequirement;
 import android.mediapc.cts.common.Requirements.FrontCameraStartupLatencyRequirement;
+import android.mediapc.cts.common.Requirements.FrontCameraUltraHDRRequirement;
 import android.mediapc.cts.common.Requirements.RearCameraCaptureLatencyRequirement;
 import android.mediapc.cts.common.Requirements.RearCameraStartupLatencyRequirement;
+import android.mediapc.cts.common.Requirements.RearCameraUltraHDRRequirement;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -386,7 +387,9 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     FrontCameraCaptureLatencyRequirement mFrontJpegLatencyReq = null;
     RearCameraStartupLatencyRequirement mRearLaunchLatencyReq = null;
     FrontCameraStartupLatencyRequirement mFrontLaunchLatencyReq = null;
-    CameraUltraHDRRequirement mUltraHdrReq = null;
+    FrontCameraUltraHDRRequirement mFrontUltraHdrReq = null;
+    RearCameraUltraHDRRequirement mRearUltraHdrReq = null;
+
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
     // stored in the report log
@@ -838,11 +841,13 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                     hasGainMap = true;
                 }
                 if (cameraId.equals(mPrimaryRearCameraId)) {
-                    mUltraHdrReq.setRearCameraUltraHdrSupported(hasGainMap);
+                    mRearUltraHdrReq.setUltraHdrSupported(hasGainMap);
+                    updatedReq = mRearUltraHdrReq;
                 } else {
-                    mUltraHdrReq.setFrontCameraUltraHdrSupported(hasGainMap);
+                    mFrontUltraHdrReq.setUltraHdrSupported(hasGainMap);
+                    updatedReq = mFrontUltraHdrReq;
                 }
-                updatedReq = mUltraHdrReq;
+
             }
             return updatedReq;
         }
@@ -1601,7 +1606,10 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 resetRequirement(mRearLaunchLatencyReq, Requirements.addR7_5__H_1_6_2()::to);
 
         if (ItsUtils.isAtLeastV()) {
-            mUltraHdrReq = resetRequirement(mUltraHdrReq, Requirements.addR7_5__H_1_20()::to);
+            mFrontUltraHdrReq =
+                    resetRequirement(mFrontUltraHdrReq, Requirements.addR7_5__H_1_20_1()::to);
+            mRearUltraHdrReq =
+                    resetRequirement(mRearUltraHdrReq, Requirements.addR7_5__H_1_20_2()::to);
         }
 
         // 3. Apply failure values for missing hardware
@@ -1629,8 +1637,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 if (mFrontLaunchLatencyReq != null) {
                     mFrontLaunchLatencyReq.setLatencyMs(Float.MAX_VALUE);
                 }
-                if (mUltraHdrReq != null) {
-                    mUltraHdrReq.setFrontCameraUltraHdrSupported(false);
+                if (mFrontUltraHdrReq != null) {
+                    mFrontUltraHdrReq.setUltraHdrSupported(false);
                 }
             }
             case CameraMetadata.LENS_FACING_BACK -> {
@@ -1640,8 +1648,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 if (mRearLaunchLatencyReq != null) {
                     mRearLaunchLatencyReq.setLatencyMs(Float.MAX_VALUE);
                 }
-                if (mUltraHdrReq != null) {
-                    mUltraHdrReq.setRearCameraUltraHdrSupported(false);
+                if (mRearUltraHdrReq != null) {
+                    mRearUltraHdrReq.setUltraHdrSupported(false);
                 }
             }
             default -> {
