@@ -35,7 +35,6 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +48,6 @@ public class IRadioDataImpl extends IRadioData.Stub {
     private static final int LATCH_MAX = 3;
 
     private final CountDownLatch[] mLatches = new CountDownLatch[LATCH_MAX];
-    private final LinkedList<DataProfileInfo> mSetupDataCallHistory = new LinkedList<>();
 
     private final MockModemService mService;
     private final MockDataService mMockDataService;
@@ -64,7 +62,6 @@ public class IRadioDataImpl extends IRadioData.Stub {
     private static MockNetworkService sServiceState;
 
     private boolean mUseNewHalDataCallListChanged = true;
-    private boolean mHistoryEnabled = false;
 
     // Event
     static final int EVENT_NETWORK_STATUS_CHANGED = 1;
@@ -96,27 +93,6 @@ public class IRadioDataImpl extends IRadioData.Stub {
 
     public MockDataService getMockDataServiceInstance() {
         return mMockDataService;
-    }
-
-    public List<DataProfileInfo> getSetupDataCallHistory() {
-        return mSetupDataCallHistory;
-    }
-
-    /**
-     * Sets setup data call history enabled.
-     *
-     * @param enabled boolean true to enable history, otherwise false.
-     */
-    public void setHistoryEnabled(boolean enabled) {
-        mHistoryEnabled = enabled;
-        Log.d(mTag, "setHistoryEnabled: " + enabled);
-    }
-
-    /** Clears setup data call history. */
-    public void clearSetupDataCallHistory() {
-        synchronized (mSetupDataCallHistory) {
-            mSetupDataCallHistory.clear();
-        }
     }
 
     // Implementation of IRadioData functions
@@ -292,12 +268,6 @@ public class IRadioDataImpl extends IRadioData.Stub {
             SliceInfo sliceInfo,
             boolean matchAllRuleAllowed) {
         Log.d(mTag, "setupDataCall");
-
-        if (mHistoryEnabled) {
-            synchronized (mSetupDataCallHistory) {
-                mSetupDataCallHistory.add(dataProfileInfo);
-            }
-        }
 
         RadioResponseInfo rsp;
         SetupDataCallResult dc = new SetupDataCallResult();
