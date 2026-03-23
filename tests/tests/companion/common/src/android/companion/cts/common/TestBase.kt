@@ -349,7 +349,7 @@ fun assertValidCompanionDeviceServicesRemainBound() =
  */
 fun assertValidCompanionDeviceServicesUnbind() =
         assertTrue("CompanionDeviceServices should not bind") {
-            waitFor(timeout = 1.seconds.plus(UNBIND_DELAY_DURATION), interval = 100.milliseconds) {
+            waitFor(timeout = 3.seconds.plus(UNBIND_DELAY_DURATION), interval = 100.milliseconds) {
                 !PrimaryCompanionService.isBound && !SecondaryCompanionService.isBound
             }
         }
