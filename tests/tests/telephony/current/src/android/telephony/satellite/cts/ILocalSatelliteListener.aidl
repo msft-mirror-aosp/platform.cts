@@ -81,4 +81,22 @@ oneway interface ILocalSatelliteListener {
      * requestSatelliteEnabled from Telephony.
      */
     void onRequestSatelliteEnabled(in SatelliteModemEnableRequestAttributes enableAttributes);
+
+    /**
+     * Indicates that MockSatelliteService has just received the request
+     * setSatelliteNetworkInfo from Telephony.
+     */
+    void onSetSatelliteNetworkInfo();
+
+    /**
+     * Indicates that MockSatelliteService has just received the request
+     * enablePrioritizedNetworkScan from Telephony.
+     */
+    void onEnablePrioritizedNetworkScan();
+
+    /**
+     * Indicates that MockSatelliteService has just received the request
+     * disablePrioritizedNetworkScan from Telephony.
+     */
+    void onDisablePrioritizedNetworkScan();
 }
