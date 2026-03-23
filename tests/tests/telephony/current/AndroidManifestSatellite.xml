@@ -47,7 +47,7 @@
 
     <application android:debuggable="true">
 
-        <receiver android:name="android.telephony.cts.SatelliteReceiver"
+        <receiver android:name=".SatelliteReceiver"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.telephony.action.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED"/>
