@@ -19,15 +19,27 @@ package com.android.cts.pcc.featuretests.services;
 import static com.android.cts.pcc.common.StorageTestUtils.writeFile;
 
 import android.app.privatecompute.PccService;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.os.storage.FileManager;
+import android.os.storage.operations.FileOperationEnqueueResult;
+import android.os.storage.operations.FileOperationRequest;
+import android.os.storage.operations.sources.AppDataFileSource;
+import android.os.storage.operations.targets.PccTarget;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PccStorageService extends PccService {
+    private final List<BroadcastReceiver> mRegisteredReceivers = new ArrayList<>();
     private static final String TAG = "PccStorageService";
     public static final String EXTRA_COMMAND = "command";
     public static final String COMMAND_WRITE_FILE = "write_file";
@@ -36,6 +48,10 @@ public class PccStorageService extends PccService {
     public static final String COMMAND_CLEANUP = "cleanup";
     public static final String COMMAND_READ_FD = "read_fd";
     public static final String COMMAND_CAN_OPEN_FILE_BY_PATH = "can_open_file_by_path";
+    public static final String COMMAND_START_FILE_OPERATION_AND_LISTEN =
+            "start_file_operation_and_listen";
+    public static final String COMMAND_LISTEN_FOR_FILE_OPERATION = "listen_for_file_operation";
+    public static final String EXTRA_REQUEST_ID = "request_id";
 
     public static final String EXTRA_FILE_SIZE_BYTES = "file_size_bytes";
     public static final String EXTRA_PFD = "pfd";
@@ -90,7 +106,75 @@ public class PccStorageService extends PccService {
                     Log.i(TAG, "Successfully blocked from opening file by path: " + path, e);
                 }
             }
+        } else if (COMMAND_LISTEN_FOR_FILE_OPERATION.equals(command)) {
+            String reqId = data.getString(EXTRA_REQUEST_ID);
+            if (reqId != null) {
+                FileManager fileManager = getSystemService(FileManager.class);
+                if (fileManager != null) {
+                    listenForFileOperationCompletion(fileManager, reqId);
+                }
+            }
+        } else if (COMMAND_START_FILE_OPERATION_AND_LISTEN.equals(command)) {
+            FileManager fileManager = getSystemService(FileManager.class);
+            if (fileManager != null) {
+                File dummyFile = new File(getFilesDir(), "dummy.txt");
+                try {
+                    dummyFile.createNewFile();
+                } catch (IOException e) {
+                    Log.e(TAG, "Failed to create dummy file", e);
+                }
+
+                FileOperationRequest request =
+                        new FileOperationRequest.Builder(FileOperationRequest.OPERATION_COPY)
+                                .setSource(new AppDataFileSource(dummyFile))
+                                .setTarget(new PccTarget("dummy_dest"))
+                                .build();
+
+                FileOperationEnqueueResult enqueueResult = fileManager.enqueueOperation(request);
+                String requestId = enqueueResult.getRequestId();
+
+                listenForFileOperationCompletion(fileManager, requestId);
+            }
         }
+    }
+
+    private void listenForFileOperationCompletion(FileManager fileManager, String requestId) {
+        BroadcastReceiver receiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String receivedId = intent.getStringExtra(FileManager.EXTRA_REQUEST_ID);
+                        if (requestId.equals(receivedId)) {
+                            Log.i(
+                                    TAG,
+                                    "Successfully received broadcast in PCC process for"
+                                            + " requestId: "
+                                            + requestId);
+                            System.exit(1); // Signal success by crashing
+                        }
+                    }
+                };
+
+        registerReceiver(
+                receiver,
+                new IntentFilter(FileManager.ACTION_FILE_OPERATION_COMPLETED),
+                Context.RECEIVER_EXPORTED);
+        mRegisteredReceivers.add(receiver);
+
+        fileManager.registerCompletionListener(requestId);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        for (BroadcastReceiver receiver : mRegisteredReceivers) {
+            try {
+                unregisterReceiver(receiver);
+            } catch (IllegalArgumentException e) {
+                // Ignore if not registered
+            }
+        }
+        mRegisteredReceivers.clear();
     }
 
     private void cleanup() {
