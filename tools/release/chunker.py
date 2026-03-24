@@ -46,7 +46,7 @@ def _get_args():
       ),
   )
   parser.add_argument(
-      '--avg_chunk_size_kb', default=128, help='Average chunk size in KB'
+      '--avg_chunk_size_kb', default=32, help='Average chunk size in KB'
   )
   return parser.parse_args()
 
@@ -78,7 +78,15 @@ def main():
 
         print(f'Chunking {rel_path}...')
         st = os.stat(file_path)
-        chunks = chunk_util.chunk_file(file_path, chunks_dir, avg_chunk_size_kb)
+        symlink_target = None
+        chunks = []
+        # Check if the file is a symlink
+        if os.path.islink(file_path):
+          symlink_target = os.readlink(file_path)
+        else:
+          chunks = chunk_util.chunk_file(
+              file_path, chunks_dir, avg_chunk_size_kb
+          )
 
         # Time JSON marshaling uses RFC3339 format with 'Z' suffix for UTC.
         mod_time = (
@@ -93,6 +101,7 @@ def main():
             'path': rel_path,
             'mod_time': mod_time,
             'mode': st.st_mode,
+            'symlink_target': symlink_target,
             'chunks': [c.to_dict() for c in chunks],
         })
 
