@@ -1785,6 +1785,9 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
                     View.VISIBLE, TIMEOUT);
             expectImeVisible(TIMEOUT);
+            // Wait for layout being stable in case insets visibility might not align with the
+            // input view visibility.
+            waitForInputViewLayoutStable(stream, LAYOUT_STABLE_THRESHOLD);
 
             WindowInsets initialRootWindowInsets =
                     testActivity.getWindow().getDecorView().getRootWindowInsets();
