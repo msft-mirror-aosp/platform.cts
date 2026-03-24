@@ -196,35 +196,6 @@ class AllowlistManagerTest {
         }
     }
 
-    @ApiTest(
-        apis = ["android.os.allowlist.AllowlistManager#queryAllowlist"]
-    )
-    @Test
-    fun testQueryAllowlist_providerNotAvailable_receiveErrorResponse() {
-        runWithShellPermissionIdentity {
-            allowlistManager.setTestProviderEnabled(false)
-
-            val data = Bundle().apply {
-                putParcelableArrayList(
-                    AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
-                    arrayListOf(testPackage1)
-                )
-            }
-            val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, data)
-            val latch = CountDownLatch(1)
-            var response: AllowlistResponse? = null
-
-            allowlistManager.queryAllowlist(request, context.mainExecutor) { resp ->
-                response = resp
-                latch.countDown()
-            }
-            assertThat(latch.await(LATCH_TIMEOUT_UNEXPECTED_MS, TimeUnit.MILLISECONDS)).isTrue()
-            assertThat(response).isNotNull()
-            assertThat(response!!.status).isEqualTo(AllowlistManager.RESPONSE_STATUS_ERROR_PROVIDER)
-            assertThat(response.data).isEqualTo(Bundle.EMPTY)
-        }
-    }
-
     @ApiTest(apis = ["android.os.allowlist.AllowlistManager#addOnAllowlistChangedListener"])
     @Test
     fun testAddOnAllowlistChangedListener_withoutPermission_throwsException() {

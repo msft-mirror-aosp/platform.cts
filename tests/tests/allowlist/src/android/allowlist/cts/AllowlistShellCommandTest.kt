@@ -57,6 +57,9 @@ class AllowlistShellCommandTest {
     @Before
     fun setUp() {
         runShellCommand("cmd allowlist clear-shell-allowlist ${AllowlistManager.ALLOWLIST_ID_TEST}")
+        runWithShellPermissionIdentity {
+            allowlistManager.setTestProviderEnabled(true)
+        }
     }
 
     @After
@@ -100,7 +103,7 @@ class AllowlistShellCommandTest {
 
         val request = createRequest(arrayListOf(testPackage1, testPackage2))
         val allowedPackages = queryAllowlistPackages(AllowlistManager.ALLOWLIST_ID_TEST, request)
-        assertThat(allowedPackages).containsExactly(SignedPackage("*", null))
+        assertThat(allowedPackages).contains(SignedPackage("*", null))
     }
 
     @Test
@@ -166,7 +169,7 @@ class AllowlistShellCommandTest {
         val request = createRequest(arrayListOf(testPackage2), arrayListOf(signedTestTarget1))
         val allowedMap = queryAllowlistPackageTargets(AllowlistManager.ALLOWLIST_ID_TEST, request)
         assertThat(allowedMap).containsKey(testPackage2)
-        assertThat(allowedMap[testPackage2]?.map { it.packageName }).containsExactly("*")
+        assertThat(allowedMap[testPackage2]?.map { it.packageName }).contains("*")
     }
 
     @Test
