@@ -452,8 +452,8 @@ public class BaseAppVerifierImpl {
         mVerifierMethods.setExpectedEvent(callId, expectedEvent);
     }
 
-    public boolean waitOnExpectedEvent(String callId) {
-        return mVerifierMethods.waitOnExpectedEvent(callId);
+    public boolean waitOnExpectedEvent(String callId, long timeout) {
+        return mVerifierMethods.waitOnExpectedEvent(callId, timeout);
     }
 
     // -- call state

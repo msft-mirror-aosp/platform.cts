@@ -211,9 +211,9 @@ public class BaseAppVerifier {
                             }
 
                             @Override
-                            public boolean waitOnExpectedEvent(String callId) {
+                            public boolean waitOnExpectedEvent(String callId, long timeout) {
                                 return CujInCallService.getCallbackForCall(callId)
-                                        .waitOnExpectedEvent();
+                                        .waitOnExpectedEvent(timeout);
                             }
                         });
         mBaseAppVerifierImpl.setUp();
@@ -440,8 +440,8 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.setExpectedEvent(callId, event);
     }
 
-    public boolean waitOnExpectedEvent(String callId) {
-        return mBaseAppVerifierImpl.waitOnExpectedEvent(callId);
+    public boolean waitOnExpectedEvent(String callId, long timeout) {
+        return mBaseAppVerifierImpl.waitOnExpectedEvent(callId, timeout);
     }
 
     public void setCallState(AppControlWrapper appControl, String id, int callState)
