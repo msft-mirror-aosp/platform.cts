@@ -472,7 +472,7 @@ public class DuplexAudioManager {
     }
 
     /**
-     * Don't call this until the streams are started
+     * Don't call this until the streams are opened
      * @return true if the player is using the specified sharing mode set with
      * setPlayerSharingMode().
      */
@@ -487,7 +487,7 @@ public class DuplexAudioManager {
     }
 
     /**
-     * Don't call this until the streams are started
+     * Don't call this until the streams are opened
      * @return true if the recorder is using the specified sharing mode set with
      * setRecorderSharingMode().
      */
@@ -502,7 +502,7 @@ public class DuplexAudioManager {
     }
 
     /**
-     * Don't call this until the streams are started
+     * Don't call this until the streams are opened
      * @return true if the player is using MMAP.
      */
     public boolean isPlayerStreamMMap() {
@@ -510,7 +510,7 @@ public class DuplexAudioManager {
     }
 
     /**
-     * Don't call this until the streams are started
+     * Don't call this until the streams are opened
      * @return true if the recorders is using MMAP.
      */
     public boolean isRecorderStreamMMap() {
