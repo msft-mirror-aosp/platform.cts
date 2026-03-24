@@ -22,6 +22,11 @@ import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.RunInterruptedException;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
+
+import javax.annotation.Nullable;
+
 /**
  * Helper class to command this test's DPC (Device Policy Controller) app.
  */
@@ -66,10 +71,9 @@ public final class DpcCommander {
         runDpcCmd("clear-user-restriction %s", restriction);
     }
 
-    /**
-     * Sends a {@code cmd} to the DPC service using {@code dumpsys}.
-     */
-    private CommandResult runDpcCmd(String format, Object... args)
+    /** Sends a {@code cmd} to the DPC service using {@code dumpsys}. */
+    @FormatMethod
+    private CommandResult runDpcCmd(@FormatString String format, @Nullable Object... args)
             throws DeviceNotAvailableException {
         waitUntilReady();
         String cmd = String.format(format, args);
@@ -81,19 +85,17 @@ public final class DpcCommander {
         return result;
     }
 
-    /**
-     * Calls {@code dumpsys} in the DPC service.
-     */
-    private CommandResult dumpDpc(String format, Object... args)
+    /** Calls {@code dumpsys} in the DPC service. */
+    @FormatMethod
+    private CommandResult dumpDpc(@FormatString String format, @Nullable Object... args)
             throws DeviceNotAvailableException {
         return runShellCmd("dumpsys activity --user %s service %s %s", mUser, SERVICE,
                 String.format(format, args));
     }
 
-    /**
-     * Runs a {@code Shell} command.
-     */
-    private CommandResult runShellCmd(String format, Object... args)
+    /** Runs a {@code Shell} command. */
+    @FormatMethod
+    private CommandResult runShellCmd(@FormatString String format, @Nullable Object... args)
             throws DeviceNotAvailableException {
         String command = String.format(format, args);
         CommandResult result = mDevice.executeShellV2Command(command);
