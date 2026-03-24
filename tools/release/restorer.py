@@ -74,11 +74,16 @@ def main():
     os.makedirs(restored_dir, exist_ok=True)
     chunks_dir = os.path.join(chunked_extract_dir, chunk_util.CHUNKS_DIR_NAME)
 
+    symlinks = []
     for entry in index:
       rel_path = entry['path']
-      chunks_data = entry['chunks']
       mod_time_str = entry.get('mod_time')
       mode = entry.get('mode')
+      symlink_target = entry.get('symlink_target')
+      chunks_data = entry['chunks']
+      if symlink_target is not None:
+        symlinks.append(entry)
+        continue
 
       print(f'Restoring {rel_path}...')
       target_path = os.path.join(restored_dir, rel_path)
@@ -97,6 +102,31 @@ def main():
         mtime = dt.timestamp()
         os.utime(target_path, (mtime, mtime))
 
+    for entry in symlinks:
+      rel_path = entry['path']
+      mod_time_str = entry.get('mod_time')
+      symlink_target = entry.get('symlink_target')
+
+      print(f'Restoring {rel_path}...')
+      target_path = os.path.join(restored_dir, rel_path)
+      # Use lexists to check if a broken link or incorrect file is in the way
+      if os.path.lexists(target_path):
+        os.remove(target_path)
+
+      output_dir = os.path.dirname(target_path)
+      if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+      # Recreate the symlink
+      os.symlink(symlink_target, target_path)
+
+      if mod_time_str:
+        # datetime.fromisoformat() handles 'Z' suffix since Python 3.11.
+        # For older versions, replace 'Z' with '+00:00'.
+        dt = datetime.datetime.fromisoformat(
+            mod_time_str.replace('Z', '+00:00')
+        )
+        mtime = dt.timestamp()
+        os.utime(target_path, (mtime, mtime))
 
 if __name__ == '__main__':
   main()
