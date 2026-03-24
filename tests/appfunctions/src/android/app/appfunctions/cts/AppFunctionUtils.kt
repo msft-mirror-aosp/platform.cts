@@ -45,7 +45,6 @@ import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
-import com.google.common.truth.Truth.assertWithMessage
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -294,27 +293,21 @@ object AppFunctionUtils {
         agentPackage: TestAllowlistPackage,
         appPackages: List<TestAllowlistPackage>,
     ) {
-        purgeAllowlistCache()
-        val shellCommand = buildString {
-            append("cmd allowlist add-package-multimap")
-            append(" ")
-            append("$APP_FUNCTION_ALLOWLIST_TYPE")
-            append(" ")
-            append(agentPackage.format())
-            append(" ")
-            val targetPackages = appPackages.map { it.format() }.joinToString(",")
-            append(targetPackages)
-        }
-        val result = ShellCommand.builder(shellCommand).execute()
-        assertWithMessage("Failed to set interaction allowlist. Actual result: $result")
-            .that(result)
-            .startsWith("Added")
+        assertThat(
+                ShellCommand.builder("cmd app_function set-test-allowlist-entry")
+                    .addOption("--agent-package", agentPackage.format())
+                    .addOption(
+                        "--app-packages",
+                        appPackages.joinToString(separator = ",") { it.format() },
+                    )
+                    .execute()
+            )
+            .isEqualTo("Set test allowlist entry\n")
     }
 
     /** Clear interaction allowlist. */
     fun clearInteractionAllowlist() {
-        purgeAllowlistCache()
-        ShellCommand.builder("cmd allowlist clear-shell-allowlist $APP_FUNCTION_ALLOWLIST_TYPE").execute()
+        ShellCommand.builder("cmd app_function clear-test-allowlist").execute()
     }
 
     /** Runs [runnable] with interaction between [agentPackage] and [appPackages] allowlisted. */
@@ -329,11 +322,6 @@ object AppFunctionUtils {
         } finally {
             clearInteractionAllowlist()
         }
-    }
-
-    private fun purgeAllowlistCache() {
-        assertThat(ShellCommand.builder("cmd app_function purge-allowlist-cache").execute())
-            .isEqualTo("Purge allowlist cache\n")
     }
 
     /**
@@ -426,5 +414,4 @@ object AppFunctionUtils {
 
     private const val PROPERTY_PACKAGE_NAME = "packageName"
     private const val APP_FUNCTION_INDEXER_PACKAGE = "android"
-    private const val APP_FUNCTION_ALLOWLIST_TYPE = 2
 }
