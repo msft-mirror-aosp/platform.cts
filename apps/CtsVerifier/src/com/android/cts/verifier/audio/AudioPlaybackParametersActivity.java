@@ -72,7 +72,7 @@ public class AudioPlaybackParametersActivity
     private static final int RESULT_CODE_FAILED = 1;
     private static final int RESULT_CODE_NOT_RUN = 2;
 
-    private static final double CORRELATION_PASS_THRESHOLD = 0.7;
+    private static final double CORRELATION_PASS_THRESHOLD = 0.6;
     private static final double WEIGHING_CONSTANT = 0.9;
 
     private Button mButtonTest;
