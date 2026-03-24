@@ -66,14 +66,18 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.Task;
+import android.server.wm.settings.SettingsSession;
 import android.util.Pair;
 
 import androidx.test.filters.MediumTest;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +94,13 @@ import java.util.List;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClientTestBase {
+
+    @ClassRule
+    public static final TestRule sEnableTransitionAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            1.0f);
 
     @Before
     public void setUp() throws Exception {

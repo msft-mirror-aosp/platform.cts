@@ -19,18 +19,19 @@ package android.server.wm.jetpack.embedding;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.second.Components.PORTRAIT_ACTIVITY;
 import static android.server.wm.jetpack.second.Components.SECOND_UNTRUSTED_EMBEDDING_ACTIVITY;
 import static android.server.wm.jetpack.signed.Components.SIGNED_EMBEDDING_ACTIVITY;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildcardSplitPairRule;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.EXTRA_EMBED_ACTIVITY;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.startActivityFromActivity;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.startActivityOnDisplaySingleTop;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -45,6 +46,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.SystemProperties;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.Condition;
 import android.server.wm.NestedShellPermission;
@@ -53,6 +55,7 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.jetpack.utils.TestActivityKnownEmbeddingCerts;
 import android.server.wm.jetpack.utils.TestActivityLauncher;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
+import android.server.wm.settings.SettingsSession;
 import android.view.Display;
 import android.view.WindowManager;
 
@@ -66,7 +69,9 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.Collections;
@@ -83,6 +88,14 @@ import java.util.function.BooleanSupplier;
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
+
+    @ClassRule
+    public static final TestRule sEnableTransitionAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            1.0f);
+
     protected ActivityEmbeddingComponent mActivityEmbeddingComponent;
 
     @Override
