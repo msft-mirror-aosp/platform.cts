@@ -206,6 +206,7 @@ public abstract class BaseAdvancedProtectionFeatureTest extends BaseAdvancedProt
         assumeTrue(isFeatureAvailableInConfig());
 
         setAdvancedProtectionEnabled(true);
+        setFeatureProvisioned(true, getFeatureId());
         assertFeatureEnabled();
     }
 
@@ -221,6 +222,7 @@ public abstract class BaseAdvancedProtectionFeatureTest extends BaseAdvancedProt
         assumeTrue(isFeatureAvailableInConfig());
 
         setAdvancedProtectionEnabled(false);
+        setFeatureProvisioned(true, getFeatureId());
         assertFeatureDisabled();
     }
 
