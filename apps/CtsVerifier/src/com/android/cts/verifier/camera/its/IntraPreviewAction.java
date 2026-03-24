@@ -128,7 +128,7 @@ abstract class IntraPreviewAction {
     }
 
     /**
-     * Perform actions between {@link PreviewRecorder#startRecording()} and
+     * Perform actions between {@link VideoRecorder#startRecording()} and
      * {@link CameraCaptureSession#stopRepeating()}. The execute() method can be used to define the
      * duration of the recording, using {@link Thread#sleep(long)}. The method can also call
      * {@link CameraCaptureSession#setRepeatingRequest(CaptureRequest, CameraCaptureSession.CaptureCallback, Handler)}

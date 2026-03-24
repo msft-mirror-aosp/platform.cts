@@ -26,16 +26,18 @@ import java.util.Objects;
 final class ImageReaderArgs {
     private final Size[] mOutputSizes;
     private final int[] mOutputFormats;
+    private final long[] mOutputUsages;
     private final Size mInputSize;
     private final int mInputFormat;
     private final int mMaxInputBuffers;
     private final boolean mHas10bitOutput;
 
-    private ImageReaderArgs(Size[] outputSizes, int[] outputFormats,
+    private ImageReaderArgs(Size[] outputSizes, int[] outputFormats, long[] outputUsages,
                             Size inputSize, int inputFormat,
                             int maxInputBuffers, boolean has10bitOutput) {
         mOutputSizes = outputSizes;
         mOutputFormats = outputFormats;
+        mOutputUsages = outputUsages;
         mInputSize = inputSize;
         mInputFormat = inputFormat;
         mMaxInputBuffers = maxInputBuffers;
@@ -43,12 +45,14 @@ final class ImageReaderArgs {
     }
 
     public static final ImageReaderArgs EMPTY = new ImageReaderArgs(
-            null, null, null, -1, -1, false);
+            null, null, null, null, -1, -1, false);
 
     public static ImageReaderArgs valueOf(Size[] outputSizes, int[] outputFormats,
-                                   Size inputSize, int inputFormat,
+                                   long[] outputUsages, Size inputSize, int inputFormat,
                                    int maxInputBuffers, boolean has10bitOutput) {
-        return new ImageReaderArgs(outputSizes.clone(), outputFormats.clone(),
+        return new ImageReaderArgs(outputSizes == null ? null : outputSizes.clone(),
+                                   outputFormats == null ? null : outputFormats.clone(),
+                                   outputUsages == null ? null : outputUsages.clone(),
                                    inputSize, inputFormat, maxInputBuffers, has10bitOutput);
     }
 
@@ -58,6 +62,10 @@ final class ImageReaderArgs {
 
     public int[] getOutputFormats() {
         return mOutputFormats;
+    }
+
+    public long[] getOutputUsages() {
+        return mOutputUsages;
     }
 
     public Size getInputSize() {
@@ -86,6 +94,7 @@ final class ImageReaderArgs {
             ImageReaderArgs other = (ImageReaderArgs) obj;
             return (Arrays.equals(mOutputSizes, other.mOutputSizes) &&
                     Arrays.equals(mOutputFormats, other.mOutputFormats) &&
+                    Arrays.equals(mOutputUsages, other.mOutputUsages) &&
                     Objects.equals(mInputSize, other.mInputSize) &&
                     mInputFormat == other.mInputFormat &&
                     mMaxInputBuffers == other.mMaxInputBuffers &&
@@ -98,7 +107,8 @@ final class ImageReaderArgs {
     @Override
     public int hashCode() {
         return Objects.hash(Arrays.hashCode(mOutputSizes), Arrays.hashCode(mOutputFormats),
-                            mInputSize, mInputFormat, mMaxInputBuffers, mHas10bitOutput);
+                            Arrays.hashCode(mOutputUsages), mInputSize, mInputFormat,
+                            mMaxInputBuffers, mHas10bitOutput);
     }
 
     @Override
@@ -108,6 +118,8 @@ final class ImageReaderArgs {
                 "outputSizes: %s, ", Arrays.toString(mOutputSizes)));
         output.append(String.format(Locale.getDefault(),
                 "outputFormats: %s, ", Arrays.toString(mOutputFormats)));
+        output.append(String.format(Locale.getDefault(),
+                "consumerUsages: %s", Arrays.toString(mOutputUsages)));
         output.append(String.format(Locale.getDefault(),
                 "inputSize: %s, ", Objects.toString(mInputSize)));
         output.append(String.format(Locale.getDefault(),
