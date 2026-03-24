@@ -41,6 +41,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ActivityScenario;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
@@ -243,6 +244,7 @@ public class TapjackingTest {
     }
 
     @Test
+    @FlakyTest(bugId = 493053160)
     public void overlaysAreSuppressedWhenConfirmingInstall() throws Exception {
         // 1. Grant permission to draw overlays for the test app
         AppOpsUtils.setOpMode(mContext.getPackageName(), "SYSTEM_ALERT_WINDOW", MODE_ALLOWED);
