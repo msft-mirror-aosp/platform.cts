@@ -62,7 +62,6 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -108,7 +107,6 @@ public class RingerTest extends BaseAppVerifier {
      * <p>
      *  4. disconnect the call
      */
-    @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
@@ -166,7 +164,6 @@ public class RingerTest extends BaseAppVerifier {
      * <p>
      *  4. disconnect the call
      */
-    @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
@@ -282,7 +279,6 @@ public class RingerTest extends BaseAppVerifier {
      * <p>
      *  4. disconnect the call
      */
-    @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
@@ -347,7 +343,6 @@ public class RingerTest extends BaseAppVerifier {
      *  <p>
      *  6. disconnect the call
      */
-    @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
     @CddTest(requirements = {"7.4.1.2/H-0-2"})
     @ApiTest(apis = {"android.telecom.TelecomManager#addNewIncomingCall"})
