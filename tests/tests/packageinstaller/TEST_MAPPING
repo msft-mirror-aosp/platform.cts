@@ -203,7 +203,15 @@
       "name": "CtsNoPermissionTestCases25"
     },
     {
-      "name": "CtsPackageInstallerTapjackingTestCases"
+      "name": "CtsPackageInstallerTapjackingTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
     },
     {
       "name": "CtsPackageUninstallTestCases"
