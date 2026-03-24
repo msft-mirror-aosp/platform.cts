@@ -36,4 +36,16 @@
         <option name="package" value="com.android.cts.pcc.featuretests" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
     </test>
+
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- Create the files directory if it doesn't exist yet -->
+        <option name="run-command" value="mkdir -p /data/user/0/com.android.cts.pcc.featuretests-pcc/files" />
+        <!-- Create a dummy file -->
+        <option name="run-command" value="echo 'secret_data' > /data/user/0/com.android.cts.pcc.featuretests-pcc/files/test_pcc_file.dat" />
+        <!-- Make it world-readable so we test the Sandbox/Namespace boundary, not just root DAC ownership -->
+        <option name="run-command" value="chmod 777 /data/user/0/com.android.cts.pcc.featuretests-pcc/files/test_pcc_file.dat" />
+
+        <!-- Clean up after the test finishes -->
+        <option name="teardown-command" value="rm -f /data/user/0/com.android.cts.pcc.featuretests-pcc/files/test_pcc_file.dat" />
+    </target_preparer>
 </configuration>
