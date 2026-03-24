@@ -131,16 +131,68 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testCreatePictureProfile() {
-        Exception exception = null;
-        try {
-            PictureProfile toCreate = getTestPictureProfile("createPictureProfile");
+    public void testCreatePictureProfile() throws InterruptedException {
+        String testName = "testCreateProfile";
+        PersistableBundle params = getPictureTestParams(75, 60, 80);
+        PictureProfile toCreate =
+                new PictureProfile.Builder(testName)
+                        .setProfileType(PictureProfile.TYPE_APPLICATION)
+                        .setPackageName(PACKAGE_NAME)
+                        .setParameters(params)
+                        .build();
 
+        String createdProfileId = null;
+        try {
             mManager.createPictureProfile(toCreate);
-        } catch (Exception e) {
-            exception = e;
+
+            boolean created =
+                    waitForCondition(
+                            () -> {
+                                PictureProfile p =
+                                        mManager.getPictureProfile(
+                                                PictureProfile.TYPE_APPLICATION,
+                                                testName,
+                                                includeParams(true));
+                                return p != null;
+                            });
+            Assert.assertTrue("Profile should be created within the timeout.", created);
+
+            PictureProfile fetched =
+                    mManager.getPictureProfile(
+                            PictureProfile.TYPE_APPLICATION, testName, includeParams(true));
+            Assert.assertNotNull(fetched);
+            createdProfileId = fetched.getProfileId();
+
+            Assert.assertEquals("Name mismatch", testName, fetched.getName());
+            PersistableBundle fetchedParams = fetched.getParameters();
+            Assert.assertEquals(
+                    "Brightness value mismatch",
+                    75,
+                    fetchedParams.getInt(PictureQuality.PARAMETER_BRIGHTNESS));
+            Assert.assertEquals(
+                    "Saturation value mismatch",
+                    60,
+                    fetchedParams.getInt(PictureQuality.PARAMETER_SATURATION));
+            Assert.assertEquals(
+                    "Contrast value mismatch",
+                    80,
+                    fetchedParams.getInt(PictureQuality.PARAMETER_CONTRAST));
+
+        } finally {
+            if (createdProfileId != null) {
+                try {
+                    waitForCondition(
+                            () ->
+                                    mManager.getPictureProfile(
+                                                    PictureProfile.TYPE_APPLICATION,
+                                                    testName,
+                                                    includeParams(false))
+                                            == null);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
-        Assert.assertNull("No exceptions caught", exception);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -1351,5 +1403,18 @@ public class MediaQualityTest {
             Thread.sleep(POLLING_INTERVAL_MS); // Wait a short interval before next check
         }
         return false; // Condition was not met within the timeout
+    }
+
+    /**
+     * @param b Brightness
+     * @param s Saturation
+     * @param c Contrast
+     */
+    private PersistableBundle getPictureTestParams(int b, int s, int c) {
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putInt(PictureQuality.PARAMETER_BRIGHTNESS, b);
+        bundle.putInt(PictureQuality.PARAMETER_SATURATION, s);
+        bundle.putInt(PictureQuality.PARAMETER_CONTRAST, c);
+        return bundle;
     }
 }
