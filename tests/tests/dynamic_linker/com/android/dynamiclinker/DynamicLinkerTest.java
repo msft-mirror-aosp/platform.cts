@@ -18,6 +18,8 @@ package com.android.dynamiclinker;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CpuFeatures;
+
 import junit.framework.TestCase;
 
 import java.io.File;
@@ -33,15 +35,14 @@ public class DynamicLinkerTest extends TestCase {
   }
 
   public void testLoadLibInApkByFileName() {
-    String arch = System.getProperty("os.arch");
     String apkPath = InstrumentationRegistry.getContext().getPackageResourcePath();
-    if (arch.equals("aarch64")) {
+    if (CpuFeatures.isArm64Cpu()) {
       System.load(apkPath + "!/lib/arm64-v8a/libdynamiclinker_native_lib_b.so");
-    } else if (arch.startsWith("arm")) {
+    } else if (CpuFeatures.isArmCpu()) {
       System.load(apkPath + "!/lib/armeabi-v7a/libdynamiclinker_native_lib_b.so");
-    } else if (arch.equals("x86_64")) {
+    } else if (CpuFeatures.isX86_64Cpu()) {
       System.load(apkPath + "!/lib/x86_64/libdynamiclinker_native_lib_b.so");
-    } else if (arch.endsWith("86")) {
+    } else if (CpuFeatures.isX86Cpu()) {
       System.load(apkPath + "!/lib/x86/libdynamiclinker_native_lib_b.so");
     } else {
       // Don't know which lib to load on this arch.
