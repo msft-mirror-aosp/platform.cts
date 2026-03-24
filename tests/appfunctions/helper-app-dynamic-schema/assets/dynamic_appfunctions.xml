@@ -17,17 +17,14 @@
 <appfunctions>
     <appfunction>
         <id>contextConcatStrings</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>activityConcatStrings</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>activity</scope>
     </appfunction>
     <appfunction>
         <id>activityReturnInstanceId</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>activity</scope>
     </appfunction>
     <appfunction>
@@ -38,48 +35,39 @@
     <appfunction>
         <function_id>contextLongRunning</function_id>
         <id>contextLongRunning</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextOutputInvalidArgument</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextThrowUnknownException</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextThrowInvalidArgument</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextStopProcess</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextGetUris</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>appFunctionGlobalScope</id>
         <scope>global</scope>
-        <enabled_by_default>true</enabled_by_default>
     </appfunction>
     <appfunction>
         <id>appFunctionActivityScope</id>
         <scope>activity</scope>
-        <enabled_by_default>true</enabled_by_default>
     </appfunction>
     <appfunction>
         <id>contextCheckAttribution</id>
         <function_id>contextCheckAttribution</function_id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
 </appfunctions>
