@@ -49,12 +49,16 @@ cc_test_library {
 android_test {
     name: "CtsDynamicLinkerTestCases",
     defaults: ["cts_defaults"],
-    static_libs: ["ctstestrunner-axt"],
+    static_libs: [
+        "ctstestrunner-axt",
+        "compatibility-device-util-axt",
+    ],
     srcs: ["**/*.java"],
     compile_multilib: "both",
     jni_libs: [
         "libdynamiclinker_native_lib_a",
         "libdynamiclinker_native_lib_b",
+        "libcts_jni",
     ],
     manifest: "AndroidManifest.xml",
     sdk_version: "current",
