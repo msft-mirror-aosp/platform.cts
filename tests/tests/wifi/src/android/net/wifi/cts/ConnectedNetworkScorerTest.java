@@ -188,13 +188,11 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             }
             // ensure Wifi is connected
             ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.reconnect());
-            PollingCheck.waitFor(
+            SupplicantState finalState = PollingCheck.waitFor(
                     WIFI_CONNECT_TIMEOUT_MILLIS,
-                    () -> sWifiManager.getConnectionInfo().getSupplicantState()
-                            == SupplicantState.COMPLETED);
-            isConnected =
-                    sWifiManager.getConnectionInfo().getSupplicantState()
-                            == SupplicantState.COMPLETED;
+                    () -> sWifiManager.getConnectionInfo().getSupplicantState(),
+                    (state) -> state == SupplicantState.COMPLETED);
+            isConnected = finalState == SupplicantState.COMPLETED;
             numTry++;
         }
     }
