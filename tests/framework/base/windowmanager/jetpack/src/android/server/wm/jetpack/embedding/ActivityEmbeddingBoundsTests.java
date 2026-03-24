@@ -32,10 +32,12 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
+import android.server.wm.settings.SettingsSession;
 import android.support.test.uiautomator.UiDevice;
 import android.util.Pair;
 import android.util.Size;
@@ -49,7 +51,9 @@ import androidx.window.extensions.embedding.SplitPairRule;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.Collections;
@@ -67,6 +71,14 @@ import java.util.Set;
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
+
+    @ClassRule
+    public static final TestRule sEnableTransitionAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            1.0f);
+
     public static SplitType UNEVEN_CONTAINERS_DEFAULT_SPLIT_TYPE =
             new SplitType.RatioSplitType(0.7f);
 

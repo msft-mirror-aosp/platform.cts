@@ -30,7 +30,9 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.wm.overlay.Components;
+import android.server.wm.settings.SettingsSession;
 
 import androidx.annotation.Nullable;
 
@@ -38,7 +40,9 @@ import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 /**
  * Build/Install/Run:
@@ -46,6 +50,13 @@ import org.junit.Test;
  */
 @Presubmit
 public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
+
+    @ClassRule
+    public static final TestRule sEnableTransitionAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            1.0f);
 
     private static final String APP_SELF =
             WindowUntrustedTouchTest.class.getPackage().getName() + ".cts";
