@@ -41,4 +41,7 @@
 
     <!-- Main CTS remains single device until decided otherwise for default automation -->
     <option name="multi-devices-modules" value="EXCLUDE_ALL" />
+
+    <!-- Disable the collector to skip VBMeta data collection -->
+    <option name="com.android.compatibility.common.tradefed.targetprep.ReportIntegrityCollector:disable" value="true"/>
 </configuration>
