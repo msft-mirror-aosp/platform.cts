@@ -45,7 +45,6 @@ _METADATA = 'metadata'
 _MODE = 'mode'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NONUNIFORM = 'nonuniform'
-_NUM_CAPTURES = 3
 _NUM_FRAMES_PER_CAPTURE = 8
 _PATCH_H = 0.2  # center 20%
 _PATCH_W = 0.2  # center 20%
@@ -233,13 +232,11 @@ def _do_captures_and_extract_patch(
     - last_cap: The last capture metadata.
     - patch: image patch of center 20% of image.
   """
-  last_cap = None
-  for _ in range(_NUM_CAPTURES):
-    cap = cam.do_capture([req]*num_frames_per_cap, fmt)
-    last_cap = cap[-1]
-    img = image_processing_utils.convert_capture_to_rgb_image(cap[-1])
-    patch = image_processing_utils.get_image_patch(
-        img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
+  cap = cam.do_capture([req]*num_frames_per_cap, fmt)
+  last_cap = cap[-1]
+  img = image_processing_utils.convert_capture_to_rgb_image(last_cap)
+  patch = image_processing_utils.get_image_patch(
+      img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
   image_processing_utils.write_image(
       img, f'{os.path.join(log_path, _NAME)}_{tonemap}.jpg')
   return last_cap, patch
