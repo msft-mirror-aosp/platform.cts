@@ -23,6 +23,7 @@ import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWE
 import android.annotation.Nullable;
 import android.content.Context;
 import android.hardware.radio.RadioError;
+import android.hardware.radio.data.DataProfileInfo;
 import android.hardware.radio.network.NetworkInfo;
 import android.hardware.radio.sim.Carrier;
 import android.hardware.radio.sim.CarrierRestrictions;
@@ -1605,5 +1606,49 @@ public class MockModemManager {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Sets whether SetupDataCall history collection is enabled.
+     *
+     * @param slotId for which slot to set the flag.
+     * @param enabled boolean true to enable history, otherwise false.
+     */
+    public void setSetupDataCallHistoryEnabled(int slotId, boolean enabled) {
+        Log.d(TAG, "setSetupDataCallHistoryEnabled[" + slotId + "]: " + enabled);
+        if (mMockModemService == null) {
+            Log.e(TAG, "setSetupDataCallHistoryEnabled: mMockModemService is null");
+            return;
+        }
+        mMockModemService.getIRadioData((byte) slotId).setHistoryEnabled(enabled);
+    }
+
+    /**
+     * Returns the list of SetupDataCall requests.
+     *
+     * @param slotId for which slot to get the history.
+     * @return the list of SetupDataCall requests.
+     */
+    public List<DataProfileInfo> getSetupDataCallHistory(int slotId) {
+        Log.d(TAG, "getSetupDataCallHistory[" + slotId + "]");
+        if (mMockModemService == null) {
+            Log.e(TAG, "getSetupDataCallHistory: mMockModemService is null");
+            return null;
+        }
+        return mMockModemService.getIRadioData((byte) slotId).getSetupDataCallHistory();
+    }
+
+    /**
+     * Clears the list of SetupDataCall requests.
+     *
+     * @param slotId for which slot to get the history.
+     */
+    public void clearSetupDataCallHistory(int slotId) {
+        Log.d(TAG, "clearSetupDataCallHistory[" + slotId + "]");
+        if (mMockModemService == null) {
+            Log.e(TAG, "clearSetupDataCallHistory: mMockModemService is null");
+            return;
+        }
+        mMockModemService.getIRadioData((byte) slotId).clearSetupDataCallHistory();
     }
 }
