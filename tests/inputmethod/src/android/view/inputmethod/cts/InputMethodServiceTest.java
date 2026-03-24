@@ -1265,21 +1265,31 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
             imeSession.callRequestShowSelf(0 /* flags */);
 
-            PollingCheck.waitFor(TIMEOUT, () -> decorView.getRootWindowInsets().isVisible(ime()));
-
-            imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
             final boolean isFullscreen = expectCommand(stream,
                     imeSession.callGetOnEvaluateFullscreenMode(), TIMEOUT)
                     .getReturnBooleanValue();
             assertEquals(isFullscreen, useFullscreenMode);
             if (isFullscreen) {
                 // In Fullscreen mode the IME doesn't provide any insets.
+                PollingCheck.waitFor(TIMEOUT, () -> {
+                    final var insets = decorView.getRootWindowInsets();
+                    return insets.isVisible(ime()) && insets.getInsets(ime()).bottom == 0;
+                });
+                imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
                 assertEquals("Height of ime: " + imeHeight + " should be zero in fullscreen mode",
                         0, imeHeight);
             } else {
                 final int imeNavBarHeight = expectCommand(stream,
-                        imeSession.callGetImeCaptionBarHeight(), TIMEOUT)
-                        .getReturnIntegerValue();
+                        imeSession.callGetImeCaptionBarHeight(), TIMEOUT).getReturnIntegerValue();
+                // Wait for the IME insets to be at least as big as the IME navigation bar.
+                // This is needed because synced_insets_animation might dispatch intermediate
+                // insets.
+                PollingCheck.waitFor(TIMEOUT, () -> {
+                    final var insets = decorView.getRootWindowInsets();
+                    return insets.isVisible(ime()) && insets.getInsets(ime()).bottom
+                            >= imeNavBarHeight;
+                });
+                imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
                 assertTrue("Height of ime: " + imeHeight + " should be at least as big as"
                                 + " the height of the IME navigation bar: " + imeNavBarHeight,
                         imeHeight >= imeNavBarHeight);
