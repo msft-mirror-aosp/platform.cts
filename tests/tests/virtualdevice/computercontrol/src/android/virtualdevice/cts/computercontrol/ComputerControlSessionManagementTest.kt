@@ -30,7 +30,6 @@ import android.util.Log
 import android.view.Display
 import android.view.Surface
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.extensions.computercontrol.ComputerControlSession
@@ -41,6 +40,7 @@ import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeTrue
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -418,7 +418,7 @@ class ComputerControlSessionManagementTest {
         }
     }
 
-    @FlakyTest(bugId = 491587958)
+    @Ignore("b/491587958")
     @Test
     fun testHandOver() {
         assumeReferenceDisplayInPortrait()
