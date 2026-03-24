@@ -18,6 +18,8 @@
     package="com.android.cts.appsearch.indexertestapp.a">
 
     <application android:label="App A with dynamic schema and multiple root schemas">
+        <property android:name="android.app.appfunctions.schema"
+            android:value="app_functions_schema.xsd" />
         <activity android:name="com.android.cts.appsearch.helper.MainActivity"
             android:exported="true">
             <intent-filter>
@@ -29,10 +31,9 @@
         <service android:name="com.android.cts.appsearch.helper.TestAppFunctionServiceA"
             android:exported="true"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE">
-            <property android:name="android.app.appfunctions.v2"
+            <!-- Uses v1 property. -->
+            <property android:name="android.app.appfunctions"
                 android:value="appfunctions_serviceA.xml" />
-            <property android:name="android.app.appfunctions.schema"
-                android:value="app_functions_schema.xsd" />
             <intent-filter>
                 <action android:name="android.app.appfunctions.AppFunctionService" />
             </intent-filter>
@@ -42,19 +43,16 @@
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE">
             <property android:name="android.app.appfunctions.v2"
                 android:value="appfunctions_serviceB.xml" />
-            <property android:name="android.app.appfunctions.schema"
-                android:value="app_functions_schema.xsd" />
             <intent-filter>
                 <action android:name="android.app.appfunctions.AppFunctionService" />
             </intent-filter>
         </service>
         <service android:name="com.android.cts.appsearch.helper.TestAppFunctionServiceC"
             android:exported="true"
+            android:enabled="false"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE">
             <property android:name="android.app.appfunctions.v2"
                 android:value="appfunctions_serviceC.xml" />
-            <property android:name="android.app.appfunctions.schema"
-                android:value="app_functions_schema.xsd" />
             <intent-filter android:priority="-1">
                 <action android:name="android.app.appfunctions.AppFunctionService" />
             </intent-filter>
