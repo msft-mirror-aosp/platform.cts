@@ -32,6 +32,7 @@ import its_device_utils
 import its_session_utils
 import lighting_control_utils
 from mobly.controllers import android_device
+from mobly.snippet import errors as mobly_errors
 import numpy as np
 import yaml
 
@@ -1085,8 +1086,20 @@ def main():
                    testing_scene, camera_id)
       # Click on the Camera ITS app icon to bring it to foreground
       # This is needed for aggregating test results in CtsVerifier
-      dut = android_device.AndroidDevice(device_id)
-      its_device_utils.click_on_app_icon(dut, mobly_output_logs_path)
+      # Wrapped in try-except with retry to handle flaky RPC timeouts.
+      for setup_try in range(NUM_TRIES):
+        try:
+          dut = android_device.AndroidDevice(device_id)
+          its_device_utils.click_on_app_icon(dut, mobly_output_logs_path)
+          break
+        except (mobly_errors.Error, Exception) as e:
+          logging.warning('Try %d/%d: Failed to click on app icon: %s',
+                          setup_try + 1, NUM_TRIES, e)
+          if setup_try == NUM_TRIES - 1:
+            logging.error('Failed to click on app icon after %d tries. '
+                          'Continuing anyway...', NUM_TRIES)
+          else:
+            time.sleep(ACTIVITY_START_WAIT)
 
       num_pass = 0
       num_skip = 0
