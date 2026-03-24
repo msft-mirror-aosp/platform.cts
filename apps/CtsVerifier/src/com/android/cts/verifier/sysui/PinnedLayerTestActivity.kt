@@ -87,7 +87,6 @@ class PinnedLayerTestActivity : PassFailButtons.Activity() {
                 R.string.pinned_layer_perm_fail_desc,
                 R.string.pinned_layer_acknowledge_button,
             )
-            ackBtn.setOnClickListener { finish() }
             return
         }
 
@@ -116,6 +115,7 @@ class PinnedLayerTestActivity : PassFailButtons.Activity() {
             R.string.pinned_layer_close_affordance_desc,
             R.string.pinned_layer_acknowledge_button,
         )
+        ackBtn.isVisible = true
         launchBtn.isVisible = true
         ackBtn.setOnClickListener { showDisableActionStep() }
     }
