@@ -135,7 +135,7 @@ public class StorageTest extends InstrumentationTestCase {
                     /* endY= */ 0,
                     /* steps= */ 40);
         }
-        device.findObject(new UiSelector().textContains("internal storage")).click();
+        device.findObject(new UiSelector().textContains("internal storage")).clickTopLeft();
         device.waitForIdle();
 
         try {
