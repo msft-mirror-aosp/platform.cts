@@ -21,10 +21,14 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.app.NotificationChannel.NEWS_ID;
 import static android.app.NotificationChannel.PROMOTIONS_ID;
+import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
+import static android.app.NotificationManager.IMPORTANCE_LOW;
+import static android.app.NotificationManager.IMPORTANCE_MAX;
 import static android.app.NotificationRule.Action.PRIMARY_ACTION_HIGHLIGHT;
 import static android.app.NotificationRule.Action.PRIMARY_ACTION_LOW;
 import static android.service.notification.Adjustment.KEY_CONTEXTUAL_ACTIONS;
 import static android.service.notification.Adjustment.KEY_IMPORTANCE;
+import static android.service.notification.Adjustment.KEY_NOTIFICATION_RULES;
 import static android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT;
 import static android.service.notification.Adjustment.KEY_SUMMARIZATION;
 import static android.service.notification.Adjustment.KEY_TEXT_REPLIES;
@@ -63,7 +67,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
+import android.graphics.Color;
 import android.graphics.drawable.Icon;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
@@ -72,6 +78,7 @@ import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
 import android.service.notification.DynamicBundle;
@@ -268,6 +275,43 @@ public class NotificationAssistantServiceTest {
             }
         }
         return -1;
+    }
+
+
+    NotificationRule createHighlightRule(int id, boolean isEnabled) {
+        int primaryAction = NotificationRule.Action.PRIMARY_ACTION_HIGHLIGHT;
+        int lightColor = Color.RED;
+        Uri soundHaptics = Settings.System.DEFAULT_NOTIFICATION_URI;
+        List<String> keywords = List.of("weather", "another");
+
+        return new NotificationRule.Builder(id,
+                new NotificationRule.Action.Builder(primaryAction)
+                        .setLightColorOverride(lightColor)
+                        .setSoundHapticOverride(soundHaptics)
+                        .build())
+                .setFilters(List.of(new NotificationRule.Filter.Builder()
+                        .setKeywords(keywords)
+                        .build()))
+                .setEnabled(isEnabled)
+                .build();
+    }
+
+    NotificationRule createBundleRule(int id, boolean isEnabled) {
+        int primaryAction = NotificationRule.Action.PRIMARY_ACTION_BUNDLE;
+        String bundleName = "bundleName";
+        String emojiIcon = "\uD83D\uDE42";
+        List<String> keywords = List.of("weather", "another");
+
+        return new NotificationRule.Builder(id,
+                new NotificationRule.Action.Builder(primaryAction)
+                        .setDynamicBundleName(bundleName)
+                        .setDynamicBundleEmojiIcon(emojiIcon)
+                        .build())
+                .setFilters(List.of(new NotificationRule.Filter.Builder()
+                        .setKeywords(keywords)
+                        .build()))
+                .setEnabled(isEnabled)
+                .build();
     }
 
     @Test
@@ -1508,7 +1552,7 @@ public class NotificationAssistantServiceTest {
                 new Adjustment(sbn1.getPackageName(), sbn1.getKey(), signals1, "", sbn1.getUser());
 
         Bundle signals2 = new Bundle();
-        signals2.putInt(Adjustment.KEY_IMPORTANCE, NotificationManager.IMPORTANCE_LOW);
+        signals2.putInt(Adjustment.KEY_IMPORTANCE, IMPORTANCE_LOW);
         Adjustment adjustment2 =
                 new Adjustment(sbn2.getPackageName(), sbn2.getKey(), signals2, "", sbn2.getUser());
 
@@ -1548,7 +1592,7 @@ public class NotificationAssistantServiceTest {
                 new Adjustment(sbn.getPackageName(), sbn.getKey(), signals1, "", sbn.getUser());
 
         Bundle signals2 = new Bundle();
-        signals2.putInt(Adjustment.KEY_IMPORTANCE, NotificationManager.IMPORTANCE_LOW);
+        signals2.putInt(Adjustment.KEY_IMPORTANCE, IMPORTANCE_LOW);
         Adjustment adjustment2 = new Adjustment("a.b.c", "some key", signals2, "", sbn.getUser());
 
         try (PermissionContext permission =
@@ -1630,6 +1674,213 @@ public class NotificationAssistantServiceTest {
                              .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
             List<NotificationRule> rules = mNotificationManager.getNotificationRules();
             assertThat(rules).isNotEmpty();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testApplyNotificationRuleToNotification() throws Exception {
+
+        mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+        mNotificationManager.addNotificationRule(createHighlightRule(101, true), 0);
+        mUi.dropShellPermissionIdentity();
+
+        try {
+            setUpListeners();
+
+            sendNotification(1, null, ICON_ID);
+            StatusBarNotification sbn =
+                    mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+            assertNotNull(sbn);
+
+            CountDownLatch notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+
+            Bundle signals = new Bundle();
+            ArrayList<Integer> rules = new ArrayList<>();
+            rules.add(101);
+            signals.putIntegerArrayList(KEY_NOTIFICATION_RULES, rules);
+            Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals,
+                    "", sbn.getUser().getIdentifier());
+            mAssistant.adjustNotification(adjustment);
+
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            assertThat(out.getImportance()).isEqualTo(IMPORTANCE_MAX);
+        } finally {
+            mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+            mNotificationManager.removeNotificationRule(101);
+            mUi.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testRemoveRuleThatHasMatchingNotification() throws Exception {
+
+        mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+        mNotificationManager.addNotificationRule(createHighlightRule(101, true), 0);
+        mNotificationManager.addNotificationRule(createBundleRule(103, true), 2);
+        mUi.dropShellPermissionIdentity();
+
+        try {
+            setUpListeners();
+
+            sendNotification(1, null, ICON_ID);
+            StatusBarNotification sbn =
+                    mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+            assertNotNull(sbn);
+
+            CountDownLatch notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+
+            Bundle signals = new Bundle();
+            ArrayList<Integer> rules = new ArrayList<>();
+            rules.add(101);
+            rules.add(103);
+            signals.putIntegerArrayList(KEY_NOTIFICATION_RULES, rules);
+            Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals,
+                    "", sbn.getUser().getIdentifier());
+            mAssistant.adjustNotification(adjustment);
+
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            assertThat(out.getImportance()).isEqualTo(IMPORTANCE_MAX);
+
+            notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+
+            mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+            mNotificationManager.removeNotificationRule(101);
+            mUi.dropShellPermissionIdentity();
+
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            assertThat(out.getImportance()).isEqualTo(IMPORTANCE_LOW);
+            assertThat(out.getChannel().isBundleChannel()).isTrue();
+
+        } finally {
+            mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+            mNotificationManager.removeNotificationRule(101);
+            mNotificationManager.removeNotificationRule(103);
+            mUi.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testRuleNoLongerAppliesToNotification() throws Exception {
+
+        mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+        mNotificationManager.addNotificationRule(createHighlightRule(111, true), 0);
+        mUi.dropShellPermissionIdentity();
+
+        try {
+            setUpListeners();
+
+            sendNotification(1, null, ICON_ID);
+            StatusBarNotification sbn =
+                    mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+            assertNotNull(sbn);
+
+            CountDownLatch notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+
+            Bundle signals = new Bundle();
+            ArrayList<Integer> rules = new ArrayList<>();
+            rules.add(111);
+            signals.putIntegerArrayList(KEY_NOTIFICATION_RULES, rules);
+            Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals,
+                    "", sbn.getUser().getIdentifier());
+            mAssistant.adjustNotification(adjustment);
+
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            assertThat(out.getImportance()).isEqualTo(IMPORTANCE_MAX);
+
+            notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+
+            rules = new ArrayList<>();
+            signals.putIntegerArrayList(KEY_NOTIFICATION_RULES, rules);
+            adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals,
+                    "", sbn.getUser().getIdentifier());
+            mAssistant.adjustNotification(adjustment);
+
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            assertThat(out.getImportance()).isEqualTo(IMPORTANCE_DEFAULT);
+        } finally {
+            mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+            mNotificationManager.removeNotificationRule(111);
+            mUi.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testRuleNoLongerAppliesToNotification_multipleRules() throws Exception {
+
+        mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+        mNotificationManager.addNotificationRule(createHighlightRule(120, true), 0);
+        mNotificationManager.addNotificationRule(createBundleRule(121, true), 2);
+        mUi.dropShellPermissionIdentity();
+
+        try {
+            setUpListeners();
+
+            sendNotification(1, null, ICON_ID);
+            StatusBarNotification sbn =
+                    mHelper.findPostedNotification(null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+            assertNotNull(sbn);
+
+            CountDownLatch notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+
+            Bundle signals = new Bundle();
+            ArrayList<Integer> rules = new ArrayList<>();
+            rules.add(120);
+            rules.add(121);
+            signals.putIntegerArrayList(KEY_NOTIFICATION_RULES, rules);
+            Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals,
+                    "", sbn.getUser().getIdentifier());
+            mAssistant.adjustNotification(adjustment);
+
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            assertThat(out.getImportance()).isEqualTo(IMPORTANCE_MAX);
+
+            notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
+
+            rules = new ArrayList<>();
+            rules.add(121);
+            signals.putIntegerArrayList(KEY_NOTIFICATION_RULES, rules);
+            adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals,
+                    "", sbn.getUser().getIdentifier());
+            mAssistant.adjustNotification(adjustment);
+
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            assertThat(out.getImportance()).isEqualTo(IMPORTANCE_LOW);
+            assertThat(out.getChannel().isBundleChannel()).isTrue();
+
+        } finally {
+            mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE");
+            mNotificationManager.removeNotificationRule(120);
+            mNotificationManager.removeNotificationRule(121);
+            mUi.dropShellPermissionIdentity();
         }
     }
 
