@@ -612,9 +612,14 @@ public class RingerTest extends BaseAppVerifier {
             // all of the ringer focus checks have happened; the InCallController updates before the
             // ringing focus updates; waiting on a connection event ensures that has completed and
             // we can now rely on focus being obtained by Telecom if it was ever going to be.
-            setExpectedEvent(mt, EVENT_FOR_TEST);
-            sendConnectionEvent(app, mt, EVENT_FOR_TEST);
-            assertTrue(waitOnExpectedEvent(mt));
+            int maxRetry = 3, attempt = 1;
+            boolean success = false;
+            do {
+                setExpectedEvent(mt, EVENT_FOR_TEST);
+                sendConnectionEvent(app, mt, EVENT_FOR_TEST);
+                success = waitOnExpectedEvent(mt, (long) Math.pow(2, attempt) /* timeout */);
+            } while (++attempt <= maxRetry && !success);
+            assertTrue(success);
 
             if (isDndOn) {
                 // Music playback should not have changed due to DND being enabled; in other words

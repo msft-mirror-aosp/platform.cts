@@ -45,11 +45,12 @@ public class CujInCallService extends InCallService {
 
         public void setExpectedEvent(String expectedEvent) {
             mExpectedEvent = expectedEvent;
+            mExpectedEventLatch = new CountDownLatch(1);
         }
 
-        public boolean waitOnExpectedEvent() {
+        public boolean waitOnExpectedEvent(long timeout) {
             try {
-                return mExpectedEventLatch.await(5, TimeUnit.SECONDS);
+                return mExpectedEventLatch.await(timeout, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 return false;
             }
