@@ -59,8 +59,10 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.wm.overlay.Components;
 import android.server.wm.overlay.R;
+import android.server.wm.settings.SettingsSession;
 import android.server.wm.shared.BlockingResultReceiver;
 import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
@@ -88,6 +90,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
 
 import java.util.Map;
 import java.util.Set;
@@ -160,6 +163,13 @@ public class WindowUntrustedTouchTest {
     public static ActivityManagerTestBase.DisableImmersiveModeConfirmationRule
             mDisableImmersiveModeConfirmationRule =
             new ActivityManagerTestBase.DisableImmersiveModeConfirmationRule();
+
+    @ClassRule
+    public static final TestRule sEnableTransitionAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            1.0f);
 
     @Rule
     public TestName testNameRule = new TestName();
