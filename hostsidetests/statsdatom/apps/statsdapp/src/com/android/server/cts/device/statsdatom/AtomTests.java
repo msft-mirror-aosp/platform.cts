@@ -23,6 +23,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -79,6 +80,10 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.StatsEvent;
+import android.telephony.TelephonyManager;
+import android.content.pm.PackageInfo;
+import android.content.pm.Signature;
+import java.security.MessageDigest;
 import android.util.StatsLog;
 
 import androidx.annotation.NonNull;
@@ -114,6 +119,8 @@ public class AtomTests {
     private static final String TAG = AtomTests.class.getSimpleName();
 
     private static final String MY_PACKAGE_NAME = "com.android.server.cts.device.statsdatom";
+
+    private static final int ATOM_PROPAGATION_DELAY_MS = 5_000;
 
     @Test
     public void testTlsHandshake() throws Exception {
@@ -1025,6 +1032,52 @@ public class AtomTests {
                         new GameModeConfiguration.Builder()
                                 .setScalingFactor(0.9f)
                                 .setFpsOverride(60).build()));
+    }
+
+    @Test
+    public void testSetCarrierTestOverride() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+        assumeTrue(context.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY));
+
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        if (telephonyManager == null) {
+            return;
+        }
+
+        String packageName = context.getPackageName();
+        String certHash = getCertificateHashAsString(packageName, context);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+            (tm) -> tm.setCarrierTestOverride(
+                null, null, null, null, null, null, null,
+                certHash, null));
+
+        sleep(ATOM_PROPAGATION_DELAY_MS);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+            (tm) -> tm.setCarrierTestOverride(
+                null, null, null, null, null, null, null,
+                null, null));
+    }
+
+    /**
+     * Computes the SHA-256 hash of the app's signing certificate and returns it as a hex string.
+     * This is required to pass the app's certificate hash to setCarrierTestOverride to simulate
+     * carrier privileges to the test app.
+     */
+    private String getCertificateHashAsString(String packageName, Context context) throws Exception {
+        PackageManager pm = context.getPackageManager();
+        PackageInfo info = pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
+        Signature[] signatures = info.signatures;
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(signatures[0].toByteArray());
+        byte[] digest = md.digest();
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
     }
 
     @Test
