@@ -45,6 +45,7 @@ import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.CddTest;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.wavelib.DspBufferDouble;
 import com.android.cts.verifier.audio.wavelib.DspBufferMath;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
@@ -154,6 +155,8 @@ public class AudioPlaybackParametersActivity
         if (infoButton != null) {
             infoButton.performClick();
         }
+
+        DisplayUtils.setKeepScreenOn(this, true);
     }
 
     private void showView(View v, boolean show) {
@@ -488,7 +491,7 @@ public class AudioPlaybackParametersActivity
 
                 if (isOffload) {
                     try {
-                        AudioDataSource audioData = getAudioData(R.raw.speech);
+                        AudioDataSource audioData = getAudioData(R.raw.speech_short);
                         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                                 .setUsage(AudioAttributes.USAGE_MEDIA)
                                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -520,7 +523,7 @@ public class AudioPlaybackParametersActivity
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Playing at 1.0x speed and recording (control)"
                         + (isOffload ? " [Offload]" : "") + "...");
-                mControlRecordingFile = recordPlayback(1.0f, 1.0f, R.raw.speech, isOffload);
+                mControlRecordingFile = recordPlayback(1.0f, 1.0f, R.raw.speech_short, isOffload);
                 if (mControlRecordingFile == null) {
                     sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
                             "Failed to record control playback.");
@@ -533,7 +536,7 @@ public class AudioPlaybackParametersActivity
                 // Step 2: Play speech at 2.0x speed and record it.
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Playing at 2.0x speed and recording...");
-                mRecording1File = recordPlayback(2.0f, 1.0f, R.raw.speech, isOffload);
+                mRecording1File = recordPlayback(2.0f, 1.0f, R.raw.speech_short, isOffload);
                 if (mRecording1File == null) {
                     sendMessage(AudioTestRunner.TEST_ENDED_ERROR,
                             "Failed to record first playback.");
