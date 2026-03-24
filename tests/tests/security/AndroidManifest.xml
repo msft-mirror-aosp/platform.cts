@@ -327,6 +327,15 @@
 
         <activity android:name="android.security.cts.CVE_2022_20429.PocActivity" />
 
+	<!-- CVE-2025-48546 -->
+        <activity
+            android:name="android.security.cts.CVE_2025_48546.HijackActivity"
+            android:supportsPictureInPicture="true">
+        </activity>
+        <activity
+            android:name="android.security.cts.CVE_2025_48546.HelperHijackActivity">
+        </activity>
+
         <activity android:name="android.security.cts.BUG_293602970.PocActivity" />
 
         <activity android:name="android.security.cts.bug_383328827.PocActivity" />
@@ -354,7 +363,7 @@
             </intent-filter>
         </service>
 
-        <!-- CVE-2025-22429 -->
+	<!-- CVE-2025-22429 -->
         <activity android:name=".CVE_2025_22429.PocActivity"
             android:exported="true" />
 
