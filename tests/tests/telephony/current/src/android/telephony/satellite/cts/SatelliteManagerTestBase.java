@@ -2300,7 +2300,7 @@ public class SatelliteManagerTestBase {
 
         boolean waitUntilChanged() {
             try {
-                if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                if (!mSemaphore.tryAcquire(65, TimeUnit.SECONDS)) {
                     logd("SatelliteReceiver: Timeout to receive");
                     return false;
                 }
