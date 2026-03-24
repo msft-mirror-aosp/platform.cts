@@ -15,8 +15,6 @@
  */
 package com.android.compatibility.common.util;
 
-import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
-
 import android.platform.test.flag.junit.host.DeviceFlags;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -40,7 +38,7 @@ public final class FlagsUtil {
     public boolean getBooleanFlag(String flag) throws DeviceNotAvailableException {
         try {
             var flags = DeviceFlags.createDeviceFlags(mTestDevice);
-            String flagValue = flags.getFlagValue(FLAG_PROFILES_FOR_ALL);
+            String flagValue = flags.getFlagValue(flag);
             CLog.v("getBooleanFlag(%s): returning value of '%s'", flag, flagValue);
             return Boolean.valueOf(flagValue);
         } catch (RuntimeException | Error e) {
