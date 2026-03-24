@@ -91,6 +91,7 @@ import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.Until;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -973,6 +974,68 @@ public class OutputSwitcherTest {
         assertThat(route2SubtextObjects).hasSize(1);
         String route2Subtext = route2SubtextObjects.get(0).getText();
         assertThat(route1Subtext).isNotEqualTo(route2Subtext);
+    }
+
+    @Test
+    public void showSystemOutputSwitcher_ongoingSessionRoute_rendersWithIcon() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        RouteListingPreference.Item ongoingSessionItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID1))
+                        .setFlags(RouteListingPreference.Item.FLAG_ONGOING_SESSION)
+                        .build();
+        RouteListingPreference.Item ongoingManagedItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID2))
+                        .setFlags(
+                                RouteListingPreference.Item.FLAG_ONGOING_SESSION
+                                        | RouteListingPreference.Item.FLAG_ONGOING_SESSION_MANAGED)
+                        .build();
+        RouteListingPreference routeListingPreference =
+                new RouteListingPreference.Builder()
+                        .setItems(List.of(ongoingSessionItem, ongoingManagedItem))
+                        .build();
+
+        mRouter2.setRouteListingPreference(routeListingPreference);
+        mRouter2.showSystemOutputSwitcher();
+        Pattern imageOrButton = Pattern.compile(".*(Image|Button).*");
+        Pattern nonEmptyDesc = Pattern.compile(".*\\S.*");
+        BySelector sessionIconSelector = By.clazz(imageOrButton).desc(nonEmptyDesc);
+        UiObject2 route1NameObject =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiObject2 route1Container = route1NameObject.getParent().getParent();
+        List<UiObject2> route1Icons =
+                route1Container.wait(Until.findObjects(sessionIconSelector), TIMEOUT_MS);
+        assertThat(route1Icons).hasSize(1);
+        UiObject2 route2NameObject =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME2).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiObject2 route2Container = route2NameObject.getParent().getParent();
+        List<UiObject2> route2Icons =
+                route2Container.wait(Until.findObjects(sessionIconSelector), TIMEOUT_MS);
+        assertThat(route2Icons).hasSize(1);
+    }
+
+    @Test
+    public void showSystemOutputSwitcher_suggestedRoute_isPrioritizedInList() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        RouteListingPreference.Item unflaggedItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID1)).build();
+        RouteListingPreference.Item suggestedItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID2))
+                        .setFlags(RouteListingPreference.Item.FLAG_SUGGESTED)
+                        .build();
+        RouteListingPreference routeListingPreference =
+                new RouteListingPreference.Builder()
+                        .setItems(List.of(unflaggedItem, suggestedItem))
+                        .build();
+
+        mRouter2.setRouteListingPreference(routeListingPreference);
+        mRouter2.showSystemOutputSwitcher();
+        assertRoutesInOrderInUi(ROUTE_NAME2, ROUTE_NAME1);
     }
 
     /** Returns a Pattern that matches any non-empty string EXCEPT the exact text provided. */
