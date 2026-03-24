@@ -95,12 +95,14 @@ public class BluetoothRestrictionTest {
 
     private int mState;
     private BluetoothAdapter mAdapter;
+    private InOrder mLeInOrder;
     private InOrder mInOrder;
 
     @Before
     public void setUp() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
-        mInOrder = inOrder(mLeReceiver, mReceiver);
+        mLeInOrder = inOrder(mLeReceiver);
+        mInOrder = inOrder(mReceiver);
 
         doAnswer(
                         invocation -> {
@@ -224,6 +226,7 @@ public class BluetoothRestrictionTest {
 
         // Validate the state is stable and not a transition
         sleep(CHECK_WAIT_TIME);
+        mLeInOrder.verifyNoMoreInteractions();
         mInOrder.verifyNoMoreInteractions();
     }
 
@@ -258,7 +261,7 @@ public class BluetoothRestrictionTest {
 
     @SafeVarargs
     private void verifyLeIntentReceived(Duration delay, Matcher<Intent>... matchers) {
-        mInOrder.verify(mLeReceiver, timeout(delay.toMillis()))
+        mLeInOrder.verify(mLeReceiver, timeout(delay.toMillis()))
                 .onReceive(any(Context.class), MockitoHamcrest.argThat(AllOf.allOf(matchers)));
     }
 
