@@ -18,8 +18,8 @@ package com.android.bedstead.enterprise.annotations.parameterized
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceController
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY
 import com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.google.auto.value.AutoAnnotation
 

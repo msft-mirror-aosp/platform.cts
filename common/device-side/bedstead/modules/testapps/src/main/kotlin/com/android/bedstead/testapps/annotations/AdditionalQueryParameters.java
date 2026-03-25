@@ -19,7 +19,7 @@ package com.android.bedstead.testapps.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.queryable.annotations.Query;
 
 import java.lang.annotation.ElementType;

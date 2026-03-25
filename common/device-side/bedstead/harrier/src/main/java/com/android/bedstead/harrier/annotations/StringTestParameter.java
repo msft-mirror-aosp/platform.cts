@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier.annotations;
 
 import com.android.bedstead.harrier.MainParameterizedTestWithArgumentGenerator;
-import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestWithArgumentGenerator;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

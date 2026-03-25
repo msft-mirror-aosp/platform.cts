@@ -18,8 +18,6 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

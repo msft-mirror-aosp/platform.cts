@@ -17,7 +17,7 @@ package com.android.xts.root.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.google.auto.value.AutoAnnotation
 
 /**

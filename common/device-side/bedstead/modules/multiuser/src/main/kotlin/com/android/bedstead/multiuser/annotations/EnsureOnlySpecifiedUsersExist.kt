@@ -18,7 +18,7 @@ package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
  * This annotation will ensure that no users exist on the device other than those explicitly

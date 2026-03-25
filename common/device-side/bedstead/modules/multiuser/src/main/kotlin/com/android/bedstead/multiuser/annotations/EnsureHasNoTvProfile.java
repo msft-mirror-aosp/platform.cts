@@ -21,7 +21,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoProfileAnnotation;
 
 import java.lang.annotation.ElementType;

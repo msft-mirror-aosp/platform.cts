@@ -15,7 +15,7 @@
  */
 package com.android.bedstead.settings
 
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest
 
 /**

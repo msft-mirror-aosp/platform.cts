@@ -19,7 +19,7 @@ package com.android.bedstead.testapps.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_DELEGATE_PRIORITY;
 import static com.android.bedstead.testapps.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;

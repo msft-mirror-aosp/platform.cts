@@ -15,8 +15,6 @@
  */
 package com.android.bedstead.harrier.annotations
 
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
-
 /**
  * Mark that a test method should only run
  * when the boolean system resource is set to the specified value
