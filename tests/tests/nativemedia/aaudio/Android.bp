@@ -30,8 +30,11 @@ android_test {
     ],
     static_libs: [
         "com.android.media.audioserver-aconfig-java",
+        "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "nativetesthelper",
+        "MediaPerformanceClassCommon",
+        "mediapc-requirements",
     ],
     jni_libs: ["libnativeaaudiotest"],
     srcs: ["src/**/*.java"],
