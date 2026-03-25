@@ -40,6 +40,13 @@ public class InstalledIncrementalPackageStatsTests extends PackageManagerStatsTe
             "com.android.cts.packagemanager.stats.emptyapp2";
 
     @Override
+    protected void setUp() throws Exception {
+        getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
+        getDevice().uninstallPackage(TEST_INSTALL_PACKAGE2);
+        super.setUp();
+    }
+
+    @Override
     protected void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
         getDevice().uninstallPackage(TEST_INSTALL_PACKAGE2);
