@@ -18,8 +18,8 @@ package com.android.bedstead.harrier;
 
 import android.util.Log;
 
-import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
+import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 
 import org.junit.Test;

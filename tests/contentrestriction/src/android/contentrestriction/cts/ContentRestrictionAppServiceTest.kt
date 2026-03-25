@@ -25,10 +25,10 @@ import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.EventLogs
 import com.android.eventlib.truth.EventLogsSubject
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.Executors
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.Executors
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(Flags.FLAG_CONTENT_RESTRICTION_API)
@@ -45,7 +45,7 @@ class ContentRestrictionAppServiceTest : BaseContentRestrictionTest() {
             [
                 "android.app.contentrestriction.ContentRestrictionAppService#onContentRestrictionEnabled",
                 "android.app.contentrestriction.ContentRestrictionAppService#onContentRestrictionDisabled",
-                "android.app.contentrestriction.ContentRestrictionAppService#onBind"
+                "android.app.contentrestriction.ContentRestrictionAppService#onBind",
             ]
     )
     fun testContentRestrictionAppService_withContentRestrictionApp() {
@@ -53,13 +53,15 @@ class ContentRestrictionAppServiceTest : BaseContentRestrictionTest() {
             EventLogsSubject.assertThat(app.events().serviceBound()).eventOccurred()
             EventLogsSubject.assertThat(app.events().contentRestrictionEnabled()).eventOccurred()
 
-            setRestrictionApps(emptyList())
+            setDevicePolicyContentRestrictionApps(emptyList())
             EventLogsSubject.assertThat(app.events().contentRestrictionDisabled()).eventOccurred()
         }
     }
 
     @Test
-    @ApiTest(apis = ["android.app.contentrestriction.ContentRestrictionAppService#onClassifyContent"])
+    @ApiTest(
+        apis = ["android.app.contentrestriction.ContentRestrictionAppService#onClassifyContent"]
+    )
     fun testOnClassifyContent_isCalled() {
         withContentRestrictionApps(count = 1) { (app) ->
             EventLogsSubject.assertThat(app.events().contentRestrictionEnabled()).eventOccurred()
@@ -68,7 +70,10 @@ class ContentRestrictionAppServiceTest : BaseContentRestrictionTest() {
             val content = ClassifiableContent.Builder(locusId, "text/plain").build()
 
             contentRestrictionManager.requestClassification(
-                content, Executors.newSingleThreadExecutor()) { _ -> }
+                content,
+                Executors.newSingleThreadExecutor(),
+            ) { _ ->
+            }
 
             val event = app.events().classifyContent().waitForEvent()
             assertThat(event.classifiableContent?.id).isEqualTo(locusId)

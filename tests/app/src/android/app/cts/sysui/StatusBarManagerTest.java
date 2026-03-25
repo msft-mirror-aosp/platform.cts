@@ -43,6 +43,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -325,6 +326,7 @@ public class StatusBarManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
     @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
     @EnsureDoesNotHavePermission(Manifest.permission.SHOW_POWER_MENU)
+    @RequireNotAutomotive(reason = "Power menu is not supported on automotive devices")
     @Test
     public void testShowPowerMenu_noPermission_securityException() throws Exception {
         OutcomeReceiver receiver =
@@ -347,6 +349,7 @@ public class StatusBarManagerTest {
     @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
+    @RequireNotAutomotive(reason = "Power menu is not supported on automotive devices")
     public void testShowPowerMenu_hasPermissionPrivileged_succeeds() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         OutcomeReceiver receiver =
@@ -375,6 +378,7 @@ public class StatusBarManagerTest {
     @ApiTest(apis = {"android.app.StatusBarManager#showPowerMenu"})
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
+    @RequireNotAutomotive(reason = "Power menu is not supported on automotive devices")
     public void testShowPowerMenu_hasPermissionRole_succeeds() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         OutcomeReceiver receiver =

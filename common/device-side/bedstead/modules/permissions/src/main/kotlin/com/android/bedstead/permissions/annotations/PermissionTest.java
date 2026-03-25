@@ -19,9 +19,9 @@ package com.android.bedstead.permissions.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestGenerator;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

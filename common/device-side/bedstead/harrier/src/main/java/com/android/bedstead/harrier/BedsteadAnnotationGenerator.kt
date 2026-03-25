@@ -16,10 +16,10 @@
 package com.android.bedstead.harrier
 
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation
+import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
@@ -39,14 +39,6 @@ import org.junit.runners.model.FrameworkMethod
 
 /** This class exposes a number of annotation-related helper methods. */
 class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
-
-    /**
-     * Special annotations that get handled at a different level and can therefore be skipped during
-     * annotation generation.
-     */
-    // TODO(b/489627134): Move [UsesAnnotationExecutor] into meta folder
-    private val IGNORED_ANNOTATIONS: ImmutableSet<String> =
-        ImmutableSet.of("com.android.bedstead.harrier.annotations.UsesAnnotationExecutor")
 
     /** Standard java annotations that our processing logic ignores. */
     private val IGNORED_ANNOTATION_PACKAGES: ImmutableSet<String> =
@@ -161,15 +153,25 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
         return annotation.annotationClass.java.isAnnotationPresent(RepeatingAnnotation::class.java)
     }
 
+    private val INDIRECT_ANNOTATIONS_CACHE = mutableMapOf<String, List<Annotation>>()
+
     /**
-     * Returns all indirect annotations of a given annotation. Those are the annotations that are
-     * annotating the annotation class.
+     * Returns relevant indirect annotations of a given annotation.
+     *
+     * Those are the annotations that are annotating the annotation class. These get filtered via
+     * [shouldSkipAnnotation].
      */
-    private fun getIndirectAnnotations(annotation: Annotation): Array<Annotation> {
+    private fun getIndirectAnnotations(annotation: Annotation): List<Annotation> {
         if (annotation is DynamicParameterizedAnnotation) {
-            return annotation.annotations()
+            return annotation
+                .annotations()
+                .filterNot(this::shouldSkipAnnotation)
         }
-        return annotation.annotationClass.java.getAnnotations()
+        return INDIRECT_ANNOTATIONS_CACHE.getOrPut(annotation.annotationClass.java.name) {
+            annotation.annotationClass.java
+                .getAnnotations()
+                .filterNot(this::shouldSkipAnnotation)
+        }
     }
 
     /**
@@ -181,21 +183,15 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
             return false
         }
 
-        if (annotation.annotationClass.java == IncludeNone::class.java) {
+        if (annotation is IncludeNone) {
             return true
         }
 
-        val annotationPackage: String = annotation.annotationClass.java.getPackage().name
-        val annotationName: String = annotation.annotationClass.java.name
+        val annotationType = (annotation as java.lang.annotation.Annotation).annotationType()
+        val annotationPackage: String = annotationType.`package`.name
 
-        if (
-            IGNORED_ANNOTATIONS.contains(annotationName) ||
-                IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage)
-        ) {
-            return true
-        }
-
-        return IGNORED_ANNOTATION_PREFIXES.stream().anyMatch { annotationPackage.startsWith(it) }
+        return IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage) ||
+            IGNORED_ANNOTATION_PREFIXES.stream().anyMatch { annotationPackage.startsWith(it) }
     }
 
     private fun createRunOnAnnotationsIfNeeded(annotations: List<Annotation>): List<Annotation> {

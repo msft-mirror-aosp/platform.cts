@@ -17,7 +17,7 @@ package com.android.bedstead.settings.appfunctions
 
 import android.service.settings.preferences.SettingsPreferenceMetadata
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator
+import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestWithArgumentGenerator
 import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.settings.SETTINGS_PACKAGE_NAME
 import com.android.bedstead.settings.SettingsParameterizedTestWithArgumentGenerator

@@ -20,6 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestGenerator;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

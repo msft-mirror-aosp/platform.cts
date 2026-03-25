@@ -19,7 +19,7 @@ package com.android.bedstead.enterprise.annotations
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.queryable.annotations.Query
 import java.lang.annotation.Repeatable

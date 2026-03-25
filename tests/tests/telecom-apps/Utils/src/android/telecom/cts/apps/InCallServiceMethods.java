@@ -39,5 +39,5 @@ public interface InCallServiceMethods {
 
     void setExpectedEvent(String callId, String event);
 
-    boolean waitOnExpectedEvent(String callId);
+    boolean waitOnExpectedEvent(String callId, long timeout);
 }

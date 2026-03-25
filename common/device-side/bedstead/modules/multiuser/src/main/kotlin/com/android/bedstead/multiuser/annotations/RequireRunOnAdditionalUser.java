@@ -21,9 +21,9 @@ import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;

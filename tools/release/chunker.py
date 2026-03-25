@@ -28,6 +28,7 @@ import datetime
 import json
 import os
 import tempfile
+import time
 import chunk_util
 import zip_util
 
@@ -42,7 +43,7 @@ def _get_args():
       '--output_zip_path',
       help=(
           'Path to chunked zip file. If unset, it will be saved as'
-          ' [source_zip_path]_chunked.zip.'
+          ' [source_zip_path]-chunked.zip.'
       ),
   )
   parser.add_argument(
@@ -52,6 +53,7 @@ def _get_args():
 
 
 def main():
+  total_start_time = time.time()
   args = _get_args()
   source_zip_path = args.source_zip_path
   output_zip_path = args.output_zip_path
@@ -62,10 +64,14 @@ def main():
   with tempfile.TemporaryDirectory() as temp_dir:
     # 1. Unzip android-cts.zip
     print(f'Unzipping {source_zip_path}...')
+    start_time = time.time()
     extract_dir = os.path.join(temp_dir, 'extracted')
     zip_util.ZipUtil.unzip_file(source_zip_path, extract_dir)
+    unzip_time = time.time() - start_time
 
     # 2. Chunk all files
+    print('Chunking all files...')
+    start_time = time.time()
     chunked_dir = os.path.join(temp_dir, 'chunked')
     chunks_dir = os.path.join(chunked_dir, chunk_util.CHUNKS_DIR_NAME)
     os.makedirs(chunks_dir, exist_ok=True)
@@ -104,6 +110,7 @@ def main():
             'symlink_target': symlink_target,
             'chunks': [c.to_dict() for c in chunks],
         })
+    chunk_time = time.time() - start_time
 
     # 3. Save the index json file
     with open(
@@ -113,7 +120,17 @@ def main():
 
     # 4. Zip the chunked directory
     print(f'Zipping the chunked directory to {output_zip_path}...')
+    start_time = time.time()
     zip_util.ZipUtil.zip_directory(chunked_dir, output_zip_path)
+    zip_time = time.time() - start_time
+
+  print(f'Extracting the zip file took {unzip_time:.2f}s')
+  print(f'Chunking the package took {chunk_time:.2f}s')
+  print(
+      'Compressing the chunked package into a new zip file took'
+      f' {zip_time:.2f}s'
+  )
+  print(f'Total time: {time.time() - total_start_time:.2f}s')
 
 
 if __name__ == '__main__':

@@ -16,26 +16,25 @@
 
 package com.android.bedstead.accounts.annotations;
 
-import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator.ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
+import static com.android.bedstead.harrier.UserType.ANY;
 
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Ensure that no account exists.
- */
+/** Ensure that no account exists. */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ACCOUNTS)
-@RequireNotInstantApp(reason = "Uses DevicePolicyManager system service, which Instant Apps cannot utilize")
+@RequireNotInstantApp(
+        reason = "Uses DevicePolicyManager system service, which Instant Apps cannot utilize")
 // TODO: Add options (features of the user, type of the user, etc.)
 public @interface EnsureHasNoAccounts {
 

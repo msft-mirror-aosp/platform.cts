@@ -17,7 +17,7 @@ package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 
 /**
  * Mark that a particular user type is the "other" user.

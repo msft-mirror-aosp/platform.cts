@@ -15,6 +15,8 @@
  */
 package com.android.bedstead.harrier.annotations
 
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+
 /**
  * Marks that the test requires a list of instrumented processes to be running. It assumes that
  * instrumented apks are installed. If installed, it will start those instrumented processes

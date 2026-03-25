@@ -8,7 +8,7 @@ java_library_host {
     srcs: [
         "harrier/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.kt",
         "harrier/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
-        "harrier/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
+        "harrier/src/main/java/com/android/bedstead/harrier/annotations/meta/UsesAnnotationExecutor.kt",
         "harrier/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
         "modules/enterprise/src/main/kotlin/com/android/bedstead/enterprise/annotations/DevicePolicyRelevant.java",
         "harrier/src/main/java/com/android/bedstead/harrier/annotations/FailureMode.java",

@@ -27,7 +27,6 @@ import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppFunctionRegistrationTest.Companion.EXECUTE_APP_FUNCTIONS_PERMISSION
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.cts.AppSearchUtils.sanitizeGenericDocument
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
@@ -38,6 +37,7 @@ import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
+import android.Manifest.permission.EXECUTE_APP_FUNCTIONS
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import androidx.core.os.asOutcomeReceiver
@@ -52,7 +52,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 object AppFunctionUtils {
     suspend fun getAllAppFunctionPackages(context: Context): List<String> {
         var result: List<String> = emptyList()
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS) {
             val session = getGlobalSearchSession(context)
             val getSchemaResponse = session.getSchemaAsync("android", "apps-db").get()
             result = buildList {
@@ -77,7 +77,7 @@ object AppFunctionUtils {
         manager: AppFunctionManager,
         isEnabled: Boolean,
     ) {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS) {
             val result = manager.isAppFunctionEnabled(packageName, functionId)
 
             assertThat(result.exceptionOrNull()).isNull()

@@ -17,6 +17,7 @@
 package android.devicepolicy.cts;
 
 import static android.Manifest.permission.CAMERA;
+import static android.Manifest.permission.CAMERA_HEADLESS_SYSTEM_USER;
 import static android.content.pm.PackageManager.FEATURE_CAMERA;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
@@ -211,7 +212,7 @@ public final class CameraTest {
     }
 
     @Postsubmit(reason = "new test")
-    @EnsureHasPermission(CAMERA)
+    @EnsureHasPermission({CAMERA, CAMERA_HEADLESS_SYSTEM_USER})
     @CanSetPolicyTest(policy = DisallowCamera.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setCameraDisabled")
     public void openCamera_cameraEnabled_successful() throws Exception {
@@ -231,7 +232,7 @@ public final class CameraTest {
     }
 
     @Postsubmit(reason = "new test")
-    @EnsureHasPermission(CAMERA)
+    @EnsureHasPermission({CAMERA, CAMERA_HEADLESS_SYSTEM_USER})
     @CanSetPolicyTest(policy = DisallowCamera.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setCameraDisabled")
     public void openCamera_cameraDisabled_unsuccessful() throws Exception {
@@ -483,7 +484,7 @@ public final class CameraTest {
     }
 
     @Postsubmit(reason = "new test")
-    @EnsureHasPermission(CAMERA)
+    @EnsureHasPermission({CAMERA, CAMERA_HEADLESS_SYSTEM_USER})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_CAMERA)
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CAMERA")
     @Test
@@ -492,7 +493,7 @@ public final class CameraTest {
     }
 
     @Postsubmit(reason = "new test")
-    @EnsureHasPermission(CAMERA)
+    @EnsureHasPermission({CAMERA, CAMERA_HEADLESS_SYSTEM_USER})
     @EnsureHasUserRestriction(DISALLOW_CAMERA)
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CAMERA")
     @Test

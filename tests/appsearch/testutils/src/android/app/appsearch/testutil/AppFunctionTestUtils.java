@@ -72,8 +72,7 @@ public final class AppFunctionTestUtils {
     public static final String TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppFunctionServiceDisabled.apk";
     public static final String TEST_APP_A_MULTI_SERVICE_PATH =
-            TEST_APP_ROOT_FOLDER
-                    + "CtsAppSearchIndexerTestAppAMultiService.apk";
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAMultiService.apk";
     public static final String TEST_APP_B_MULTIPLE_APP_LEVEL_XML_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBMultipleAppLevelXml.apk";
 
@@ -118,6 +117,7 @@ public final class AppFunctionTestUtils {
                             TEST_APP_FUNCTIONS_SERVICE,
                             "global",
                             /* addAppLevelProperties= */ true);
+
     /**
      * Print app function generic document as defined in the app_appfunctions_v2.xml of dynamic
      * schema test app A.
@@ -130,6 +130,15 @@ public final class AppFunctionTestUtils {
                     buildAppFunctionDocument(
                             TEST_APP_A_PKG,
                             "appPrint1",
+                            "@null",
+                            "activity",
+                            /* addAppLevelProperties= */ true);
+
+    public static final GenericDocument
+            APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES_2 =
+                    buildAppFunctionDocument(
+                            TEST_APP_A_PKG,
+                            "appPrint2",
                             "@null",
                             "activity",
                             /* addAppLevelProperties= */ true);
@@ -189,16 +198,20 @@ public final class AppFunctionTestUtils {
     /** Updates the enabled state of the AppFunctionService for a given package. */
     public static void updateAppFunctionServiceEnabledState(
             Context context, String packageName, int newState) {
+        updateAppFunctionServiceEnabledState(
+                context, packageName, TEST_APP_FUNCTIONS_SERVICE, newState);
+    }
+
+    /** Updates the enabled state of the AppFunctionService for a given package. */
+    public static void updateAppFunctionServiceEnabledState(
+            Context context, String packageName, String serviceName, int newState) {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
 
         context.getPackageManager()
                 .setComponentEnabledSetting(
-                        new ComponentName(
-                                packageName, "com.android.cts.appsearch.helper.AppFunctionService"),
-                        newState,
-                        /* flags= */ 0);
+                        new ComponentName(packageName, serviceName), newState, /* flags= */ 0);
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .dropShellPermissionIdentity();
@@ -475,6 +488,8 @@ public final class AppFunctionTestUtils {
             builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
             builder.setPropertyString(PROPERTY_SCOPE, scope);
             builder.setPropertyLong(PROPERTY_PACKAGE_NAME_HASH, packageName.hashCode());
+            // App level functions are disabled by default.
+            builder.setPropertyBoolean("enabledByDefault", !"@null".equals(serviceName));
         } else {
             builder.setPropertyString("functionId", "com.example.utils#" + functionSuffix);
         }
@@ -638,8 +653,6 @@ public final class AppFunctionTestUtils {
 
         return builder.build();
     }
-
-
 
     private AppFunctionTestUtils() {}
 }

@@ -31,6 +31,7 @@ java_library {
         "guava",
         "truth",
         "bedstead-root",
+        "CtsAppSearchTestUtils",
     ],
     visibility: [
         "//cts/tests:__subpackages__",
