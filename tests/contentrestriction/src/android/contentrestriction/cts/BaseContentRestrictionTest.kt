@@ -21,15 +21,12 @@ import android.app.admin.PolicyIdentifier
 import android.app.contentrestriction.ContentRestrictionAppService
 import android.app.contentrestriction.ContentRestrictionManager
 import android.content.Context
-import android.content.Intent
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.queryable.queries.IntentFilterQuery.intentFilter
 import com.android.queryable.queries.ServiceQuery.service
-import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
@@ -37,70 +34,77 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 
-
 /** Base class for content restriction CTS tests. */
 open class BaseContentRestrictionTest {
 
-    fun setRestrictionApps(apps: List<String>) {
-        runWithShellPermissionIdentity({
-            devicePolicyManager.setPolicy(
-                PolicyIdentifier.CONTENT_RESTRICTION_APPS,
-                DevicePolicyManager.POLICY_SCOPE_USER,
-                apps
-            )
-        }, "android.permission.MANAGE_DEVICE_POLICY_CONTENT_RESTRICTION_APPS")
+    fun setDevicePolicyContentRestrictionApps(apps: List<String>) {
+        runWithShellPermissionIdentity(
+            {
+                devicePolicyManager.setPolicy(
+                    PolicyIdentifier.CONTENT_RESTRICTION_APPS,
+                    DevicePolicyManager.POLICY_SCOPE_USER,
+                    apps,
+                )
+            },
+            "android.permission.MANAGE_DEVICE_POLICY_CONTENT_RESTRICTION_APPS",
+        )
     }
 
     /**
-     * Installs and sets up the specified [count] of content restriction apps to execute the given [action].
+     * Installs and sets up the specified [count] of content restriction apps to execute the given
+     * [action].
      *
-     * Once the [action] completes (or fails), all installed apps are automatically uninstalled
-     * to ensure a clean test environment.
+     * Once the [action] completes (or fails), all installed apps are automatically uninstalled to
+     * ensure a clean test environment.
      *
      * @param count The number of content restriction apps to install.
      * @param action The block of code to execute, receiving the list of [TestAppInstance]s.
      */
-    fun withContentRestrictionApps(
-        count: Int = 1,
-        action: (List<TestAppInstance>) -> Unit
-    ) {
+    fun withContentRestrictionApps(count: Int = 1, action: (List<TestAppInstance>) -> Unit) {
         val testAppProvider = TestAppProvider()
         val apps = installContentRestrictionApps(testAppProvider, count)
         val packageNames = apps.map { it.packageName() }
 
         try {
-            setRestrictionApps(packageNames)
+            setDevicePolicyContentRestrictionApps(packageNames)
             action(apps)
         } finally {
-            setRestrictionApps(emptyList())
-            runBlocking {
-                apps.forEachParallel { it.uninstall() }
-            }
+            setDevicePolicyContentRestrictionApps(emptyList())
+            runBlocking { apps.forEachParallel { it.uninstall() } }
         }
     }
 
     suspend fun <T> Iterable<T>.forEachParallel(action: suspend (T) -> Unit) = coroutineScope {
-        map { item ->
-            launch(Dispatchers.IO) {
-                action(item)
-            }
-        }.joinAll()
+        map { item -> launch(Dispatchers.IO) { action(item) } }.joinAll()
     }
 
-    fun installContentRestrictionApps(testAppProvider: TestAppProvider, count: Int):
-            List<TestAppInstance> {
-        val testApps = testAppProvider.query()
-            .whereServices().contains(
-                service().where().intentFilters().contains(
-                    intentFilter().where().actions().contains(
-                        ContentRestrictionAppService.ACTION_CONTENT_RESTRICTION_APP_SERVICE
-                    )
+    fun installContentRestrictionApps(
+        testAppProvider: TestAppProvider,
+        count: Int,
+    ): List<TestAppInstance> {
+        val testApps =
+            testAppProvider
+                .query()
+                .whereServices()
+                .contains(
+                    service()
+                        .where()
+                        .intentFilters()
+                        .contains(
+                            intentFilter()
+                                .where()
+                                .actions()
+                                .contains(
+                                    ContentRestrictionAppService
+                                        .ACTION_CONTENT_RESTRICTION_APP_SERVICE
+                                )
+                        )
                 )
-            )
-            .all.take(count)
+                .all
+                .take(count)
         check(testApps.size == count) {
             "Could not find ${count} app(s) with service action " +
-                    ContentRestrictionAppService.ACTION_CONTENT_RESTRICTION_APP_SERVICE
+                ContentRestrictionAppService.ACTION_CONTENT_RESTRICTION_APP_SERVICE
         }
 
         runBlocking {
