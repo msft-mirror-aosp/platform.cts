@@ -490,6 +490,7 @@ class AppFunctionMetadataTestHelper {
                     .setPropertyString("customStringProperty", "testValue")
                     .build()
         }
+
         val PACKAGE_METADATA =
             AppFunctionPackageMetadata.create(
                 PACKAGE_NAME,
@@ -537,7 +538,7 @@ class AppFunctionMetadataTestHelper {
         }
 
         object Service2 {
-            private const val TEST_SERVICE_NAME =
+            const val TEST_SERVICE_NAME =
                 "android.app.appfunctions.testutils.TestAppFunctionService2"
 
             object FunctionNames {
@@ -580,6 +581,7 @@ class AppFunctionMetadataTestHelper {
             val ALL_FUNCTIONS =
                 Service1.FunctionNames.ALL_FUNCTIONS + Service2.FunctionNames.ALL_FUNCTIONS
         }
+
         val ALL_FUNCTIONS = Service1.ALL_FUNCTIONS + Service2.ALL_FUNCTIONS
     }
 

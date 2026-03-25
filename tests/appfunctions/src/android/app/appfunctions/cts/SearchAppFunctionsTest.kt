@@ -38,7 +38,9 @@ import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
+import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -894,9 +896,7 @@ class SearchAppFunctionsTest {
 
     @Test
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-    )
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MULTI_SERVICE_BUGFIX)
     fun searchAppFunctions_multiServiceApp_indexesBothServices() = doBlocking {
         installPackage(
@@ -907,15 +907,17 @@ class SearchAppFunctionsTest {
         )
 
         try {
-        val searchSpec =
-            AppFunctionSearchSpec.Builder()
-                .setPackageNames(setOf(MultiServicesHelperApp.PACKAGE_NAME))
-                .build()
+            val searchSpec =
+                AppFunctionSearchSpec.Builder()
+                    .setPackageNames(setOf(MultiServicesHelperApp.PACKAGE_NAME))
+                    .build()
             retryAssert {
                 val result = manager.searchAppFunctions(searchSpec)
 
                 val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
-                    result.associateBy { it.name }
+                    result.associateBy {
+                        it.name
+                    }
 
                 assertThat(resultAppFunctionsByName.keys)
                     .containsExactlyElementsIn(MultiServicesHelperApp.FunctionNames.ALL_FUNCTIONS)
@@ -927,7 +929,50 @@ class SearchAppFunctionsTest {
                     resultAppFunctionsByName[MultiServicesHelperApp.Service2.FunctionNames.ECHO]!!,
                     MultiServicesHelperApp.Service2.FunctionMetadata.ECHO,
                 )
+            }
+        } finally {
+            uninstallPackage(MultiServicesHelperApp.PACKAGE_NAME, context)
         }
+    }
+
+    @Test
+    @EnsureHasPermission(
+        Manifest.permission.QUERY_ALL_PACKAGES,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE,
+    )
+    fun searchAppFunctions_multipleServices_cannotInvokeDisabledServiceFunction() = doBlocking {
+        installPackage(
+            MultiServicesHelperApp.APK_PATH,
+            MultiServicesHelperApp.PACKAGE_NAME,
+            context,
+            checkIndexation = true,
+        )
+
+        try {
+            context
+                .getPackageManager()
+                .setComponentEnabledSetting(
+                    ComponentName(
+                        MultiServicesHelperApp.PACKAGE_NAME,
+                        MultiServicesHelperApp.Service2.TEST_SERVICE_NAME,
+                    ),
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    /* flags= */ 0,
+                )
+
+            retryAssert {
+                // Retry till the AppFunction indexer has completed a run.
+                val searchSpec =
+                    AppFunctionSearchSpec.Builder()
+                        .setPackageNames(setOf(MultiServicesHelperApp.PACKAGE_NAME))
+                        .build()
+                val result = manager.searchAppFunctions(searchSpec)
+                assertThat(result.map { it.name })
+                    .doesNotContain(MultiServicesHelperApp.Service2.FunctionNames.ECHO)
+                assertThat(result.map { it.name })
+                    .contains(MultiServicesHelperApp.Service1.FunctionNames.ADD)
+            }
         } finally {
             uninstallPackage(MultiServicesHelperApp.PACKAGE_NAME, context)
         }
