@@ -47,11 +47,18 @@ class DynamicRegistrationActivity : Activity() {
     }
 
     fun handleIntent(intent: Intent) {
-        val action = intent.action
-        if (action == ACTION_REGISTER_APP_FUNCTION) {
-            logDebugMessage("handle registration intent")
-            val functionId = intent.getStringExtra(EXTRA_FUNCTION_ID)!!
-            registerAppFunction(functionId)
+        when (intent.action) {
+            ACTION_REGISTER_APP_FUNCTION -> {
+                logDebugMessage("handle registration intent")
+                val functionId = intent.getStringExtra(EXTRA_FUNCTION_ID)!!
+                registerAppFunction(functionId)
+            }
+            ACTION_REGISTER_APP_FUNCTION_IN_BACKGROUND -> {
+                logDebugMessage("handle move task to back intent")
+                val functionId = intent.getStringExtra(EXTRA_FUNCTION_ID)!!
+                registerAppFunction(functionId)
+                moveTaskToBack(/* nonRoot= */ false)
+            }
         }
     }
 
@@ -114,6 +121,10 @@ class DynamicRegistrationActivity : Activity() {
          * See getAppFunctionFromFuncionId for the list of supported functions.
          */
         const val ACTION_REGISTER_APP_FUNCTION = "android.cts.appfunctions.REGISTER_APP_FUNCTION"
+        /**
+         * Action to register an AppFunction and move the task to back.
+         */
+        const val ACTION_REGISTER_APP_FUNCTION_IN_BACKGROUND = "android.app.appfunctions.REGISTER_APP_FUNCTION_IN_BACKGROUND"
         /** Extra to specify the function to register. */
         const val EXTRA_FUNCTION_ID = "FUNCTION_ID"
         /**

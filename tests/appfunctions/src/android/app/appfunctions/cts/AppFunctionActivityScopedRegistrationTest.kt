@@ -39,6 +39,7 @@ import android.app.appfunctions.testutils.CtsTestUtil.safeUnfreezeProcess
 import android.app.appfunctions.testutils.CtsTestUtil.unfreezeProcess
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.DynamicRegistrationActivity.Companion.ACTION_REGISTER_APP_FUNCTION
+import android.app.appfunctions.testutils.DynamicRegistrationActivity.Companion.ACTION_REGISTER_APP_FUNCTION_IN_BACKGROUND
 import android.app.appfunctions.testutils.DynamicRegistrationActivity2
 import android.app.appsearch.GenericDocument
 import android.content.ComponentName
@@ -165,14 +166,18 @@ class AppFunctionActivityScopedRegistrationTest {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun freezeProcessHavingActivityFunctionRegistered_enabledStateShouldBeFalse() = doBlocking {
         try {
-            TestApis.activities()
+            context
                 .startActivity(
-                    getExternalRegistrationIntent(
+                    getExternalBackgroundRegistrationIntent(
                         DynamicSchemaHelperApp.PACKAGE_NAME,
                         REGISTRATION_ACTIVITY,
                         ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     )
                 )
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
 
             freezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
 
@@ -194,14 +199,18 @@ class AppFunctionActivityScopedRegistrationTest {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun unfreezeProcessHavingActivityFunctionRegistered_enabledStateShouldBeTrue() = doBlocking {
         try {
-            TestApis.activities()
+            context
                 .startActivity(
-                    getExternalRegistrationIntent(
+                    getExternalBackgroundRegistrationIntent(
                         DynamicSchemaHelperApp.PACKAGE_NAME,
                         REGISTRATION_ACTIVITY,
                         ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     )
                 )
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
 
             freezeProcess(context, DynamicSchemaHelperApp.PACKAGE_NAME)
             retryAssert {
@@ -504,14 +513,18 @@ class AppFunctionActivityScopedRegistrationTest {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeActivityFunctionFromFrozenProcess_fail() = doBlocking {
         try {
-            TestApis.activities()
+            context
                 .startActivity(
-                    getExternalRegistrationIntent(
+                    getExternalBackgroundRegistrationIntent(
                         DynamicSchemaHelperApp.PACKAGE_NAME,
                         REGISTRATION_ACTIVITY,
                         ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     )
                 )
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
             val activityIds =
                 awaitRegisteredActivityIds(
                     DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
@@ -545,14 +558,18 @@ class AppFunctionActivityScopedRegistrationTest {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeActivityFunctionFromUnfrozenProcess_success() = doBlocking {
         try {
-            TestApis.activities()
+            context
                 .startActivity(
-                    getExternalRegistrationIntent(
+                    getExternalBackgroundRegistrationIntent(
                         DynamicSchemaHelperApp.PACKAGE_NAME,
                         REGISTRATION_ACTIVITY,
                         ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                     )
                 )
+            awaitRegisteredActivityIds(
+                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                numRegistrations = 1,
+            )
             val activityIds =
                 awaitRegisteredActivityIds(
                     DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
@@ -975,6 +992,26 @@ class AppFunctionActivityScopedRegistrationTest {
         return Intent().apply {
             component = ComponentName(packageName, activityName)
             action = ACTION_REGISTER_APP_FUNCTION
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(DynamicRegistrationActivity.EXTRA_FUNCTION_ID, functionId)
+        }
+    }
+
+    /**
+     * Starts the registration activity and immediately move task to background.
+     *
+     * This is the ensure that the process does not have foreground activity
+     * to receive exccesive binder calls which could make ActivityManager to
+     * to kill the process and make the test flaky.
+     */
+    private fun getExternalBackgroundRegistrationIntent(
+        packageName: String,
+        activityName: String,
+        functionId: String,
+    ): Intent {
+        return Intent().apply {
+            component = ComponentName(packageName, activityName)
+            action = ACTION_REGISTER_APP_FUNCTION_IN_BACKGROUND
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             putExtra(DynamicRegistrationActivity.EXTRA_FUNCTION_ID, functionId)
         }
