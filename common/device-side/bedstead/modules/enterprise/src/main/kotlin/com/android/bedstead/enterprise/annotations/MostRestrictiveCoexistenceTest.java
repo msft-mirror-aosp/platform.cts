@@ -19,8 +19,8 @@ package com.android.bedstead.enterprise.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 import com.android.bedstead.testapps.annotations.EnsureTestAppInstalled;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;

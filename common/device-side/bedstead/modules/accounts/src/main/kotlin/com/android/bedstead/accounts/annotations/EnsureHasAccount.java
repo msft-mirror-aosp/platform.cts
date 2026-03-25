@@ -23,7 +23,7 @@ import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.
 import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

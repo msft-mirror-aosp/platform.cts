@@ -20,7 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import static com.android.bedstead.testapps.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 
 import com.android.bedstead.harrier.annotations.FailureMode;
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;

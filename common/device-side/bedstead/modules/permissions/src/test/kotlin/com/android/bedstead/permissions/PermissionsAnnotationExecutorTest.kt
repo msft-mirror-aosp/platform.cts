@@ -23,7 +23,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateTester
 import com.android.bedstead.harrier.annotations.RequireSdkVersion
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.permissions

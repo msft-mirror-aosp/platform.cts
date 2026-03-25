@@ -21,7 +21,7 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INITIAL_USER
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY
 import com.android.bedstead.harrier.annotations.RequireFeature
-import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.nene.types.OptionalBoolean.ANY
 import com.android.bedstead.nene.types.OptionalBoolean.FALSE
