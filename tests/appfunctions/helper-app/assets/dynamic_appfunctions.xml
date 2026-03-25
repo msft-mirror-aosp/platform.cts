@@ -17,7 +17,6 @@
 <appfunctions>
     <appfunction>
         <id>contextConcatStrings</id>
-        <enabled_by_default>true</enabled_by_default>
         <scope>activity</scope>
     </appfunction>
 </appfunctions>
