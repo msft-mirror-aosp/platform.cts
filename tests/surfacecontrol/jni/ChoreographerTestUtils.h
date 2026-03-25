@@ -59,10 +59,11 @@ struct Callback {
     std::string name;
     int count{0};
     std::chrono::nanoseconds frameTime{0LL};
+    std::string errorMessage;
 };
 
 struct VsyncCallback : Callback {
-    VsyncCallback(const char* name, JNIEnv* env) : Callback(name), env(env) {}
+    VsyncCallback(const char* name) : Callback(name) {}
 
     struct FrameTime {
         FrameTime(const AChoreographerFrameCallbackData* callbackData, int index)
@@ -83,7 +84,10 @@ struct VsyncCallback : Callback {
         size_t index = AChoreographerFrameCallbackData_getPreferredFrameTimelineIndex(callbackData);
         preferredFrameTimelineIndex = index;
         size_t length = AChoreographerFrameCallbackData_getFrameTimelinesLength(callbackData);
-        ASSERT(index < length, "Preferred frame timeline index out of bounds");
+        if (index >= length) {
+            errorMessage = "Preferred frame timeline index out of bounds";
+            return;
+        }
         timelines.reserve(length);
 
         for (int i = 0; i < length; i++) {
@@ -95,7 +99,6 @@ struct VsyncCallback : Callback {
     const std::vector<FrameTime>& getTimeline() const { return timelines; }
 
 private:
-    JNIEnv* env;
     size_t preferredFrameTimelineIndex{std::numeric_limits<size_t>::max()};
     std::vector<FrameTime> timelines;
 };
@@ -133,6 +136,8 @@ static std::chrono::nanoseconds now() {
 static void verifyCallback(JNIEnv* env, const Callback& cb, int expectedCount,
                            std::chrono::nanoseconds startTime, std::chrono::nanoseconds maxTime) {
     std::lock_guard<std::mutex> _l{gLock};
+    ASSERT(cb.errorMessage.empty(), "Callback '%s' encountered error: %s", cb.name.c_str(),
+           cb.errorMessage.c_str());
     ASSERT(cb.count == expectedCount, "Choreographer failed to invoke '%s' %d times - actual: %d",
            cb.name.c_str(), expectedCount, cb.count);
     if (maxTime > ZERO) {
