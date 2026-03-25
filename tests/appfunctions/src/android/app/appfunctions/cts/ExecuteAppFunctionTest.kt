@@ -16,6 +16,7 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
+import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
@@ -24,8 +25,11 @@ import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appsearch.GenericDocument
 import android.content.Context
+import android.content.pm.PackageManager
+import android.content.ComponentName
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -33,15 +37,15 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.google.common.truth.Truth.assertThat
+import kotlin.test.assertIs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
-import org.junit.Assume.assumeNotNull
 import org.junit.After
+import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
 @RunWith(BedsteadJUnit4::class)
@@ -62,11 +66,7 @@ class ExecuteAppFunctionTest {
 
     @After
     fun teardown() = doBlocking {
-        uninstallPackage(
-            MultiServicesHelperApp.PACKAGE_NAME,
-            context,
-            true,
-        )
+        uninstallPackage(MultiServicesHelperApp.PACKAGE_NAME, context, true)
     }
 
     @Test
@@ -124,6 +124,52 @@ class ExecuteAppFunctionTest {
                     response.getOrNull()!!.resultDocument.getPropertyString(PROPERTY_RETURN_VALUE)
                 )
                 .isEqualTo("hello")
+        }
+    }
+
+    @Test
+    @EnsureHasPermission(
+        Manifest.permission.QUERY_ALL_PACKAGES,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE,
+    )
+    fun executeAppFunction_multipleServices_cannotInvokeDisabledServiceFunction() = doBlocking {
+        installPackage(
+            MultiServicesHelperApp.APK_PATH,
+            MultiServicesHelperApp.PACKAGE_NAME,
+            context,
+            checkIndexation = true,
+        )
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyString("message", "hello")
+                .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                    MultiServicesHelperApp.PACKAGE_NAME,
+                    MultiServicesHelperApp.Service2.FunctionNames.ECHO.functionIdentifier,
+                )
+                .setParameters(parameters)
+                .build()
+
+        // Disable service 2.
+        context
+            .getPackageManager()
+            .setComponentEnabledSetting(
+                ComponentName(
+                    MultiServicesHelperApp.PACKAGE_NAME,
+                    MultiServicesHelperApp.Service2.TEST_SERVICE_NAME,
+                ),
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                /* flags= */ 0,
+            )
+
+        retryAssert {
+            // Retry till the AppFunction indexer has completed a run.
+            val response = manager.executeAppFunction(request)
+            assertThat(response.isSuccess).isFalse()
+            val exception = assertIs<AppFunctionException>(response.exceptionOrNull())
+            assertThat(exception.errorCode).isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
         }
     }
 
