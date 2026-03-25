@@ -29,11 +29,10 @@
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
+        <option name="install-arg" value="-g" />
         <option name="test-file-name" value="PackageManagerStatsTestsHelper.apk" />
+        <option name="test-file-name" value="CtsPackageInstallTestCases.apk" />
     </target_preparer>
-    <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
-        <option name="jar" value="CtsPackageManagerStatsHostTestCases.jar" />
-    </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <!-- Disables StatsD logging control-->
         <option name="run-command" value="cmd stats logging-control 0" />
@@ -41,4 +40,18 @@
         <option name="delay-after-commands" value="30000" />
         <option name="teardown-command" value="cmd stats logging-control 1" />
     </target_preparer>
+    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
+        <option name="cleanup" value="true" />
+        <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp.apk" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- Assuming your test package is android.packageinstaller.install.cts -->
+        <option name="run-command" value="appops set android.packageinstaller.install.cts REQUEST_INSTALL_PACKAGES allow" />
+
+        <!-- Revoke it after the test finishes -->
+        <option name="teardown-command" value="appops set android.packageinstaller.install.cts REQUEST_INSTALL_PACKAGES default" />
+    </target_preparer>
+    <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
+        <option name="jar" value="CtsPackageManagerStatsHostTestCases.jar" />
+    </test>
 </configuration>

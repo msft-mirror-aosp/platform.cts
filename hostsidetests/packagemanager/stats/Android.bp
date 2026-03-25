@@ -61,7 +61,13 @@ java_test_host {
         "src/**/PackageInstallerV2StatsTests.java",
         "src/**/PackageManagerStatsTestsBase.java",
         "src/**/SettingsProviderSettingChangedStatsTests.java",
+        "src/**/PiaStagesLatencyTrackerStatsTest.java",
         "src/**/Utils.java",
+    ],
+    device_common_data: [
+        // Include the device-side test module so the presubmit builder packages it
+        ":CtsPackageInstallTestCases",
+        ":CtsEmptyTestApp",
     ],
     test_config: "AndroidTest.xml",
 }
