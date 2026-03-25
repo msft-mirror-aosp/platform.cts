@@ -1651,4 +1651,18 @@ public class MockModemManager {
         }
         mMockModemService.getIRadioData((byte) slotId).clearSetupDataCallHistory();
     }
+
+    /**
+     * Deactivate all active PDNs and send unsolicited update.
+     *
+     * @param slotId for which slot to deactivate calls.
+     */
+    public void deactivateAllDataCalls(int slotId) {
+        Log.d(TAG, "deactivateAllDataCalls[" + slotId + "]");
+        if (mMockModemService == null) {
+            Log.e(TAG, "deactivateAllDataCalls: mMockModemService is null");
+            return;
+        }
+        mMockModemService.getIRadioData((byte) slotId).deactivateAllDataCalls();
+    }
 }

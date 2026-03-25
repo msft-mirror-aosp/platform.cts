@@ -526,6 +526,13 @@ public class IRadioDataImpl extends IRadioData.Stub {
         }
     }
 
+    /** Force deactivation of all PDNs and send unsolicited update. */
+    public void deactivateAllDataCalls() {
+        Log.d(mTag, "deactivateAllDataCalls");
+        mMockDataService.deactivateAllDataCalls();
+        unsolDataCallListChanged();
+    }
+
     /** Set to use new HAL explicit disconnect behaviour */
     public void setUseNewHalDataCallListChanged(boolean useNew) {
         mUseNewHalDataCallListChanged = useNew;

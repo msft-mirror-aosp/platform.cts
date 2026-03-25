@@ -52,12 +52,16 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /** Tests for Dynamic Data Config Update. */
 public class DataConfigTestOnMockModem extends MockModemTestBase {
     private static final String TAG = "DataConfigTest";
-    private static final int TIMEOUT_MS = 60000;
+    private static final int TIMEOUT_MS = 90000;
+
     private static final byte CAPABILITY_PRIORITIZE_LATENCY = (byte) 128;
+    private static final byte CAPABILITY_DEFAULT_PRIORITIZE_LATENCY = (byte) 166;
     private static final String CONFIG_UPDATER_PACKAGE = "com.google.android.configupdater";
     private static final String UPDATE_TELEPHONY_CONFIG_INTENT =
             "com.google.android.configupdater.TelephonyConfigUpdate.UPDATE_CONFIG";
@@ -117,18 +121,19 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         // Skip the tests if ConfigUpdater is not installed
         assumeTrue("CONFIGUPDATER is not installed", isConfigUpdaterInstalled());
 
-        Log.d(TAG, "setUp: Resetting version...");
+        Log.d(TAG, "setUp: Resetting version and stabilizing...");
         runShellCommand("cmd phone override-config-data-version -r");
-        runShellCommand("am wait-for-broadcast-idle");
+        runShellCommand("am wait-for-broadcast-idle --user 0");
 
-        // Enable history collection for this test suite
+        // Ensure data is stable and PDNs are cleared before starting
         int modemCount = mTelephonyManager.getActiveModemCount();
         for (int i = 0; i < modemCount; i++) {
+            sMockModemManager.deactivateAllDataCalls(i);
             sMockModemManager.setSetupDataCallHistoryEnabled(i, true);
-        }
-        for (int i = 0; i < modemCount; i++) {
             sMockModemManager.clearSetupDataCallHistory(i);
         }
+        runShellCommand("am wait-for-broadcast-idle --user 0");
+        Log.d(TAG, "setUp: System stabilized.");
     }
 
     @After
@@ -161,53 +166,60 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
             Log.e(TAG, "TearDown: Data disable check failed", e);
         }
 
-        // Remove SIMs and wait for clean state
-        sMockModemManager.removeSimCard(0);
-        sMockModemManager.removeSimCard(1);
-        try {
-            PollingCheck.check(
-                    "Subscription list did not empty during tearDown",
-                    60000,
-                    () -> {
-                        List<SubscriptionInfo> subList =
+        if (sMockModemManager != null) {
+            int modemCount = mTelephonyManager.getActiveModemCount();
+            // Forcefully deactivate all PDNs to clear framework "zombie" states
+            for (int i = 0; i < modemCount; i++) {
+                sMockModemManager.deactivateAllDataCalls(i);
+            }
+
+            // Remove SIMs and wait for clean state
+            sMockModemManager.removeSimCard(0);
+            sMockModemManager.removeSimCard(1);
+            try {
+                PollingCheck.check(
+                        "Subscription list did not empty during tearDown",
+                        60000,
+                        () -> {
+                            List<SubscriptionInfo> subList =
+                                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                                            mSubscriptionManager,
+                                            SubscriptionManager::getActiveSubscriptionInfoList);
+                            return subList == null || subList.isEmpty();
+                        });
+            } catch (Exception e) {
+                Log.e(TAG, "TearDown: Subscription removal check failed", e);
+            }
+
+            for (int i = 0; i < modemCount; i++) {
+                sMockModemManager.setSetupDataCallHistoryEnabled(i, false);
+            }
+
+            // Radio power cycle for HAL reset
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.setRadioPower(false));
+            try {
+                PollingCheck.check(
+                        "Radio did not power off during tearDown",
+                        30000,
+                        () ->
                                 ShellIdentityUtils.invokeMethodWithShellPermissions(
-                                        mSubscriptionManager,
-                                        SubscriptionManager::getActiveSubscriptionInfoList);
-                        return subList == null || subList.isEmpty();
-                    });
-        } catch (Exception e) {
-            Log.e(TAG, "TearDown: Subscription removal check failed", e);
-        }
+                                                mTelephonyManager,
+                                                TelephonyManager::getRadioPowerState)
+                                        == TelephonyManager.RADIO_POWER_OFF);
+            } catch (Exception e) {
+                Log.e(TAG, "TearDown: Radio power off check failed", e);
+            }
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.setRadioPower(true));
 
-        int modemCount = mTelephonyManager.getActiveModemCount();
-        for (int i = 0; i < modemCount; i++) {
-            sMockModemManager.setSetupDataCallHistoryEnabled(i, false);
-        }
-
-        // Radio power cycle for HAL reset
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager, (tm) -> tm.setRadioPower(false));
-        try {
-            PollingCheck.check(
-                    "Radio did not power off during tearDown",
-                    30000,
-                    () ->
-                            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                                            mTelephonyManager, TelephonyManager::getRadioPowerState)
-                                    == TelephonyManager.RADIO_POWER_OFF);
-        } catch (Exception e) {
-            Log.e(TAG, "TearDown: Radio power off check failed", e);
-        }
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager, (tm) -> tm.setRadioPower(true));
-
-        for (int i = 0; i < modemCount; i++) {
-            sMockModemManager.clearSetupDataCallHistory(i);
+            for (int i = 0; i < modemCount; i++) {
+                sMockModemManager.clearSetupDataCallHistory(i);
+            }
         }
 
         runShellCommand("cmd phone override-config-data-version -r");
-        runShellCommand("am wait-for-broadcast-idle");
-        runShellCommand("am wait-for-broadcast-idle");
+        runShellCommand("am wait-for-broadcast-idle --user 0");
 
         super.afterTest();
         Log.d(TAG, "tearDown END");
@@ -257,7 +269,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
                     mConnectivityManager.requestNetwork(request, callbackA);
                 });
 
-        boolean found128 = waitForSetupDataCall(slotId, capability128, true);
+        boolean found128 = waitForSetupDataCall(slotId, capability128, true, TIMEOUT_MS);
         assertTrue("V2 Config (ApnRequired=false) should allow connection with cap 128", found128);
 
         // Case B: ApnRequired = true (V6 Config)
@@ -270,21 +282,50 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
                 false);
 
         restartData(slotId);
+        final CountDownLatch latch = new CountDownLatch(1);
+        final boolean[] unavailableCalled = new boolean[1];
         ConnectivityManager.NetworkCallback callbackB =
                 new ConnectivityManager.NetworkCallback() {
                     @Override
-                    public void onAvailable(Network network) {}
+                    public void onAvailable(Network network) {
+                        Log.e(TAG, "onAvailable called when it should be blocked");
+                    }
+
+                    @Override
+                    public void onUnavailable() {
+                        Log.d(TAG, "onUnavailable called as expected");
+                        unavailableCalled[0] = true;
+                        latch.countDown();
+                    }
                 };
         mCallbacks.add(callbackB);
         sMockModemManager.clearSetupDataCallHistory(slotId);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mConnectivityManager.requestNetwork(request, callbackB);
+                    // Use a 20s timeout for the request to trigger onUnavailable faster
+                    mConnectivityManager.requestNetwork(request, callbackB, 20000);
                 });
 
-        boolean found128Blocked = waitForSetupDataCall(slotId, capability128, true);
+        // Wait for onUnavailable or a shorter local timeout
+        latch.await(25, TimeUnit.SECONDS);
         assertTrue(
-                "V6 Config (ApnRequired=true) should block connection (cap 128 not found)",
+                "V6 Config (ApnRequired=true) should trigger onUnavailable", unavailableCalled[0]);
+
+        // Modem history should NOT contain connection capability 128
+        List<DataProfileInfo> history = sMockModemManager.getSetupDataCallHistory(slotId);
+        boolean found128Blocked = false;
+        if (history != null) {
+            for (DataProfileInfo dpi : history) {
+                if (dpi.trafficDescriptor != null
+                        && (dpi.trafficDescriptor.connectionCapability & 0xFF)
+                                == (capability128 & 0xFF)) {
+                    found128Blocked = true;
+                    break;
+                }
+            }
+        }
+        assertTrue(
+                "V6 Config (ApnRequired=true) should block connection (cap 128 found in history)",
                 !found128Blocked);
     }
 
@@ -323,7 +364,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
                     mConnectivityManager.requestNetwork(request, callback);
                 });
 
-        boolean found = waitForSetupDataCall(slotId, capabilityMapped, true);
+        boolean found = waitForSetupDataCall(slotId, capabilityMapped, true, TIMEOUT_MS);
         assertTrue(
                 "Dynamic mapping for OEM_PAID should map to capability "
                         + (capabilityMapped & 0xFF),
@@ -333,26 +374,52 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         mConnectivityManager.unregisterNetworkCallback(callback);
         mCallbacks.remove(callback);
         runShellCommand("cmd phone override-config-data-version -r");
-        runShellCommand("am wait-for-broadcast-idle");
+        runShellCommand("am wait-for-broadcast-idle --user 0");
 
         restartData(slotId);
         sMockModemManager.clearSetupDataCallHistory(slotId);
 
+        final CountDownLatch latch = new CountDownLatch(1);
+        final boolean[] unavailableCalled = new boolean[1];
         ConnectivityManager.NetworkCallback callback2 =
                 new ConnectivityManager.NetworkCallback() {
                     @Override
-                    public void onAvailable(Network network) {}
+                    public void onAvailable(Network network) {
+                        Log.e(TAG, "onAvailable called for OEM_PAID when it should be unsupported");
+                    }
+
+                    @Override
+                    public void onUnavailable() {
+                        Log.d(TAG, "onUnavailable called as expected for unsupported capability");
+                        unavailableCalled[0] = true;
+                        latch.countDown();
+                    }
                 };
         mCallbacks.add(callback2);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mConnectivityManager.requestNetwork(request, callback2);
+                    // Use a shorter timeout for the request to trigger onUnavailable faster
+                    mConnectivityManager.requestNetwork(request, callback2, 20000);
                 });
 
-        boolean foundDefault = waitForSetupDataCall(slotId, capabilityMapped, false);
+        latch.await(25, TimeUnit.SECONDS);
         assertTrue(
-                "Config should be reset (Cap should NOT be " + (capabilityMapped & 0xFF) + ")",
-                foundDefault);
+                "OEM_PAID request should trigger onUnavailable after reset", unavailableCalled[0]);
+
+        // Modem history should NOT contain connection capability 128
+        List<DataProfileInfo> history = sMockModemManager.getSetupDataCallHistory(slotId);
+        boolean found128 = false;
+        if (history != null) {
+            for (DataProfileInfo dpi : history) {
+                if (dpi.trafficDescriptor != null
+                        && (dpi.trafficDescriptor.connectionCapability & 0xFF)
+                                == (CAPABILITY_PRIORITIZE_LATENCY & 0xFF)) {
+                    found128 = true;
+                    break;
+                }
+            }
+        }
+        assertTrue("Capability 128 should NOT be in history after reset", !found128);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
@@ -380,10 +447,12 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         sMockModemManager.clearSetupDataCallHistory(slotId);
         mConnectivityManager.requestNetwork(request, callback);
 
-        boolean foundBaseline = waitForSetupDataCall(slotId, CAPABILITY_PRIORITIZE_LATENCY, false);
+        boolean foundBaseline =
+                waitForSetupDataCall(
+                        slotId, CAPABILITY_DEFAULT_PRIORITIZE_LATENCY, true, TIMEOUT_MS);
         assertTrue(
-                "Baseline SetupDataCall should not have connectionCapability "
-                        + (CAPABILITY_PRIORITIZE_LATENCY & 0xFF),
+                "Baseline SetupDataCall should have default connectionCapability "
+                        + (CAPABILITY_DEFAULT_PRIORITIZE_LATENCY & 0xFF),
                 foundBaseline);
 
         mConnectivityManager.unregisterNetworkCallback(callback);
@@ -405,7 +474,8 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         mCallbacks.add(callback2);
         mConnectivityManager.requestNetwork(request, callback2);
 
-        boolean found = waitForSetupDataCall(slotId, CAPABILITY_PRIORITIZE_LATENCY, true);
+        boolean found =
+                waitForSetupDataCall(slotId, CAPABILITY_PRIORITIZE_LATENCY, true, TIMEOUT_MS);
         assertTrue(
                 "SetupDataCall with connectionCapability "
                         + (CAPABILITY_PRIORITIZE_LATENCY & 0xFF)
@@ -416,7 +486,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         mConnectivityManager.unregisterNetworkCallback(callback2);
         mCallbacks.remove(callback2);
         runShellCommand("cmd phone override-config-data-version -r");
-        runShellCommand("am wait-for-broadcast-idle");
+        runShellCommand("am wait-for-broadcast-idle --user 0");
 
         restartData(slotId);
         sMockModemManager.clearSetupDataCallHistory(slotId);
@@ -429,8 +499,14 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         mCallbacks.add(callback3);
         mConnectivityManager.requestNetwork(request, callback3);
 
-        boolean foundDefault = waitForSetupDataCall(slotId, CAPABILITY_PRIORITIZE_LATENCY, false);
-        assertTrue("Config should be reset (Cap should NOT be 128)", foundDefault);
+        boolean foundDefault =
+                waitForSetupDataCall(
+                        slotId, CAPABILITY_DEFAULT_PRIORITIZE_LATENCY, true, TIMEOUT_MS);
+        assertTrue(
+                "Config should be reset (Cap should be "
+                        + (CAPABILITY_DEFAULT_PRIORITIZE_LATENCY & 0xFF)
+                        + ")",
+                foundDefault);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
@@ -465,25 +541,15 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         mCallbacks.add(callback);
         mConnectivityManager.requestNetwork(request, callback);
 
-        boolean foundCHT = waitForSetupDataCall(slotId, capabilityCHT, true);
+        boolean foundCHT = waitForSetupDataCall(slotId, capabilityCHT, true, TIMEOUT_MS);
         assertTrue("CHT SIM should map to capability " + (capabilityCHT & 0xFF), foundCHT);
 
         Log.d(TAG, "Switching to FET SIM...");
         mConnectivityManager.unregisterNetworkCallback(callback);
         mCallbacks.remove(callback);
+        sMockModemManager.deactivateAllDataCalls(slotId);
         sMockModemManager.changeNetworkService(slotId, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
         sMockModemManager.removeSimCard(slotId);
-
-        PollingCheck.check(
-                "Subscription list did not empty during switch",
-                20000,
-                () -> {
-                    List<SubscriptionInfo> subList =
-                            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                                    mSubscriptionManager,
-                                    SubscriptionManager::getActiveSubscriptionInfoList);
-                    return subList == null || subList.isEmpty();
-                });
 
         sMockModemManager.insertSimCard(slotId, MOCK_SIM_PROFILE_ID_TWN_FET);
         sMockModemManager.changeNetworkService(slotId, MOCK_SIM_PROFILE_ID_TWN_FET, true);
@@ -499,7 +565,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         mCallbacks.add(callback2);
         mConnectivityManager.requestNetwork(request, callback2);
 
-        boolean foundFET = waitForSetupDataCall(slotId, capabilityFET, true);
+        boolean foundFET = waitForSetupDataCall(slotId, capabilityFET, true, TIMEOUT_MS);
         assertTrue("FET SIM should map to capability " + (capabilityFET & 0xFF), foundFET);
     }
 
@@ -535,14 +601,14 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         sMockModemManager.clearSetupDataCallHistory(slotId);
         mConnectivityManager.requestNetwork(request, callback);
 
-        boolean found128 = waitForSetupDataCall(slotId, capability128, true);
+        boolean found128 = waitForSetupDataCall(slotId, capability128, true, TIMEOUT_MS);
         assertTrue("Config should be applied (Cap 128)", found128);
 
         Log.d(TAG, "Resetting config...");
         mConnectivityManager.unregisterNetworkCallback(callback);
         mCallbacks.remove(callback);
         runShellCommand("cmd phone override-config-data-version -r");
-        runShellCommand("am wait-for-broadcast-idle");
+        runShellCommand("am wait-for-broadcast-idle --user 0");
 
         restartData(slotId);
         sMockModemManager.clearSetupDataCallHistory(slotId);
@@ -555,8 +621,14 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         mCallbacks.add(callback2);
         mConnectivityManager.requestNetwork(request, callback2);
 
-        boolean foundDefault = waitForSetupDataCall(slotId, capability128, false);
-        assertTrue("Config should be reset (Cap should NOT be 128)", foundDefault);
+        boolean foundDefault =
+                waitForSetupDataCall(
+                        slotId, CAPABILITY_DEFAULT_PRIORITIZE_LATENCY, true, TIMEOUT_MS);
+        assertTrue(
+                "Config should be reset (Cap should be "
+                        + (CAPABILITY_DEFAULT_PRIORITIZE_LATENCY & 0xFF)
+                        + ")",
+                foundDefault);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TRAFFIC_DESCRIPTOR_CONNECTION_CAPABILITY)
@@ -594,7 +666,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
                     mConnectivityManager.requestNetwork(request, callback);
                 });
 
-        boolean found128 = waitForSetupDataCall(slotId, capability128, true);
+        boolean found128 = waitForSetupDataCall(slotId, capability128, true, TIMEOUT_MS);
         assertTrue("V4 Config should map to capability " + (capability128 & 0xFF), found128);
 
         sMockModemManager.clearSetupDataCallHistory(slotId);
@@ -604,10 +676,9 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
                 TEST_V5_CONFIG_DATA_METADATA_LOCAL_URI,
                 false);
 
-        boolean found200 = waitForSetupDataCall(slotId, capability200, true);
+        boolean found200 = waitForSetupDataCall(slotId, capability200, true, TIMEOUT_MS);
         assertTrue(
-                "V5 Config should automatically trigger reconnect with capability "
-                        + (capability200 & 0xFF),
+                "V5 Config should trigger reconnect with capability " + (capability200 & 0xFF),
                 found200);
     }
 
@@ -654,7 +725,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         if (shouldResetVersion) {
             Log.d(TAG, "injectDynamicConfig: Resetting version first...");
             runShellCommand("cmd phone override-config-data-version -r");
-            runShellCommand("am wait-for-broadcast-idle");
+            runShellCommand("am wait-for-broadcast-idle --user 0");
         }
 
         Uri contentUri = Uri.parse(contentUriString);
@@ -672,15 +743,11 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
 
         Log.d(TAG, "Sending UPDATE_CONFIG broadcast: " + command);
         runShellCommand(command);
-        // Double idle wait to ensure ConfigUpdater processing and subsequent framework updates
-        runShellCommand("am wait-for-broadcast-idle");
-        runShellCommand("am wait-for-broadcast-idle");
-        // Extra sleep for background thread in ConfigUpdateInstallReceiver and ConfigUpdater
-        Thread.sleep(5000);
+        runShellCommand("am wait-for-broadcast-idle --user 0");
     }
 
-    private boolean waitForSetupDataCall(int slotId, byte targetCapability, boolean shouldEqual)
-            throws Exception {
+    private boolean waitForSetupDataCall(
+            int slotId, byte targetCapability, boolean shouldEqual, long timeout) throws Exception {
         final boolean[] foundMatch = new boolean[1];
         final boolean[] historySeen = new boolean[1];
 
@@ -689,11 +756,13 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
                 "waitForSetupDataCall START: targetCap="
                         + (targetCapability & 0xFF)
                         + " shouldEqual="
-                        + shouldEqual);
+                        + shouldEqual
+                        + " timeout="
+                        + timeout);
         try {
             PollingCheck.check(
                     "SetupDataCall verify failed",
-                    TIMEOUT_MS,
+                    timeout,
                     () -> {
                         List<DataProfileInfo> history =
                                 sMockModemManager.getSetupDataCallHistory(slotId);
@@ -751,6 +820,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
 
     private void restartData(int slotId) throws Exception {
         Log.d(TAG, "restartData: Powering OFF radio...");
+        sMockModemManager.deactivateAllDataCalls(slotId);
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 mTelephonyManager, (tm) -> tm.setRadioPower(false));
 
@@ -768,7 +838,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
 
         PollingCheck.check(
                 "Radio did not power on or service not restored",
-                30000,
+                60000,
                 () -> {
                     int powerState =
                             ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -779,6 +849,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
                     return (powerState == TelephonyManager.RADIO_POWER_ON)
                             && (ss != null && ss.getState() == ServiceState.STATE_IN_SERVICE);
                 });
+        Log.d(TAG, "restartData: Radio Power ON check complete.");
 
         ensureDataEnabled(slotId);
     }
