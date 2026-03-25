@@ -47,7 +47,6 @@ android_test {
     ],
     asset_dirs: ["assets"],
     manifest: "AndroidManifest.xml",
-    platform_apis: true,
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
@@ -70,8 +69,53 @@ android_test {
         ":CtsAppSearchIndexerTestAppAAppLevelFunctionsReg",
         ":CtsAppFunctionsTestAppMultiServices",
     ],
+    platform_apis: true,
     certificate: ":cts-appsearch-helper-cert-a",
     enable_static_aconfig_pb: true,
+    test_config: "AndroidTest.xml",
+}
+
+android_test {
+    name: "CtsAppFunctionNoQueryAllPackagesTestCases",
+    team: "trendy_team_app_function",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.core",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.core_core-ktx",
+        "android.app.appfunctions.flags-aconfig-java",
+        "kotlin-test",
+        "kotlinx_coroutines_test",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "CtsAppFunctionsTestUtils",
+        "flag-junit",
+        "platform-test-annotations",
+        "truth",
+        "testng",
+        "kotlin-test",
+        "kotlinx_coroutines_test",
+        "bedstead",
+    ],
+    asset_dirs: ["assets"],
+    manifest: "no-query-all-packages-cts/AndroidManifest.xml",
+    srcs: [
+        "no-query-all-packages-cts/src/**/*.kt",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    data: [
+        ":CtsAppFunctionsTestHelper",
+        ":CtsAppFunctionsTestHelperDynamicSchema",
+    ],
+    sdk_version: "test_current",
+    certificate: ":cts-appsearch-helper-cert-a",
+    enable_static_aconfig_pb: true,
+    test_config: "no-query-all-packages-cts/AndroidTest.xml",
 }
 
 android_test_helper_app {
