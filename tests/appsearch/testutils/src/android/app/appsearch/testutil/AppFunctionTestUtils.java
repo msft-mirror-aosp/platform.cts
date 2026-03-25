@@ -134,15 +134,6 @@ public final class AppFunctionTestUtils {
                             "activity",
                             /* addAppLevelProperties= */ true);
 
-    public static final GenericDocument
-            APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES_2 =
-                    buildAppFunctionDocument(
-                            TEST_APP_A_PKG,
-                            "appPrint2",
-                            "@null",
-                            "activity",
-                            /* addAppLevelProperties= */ true);
-
     /**
      * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
      * with fewer types test app A.
@@ -488,8 +479,6 @@ public final class AppFunctionTestUtils {
             builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
             builder.setPropertyString(PROPERTY_SCOPE, scope);
             builder.setPropertyLong(PROPERTY_PACKAGE_NAME_HASH, packageName.hashCode());
-            // App level functions are disabled by default.
-            builder.setPropertyBoolean("enabledByDefault", !"@null".equals(serviceName));
         } else {
             builder.setPropertyString("functionId", "com.example.utils#" + functionSuffix);
         }

@@ -19,7 +19,6 @@ package android.app.appsearch.cts.appsindexer;
 import static android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES;
-import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES_2;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
@@ -374,15 +373,11 @@ public class AppFunctionCtsTest {
                         TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL_FUNCTIONS_ONLY,
                         TEST_APP_A_PKG);
 
-        assertThat(appFnMap).hasSize(2);
+        assertThat(appFnMap).hasSize(1);
         assertContainsAppFunctionDocument(
                 appFnMap,
                 TEST_APP_A_PKG + "/com.example.utils#appPrint1",
                 APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
-        assertContainsAppFunctionDocument(
-                appFnMap,
-                TEST_APP_A_PKG + "/com.example.utils#appPrint2",
-                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES_2);
     }
 
     @RequiresFlagsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
@@ -393,15 +388,11 @@ public class AppFunctionCtsTest {
                 installAppAndGetAppFunctions(
                         mContext, TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS, TEST_APP_A_PKG);
 
-        assertThat(appFnMap).hasSize(3);
+        assertThat(appFnMap).hasSize(2);
         assertContainsAppFunctionDocument(
                 appFnMap,
                 TEST_APP_A_PKG + "/com.example.utils#appPrint1",
                 APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
-        assertContainsAppFunctionDocument(
-                appFnMap,
-                TEST_APP_A_PKG + "/com.example.utils#appPrint2",
-                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES_2);
         assertContainsAppFunctionDocument(
                 appFnMap,
                 TEST_APP_A_PKG + "/com.example.utils#print1",
@@ -656,15 +647,11 @@ public class AppFunctionCtsTest {
                     () -> {
                         Map<String, GenericDocument> appFnMap =
                                 searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
-                        assertThat(appFnMap).hasSize(3);
+                        assertThat(appFnMap).hasSize(2);
                         assertContainsAppFunctionDocument(
                                 appFnMap,
                                 TEST_APP_A_PKG + "/com.example.utils#appPrint1",
                                 APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
-                        assertContainsAppFunctionDocument(
-                                appFnMap,
-                                TEST_APP_A_PKG + "/com.example.utils#appPrint2",
-                                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES_2);
                         assertContainsAppFunctionDocument(
                                 appFnMap,
                                 TEST_APP_A_PKG + "/com.example.utils#print1",
@@ -686,15 +673,11 @@ public class AppFunctionCtsTest {
                     installAppAndGetAppFunctions(
                             mContext, TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS, TEST_APP_A_PKG);
 
-            assertThat(appFnMap).hasSize(3);
+            assertThat(appFnMap).hasSize(2);
             assertContainsAppFunctionDocument(
                     appFnMap,
                     TEST_APP_A_PKG + "/com.example.utils#appPrint1",
                     APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
-            assertContainsAppFunctionDocument(
-                    appFnMap,
-                    TEST_APP_A_PKG + "/com.example.utils#appPrint2",
-                    APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES_2);
             assertContainsAppFunctionDocument(
                     appFnMap,
                     TEST_APP_A_PKG + "/com.example.utils#print1",
