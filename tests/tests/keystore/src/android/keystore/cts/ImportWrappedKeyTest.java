@@ -535,6 +535,10 @@ public class ImportWrappedKeyTest {
 
     private void testCurve25519WrappedKeyImport(
             String keyAlgorithm, boolean isStrongBox, boolean expectSuccess) throws Exception {
+        assumeTrue(
+                "Only VSR V+ KeyMint implementations are expected to pass.",
+                TestUtils.getVendorApiLevel() >= 35);
+
         if (isStrongBox) {
             TestUtils.assumeStrongBox();
         }
