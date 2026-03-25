@@ -1869,10 +1869,13 @@ class MockSatelliteServiceManager {
 
     boolean setSatelliteSubscriberIdListChangedIntentComponent(String name) {
         String option;
+        String value = "";
         if ("package".equalsIgnoreCase(name)) {
             option = "-p";
+            value = " " + mInstrumentation.getContext().getPackageName();
         } else if ("class".equalsIgnoreCase(name)) {
             option = "-c";
+            value = " " + SatelliteReceiver.class.getName();
         } else if ("reset".equalsIgnoreCase(name)) {
             option = "-r";
         } else {
@@ -1881,9 +1884,9 @@ class MockSatelliteServiceManager {
 
         try {
             String result = TelephonyUtils.executeShellCommand(mInstrumentation,
-                    SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT + option);
-            logd("setSatelliteSubscriberIdListChangedIntentComponent(" + option + "): result = "
-                    + result);
+                    SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT + option + value);
+            logd("setSatelliteSubscriberIdListChangedIntentComponent(" + option + value
+                    + "): result = " + result);
             return true;
         } catch (Exception e) {
             loge("setSatelliteSubscriberIdListChangedIntentComponent: e=" + e);
