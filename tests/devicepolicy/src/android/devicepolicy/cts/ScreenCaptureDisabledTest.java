@@ -214,6 +214,9 @@ public final class ScreenCaptureDisabledTest {
     @EnsureUnlocked
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setScreenCaptureDisabled")
     public void setScreenCaptureDisabled_true_screenCaptureNoRedactionOrNull() {
+        // TODO (b/481701311) Re-enable the tests for multi-task mode.
+        Assume.assumeFalse("Screen capture disabled policy does not work for Automotive's "
+                + "split-screen multi-task mode", isCarSplitscreenMultitasking());
         Assume.assumeTrue(
                 "Requires showing an activity",
                 TestApis.users().instrumented().canShowActivities());
@@ -236,6 +239,9 @@ public final class ScreenCaptureDisabledTest {
     @EnsureUnlocked
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setScreenCaptureDisabled")
     public void setScreenCaptureDisabled_true_screenCaptureRedactedOrNull() {
+        // TODO (b/481701311) Re-enable the tests for multi-task mode.
+        Assume.assumeFalse("Screen capture disabled policy does not work for Automotive's "
+                + "split-screen multi-task mode", isCarSplitscreenMultitasking());
         Assume.assumeTrue(
                 "Requires showing an activity",
                 TestApis.users().instrumented().canShowActivities());
@@ -256,6 +262,9 @@ public final class ScreenCaptureDisabledTest {
     @EnsureUnlocked
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setScreenCaptureDisabled")
     public void setScreenCaptureDisabled_false_screenCaptureNoRedactionOrNull() {
+        // TODO (b/481701311) Re-enable the tests for multi-task mode.
+        Assume.assumeFalse("Screen capture disabled policy does not work for Automotive's "
+                + "split-screen multi-task mode", isCarSplitscreenMultitasking());
         Assume.assumeTrue(
                 "Requires showing an activity",
                 TestApis.users().instrumented().canShowActivities());
@@ -645,13 +654,7 @@ public final class ScreenCaptureDisabledTest {
         // there could be notifications in the top part and white line(navigation bar) at bottom
         // which are included in the screenshot and are not redacted(black). It's not perfect, but
         // seems best option to avoid any flakiness at this point.
-        // For split-screen multi-tasking, use a taller margin (2/5 of the height), taking into
-        // account the other panels. Ideally, we would want to use the actual dimensions of the app
-        // panel, but there is no good way to get access to the current test activity or its window,
-        // because the activity is running in a different process, according to the bedstead team.
-        // We would need an adb command that can return the app panel layouts on the screen.
-        // TODO(b/481701311): Clean up this special case logic.
-        int margin = isCarSplitscreenMultitasking() ? (height * 2 / 5) : (height / 4);
+        int margin = height / 4;
         int effectiveHeight = height - (2 * margin);
         int len = width * effectiveHeight;
         int[] pixels = new int[len];

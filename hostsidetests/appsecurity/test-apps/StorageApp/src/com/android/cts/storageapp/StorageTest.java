@@ -48,6 +48,7 @@ import android.test.InstrumentationTestCase;
 
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
@@ -122,14 +123,19 @@ public class StorageTest extends InstrumentationTestCase {
     private void clearSpaceGeneric(UiDevice device) throws UiObjectNotFoundException {
         UiScrollable localObject = new UiScrollable(new UiSelector().scrollable(true));
         assertNotNull("Cannot find scrollable object.", localObject);
-        ((UiScrollable) localObject).setMaxSearchSwipes(10);
-        try {
-            ((UiScrollable) localObject).scrollIntoView(
-                    new UiSelector().textContains("internal storage"));
-        } catch (UiObjectNotFoundException localUiObjectNotFoundException) {
-            // Scrolling can fail if the UI is not scrollable
+        for (int i = 0; i < 5; i++) { // Max attempt count 5 times
+            UiObject internalStorage = device.findObject(new UiSelector().textContains("internal storage"));
+            if (internalStorage.exists()) {
+                break;
+            }
+            // Self scrolling
+            device.swipe(/* startX= */ device.getDisplayWidth() / 2,
+                    /* startY= */ device.getDisplayHeight() / 2,
+                    /* endX= */ device.getDisplayWidth() / 2,
+                    /* endY= */ 0,
+                    /* steps= */ 40);
         }
-        device.findObject(new UiSelector().textContains("internal storage")).click();
+        device.findObject(new UiSelector().textContains("internal storage")).clickTopLeft();
         device.waitForIdle();
 
         try {

@@ -93,7 +93,7 @@
         </receiver>
 
         <!-- BroadcastReceiver that listens for ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent -->
-        <receiver android:name=".SatelliteReceiver"
+        <receiver android:name="android.telephony.satellite.cts.SatelliteReceiver"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.telephony.action.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED"/>

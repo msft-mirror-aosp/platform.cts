@@ -31,9 +31,11 @@ android_test {
         "android.companion.flags-aconfig-java",
         "android.service.notification.flags-aconfig-java",
         "android.app.flags-aconfig-java",
+        "android.security.flags-aconfig-java",
         "flag-junit",
         "notification_flags_lib",
         "bedstead",
+        "sts-device-util",
     ],
     libs: [
         "android.test.runner.stubs.test",

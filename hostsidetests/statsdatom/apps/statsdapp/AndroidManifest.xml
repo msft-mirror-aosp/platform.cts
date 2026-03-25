@@ -190,6 +190,14 @@
              android:exported="true"
              android:turnScreenOn="true"
              android:showWhenLocked="true" />
+
+        <service android:name=".TestCarrierService"
+             android:permission="android.permission.BIND_CARRIER_SERVICES"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.carrier.CarrierService" />
+            </intent-filter>
+        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

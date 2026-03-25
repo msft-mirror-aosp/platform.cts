@@ -313,6 +313,7 @@ def find_crossover_point(cam, capture_results):
     if camera_fov_before != camera_fov:
       logging.debug('Cameras with different field of view (%s != %s) crossed.',
                     camera_fov_before, camera_fov)
+      print(f'test_multi_camera_switch_crossover_zoom_ratio: {zoom_ratio:.2f}')
       if (ae_state == awb_state == _CONVERGED_STATE) and (
           af_state in _AF_CONVERGED_STATE):
         lens_changed = True

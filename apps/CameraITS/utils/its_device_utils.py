@@ -22,7 +22,7 @@ from snippet_uiautomator import uiautomator
 
 
 ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsDefaultTestActivity'
-ITS_FEATURE_COMBINATION_ACTIVITY = 'com.android.cts.verifier/.camera.its.FeatureCombinationTestActivity'
+ITS_SENSOR_FUSION_ACTIVITY = 'com.android.cts.verifier/.camera.its.SensorFusionTestActivity'
 CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 SYSTEM_USER = '0'
 WAIT_TIME_SEC = 2

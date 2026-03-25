@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.telephony.cts;
+package android.telephony.satellite.cts;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

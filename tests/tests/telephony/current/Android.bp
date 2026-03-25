@@ -167,7 +167,7 @@ android_test {
         "src/android/telephony/satellite/cts/SatelliteManagerOnMockServiceTestBase.java",
         "src/android/telephony/satellite/cts/SatelliteManagerTestBase.java",
         "src/android/telephony/satellite/cts/SatelliteManagerTestOnMockService.java",
-        "src/android/telephony/cts/SatelliteReceiver.java",
+        "src/android/telephony/satellite/cts/SatelliteReceiver.java",
         "src/android/telephony/cts/ServiceStateRadioStateListener.java",
         "src/android/telephony/cts/InCallServiceStateValidator.java",
         "src/android/telephony/ims/cts/ImsServiceConnector.java",

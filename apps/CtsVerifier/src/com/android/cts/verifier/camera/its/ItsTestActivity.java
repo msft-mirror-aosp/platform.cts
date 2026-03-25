@@ -162,6 +162,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_yuv_plus_jpeg_rms_diff:(\\d+(\\.\\d+)?)");
     private static final Pattern PERF_METRICS_YUV_JPEG_CAPTURE_SAMENESS_PATTERN =
             Pattern.compile("test_yuv_jpeg_capture_sameness_.*");
+    private static final Pattern PERF_METRICS_MULTI_CAMERA_SWITCH_PATTERN =
+            Pattern.compile("test_multi_camera_switch_*");
     /* TODO b/346817862 - More concise regex. */
     private static final Pattern PERF_METRICS_YUV_PLUS_RAW_PATTERN =
             Pattern.compile("test_yuv_plus_raw.*");
@@ -209,6 +211,10 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             "yuv_jpeg_capture_sameness";
     private static final String PERF_METRICS_KEY_PREFIX_RMS_DIFF =
             "rms_diff";
+    private static final String PERF_METRICS_KEY_PREFIX_MULTI_CAMERA_SWITCH =
+            "multi_camera_switch";
+    private static final String PERF_METRICS_KEY_PREFIX_CROSSOVER_ZOOM_RATIO =
+            "crossover_zoom_ratio";
 
     private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
             Pattern.compile("test_preview_distortion_.*");
@@ -918,6 +924,11 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
             boolean yuvJpegCaptureSamenessMetricsMatches =
                     yuvJpegCaptureSamenessMetricsMatcher.matches();
 
+            Matcher multiCameraSwitchMetricsMatcher =
+                    PERF_METRICS_MULTI_CAMERA_SWITCH_PATTERN.matcher(perfMetricsResult);
+            boolean multiCameraSwitchMetricsMatches =
+                    multiCameraSwitchMetricsMatcher.matches();
+
             Matcher imuDriftMetricsMatcher = PERF_METRICS_IMU_DRIFT_PATTERN.matcher(
                         perfMetricsResult);
             boolean imuDriftMetricsMatches = imuDriftMetricsMatcher.matches();
@@ -983,7 +994,7 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                         && !aeAwbMetricsMatches && !multiCamMetricsMatches
                         && !previewFrameDropMetricsMatches && !previewZoomMetricsMatches
                         && !previewStabilizationFovMetricsMatches && !sceneIpMetricsMatches
-                        && !jpegRMetricsMatches) {
+                        && !jpegRMetricsMatches && !multiCameraSwitchMetricsMatches) {
                 return false;
             }
 
@@ -1069,6 +1080,12 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                 if (multiCamMetricsMatches) {
                     Log.i(TAG, "multi cam metrics matches");
                     addMultiCamPerfMetricsResult(perfMetricsResult, obj);
+                }
+
+                if (multiCameraSwitchMetricsMatches) {
+                    Log.i(TAG, "multi camera switch metrics matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_MULTI_CAMERA_SWITCH,
+                            perfMetricsResult, obj);
                 }
 
                 if (sceneIpMetricsMatches) {
@@ -1211,6 +1228,9 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_RMS_DIFF)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_RMS_DIFF, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_CROSSOVER_ZOOM_RATIO)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_CROSSOVER_ZOOM_RATIO, floatValue);
         }
     }
 

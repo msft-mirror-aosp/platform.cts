@@ -18,31 +18,30 @@ package com.android.cts.verifier.camera.its;
 
 import com.android.cts.verifier.R;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Feature combination query test activity for testing and collecting results for
- * test_feature_combination.
+ * SensorFusion test activity for testing and collecting results for tests with sensor fusion rig,
+ * including test_feature_combination, sensor_fusion, and scene_flash.
  */
-public class FeatureCombinationTestActivity extends ItsTestActivity {
+public class SensorFusionTestActivity extends ItsTestActivity {
 
     @Override
     protected List<String> getSceneIds() {
         // Child provides the complete list of scene IDs.
-        return List.of("feature_combination");
+        return List.of("feature_combination", "sensor_fusion");
     }
 
     @Override
     protected List<String> getHiddenPhysicalCameraSceneIds() {
-        return Collections.emptyList();
+        return List.of("sensor_fusion");
     }
 
-    public FeatureCombinationTestActivity() {
+    public SensorFusionTestActivity() {
         super(
                 R.layout.its_main,
-                R.string.camera_its_feature_combination_test,
+                R.string.camera_its_sensor_fusion_test,
                 R.string.camera_its_test_info,
-                R.string.camera_its_feature_combination_test);
+                R.string.camera_its_sensor_fusion_test);
     }
 }

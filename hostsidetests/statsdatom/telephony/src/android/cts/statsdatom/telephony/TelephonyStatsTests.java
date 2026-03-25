@@ -25,6 +25,9 @@ import android.cts.statsdatom.lib.ReportUtils;
 import android.telephony.NetworkTypeEnum;
 
 import com.android.os.AtomsProto;
+import com.android.os.telephony.CarrierServiceConfigOverridesReported;
+import com.android.os.telephony.TelephonyExtensionAtoms;
+import com.google.protobuf.ExtensionRegistry;
 import com.android.os.StatsLog.EventMetricData;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceTestCase;
@@ -103,6 +106,40 @@ public class TelephonyStatsTests extends DeviceTestCase implements IBuildReceive
     @Override
     public void setBuild(IBuildInfo buildInfo) {
         mCtsBuild = buildInfo;
+    }
+
+    public void testCarrierServiceConfigOverridesReported() throws Exception {
+        if (!DeviceUtils.hasFeature(getDevice(), FEATURE_TELEPHONY)) {
+            return;
+        }
+
+        int atomId = TelephonyExtensionAtoms.CARRIER_SERVICE_CONFIG_OVERRIDES_REPORTED_FIELD_NUMBER;
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG, atomId);
+
+        DeviceUtils.runDeviceTests(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                ".AtomTests", "testSetCarrierTestOverride");
+
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        TelephonyExtensionAtoms.registerAllExtensions(registry);
+
+        List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
+        boolean found = false;
+        int appUid = DeviceUtils.getAppUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG);
+
+        for (EventMetricData d : data) {
+            if (d.getAtom().hasExtension(TelephonyExtensionAtoms.carrierServiceConfigOverridesReported)) {
+                CarrierServiceConfigOverridesReported atom =
+                        d.getAtom().getExtension(TelephonyExtensionAtoms.carrierServiceConfigOverridesReported);
+
+                assertThat(atom.getCarrierServicePackageUid()).isEqualTo(appUid);
+                assertThat(atom.getPackageUidsList()).contains(appUid);
+                found = true;
+                break;
+            }
+        }
+        assertThat(found).isTrue();
     }
 
     public void testSupportedRadioAccessFamily() throws Exception {

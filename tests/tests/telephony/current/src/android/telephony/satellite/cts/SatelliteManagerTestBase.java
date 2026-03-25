@@ -68,7 +68,6 @@ import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
-import android.telephony.cts.SatelliteReceiver;
 import android.telephony.cts.ServiceStateRadioStateListener;
 import android.telephony.satellite.EarfcnRange;
 import android.telephony.satellite.EnableRequestAttributes;
@@ -2301,8 +2300,7 @@ public class SatelliteManagerTestBase {
 
         boolean waitUntilChanged() {
             try {
-                if (!mSemaphore.tryAcquire(
-                        TimeUnit.SECONDS.toMillis(TIMEOUT), TimeUnit.MILLISECONDS)) {
+                if (!mSemaphore.tryAcquire(65, TimeUnit.SECONDS)) {
                     logd("SatelliteReceiver: Timeout to receive");
                     return false;
                 }
