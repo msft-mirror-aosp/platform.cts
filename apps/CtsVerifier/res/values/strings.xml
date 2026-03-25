@@ -7656,7 +7656,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="pinned_layer_test_title">Pinned Windowing Layer Test</string>
     <string name="pinned_layer_test_info">This test verifies that the system provides mandatory user controls for tasks in the pinned windowing layer.</string>
     <string name="pinned_layer_perm_fail_title">Install-time Permission Missing</string>
-    <string name="pinned_layer_perm_fail_desc">The assumption about this test has failed. This device or build did not grant the required pinned layer permission at install time. Press \'Acknowledge\' to finish the test.</string>
+    <string name="pinned_layer_perm_fail_desc">The assumption about this test has failed. This device or build did not grant the required pinned layer permission at install time. Make sure you have the latest CTSVerifier app version and reinstall it. Then come back to the test. If the issue persists, press \'Pass\' to finish the test.</string>
     <string name="pinned_layer_pip_missing_title">Picture-in-Picture Permission Required</string>
     <string name="pinned_layer_pip_missing_desc">Picture-in-Picture permission is required. Please go to the system app settings for CtsVerifier and find the Picture-in-Picture setting to enable it. Press \'Acknowledge\' when done to re-run the check.</string>
     <string name="pinned_layer_close_affordance_title">Close Action Verification</string>
