@@ -54,6 +54,8 @@ import com.android.cts.input.ConfigurationItem;
 import com.android.cts.input.InputJsonParser;
 import com.android.cts.input.UinputDevice;
 import com.android.cts.input.UinputRegisterCommand;
+import com.android.cts.mockime.ImeSettings;
+import com.android.cts.mockime.MockImeSession;
 import com.android.hardware.input.Flags;
 
 import org.junit.After;
@@ -178,6 +180,7 @@ public class InputDeviceKeyLayoutMapTest {
     private UserHelper mUserHelper;
     private boolean mIsLeanback;
     private boolean mVolumeKeysHandledInWindowManager;
+    private MockImeSession mMockImeSession;
 
     private static native Map<String, Integer> nativeLoadKeyLayout(String genericKeyLayout);
 
@@ -198,8 +201,18 @@ public class InputDeviceKeyLayoutMapTest {
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        WindowUtil.waitForFocus(mActivityRule.getActivity());
         Context context = mInstrumentation.getTargetContext();
+
+        // Initialize MockImeSession before the activity gains focus.
+        try {
+            mMockImeSession =
+                    MockImeSession.create(
+                            context, mInstrumentation.getUiAutomation(), new ImeSettings.Builder());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        WindowUtil.waitForFocus(mActivityRule.getActivity());
         mParser = new InputJsonParser(context);
         mWindowManager = context.getSystemService(WindowManager.class);
         mIsLeanback = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
@@ -222,6 +235,13 @@ public class InputDeviceKeyLayoutMapTest {
     public void tearDown() {
         if (mUinputDevice != null) {
             mUinputDevice.close();
+        }
+        if (mMockImeSession != null) {
+            try {
+                mMockImeSession.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

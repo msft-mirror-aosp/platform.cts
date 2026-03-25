@@ -42,6 +42,7 @@ java_defaults {
         "androidx.test.uiautomator_uiautomator",
         "truth",
         "CtsSurfaceValidatorLib",
+        "CtsMockInputMethodLib",
         "cts-wm-util",
         "flag-junit",
         "android.os.vibrator.flags-aconfig-java",
@@ -55,6 +56,10 @@ java_defaults {
         "framework_graphics_flags_java_lib",
         "bedstead",
         "display_flags_lib",
+    ],
+
+    data: [
+        ":CtsMockInputMethod",
     ],
 
     sdk_version: "test_current",
