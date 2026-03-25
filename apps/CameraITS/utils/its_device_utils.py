@@ -132,7 +132,7 @@ def click_on_app_icon(dut, log_path):
   # Dismiss keyguard
   dut.adb.shell(['wm', 'dismiss-keyguard'])
   dut.adb.shell(
-      'am start -n com.android.cts.verifier/.CtsVerifierActivity'
+      f'am start -n {ITS_TEST_ACTIVITY}'
   )
   time.sleep(WAIT_TIME_SEC)
   if dut.ui(text=CAMERA_ITS_TEST_TEXT).wait.exists(
