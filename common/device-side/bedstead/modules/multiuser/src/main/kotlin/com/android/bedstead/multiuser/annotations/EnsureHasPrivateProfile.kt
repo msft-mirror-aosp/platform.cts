@@ -18,7 +18,7 @@ package com.android.bedstead.multiuser.annotations
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.ENSURE_HAS_SPECIFIED_USER_PRIORITY
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasProfileAnnotation
 import com.android.bedstead.nene.types.OptionalBoolean
 

@@ -16,13 +16,13 @@
 
 package com.android.bedstead.enterprise.annotations;
 
-import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY;
+import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;

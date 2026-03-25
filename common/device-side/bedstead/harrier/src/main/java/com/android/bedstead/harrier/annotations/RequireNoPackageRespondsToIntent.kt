@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier.annotations
 
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.google.auto.value.AutoAnnotation
 
 /**

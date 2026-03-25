@@ -17,7 +17,7 @@ package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
  * Mark that a test method should only be run on devices which are able to run at least [value]

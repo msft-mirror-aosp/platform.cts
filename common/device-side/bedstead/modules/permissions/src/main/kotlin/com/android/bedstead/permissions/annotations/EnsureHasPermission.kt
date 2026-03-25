@@ -18,7 +18,7 @@ package com.android.bedstead.permissions.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
  * Ensure that the given permission is granted before running the test.

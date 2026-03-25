@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier.annotations.meta
+package com.android.bedstead.harrier.annotations
 
 import com.android.bedstead.harrier.ParameterizedTestWithArgumentGenerator
 import kotlin.reflect.KClass
