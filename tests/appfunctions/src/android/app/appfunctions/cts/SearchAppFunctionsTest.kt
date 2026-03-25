@@ -361,7 +361,7 @@ class SearchAppFunctionsTest {
                     .getMetadataDocument()
                     .getPropertyBoolean(AppFunctionMetadata.PROPERTY_ENABLED_BY_DEFAULT)
             )
-            .isEqualTo(true)
+            .isFalse()
     }
 
     @Test
