@@ -18,19 +18,16 @@
     <appfunction>
         <id>contextConcatStrings</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>activityConcatStrings</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>true</enabled_by_default>
         <scope>activity</scope>
     </appfunction>
     <appfunction>
         <id>contextLongRunning</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
