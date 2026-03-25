@@ -139,11 +139,6 @@ public final class Utils {
         return memoryInfo.totalMem / 1024 / 1024;
     }
 
-    /**
-     * First defined media performance class.
-     */
-    private static final int FIRST_PERFORMANCE_CLASS = Build.VERSION_CODES.R;
-
     public static boolean isRPerfClass() {
         return sPc == Build.VERSION_CODES.R;
     }
@@ -167,9 +162,6 @@ public final class Utils {
     public static boolean isVPerfClass() {
         return sPc == Build.VERSION_CODES.VANILLA_ICE_CREAM;
     }
-
-    /** Latest defined media performance class. */
-    private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
     /**
      * Checks if the AVC codec meets the required performance preconditions.
@@ -261,8 +253,7 @@ public final class Utils {
     }
 
     public static boolean isPerfClass() {
-        return sPc >= FIRST_PERFORMANCE_CLASS &&
-               sPc <= LAST_PERFORMANCE_CLASS;
+        return sPc > 0;
     }
 
     /**
