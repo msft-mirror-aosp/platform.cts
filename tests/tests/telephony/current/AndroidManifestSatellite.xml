@@ -50,7 +50,7 @@
         <receiver android:name=".SatelliteReceiver"
              android:exported="true">
             <intent-filter>
-                <action android:name="android.telephony.action.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED"/>
+                <action android:name="android.telephony.satellite.action.SATELLITE_SUBSCRIBER_ID_LIST_CHANGED"/>
             </intent-filter>
         </receiver>
 

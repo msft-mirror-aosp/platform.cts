@@ -28,6 +28,7 @@ public class SatelliteReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        logd("onReceive: " + intent);
         final String action = intent.getAction();
         if (action == null) {
             logd("NULL action for intent " + intent);
