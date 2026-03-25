@@ -842,16 +842,33 @@ class CameraPermissionTest {
   }
 
   private fun assertCameraOpenFailed() {
-    val backgroundCameraOpenFailure =
-    try {
-      backgroundCameraTaskFuture
-          .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-          .getStringExtra(OPEN_CAMERA_APP.keys.exception)
+    val maybeIntentResult: Intent? = try {
+        backgroundCameraTaskFuture.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
     } catch (e: TimeoutException) {
-      Log.e(TAG, "assertCameraOpenFailed: TimeoutException")
-      false
+        Log.e(TAG, "assertCameraOpenFailed: TimeoutException waiting for background task result.", e)
+        null
     }
-    assertNotNull(backgroundCameraOpenFailure)
+
+    assertNotNull("Background task timed out / returned a null result", maybeIntentResult)
+    val intentResult = maybeIntentResult!!
+
+    // When open fails due to an attempt to open the camera in the background, we'll
+    // get a SecurityException and also a CameraDevice.StateCallback.onError() callback.
+    // Which of these happens first and causes the co-routine continuation in CameraOpener.kt
+    // is not deterministic. So both an error and an exception are acceptable as being returned
+    // in broadcast. What matters is that the camera couldn't be opened.
+    val exceptionMessage = intentResult.getStringExtra(OPEN_CAMERA_APP.keys.exception)
+    val errorCode = intentResult.getIntExtra(OPEN_CAMERA_APP.keys.error, 0)
+
+    val cameraOpenFailedAsExpected =
+            exceptionMessage != null || errorCode != 0
+
+    assertTrue(
+        "Expected camera open to fail (indicated by an extra with key " +
+        "'${OPEN_CAMERA_APP.keys.exception}' or '${OPEN_CAMERA_APP.keys.error}'), " +
+        "but neither was found.",
+        cameraOpenFailedAsExpected
+    )
   }
 
   private fun assertStreamOpened() {
