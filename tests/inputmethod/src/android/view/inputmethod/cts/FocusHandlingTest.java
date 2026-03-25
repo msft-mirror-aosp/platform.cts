@@ -1216,6 +1216,7 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
 
     @Test
     public void testUnfocusedEditor_stateUnspecified_hidesIme() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_UNSPECIFIED);
         expectEvent(stream, hideSoftInputMatcher(), EXPECT_TIMEOUT);
