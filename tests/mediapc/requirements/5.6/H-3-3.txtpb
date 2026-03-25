@@ -1,0 +1,67 @@
+# Copyright (C) 2026 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: cts/tests/mediapc/requirements/requirements.proto
+# proto-message: Requirement
+id: "5.6/H-3-3"
+group: GROUP_MEDIA
+name: "USB Audio Input Channels"
+comment:
+  "The test may not test up to the maximum number supported but it will "
+  "always test at least the required value."
+description: "Support at least 4 input channels for USB audio devices."
+specs {
+  key: 37
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_37
+    specification: "MUST support at least 4 input channels for USB audio devices."
+    required_values {
+      key: "tested_input_channel_count"
+      value {
+        int_value: 4
+      }
+    }
+    required_values {
+      key: "max_input_channel_count"
+      value {
+        int_value: 4
+      }
+    }
+  }
+}
+measurements {
+  key: "tested_input_channel_count"
+  value {
+    description: "The number input channels tested for USB audio devices."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements {
+  key: "max_input_channel_count"
+  value {
+    description: "Maximum number of input channels supported for USB audio devices."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 109
+  }
+}
