@@ -27,6 +27,7 @@ import datetime
 import json
 import os
 import tempfile
+import time
 import chunk_util
 import zip_util
 
@@ -48,6 +49,7 @@ def _get_args():
 
 
 def main():
+  total_start_time = time.time()
   args = _get_args()
   chunked_zip_path = args.chunked_zip_path
   restored_dir = args.output_dir
@@ -60,8 +62,10 @@ def main():
   with tempfile.TemporaryDirectory() as temp_dir:
     # 1. Unzip android-cts-chunked.zip
     print(f'Unzipping {chunked_zip_path}...')
+    start_time = time.time()
     chunked_extract_dir = os.path.join(temp_dir, 'chunked')
     zip_util.ZipUtil.unzip_file(chunked_zip_path, chunked_extract_dir)
+    unzip_time = time.time() - start_time
 
     # 2. Read the index json file
     index_path = os.path.join(
@@ -71,6 +75,8 @@ def main():
       index = json.load(f)
 
     # 3. Restore files
+    print('Restoring files...')
+    start_time = time.time()
     os.makedirs(restored_dir, exist_ok=True)
     chunks_dir = os.path.join(chunked_extract_dir, chunk_util.CHUNKS_DIR_NAME)
 
@@ -126,7 +132,13 @@ def main():
             mod_time_str.replace('Z', '+00:00')
         )
         mtime = dt.timestamp()
-        os.utime(target_path, (mtime, mtime))
+        os.utime(target_path, (mtime, mtime), follow_symlinks=False)
+
+    restore_time = time.time() - start_time
+
+  print(f'Extracting the chunked zip file took {unzip_time:.2f}s')
+  print(f'Restoring files took {restore_time:.2f}s')
+  print(f'Total time: {time.time() - total_start_time:.2f}s')
 
 if __name__ == '__main__':
   main()
