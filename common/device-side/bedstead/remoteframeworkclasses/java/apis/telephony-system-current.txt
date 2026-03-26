@@ -1,10 +1,11 @@
-// Signature format: 2.0
+// Signature format: 6.0
+// - style=java
 package android.telecom {
 
   @Deprecated public class AudioState implements android.os.Parcelable {
-    ctor @Deprecated public AudioState(boolean, int, int);
     ctor @Deprecated public AudioState(android.telecom.AudioState);
     ctor @Deprecated public AudioState(android.telecom.CallAudioState);
+    ctor @Deprecated public AudioState(boolean, int, int);
     method @Deprecated public static String audioRouteToString(int);
     method @Deprecated public int describeContents();
     method @Deprecated public int getRoute();
@@ -75,8 +76,8 @@ package android.telecom {
     method public final void clearDiagnosticMessage(int);
     method public final void displayDiagnosticMessage(int, @NonNull CharSequence);
     method public abstract void onCallDetailsChanged(@NonNull android.telecom.Call.Details);
-    method @Nullable public abstract CharSequence onCallDisconnected(int, int);
     method @Nullable public abstract CharSequence onCallDisconnected(@NonNull android.telephony.ims.ImsReasonInfo);
+    method @Nullable public abstract CharSequence onCallDisconnected(int, int);
     method public abstract void onCallQualityReceived(@NonNull android.telephony.CallQuality);
     method public abstract void onReceiveDeviceToDeviceMessage(int, int);
     method public final void sendDeviceToDeviceMessage(int, int);
@@ -207,8 +208,8 @@ package android.telecom {
   }
 
   public class ParcelableCallAnalytics implements android.os.Parcelable {
-    ctor public ParcelableCallAnalytics(long, long, int, boolean, boolean, int, int, boolean, String, boolean, java.util.List<android.telecom.ParcelableCallAnalytics.AnalyticsEvent>, java.util.List<android.telecom.ParcelableCallAnalytics.EventTiming>);
     ctor public ParcelableCallAnalytics(android.os.Parcel);
+    ctor public ParcelableCallAnalytics(long, long, int, boolean, boolean, int, int, boolean, String, boolean, java.util.List<android.telecom.ParcelableCallAnalytics.AnalyticsEvent>, java.util.List<android.telecom.ParcelableCallAnalytics.EventTiming>);
     method public java.util.List<android.telecom.ParcelableCallAnalytics.AnalyticsEvent> analyticsEvents();
     method public int describeContents();
     method public long getCallDurationMillis();
@@ -447,7 +448,7 @@ package android.telecom {
     method @FlaggedApi("android.telecom.flags.local_voicemail") @NonNull @RequiresPermission(android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE) public java.time.Duration getLocalVoicemailTimeout(@NonNull android.telecom.PhoneAccountHandle);
     method @Deprecated public java.util.List<android.telecom.PhoneAccountHandle> getPhoneAccountsForPackage();
     method @RequiresPermission(anyOf={android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE, android.Manifest.permission.READ_PHONE_STATE}) public java.util.List<android.telecom.PhoneAccountHandle> getPhoneAccountsSupportingScheme(String);
-    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") @NonNull @RequiresPermission(android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE) public java.util.Map<java.lang.String,java.lang.Boolean> getVoipCallLogIntegrationStatus();
+    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") @NonNull @RequiresPermission(android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE) public java.util.Map<String, Boolean> getVoipCallLogIntegrationStatus();
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public boolean isInEmergencyCall();
     method @FlaggedApi("com.android.server.telecom.flags.telecom_resolve_hidden_dependencies") @RequiresPermission(allOf={android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE, android.Manifest.permission.INTERACT_ACROSS_USERS}, conditional=true) public boolean isInSelfManagedCall(@NonNull String, @NonNull android.os.UserHandle);
     method @FlaggedApi("android.telecom.flags.local_voicemail") @RequiresPermission(android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE) public boolean isLocalVoicemailEnabled(@NonNull android.telecom.PhoneAccountHandle);
