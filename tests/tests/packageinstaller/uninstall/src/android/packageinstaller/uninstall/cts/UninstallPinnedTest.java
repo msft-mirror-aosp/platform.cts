@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.ActivityManager;
 import android.app.ActivityTaskManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -43,6 +44,7 @@ import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
@@ -63,16 +65,18 @@ public class UninstallPinnedTest {
     private static final ComponentName COMPONENT = new ComponentName(TEST_PKG_NAME, TEST_ACTIVITY_NAME);
     public static final String CALLBACK_ACTION =
             "android.packageinstaller.uninstall.cts.action.UNINSTALL_PINNED_CALLBACK";
-
+    private static final long LOCK_TASK_MODE_TIMEOUT = 5000;
     private WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private Context mContext;
     private UiDevice mUiDevice;
     private ActivityTaskManager mActivityTaskManager;
+    private ActivityManager mAm;
 
     @Before
     public void setup() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mActivityTaskManager = mContext.getSystemService(ActivityTaskManager.class);
+        mAm = mContext.getSystemService(ActivityManager.class);
 
         assumeTrue(isPinningSupported());
 
@@ -157,10 +161,16 @@ public class UninstallPinnedTest {
 
         int stackId = mWmState.getTaskByActivity(component).getTaskId();
 
-        runWithShellPermissionIdentity(() -> {
-            mActivityTaskManager.startSystemLockTaskMode(
-                    stackId);
-        });
+        runWithShellPermissionIdentity(
+                () -> {
+                    mActivityTaskManager.startSystemLockTaskMode(stackId);
+                    PollingCheck.check(
+                            "Timeout waiting for task to enter LOCK_TASK_MODE_PINNED state",
+                            LOCK_TASK_MODE_TIMEOUT,
+                            () ->
+                                    mAm.getLockTaskModeState()
+                                            == ActivityManager.LOCK_TASK_MODE_PINNED);
+                });
     }
 
     private boolean isPinningSupported() {
