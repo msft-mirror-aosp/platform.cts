@@ -110,38 +110,39 @@ public class UsageEventsPccTest {
     public void testUsageStatsCoverage() throws Exception {
         launchTestActivity();
 
-        long endTime = System.currentTimeMillis();
-        long startTime = endTime - (24 * 60 * 60 * 1000);
+        long startTime = System.currentTimeMillis() - (24 * 60 * 60 * 1000);
 
-        boolean packageNameFound = false;
+        UsageStats testPackageStats = null;
         long timeout = SystemClock.elapsedRealtime() + 15000;
 
         while (SystemClock.elapsedRealtime() < timeout) {
             List<UsageStats> stats =
                     mUsageStatsManager.queryUsageStats(
-                            UsageStatsManager.INTERVAL_DAILY, startTime, endTime);
+                            UsageStatsManager.INTERVAL_DAILY,
+                            startTime,
+                            System.currentTimeMillis());
 
             if (stats != null) {
                 for (UsageStats s : stats) {
-                    if (mPackageName.equals(s.getPackageName())) {
-                        packageNameFound = true;
-                        // Full Metadata Coverage for AiAi requirements
-                        assertEquals(mPackageName, s.getPackageName());
-                        assertTrue("First timestamp should be valid", s.getFirstTimeStamp() > 0);
-                        assertTrue("Last timestamp should be valid", s.getLastTimeStamp() > 0);
-                        assertTrue("Last time used should be valid", s.getLastTimeUsed() > 0);
-                        assertTrue(
-                                "Foreground time should be tracked",
-                                s.getTotalTimeInForeground() >= 0);
+                    if (mPackageName.equals(s.getPackageName()) && s.getLastTimeUsed() > 0) {
+                        testPackageStats = s;
                         break;
                     }
                 }
             }
-            if (packageNameFound) break;
+            if (testPackageStats != null) break;
             SystemClock.sleep(2000);
         }
 
-        assertTrue("Should find UsageStats for the test package in PCC sandbox", packageNameFound);
+        assertNotNull(
+                "Should find UsageStats for the test package in PCC sandbox", testPackageStats);
+        assertEquals(mPackageName, testPackageStats.getPackageName());
+        assertTrue("First timestamp should be valid", testPackageStats.getFirstTimeStamp() > 0);
+        assertTrue("Last timestamp should be valid", testPackageStats.getLastTimeStamp() > 0);
+        assertTrue("Last time used should be valid", testPackageStats.getLastTimeUsed() > 0);
+        assertTrue(
+                "Foreground time should be tracked",
+                testPackageStats.getTotalTimeInForeground() >= 0);
     }
 
     private void launchTestActivity() {
