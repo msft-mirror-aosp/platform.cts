@@ -17,10 +17,7 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
 import static android.media.codec.Flags.FLAG_DYNAMIC_OPERATING_MODE_SWITCH;
-import static android.media.codec.Flags.codecAvailability;
-import static android.media.codec.Flags.codecAvailabilitySupport;
 import static android.mediav2.cts.CodecResourceUtils.CodecState;
 import static android.mediav2.cts.CodecResourceUtils.LHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.RESOURCE_EQ;
@@ -323,7 +320,6 @@ class CodecEncoderGLSurface extends CodecTestBase {
 /**
  * This class comprises of tests that validate codec resource availability apis for video encoders
  */
-@RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RunWith(Parameterized.class)
 public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
@@ -352,9 +348,6 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     public void prerequisite() {
         Assume.assumeTrue("Skipping! Requires devices with board_first_sdk >= 202504",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202504);
-        Assume.assumeTrue("requires codec availability api support", codecAvailability());
-        Assume.assumeTrue("requires codec availability api implementation",
-                codecAvailabilitySupport());
         GLOBAL_AVBL_RESOURCES = getCurrentGlobalCodecResources();
     }
 
@@ -436,7 +429,6 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
     public void testSimpleEncode() throws IOException, InterruptedException {
@@ -673,7 +665,6 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
     public void testConcurrentMaxInstances()
@@ -694,7 +685,6 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1-002"})
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
     public void testResourceConsumptionForPerfPoints() throws IOException, InterruptedException {
@@ -745,7 +735,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1.2"}) // 4.1.2-001 through 4.1.2-004
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
+    @RequiresFlagsEnabled(FLAG_DYNAMIC_OPERATING_MODE_SWITCH)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
              "android.media.MediaCodec#getRequiredResources",
              "android.media.MediaCodec.Callback#onRequiredResourcesChanged",
@@ -868,7 +858,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @LargeTest
     @VsrTest(requirements = {"VSR-4.1.2"}) // 4.1.2-001 through 4.1.2-004
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
+    @RequiresFlagsEnabled({FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
     public void testConcurrentMaxInstancesDynamic()
