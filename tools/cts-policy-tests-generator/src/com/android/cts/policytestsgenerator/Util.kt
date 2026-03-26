@@ -37,6 +37,7 @@ fun FullyQualifiedClassName.toKotlinType(): String {
         "java.lang.Long" -> "Long"
         "java.util.List<java.lang.String>" -> "List<String>"
         "java.util.List<java.lang.Integer>" -> "List<Int>"
+        "java.util.List<android.app.admin.PackageIdentifier>" -> "List<PackageIdentifier>"
         "android.app.admin.PackageIdentifier" -> "PackageIdentifier"
         else -> throw IllegalArgumentException("Unsupported type: ${this.format()}")
     }

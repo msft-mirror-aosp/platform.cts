@@ -26,6 +26,7 @@ import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.BooleanP
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.EnumPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.LongPolicyMetadata
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.PackagePolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.StringPolicyMetadata
 import com.google.common.truth.Truth.assertThat
 import junitparams.JUnitParamsRunner
@@ -80,6 +81,13 @@ class TestFileGeneratorTest {
             .setClassName("PackageIdentifier")
             .setPackageName("android.app.admin")
             .build()
+
+    val packageListType =
+        FullyQualifiedClassName.newBuilder()
+            .setClassName("List<android.app.admin.PackageIdentifier>")
+            .setPackageName("java.util")
+            .build()
+
 
     val allDpcTypes =
         DpcType.values().filter { it != DpcType.DPC_TYPE_UNSPECIFIED && it != DpcType.UNRECOGNIZED }
@@ -171,7 +179,10 @@ class TestFileGeneratorTest {
                             PackageIdentifier("com.example.app2"),
                         )
 
-                    override val invalidValueTestCases = listOf()
+                    override val invalidValueTestCases =
+                        listOf(
+                            InvalidValueTestCase(PackageIdentifier("")), // Package name is empty
+                        )
 
                     override fun getDeviceState() = deviceState
 
@@ -774,6 +785,91 @@ class TestFileGeneratorTest {
     }
 
     @Test
+    fun listOfPackagePolicy_emptyListAllowed_generatesTestClass() {
+        val metadata =
+            listPolicyMetadata(
+                "MY_LIST_POLICY",
+                packageListType,
+                ListPolicyMetadata.newBuilder()
+                    .setEmptyListAllowed(true)
+                    .setPackageMetadata(PackagePolicyMetadata.newBuilder()),
+            )
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file.getTestClass())
+            .isEqualTo(
+                """
+                class MyListPolicyGeneratedTest : CommonPolicyTests<List<PackageIdentifier>>() {
+
+                    override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
+
+                    override val validValues =
+                        listOf(
+                            [],
+                            [PackageIdentifier("com.example.app"), PackageIdentifier("com.example.app2")],
+                        )
+
+                    override val invalidValueTestCases =
+                        listOf(
+                            InvalidValueTestCase([PackageIdentifier("")]), // Package name is empty
+                        )
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
+                }
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun listOfPackagePolicy_emptyListDisallowed_generatesTestClass() {
+        val metadata =
+            listPolicyMetadata(
+                "MY_LIST_POLICY",
+                packageListType,
+                ListPolicyMetadata.newBuilder()
+                    .setEmptyListAllowed(false)
+                    .setPackageMetadata(PackagePolicyMetadata.newBuilder()),
+            )
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file.getTestClass())
+            .isEqualTo(
+                """
+                class MyListPolicyGeneratedTest : CommonPolicyTests<List<PackageIdentifier>>() {
+
+                    override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
+
+                    override val validValues =
+                        listOf(
+                            [PackageIdentifier("com.example.app"), PackageIdentifier("com.example.app2")],
+                        )
+
+                    override val invalidValueTestCases =
+                        listOf(
+                            InvalidValueTestCase([PackageIdentifier("")]), // Package name is empty
+                            InvalidValueTestCase([], expectedError="Empty list is not allowed"),
+                        )
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
+                }
+                """
+                    .trimIndent()
+            )
+    }
+
+
+    @Test
     fun supportsUnflaggedPolicies() {
         val metadata = integerPolicyMetadata("MY_UNFLAGGED_POLICY", flag = null)
 
@@ -976,9 +1072,7 @@ class TestFileGeneratorTest {
             .setType(packageType)
             .setTypeSpecificMetadata(
                 TypeSpecificPolicyMetadata.newBuilder()
-                    .setPackageMetadata(
-                        TypeSpecificPolicyMetadata.PackagePolicyMetadata.newBuilder()
-                    )
+                    .setPackageMetadata(PackagePolicyMetadata.newBuilder())
             )
             .build()
 

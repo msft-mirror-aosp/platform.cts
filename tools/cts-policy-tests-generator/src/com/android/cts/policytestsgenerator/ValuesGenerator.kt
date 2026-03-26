@@ -136,7 +136,12 @@ object ValuesGenerator {
     private fun generateInvalidPackages(
         metadata: PackagePolicyMetadata
     ): List<InvalidValueTestCase> {
-        return listOf()
+        return listOf(
+            InvalidValueTestCase(
+                "PackageIdentifier(\"\")",
+                description = "Package name is empty",
+            ),
+        )
     }
 
     private fun generateValidLists(metadata: ListPolicyMetadata): List<String> {
@@ -167,6 +172,8 @@ object ValuesGenerator {
                 return generateInvalidIntegers(metadata.integerMetadata)
             ListElementMetadataCase.ENUM_METADATA ->
                 return generateInvalidEnums(metadata.enumMetadata)
+            ListElementMetadataCase.PACKAGE_METADATA ->
+                return generateInvalidPackages(metadata.packageMetadata)
             else ->
                 throw IllegalArgumentException(
                     "Unsupported list type ${metadata.listElementMetadataCase}"
@@ -182,6 +189,8 @@ object ValuesGenerator {
                 return generateValidIntegers(metadata.integerMetadata)
             ListElementMetadataCase.ENUM_METADATA ->
                 return generateValidEnums(metadata.enumMetadata)
+            ListElementMetadataCase.PACKAGE_METADATA ->
+                return generateValidPackages(metadata.packageMetadata)
             else ->
                 throw IllegalArgumentException(
                     "Unsupported list type ${metadata.listElementMetadataCase}"
