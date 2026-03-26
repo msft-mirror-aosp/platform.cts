@@ -18,6 +18,8 @@ package android.mediapc.cts.common;
 
 import static android.util.DisplayMetrics.DENSITY_HIGH;
 
+import static com.google.common.truth.TruthJUnit.assume;
+
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
@@ -38,6 +40,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.MediaUtils;
+
+import com.google.common.collect.Lists;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -139,14 +143,6 @@ public final class Utils {
         return memoryInfo.totalMem / 1024 / 1024;
     }
 
-    public static boolean isRPerfClass() {
-        return sPc == Build.VERSION_CODES.R;
-    }
-
-    public static boolean isSPerfClass() {
-        return sPc == Build.VERSION_CODES.S;
-    }
-
     public static boolean isTPerfClass() {
         return sPc == Build.VERSION_CODES.TIRAMISU;
     }
@@ -155,12 +151,26 @@ public final class Utils {
         return sPc < Build.VERSION_CODES.TIRAMISU;
     }
 
-    public static boolean isUPerfClass() {
-        return sPc == Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    /**
+     * Assume that the MPC is not declared or greater given mpc.
+     *
+     * <p>Throws a {@link org.junit.AssumptionViolatedException} if the condition is not met.
+     */
+    public static void assumeMpcIfDeclaredIsAtLeast(int mpc) {
+        assume().withMessage("Media performance class must be >= %s or 0 but was %s", mpc, getMpc())
+                .that(!isPerfClass() || getMpc() >= mpc)
+                .isTrue();
     }
 
-    public static boolean isVPerfClass() {
-        return sPc == Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    /**
+     * Assume that the MPC is not declared or any of the given values.
+     *
+     * <p>Throws a {@link org.junit.AssumptionViolatedException} if the condition is not met.
+     */
+    public static void assumeMpcIfDeclaredIsAnyOf(int first, Integer... rest) {
+        assume().withMessage("Media performance class must be one of these or not declared")
+                .that(sPc)
+                .isIn(Lists.asList(0, first, rest));
     }
 
     /**
