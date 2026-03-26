@@ -204,8 +204,6 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
     public void testUnlockScreen_decoredSystemDisplayChanged_dismissesKeyguardOnUnlock() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final VirtualDisplaySession virtualDisplaySession = createManagedVirtualDisplaySession();
-        lockScreenSession.setLockCredential();
-
         // Create decored system screen
         // We choose virtual display here, so inject key code won't be blocked by Overlay display.
         final DisplayContent decoredSystemDisplay = virtualDisplaySession
@@ -214,6 +212,7 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
                 .createDisplay();
         final int decoredSystemDisplayId = decoredSystemDisplay.mId;
 
+        lockScreenSession.setLockCredential();
         // Lock screen. Keyguard should be shown on the decored system display
         lockScreenSession.gotoKeyguard();
         mWmState.assertKeyguardShowingAndNotOccluded();
