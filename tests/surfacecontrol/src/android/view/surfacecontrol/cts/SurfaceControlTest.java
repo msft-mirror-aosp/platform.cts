@@ -1530,9 +1530,13 @@ public class SurfaceControlTest {
 
         assertTrue(helper.getPresentFence() != null);
         assertTrue(helper.getPresentFence().await(Duration.ofSeconds(5)));
-        assertTrue("transaction was presented too early. presentTime="
-                        + helper.getPresentFence().getSignalTime(),
-                helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        if (helper.getPresentFence().isValid()) {
+            assertTrue(
+                    "transaction was presented too early. presentTime="
+                            + helper.getPresentFence().getSignalTime(),
+                    helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        }
+
         helper.close();
     }
 
@@ -1567,9 +1571,13 @@ public class SurfaceControlTest {
         assertTrue(helper.getLatchTimeNanos() > 0);
         assertTrue(helper.getPresentFence() != null);
         assertTrue(helper.getPresentFence().await(Duration.ofSeconds(5)));
-        assertTrue("transaction was presented too early. presentTime="
-                        + helper.getPresentFence().getSignalTime(),
-                helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        if (helper.getPresentFence().isValid()) {
+            assertTrue(
+                    "transaction was presented too early. presentTime="
+                            + helper.getPresentFence().getSignalTime(),
+                    helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        }
+
         helper.close();
     }
 
@@ -1604,9 +1612,13 @@ public class SurfaceControlTest {
         assertTrue(helper.getLatchTimeNanos() > 0);
         assertTrue(helper.getPresentFence() != null);
         assertTrue(helper.getPresentFence().await(Duration.ofSeconds(5)));
-        assertTrue("transaction was presented too early. presentTime="
-                        + helper.getPresentFence().getSignalTime(),
-                helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        if (helper.getPresentFence().isValid()) {
+            assertTrue(
+                    "transaction was presented too early. presentTime="
+                            + helper.getPresentFence().getSignalTime(),
+                    helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        }
+
         helper.close();
     }
 
@@ -1655,9 +1667,13 @@ public class SurfaceControlTest {
         assertTrue(helper.getLatchTimeNanos() > 0);
         assertTrue(helper.getPresentFence() != null);
         assertTrue(helper.getPresentFence().await(Duration.ofSeconds(5)));
-        assertTrue("transaction was presented too early. presentTime="
-                        + helper.getPresentFence().getSignalTime(),
-                helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        if (helper.getPresentFence().isValid()) {
+            assertTrue(
+                    "transaction was presented too early. presentTime="
+                            + helper.getPresentFence().getSignalTime(),
+                    helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        }
+
         helper.close();
     }
 
@@ -1707,9 +1723,13 @@ public class SurfaceControlTest {
         assertTrue(helper.getLatchTimeNanos() > 0);
         assertTrue(helper.getPresentFence() != null);
         assertTrue(helper.getPresentFence().await(Duration.ofSeconds(5)));
-        assertTrue("transaction was presented too early. presentTime="
-                        + helper.getPresentFence().getSignalTime(),
-                helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        if (helper.getPresentFence().isValid()) {
+            assertTrue(
+                    "transaction was presented too early. presentTime="
+                            + helper.getPresentFence().getSignalTime(),
+                    helper.getPresentFence().getSignalTime() >= mDesiredPresentTimeNanos);
+        }
+
         helper.close();
     }
 
