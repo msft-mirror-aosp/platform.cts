@@ -104,7 +104,6 @@ public abstract class BaseAdvancedProtectionTest {
     }
 
     protected void setAdvancedProtectionEnabled(boolean enabled) throws InterruptedException {
-        disableUsbDataProtection();
         if (enabled == mManager.isAdvancedProtectionEnabled()) {
             return;
         }
@@ -166,6 +165,46 @@ public abstract class BaseAdvancedProtectionTest {
         // So it can be called by any user
         String cmd = provisioned ? "set-feature-provisioned" : "set-feature-deprovisioned";
         SystemUtil.runShellCommand("cmd advanced_protection " + cmd + " " + featureId);
+        if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on set");
+        }
+        mManager.unregisterAdvancedProtectionFeatureCallback(callback);
+    }
+
+    protected void removeAdbProvisioning(int featureId) throws InterruptedException {
+        int provisioningMode =
+                mManager.getAdvancedProtectionFeatures(new int[] {featureId})
+                        .get(0)
+                        .getProvisioningMode();
+        if (provisioningMode != AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_ADB
+                && provisioningMode
+                        != AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_ADB) {
+            return;
+        }
+        // Called once on register, then on set
+        CountDownLatch onRegister = new CountDownLatch(1);
+        CountDownLatch onSet = new CountDownLatch(1);
+        Consumer<List<AdvancedProtectionFeature>> callback =
+                features -> {
+                    for (AdvancedProtectionFeature feature : features) {
+                        if (feature.getId() == featureId) {
+                            if (onRegister.getCount() > 0) {
+                                onRegister.countDown();
+                            } else {
+                                onSet.countDown();
+                            }
+                            break;
+                        }
+                    }
+                };
+        mManager.registerAdvancedProtectionFeatureCallback(
+                new int[] {featureId}, Runnable::run, callback);
+        if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on register");
+        }
+        // So it can be called by any user
+        SystemUtil.runShellCommand(
+                "cmd advanced_protection remove-feature-provisioning " + featureId);
         if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on set");
         }
