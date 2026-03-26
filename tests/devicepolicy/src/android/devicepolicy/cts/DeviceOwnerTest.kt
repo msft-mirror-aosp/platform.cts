@@ -166,7 +166,9 @@ class DeviceOwnerTest {
             allowPreCreatedAccounts = false,
             failureMode = FailureMode.SKIP
     )
-    @RequireNotHeadlessSystemUserMode(reason = "No non-testonly dpc which supports headless")
+    @RequireNotHeadlessSystemUserMode(
+        reason = "HSUM requires different setup. Behavior tested in another test."
+    )
     @Test
     fun setDeviceOwnerViaAdb_noAccounts_notTestOnly_sets() {
         DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(context)
@@ -177,6 +179,34 @@ class DeviceOwnerTest {
                         .addOperand(NOT_TEST_ONLY_DPC_COMPONENT.flattenToString())
                         .validate { ShellCommandUtils.startsWithSuccess(it) }
                         .execute()
+                assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
+            } finally {
+                val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
+                deviceOwner?.remove()
+            }
+        }
+    }
+
+    @EnsureHasNoAdditionalUser
+    @EnsureHasNoDpc
+    // This explicitly requires no pre-created accounts so we must skip if there are any
+    @EnsureHasNoAccounts(
+        onUser = UserType.ANY,
+        allowPreCreatedAccounts = false,
+        failureMode = FailureMode.SKIP
+    )
+    @Test
+    fun setDeviceOwnerViaAdbOnHsum_noAccounts_notTestOnly_sets() {
+        DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(context)
+        val user = TestApis.users().initial()
+        NOT_TEST_ONLY_DPC.install(user).use {
+            try {
+                ShellCommand
+                    .builder(SET_DEVICE_OWNER_COMMAND)
+                    .addOperand("--user ${user.id()}")
+                    .addOperand(NOT_TEST_ONLY_DPC_COMPONENT.flattenToString())
+                    .validate { ShellCommandUtils.startsWithSuccess(it) }
+                    .execute()
                 assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
             } finally {
                 val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
@@ -474,17 +504,17 @@ class DeviceOwnerTest {
     @EnsureHasNoAccounts(onUser = UserType.ANY)
     @EnsureHasNoAdditionalUser
     @Postsubmit(reason = "new test")
-    @RequireRunOnSystemUser
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
-    @RequireNotHeadlessSystemUserMode(reason = "No non-testonly dpc which supports headless")
     @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @Test
     fun setNonTestOnlyDeviceOwner_noNonDefaultDevicePolicyManagementRoleHolderExists_sets() {
         DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(context)
-        NOT_TEST_ONLY_DPC.install().use {
+        val user = TestApis.users().initial()
+        NOT_TEST_ONLY_DPC.install(user).use {
             DeviceOwnerResource().use {
                 ShellCommand
                     .builder(SET_DEVICE_OWNER_COMMAND)
+                    .addOperand("--user ${user.id()}")
                     .addOperand(NOT_TEST_ONLY_DPC_COMPONENT.flattenToString())
                     .execute()
                 assertThat(TestApis.devicePolicy().getDeviceOwner()?.componentName())
