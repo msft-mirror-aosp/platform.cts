@@ -1272,11 +1272,7 @@ public class AudioManagerTest {
     }
 
     private void testAssistantVolume(String... permissions) throws Exception {
-        assumeFalse(
-                "AudioManagerTest testAssistantVolume() skipped: fixed volume", mUseFixedVolume);
-        assumeFalse(
-                "AudioManagerTest testAssistantVolume() skipping volume test on automotive",
-                mSkipAutoVolumeTests);
+        assumeFalse("AudioManagerTest testAssistantVolume() skipped", mSkipAssistantDealiasedTests);
 
         final int originalMode = mAudioManager.getMode();
         try (PermissionContext ignored = TestApis.permissions().withPermission(permissions)) {
@@ -1324,7 +1320,7 @@ public class AudioManagerTest {
     public void testUsageAssistant_controlledByStreamAssistant() throws Exception {
         assumeFalse(
                 "AudioManagerTest testUsageAssistant_controlledByStreamAssistant() skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         assumeTrue(
                 "AudioManagerTest testUsageAssistant_controlledByStreamAssistant() skipped due to"
