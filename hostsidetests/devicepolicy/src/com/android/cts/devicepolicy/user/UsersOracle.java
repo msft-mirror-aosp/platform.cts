@@ -15,7 +15,6 @@
  */
 package com.android.cts.devicepolicy.user;
 
-import static android.app.admin.flags.Flags.FLAG_DEVICE_OWNER_FOR_ALL;
 import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
 
 import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_MANAGED_PROFILE_ON_NON_MAIN_USER;
@@ -62,8 +61,7 @@ public final class UsersOracle {
     private final Set<Integer> mPreExistingUserIds;
     private final @Nullable Integer mMainUserId;
     private final boolean mSupportsManagedProfilesForAll;
-    private final boolean mSupportsDeviceOwnerForAll;
-    // TODO(b/35372278): temporary workaround until flag is ramped up
+    // TODO(b/374832167): temporary workaround until profiles_for_all flag is ramped up
     private final boolean mIsAutomotive;
 
     /** Factory method. */
@@ -84,7 +82,6 @@ public final class UsersOracle {
                 new UserUtil(device).isManagedProfileOnNonMainUserSupported();
         mIsAutomotive = device.hasFeature("android.hardware.type.automotive");
         mFlagsUtil = new FlagsUtil(device);
-        mSupportsDeviceOwnerForAll = mFlagsUtil.getBooleanFlag(FLAG_DEVICE_OWNER_FOR_ALL);
     }
 
     /**
@@ -103,11 +100,6 @@ public final class UsersOracle {
         return ImmutableSet.copyOf(mPreExistingUserIds);
     }
 
-    /** Gets whether device owner could be set on any full user. */
-    public boolean isDeviceOwnerSupportedOnAnyFullUsers() {
-        return mSupportsDeviceOwnerForAll;
-    }
-
     /**
      * Gets the id of the user that *should* be used by tests to set the device's {@code
      * DeviceOwner}.
@@ -118,19 +110,7 @@ public final class UsersOracle {
         if (!mIsHsum) {
             return USER_SYSTEM;
         }
-        if (mSupportsDeviceOwnerForAll) {
-            return mInitialCurrentUserId;
-        }
-        if (mMainUserId == null && mIsAutomotive) {
-            CLog.d("getDeviceOwnerUserId(): returning initial user (%d) on automotive build");
-            return mInitialCurrentUserId;
-        }
-        Preconditions.checkState(
-                mMainUserId != null,
-                "DO not supported on mainless-user device (most likely flag %s is disabled - "
-                        + "check logs)",
-                FLAG_DEVICE_OWNER_FOR_ALL);
-        return mMainUserId;
+        return mInitialCurrentUserId;
     }
 
     /** Gets the id of a user that *should* be used by tests to set a {@code ProfileOwner} on. */
@@ -181,8 +161,7 @@ public final class UsersOracle {
         return String.format(
                 "UsersOracle[mId=%d, mIsHsum=%b, mInitialCurrentUserId=%d, "
                         + "mMainUserId=%s, mSupportsProfilesForAll(flag %s=%b)=%B, "
-                        + "mSupportsDeviceOwnerForAll(flag %s)=%B, mIsAutomotive=%b, "
-                        + "mPreExistingUserIds=%s]",
+                        + "mIsAutomotive=%b, mPreExistingUserIds=%s]",
                 mId,
                 mIsHsum,
                 mInitialCurrentUserId,
@@ -190,8 +169,6 @@ public final class UsersOracle {
                 FLAG_PROFILES_FOR_ALL,
                 getFlagValueForDebuggingPurposes(FLAG_PROFILES_FOR_ALL),
                 mSupportsManagedProfilesForAll,
-                FLAG_DEVICE_OWNER_FOR_ALL,
-                mSupportsDeviceOwnerForAll,
                 mIsAutomotive,
                 mPreExistingUserIds);
     }
