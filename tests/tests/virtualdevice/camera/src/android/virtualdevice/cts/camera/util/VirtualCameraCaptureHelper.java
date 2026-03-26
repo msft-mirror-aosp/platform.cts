@@ -31,7 +31,6 @@ import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtual.camera.VirtualCameraSessionConfig;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
@@ -430,9 +429,7 @@ public class VirtualCameraCaptureHelper {
         mVirtualCameraCallback.waitForSessionConfigured();
         Mockito.verify(mSessionStateCallback, Mockito.timeout(TIMEOUT_MILLIS)).onConfigured(
                 mCameraCaptureSessionCaptor.capture());
-        if (Flags.virtualCameraMetadata()) {
-            assertThat(mVirtualCameraCallback.mConfiguredSession).isNotNull();
-        }
+        assertThat(mVirtualCameraCallback.mConfiguredSession).isNotNull();
         mCaptureSession = mCameraCaptureSessionCaptor.getValue();
         return mCaptureSession;
     }
