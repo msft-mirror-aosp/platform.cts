@@ -16,10 +16,10 @@
 package com.android.bedstead.harrier
 
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation
-import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
@@ -39,6 +39,14 @@ import org.junit.runners.model.FrameworkMethod
 
 /** This class exposes a number of annotation-related helper methods. */
 class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
+
+    /**
+     * Special annotations that get handled at a different level and can therefore be skipped during
+     * annotation generation.
+     */
+    // TODO(b/489627134): Move [UsesAnnotationExecutor] into meta folder
+    private val IGNORED_ANNOTATIONS: ImmutableSet<String> =
+        ImmutableSet.of("com.android.bedstead.harrier.annotations.UsesAnnotationExecutor")
 
     /** Standard java annotations that our processing logic ignores. */
     private val IGNORED_ANNOTATION_PACKAGES: ImmutableSet<String> =
@@ -190,7 +198,8 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
         val annotationType = (annotation as java.lang.annotation.Annotation).annotationType()
         val annotationPackage: String = annotationType.`package`.name
 
-        return IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage) ||
+        return IGNORED_ANNOTATIONS.contains(annotationType.name) ||
+            IGNORED_ANNOTATION_PACKAGES.contains(annotationPackage) ||
             IGNORED_ANNOTATION_PREFIXES.stream().anyMatch { annotationPackage.startsWith(it) }
     }
 
@@ -371,7 +380,6 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
 
         val replacementAnnotations =
             getIndirectAnnotations(annotation)
-                .filterNot { shouldSkipAnnotation(it) }
                 .flatMap { getReplacementAnnotations(it, parameterizedAnnotations) }
                 .toList()
 

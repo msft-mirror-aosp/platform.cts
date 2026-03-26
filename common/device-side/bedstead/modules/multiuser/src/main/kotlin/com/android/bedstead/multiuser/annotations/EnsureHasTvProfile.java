@@ -23,7 +23,7 @@ import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasProfileAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 

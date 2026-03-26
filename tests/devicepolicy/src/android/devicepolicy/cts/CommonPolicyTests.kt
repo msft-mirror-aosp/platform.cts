@@ -26,6 +26,7 @@ import android.app.admin.flags.Flags
 import android.app.admin.metadata.EnumPolicyMetadata
 import android.app.admin.metadata.GeneratedPolicyMetadata
 import android.app.admin.metadata.IntegerPolicyMetadata
+import android.app.admin.metadata.ListPolicyMetadata
 import android.app.admin.metadata.LongPolicyMetadata
 import android.app.admin.metadata.PackagePolicyMetadata
 import android.app.admin.metadata.StringPolicyMetadata
@@ -281,7 +282,8 @@ public abstract class CommonPolicyTests<T> {
     // We need this since the type of `T` is not available due to type erasure.
     @Suppress("UNCHECKED_CAST")
     protected fun setPolicy(scope: Int, value: T?) {
-        when (GeneratedPolicyMetadata.getPolicyMetadata(policyIdentifier)) {
+        val policyMetadata = GeneratedPolicyMetadata.getPolicyMetadata(policyIdentifier)
+        when (policyMetadata) {
             is IntegerPolicyMetadata,
             is EnumPolicyMetadata ->
                 dpcDpm.setPolicy_integer(
@@ -307,7 +309,34 @@ public abstract class CommonPolicyTests<T> {
                     scope,
                     value as PackageIdentifier?,
                 )
+            is ListPolicyMetadata<*> -> setListPolicy(policyMetadata, scope, value)
             else -> throw IllegalArgumentException("Unsupported type")
+        }
+    }
+
+    private fun setListPolicy(listPolicyMetadata: ListPolicyMetadata<*>, scope: Int, value: T?) {
+        val elementMetadata = listPolicyMetadata.getElementMetadata()
+        when (elementMetadata) {
+            is IntegerPolicyMetadata,
+            is EnumPolicyMetadata ->
+                dpcDpm.setPolicy_listOfInteger(
+                    policyIdentifier as PolicyIdentifier<List<Int>>,
+                    scope,
+                    value as List<Int>?,
+                )
+            is StringPolicyMetadata ->
+                dpcDpm.setPolicy_listOfString(
+                    policyIdentifier as PolicyIdentifier<List<String>>,
+                    scope,
+                    value as List<String>?,
+                )
+            is PackagePolicyMetadata ->
+                dpcDpm.setPolicy_listOfPackage(
+                    policyIdentifier as PolicyIdentifier<List<PackageIdentifier>>,
+                    scope,
+                    value as List<PackageIdentifier>?,
+                )
+            else -> throw IllegalArgumentException("Unsupported list type")
         }
     }
 
@@ -317,7 +346,8 @@ public abstract class CommonPolicyTests<T> {
     // We need this since the type of `T` is not available due to type erasure.
     @Suppress("UNCHECKED_CAST")
     protected fun getPolicy(scope: Int): T? {
-        return when (GeneratedPolicyMetadata.getPolicyMetadata(policyIdentifier)) {
+        val policyMetadata = GeneratedPolicyMetadata.getPolicyMetadata(policyIdentifier)
+        return when (policyMetadata) {
             is IntegerPolicyMetadata,
             is EnumPolicyMetadata ->
                 dpcDpm.getPolicy_integer(policyIdentifier as PolicyIdentifier<Int>, scope) as T?
@@ -330,7 +360,31 @@ public abstract class CommonPolicyTests<T> {
                     policyIdentifier as PolicyIdentifier<PackageIdentifier>,
                     scope,
                 ) as T?
+            is ListPolicyMetadata<*> -> getListPolicy(policyMetadata, scope) as T?
             else -> throw IllegalArgumentException("Unsupported type")
+        }
+    }
+
+    private fun getListPolicy(listPolicyMetadata: ListPolicyMetadata<*>, scope: Int): T? {
+        val elementMetadata = listPolicyMetadata.getElementMetadata()
+        return when (elementMetadata) {
+            is IntegerPolicyMetadata,
+            is EnumPolicyMetadata ->
+                dpcDpm.getPolicy_listOfInteger(
+                    policyIdentifier as PolicyIdentifier<List<Int>>,
+                    scope,
+                ) as T?
+            is StringPolicyMetadata ->
+                dpcDpm.getPolicy_listOfString(
+                    policyIdentifier as PolicyIdentifier<List<String>>,
+                    scope,
+                ) as T?
+            is PackagePolicyMetadata ->
+                dpcDpm.getPolicy_listOfPackage(
+                    policyIdentifier as PolicyIdentifier<List<PackageIdentifier>>,
+                    scope,
+                ) as T?
+            else -> throw IllegalArgumentException("Unsupported list type")
         }
     }
 

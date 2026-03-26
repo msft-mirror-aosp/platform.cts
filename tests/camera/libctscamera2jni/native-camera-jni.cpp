@@ -1171,8 +1171,8 @@ class PreviewTestCase {
             LOG_ERROR(errorString, "Get camera id list failed: ret %d", ret);
             return ret;
         }
-
         if (env != nullptr && jOverrideCameraId != nullptr) {
+            mJOverrideCameraId = (jstring)env->NewGlobalRef(jOverrideCameraId);
             mOverrideCameraId = env->GetStringUTFChars(jOverrideCameraId, 0);
         }
         ret = ACameraManager_registerAvailabilityCallback(mCameraManager, &mServiceCb);
@@ -1181,7 +1181,6 @@ class PreviewTestCase {
             return ret;
         }
         mMgrInited = true;
-        mJOverrideCameraId = jOverrideCameraId;
         mJNIEnv = env;
         return ACAMERA_OK;
     }
@@ -1206,7 +1205,10 @@ class PreviewTestCase {
         if (mOverrideCameraId != nullptr && mJNIEnv != nullptr) {
             mJNIEnv->ReleaseStringUTFChars(mJOverrideCameraId, mOverrideCameraId);
             mOverrideCameraId = nullptr;
-            mJOverrideCameraId = nullptr;
+            if (mJOverrideCameraId != nullptr) {
+                mJNIEnv->DeleteGlobalRef(mJOverrideCameraId);
+                mJOverrideCameraId = nullptr;
+            }
             mJNIEnv = nullptr;
         }
         return ACAMERA_OK;

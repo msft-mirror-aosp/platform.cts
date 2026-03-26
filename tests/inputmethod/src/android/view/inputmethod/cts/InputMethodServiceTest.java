@@ -1209,6 +1209,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
+            ensureImeRunning();
             final ImeEventStream stream = imeSession.openEventStream();
 
             expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
@@ -1565,6 +1566,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder().setSuppressDeleteSettings(true))) {
+            ensureImeRunning();
             final var stream = session.openEventStream();
 
             expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);

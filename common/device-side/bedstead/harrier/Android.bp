@@ -96,7 +96,7 @@ java_library_host {
         "src/main/java/com/android/bedstead/harrier/annotations/RequireResourcesBooleanValue.kt",
         "src/main/java/com/android/bedstead/harrier/annotations/RequireResourceValueGroup.kt",
         "src/main/java/com/android/bedstead/harrier/annotations/RequireRunOnInitialUser.java",
-        "src/main/java/com/android/bedstead/harrier/annotations/meta/UsesParameterizedTestGenerator.kt",
+        "src/main/java/com/android/bedstead/harrier/annotations/UsesParameterizedTestGenerator.kt",
         "src/main/java/com/android/bedstead/harrier/AnnotationSorter.kt",
         "src/main/java/com/android/bedstead/harrier/BedsteadAnnotationGenerator.kt",
         "src/main/java/com/android/bedstead/harrier/BedsteadFrameworkMethod.java",

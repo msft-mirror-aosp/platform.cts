@@ -204,8 +204,9 @@ public class OnDeviceIntelligenceManagerTest {
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
         mOnDeviceIntelligenceManager = mContext.getSystemService(OnDeviceIntelligenceManager.class);
-        bindToTestableOnDeviceIntelligenceServices();
+        clearTestableOnDeviceIntelligenceService();
         setTestableDeviceConfigNamespace(TEST_OD_NAMESPACE);
+        bindToTestableOnDeviceIntelligenceServices();
     }
 
     @After
@@ -1463,37 +1464,40 @@ public class OnDeviceIntelligenceManagerTest {
                         Manifest.permission.WRITE_SECURE_SETTINGS);
         assumeTrue(isSystemUser());
         updateSecureSettings();
-        // Feature Id to ensure no callbacks are invoked
-        Feature feature = new Feature.Builder(3).build();
-        CtsIntelligenceService.initServiceConnectionLatch();
-        CtsIntelligenceService.initUnbindLatch();
-        mOnDeviceIntelligenceManager.requestFeatureDownload(feature, null, EXECUTOR,
-                new DownloadCallback() {
-                    @Override
-                    public void onDownloadFailed(int failureStatus,
-                            @Nullable String errorMessage,
-                            @NonNull PersistableBundle errorParams) {
-                        Log.e(TAG, "Got Error", new RuntimeException(errorMessage));
-                    }
+         try {
+            // Feature Id to ensure no callbacks are invoked
+            Feature feature = new Feature.Builder(3).build();
+            CtsIntelligenceService.initServiceConnectionLatch();
+            CtsIntelligenceService.initUnbindLatch();
+            mOnDeviceIntelligenceManager.requestFeatureDownload(feature, null, EXECUTOR,
+                    new DownloadCallback() {
+                        @Override
+                        public void onDownloadFailed(int failureStatus,
+                                @Nullable String errorMessage,
+                                @NonNull PersistableBundle errorParams) {
+                            Log.e(TAG, "Got Error", new RuntimeException(errorMessage));
+                        }
 
-                    @Override
-                    public void onDownloadProgress(long bytesDownloaded) {
-                    }
+                        @Override
+                        public void onDownloadProgress(long bytesDownloaded) {
+                        }
 
-                    @Override
-                    public void onDownloadStarted(long bytesDownloaded) {
+                        @Override
+                        public void onDownloadStarted(long bytesDownloaded) {
 
-                    }
+                        }
 
-                    @Override
-                    public void onDownloadCompleted(
-                            @NonNull PersistableBundle downloadParams) {
-                        Log.i(TAG, "Response : =" + downloadParams);
-                    }
-                });
-        CtsIntelligenceService.waitServiceConnect();
-        CtsIntelligenceService.waitForUnbind();
-        resetSecureSettings();
+                        @Override
+                        public void onDownloadCompleted(
+                                @NonNull PersistableBundle downloadParams) {
+                            Log.i(TAG, "Response : =" + downloadParams);
+                        }
+                    });
+            CtsIntelligenceService.waitServiceConnect();
+            CtsIntelligenceService.waitForUnbind();
+        } finally {
+            resetSecureSettings();
+        }
     }
 
     @Test
@@ -1504,19 +1508,22 @@ public class OnDeviceIntelligenceManagerTest {
                         Manifest.permission.WRITE_SECURE_SETTINGS);
         assumeTrue(isSystemUser());
         updateSecureSettings();
-        CtsIntelligenceService.initServiceConnectionLatch();
-        CtsIntelligenceService.initUnbindLatch();
-        CountDownLatch statusLatch = new CountDownLatch(1);
+        try {
+            CtsIntelligenceService.initServiceConnectionLatch();
+            CtsIntelligenceService.initUnbindLatch();
+            CountDownLatch statusLatch = new CountDownLatch(1);
 
-        mOnDeviceIntelligenceManager.getVersion(EXECUTOR,
-                result -> {
-                    Log.i(TAG, "Version : =" + result);
-                    statusLatch.countDown();
-                });
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
-        CtsIntelligenceService.waitServiceConnect();
-        CtsIntelligenceService.waitForUnbind();
-        resetSecureSettings();
+            mOnDeviceIntelligenceManager.getVersion(EXECUTOR,
+                    result -> {
+                        Log.i(TAG, "Version : =" + result);
+                        statusLatch.countDown();
+                    });
+            assertThat(statusLatch.await(1, SECONDS)).isTrue();
+            CtsIntelligenceService.waitServiceConnect();
+            CtsIntelligenceService.waitForUnbind();
+        } finally {
+            resetSecureSettings();
+        }
     }
 
     @Test

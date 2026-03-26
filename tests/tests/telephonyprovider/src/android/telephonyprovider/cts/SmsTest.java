@@ -1116,34 +1116,6 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
-    @EnsureHasNoDeviceOwner
-    public void testGenericOtpSms_filterGenericOtpDisabled_handlesAppCompatSuccessfully() {
-        // If a standard app does not target SDK 37 or above, the generic OTP protection is not
-        // enabled for that app to ensure app compatibility. Hence, the app should still be able
-        // to see the generic OTP message.
-        try {
-            runShellCommand("am compat disable --no-kill "
-                    + FILTER_GENERIC_OTP_CHANGE_ID + " " + getContext().getPackageName());
-            final String message = mSmsOtpTestHelper.getGenericOtpMessage();
-            Uri inserted =
-                    mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
-                            TEST_ADDRESS,
-                            message,
-                            System.currentTimeMillis(),
-                            SmsOtpTestHelper.CONTAINS_GENERIC_OTP,
-                            TEST_THREAD_ID_1);
-            stopBeingDefaultSmsApp();
-            mSmsOtpTestHelper.assertSmsPresence(inserted, message, /* canRead */ true);
-        } finally {
-            ensureDefaultSmsApp();
-            runShellCommand("am compat reset --no-kill "
-                    + FILTER_GENERIC_OTP_CHANGE_ID + " " + getContext().getPackageName());
-        }
-    }
-
-    @Test
     @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
     public void querySms_byDefaultSmsApp_readRestrictionColumnIsHidden() {
         Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,

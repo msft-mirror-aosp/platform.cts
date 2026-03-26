@@ -17,7 +17,7 @@
 package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
  * Mark that a test requires that the backup service is not active for a given user.

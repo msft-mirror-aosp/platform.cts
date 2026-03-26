@@ -20,7 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 

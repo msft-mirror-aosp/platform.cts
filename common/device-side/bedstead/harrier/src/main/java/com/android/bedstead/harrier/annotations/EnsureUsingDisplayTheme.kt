@@ -16,7 +16,6 @@
 
 package com.android.bedstead.harrier.annotations
 
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.nene.display.DisplayProperties
 

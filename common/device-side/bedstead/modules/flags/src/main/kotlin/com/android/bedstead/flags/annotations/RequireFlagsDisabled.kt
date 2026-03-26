@@ -1,6 +1,6 @@
 package com.android.bedstead.flags.annotations
 
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
  * Indicates that a specific test or class should be run only if all of the given feature flags are

@@ -73,6 +73,7 @@ import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -364,6 +365,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
      * <p>Regression test for Bug 195765264 and Bug 152304051.
      */
     @Test
+    @FlakyTest(bugId = 496128779)
     public void testEditorWontCoveredByImeWhenInputWindowBehindPanel_freeformWindow()
             throws Exception {
         assumeTrue(isFreeformSupported());
@@ -372,6 +374,7 @@ public final class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
     private void runEditorWontCoveredByImeWhenInputWindowBehindPanel(int windowingMode)
             throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),

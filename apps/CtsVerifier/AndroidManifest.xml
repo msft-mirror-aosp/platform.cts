@@ -1580,7 +1580,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1603,7 +1603,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="CddTest"
@@ -1628,7 +1628,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="CddTest"
@@ -1653,7 +1653,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1676,7 +1676,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1699,7 +1699,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1722,7 +1722,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1745,7 +1745,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1768,7 +1768,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1791,7 +1791,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1814,7 +1814,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1837,7 +1837,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1860,7 +1860,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1883,7 +1883,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1906,7 +1906,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1929,7 +1929,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1952,7 +1952,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1975,7 +1975,7 @@
                        android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -1998,7 +1998,7 @@
                 android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -2021,7 +2021,7 @@
                 android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -2044,7 +2044,7 @@
                 android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
             <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
             <meta-data android:name="test_excluded_features"
-                android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+                android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
@@ -5878,51 +5878,6 @@
             </intent-filter>
         </service>
 
-        <activity android:name=".telecom.CallSwitchingAudioTestActivity"
-                  android:exported="true"
-                  android:label="@string/telecom_audio_call_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.cts.intent.category.MANUAL_TEST"/>
-            </intent-filter>
-            <meta-data android:name="ApiTest"
-                       android:value="android.telecom.Connection#setAudioModeIsVoip"/>
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_telecom"/>
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.telephony.calling"/>
-            <meta-data
-                android:name="test_required_configs"
-                android:value="config_voice_capable"/>
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode"/>
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.watch"/>
-        </activity>
-
-        <activity android:name=".telecom.TelecomDefaultDialerTestActivity"
-                android:exported="true"
-                  android:label="@string/telecom_default_dialer_test_title">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-
-            <meta-data
-                android:name="test_category"
-                android:value="@string/test_category_telecom"/>
-            <meta-data
-                android:name="test_required_features"
-                android:value="android.hardware.telephony"/>
-            <meta-data
-                android:name="test_required_configs"
-                android:value="config_voice_capable"/>
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-        </activity>
-
         <activity android:name=".telecom.CtsVerifierInCallUi"
                 android:exported="true"
                   android:label="@string/telecom_in_call_ui_label">
@@ -5932,7 +5887,7 @@
             </intent-filter>
             <meta-data
                 android:name="test_category"
-                android:value="@string/test_category_telecom"/>
+                android:value="@string/test_category_telephony"/>
             <meta-data
                 android:name="test_required_features"
                 android:value="android.hardware.telephony"/>

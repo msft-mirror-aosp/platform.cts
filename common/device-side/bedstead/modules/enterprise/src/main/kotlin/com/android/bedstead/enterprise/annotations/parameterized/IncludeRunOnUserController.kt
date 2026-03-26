@@ -20,8 +20,8 @@ import com.android.bedstead.enterprise.annotations.EnsureHasUserController
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY
 import com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor
 import com.google.auto.value.AutoAnnotation
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)

@@ -192,6 +192,12 @@ class SecurePlaybackTest(secure_playback_base_test.SecurePlaybackBaseTest):
       video_url: The URL of the video to test.
       duration_sec: The duration of the video to test in seconds.
     """
+    supported_codecs = self.dut.adb.shell(
+        'dumpsys media.player | grep "decoder.*secure"').decode('utf-8')
+    logging.info('Supported codecs: %s', supported_codecs)
+    if self.codec_name not in supported_codecs:
+      logging.warning(
+          'Codec %s is not supported on this device', self.codec_name)
     self._play_video(video_url)
     if not self.aligned:
       self._align_playback_tool(video_url)

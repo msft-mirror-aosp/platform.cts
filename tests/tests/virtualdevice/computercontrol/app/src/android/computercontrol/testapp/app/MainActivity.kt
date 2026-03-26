@@ -135,16 +135,26 @@ fun TestView(sendInteractionResult: (Interaction) -> Unit) {
         modifier =
             Modifier.fillMaxSize()
                 .pointerInput(Unit) {
+                    var longPressOffset: Offset? = null
                     detectTapGestures(
+                        onPress = {
+                            longPressOffset = null
+                            tryAwaitRelease()
+                            longPressOffset?.let { offset ->
+                                sendInteractionResult(
+                                    Interaction(
+                                        Action.LongPress(offset.x.toInt(), offset.y.toInt())
+                                    )
+                                )
+                            }
+                        },
                         onTap = {
                             sendInteractionResult(
                                 Interaction(Action.Tap(it.x.toInt(), it.y.toInt()))
                             )
                         },
                         onLongPress = {
-                            sendInteractionResult(
-                                Interaction(Action.LongPress(it.x.toInt(), it.y.toInt()))
-                            )
+                            longPressOffset = it
                         },
                     )
                 }

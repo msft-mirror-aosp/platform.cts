@@ -1342,13 +1342,20 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
                 // Verify IME will invisible after device unlocked
                 lockScreenSession.unlock();
-                // Expect hideSoftInput will called by IMMS when the same window
-                // focused since the editText view focus has been cleared.
                 TestUtils.waitOnMainUntil(() -> editTextRef.get().hasWindowFocus()
                         && !editTextRef.get().hasFocus(), TIMEOUT);
-                expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
-                if (!imeSession.isFinishInputNoFallbackConnectionEnabled()) {
-                    expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+                if (isPreventImeStartup()) {
+                    // If preventImeStartup is enabled, the IME will be unbound rather than hidden
+                    final InputMethodManager imm =
+                            testActivity.getSystemService(InputMethodManager.class);
+                    assertFalse(imm.isImeBoundForTesting());
+                } else {
+                    // Expect hideSoftInput will called by IMMS when the same window
+                    // focused since the editText view focus has been cleared.
+                    expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+                    if (!imeSession.isFinishInputNoFallbackConnectionEnabled()) {
+                        expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+                    }
                 }
                 expectImeInvisible(TIMEOUT);
             }
@@ -1875,6 +1882,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     public void testImeInsetsInvisibleAfterBackingFromImeHiddenActivity() throws Exception {
+        assumeFalse(isPreventImeStartup());
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),

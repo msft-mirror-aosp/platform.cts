@@ -18,7 +18,6 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 
-import com.android.bedstead.harrier.annotations.meta.UsesAnnotationExecutor;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
 
 import java.lang.annotation.ElementType;

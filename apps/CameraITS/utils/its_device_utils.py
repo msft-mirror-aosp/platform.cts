@@ -25,10 +25,10 @@ ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsDefaultTestActivity
 ITS_SENSOR_FUSION_ACTIVITY = 'com.android.cts.verifier/.camera.its.SensorFusionTestActivity'
 CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 SYSTEM_USER = '0'
-WAIT_TIME_SEC = 2
+WAIT_TIME_SEC = 5
 CAMERA_ITS_TEST_TEXT = 'Camera ITS Test'
 NAVIGATE_UP_DESCRIPTION = 'Navigate up'
-
+RPC_TIMEOUT_SEC = 180
 
 def run(cmd):
   """Replacement for os.system, with hiding of stdout+stderr messages.
@@ -125,30 +125,51 @@ def click_on_app_icon(dut, log_path):
       log_path: Path to save screenshot if setup fails.
   """
   dut.services.register(
-        uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
+      uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
   )
-  dut.adb.shell(['input', 'keyevent', 'KEYCODE_POWER'])
-  dut.adb.shell(['input', 'keyevent', 'KEYCODE_WAKEUP'])
-  # Dismiss keyguard
-  dut.adb.shell(['wm', 'dismiss-keyguard'])
-  dut.adb.shell(
-      'am start -n com.android.cts.verifier/.CtsVerifierActivity'
-  )
-  time.sleep(WAIT_TIME_SEC)
-  if dut.ui(text=CAMERA_ITS_TEST_TEXT).wait.exists(
-      WAIT_TIME_SEC
-  ) and dut.ui(description=NAVIGATE_UP_DESCRIPTION).wait.exists(WAIT_TIME_SEC):
-    logging.debug('Pressing back button to return to Camera ITS Test page')
-    dut.ui(description=NAVIGATE_UP_DESCRIPTION).click()
-  scrollable_menu = dut.ui(scrollable=True)
-  if scrollable_menu.wait.exists(WAIT_TIME_SEC):
-    logging.debug('Scrolling down to find CameraITS')
-    found = scrollable_menu.scroll.down(text=CAMERA_ITS_TEST_TEXT)
-    if not found:
-      dut.take_screenshot(log_path, prefix='failed_to_find_CameraITS')
-    else:
-      logging.debug('Found CameraITS')
-      dut.ui(text=CAMERA_ITS_TEST_TEXT).click()
+  # Increase the RPC timeout to 3 minutes for slow UI operations.
+  original_timeout = dut.ui._ui._conn.gettimeout()
+  dut.ui._ui._conn.settimeout(RPC_TIMEOUT_SEC)
+  try:
+    dut.adb.shell(['input', 'keyevent', 'KEYCODE_WAKEUP'])
+    dut.adb.shell(['input', 'keyevent', 'KEYCODE_MENU'])
+    # Dismiss keyguard and wait a moment for the system to settle
+    dut.adb.shell(['wm', 'dismiss-keyguard'])
+    time.sleep(WAIT_TIME_SEC)
+
+    # First, try to start the activity directly as it's more robust.
+    # Note: --activity-brought-to-front and --activity-reorder-to-front are used
+    # to ensure the activity is shown if it was already running in the background.
+    logging.debug('Attempting to start %s directly.', ITS_TEST_ACTIVITY)
+    dut.adb.shell(['am', 'start', '-n', ITS_TEST_ACTIVITY,
+                   '--activity-brought-to-front',
+                   '--activity-reorder-to-front'])
+    time.sleep(WAIT_TIME_SEC)
+
+    # Check if already on the correct page.
+    if dut.ui(text=CAMERA_ITS_TEST_TEXT).wait.exists(WAIT_TIME_SEC) and \
+       dut.ui(desc=NAVIGATE_UP_DESCRIPTION).wait.exists(WAIT_TIME_SEC):
+      logging.debug('Successfully launched %s directly.', ITS_TEST_ACTIVITY)
+      dut.ui(desc=NAVIGATE_UP_DESCRIPTION).click()
+      time.sleep(WAIT_TIME_SEC)
+
+    scrollable_menu = dut.ui(scrollable=True)
+    if scrollable_menu.wait.exists(WAIT_TIME_SEC):
+      logging.debug('Scrolling down to find CameraITS')
+      if dut.ui(text=CAMERA_ITS_TEST_TEXT).exists:
+        found = True
+      else:
+        found = scrollable_menu.scroll.down(text=CAMERA_ITS_TEST_TEXT)
+
+      if not found:
+        dut.take_screenshot(log_path, prefix='failed_to_find_CameraITS')
+        logging.error('Failed to find Camera ITS Test icon in the menu.')
+      else:
+        logging.debug('Found CameraITS icon, clicking.')
+        dut.ui(text=CAMERA_ITS_TEST_TEXT).click()
+        time.sleep(WAIT_TIME_SEC)
+  finally:
+    dut.ui._ui._conn.settimeout(original_timeout)
 
 
 def pull_file_from_content_provider(

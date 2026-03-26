@@ -16,9 +16,9 @@
 package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4
-import com.android.bedstead.harrier.annotations.meta.UsesParameterizedTestGenerator
 import com.google.auto.value.AutoAnnotation
 import kotlin.reflect.KClass
 

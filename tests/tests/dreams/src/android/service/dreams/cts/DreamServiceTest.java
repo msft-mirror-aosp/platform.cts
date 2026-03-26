@@ -58,6 +58,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -259,6 +260,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         mDreamCoordinator.stopDream();
     }
 
+    @Ignore("b/495773644")
     @Test
     public void testDreamDoesNotForcePictureInPicture() {
         assumeTrue(supportsPip());

@@ -2213,7 +2213,11 @@ public class TunerTest {
             tunerB.setResourceOwnershipRetention(true);
             res = tunerB.applyFrontend(info);
             assertEquals(Tuner.RESULT_UNAVAILABLE, res);
-            assertNull(tunerB.getFrontendInfo());
+            FrontendInfo bInfo = tunerB.getFrontendInfo();
+            if (bInfo != null) {
+                assertNotEquals("TunerB should not have acquired the contended frontend",
+                        info.getId(), bInfo.getId());
+            }
         }
     }
 

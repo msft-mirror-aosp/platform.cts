@@ -82,8 +82,8 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
 
     private final Executor mAsyncRequestExecutor = Executors.newCachedThreadPool();
 
-    private PersistableBundle mReceivedDeviceConfig;
-    private final CountDownLatch mConfigUpdateLatch = new CountDownLatch(1);
+    private final Object mConfigLock = new Object();
+    private final PersistableBundle mReceivedDeviceConfig = new PersistableBundle();
     private LifecycleListener mLifecycleListener;
 
     public static TokenInfo constructTokenInfo(int status, PersistableBundle persistableBundle) {
@@ -317,18 +317,22 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
 
         if (requestType
                 == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG) {
-            // This needs to happen async because updateProcessingState doesn't get a chance
-            // to run while we're blocking the binder thread with this method.
-            try {
-                Log.e(TAG, "Waiting for DeviceConfig Update latch.");
-                mConfigUpdateLatch.await(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                callback.onError(new OnDeviceIntelligenceException(-1, e.getMessage()));
-                return;
+            synchronized (mConfigLock) {
+                long startTime = System.currentTimeMillis();
+                while (!mReceivedDeviceConfig.containsKey("key1")
+                        && (System.currentTimeMillis() - startTime < 10000)) {
+                    try {
+                        mConfigLock.wait(10000 - (System.currentTimeMillis() - startTime));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+                Bundle bundle = new Bundle();
+                bundle.putParcelable(TEST_KEY, new PersistableBundle(mReceivedDeviceConfig));
+                mReceivedDeviceConfig.clear();
+                callback.onResult(bundle);
             }
-            Bundle bundle = new Bundle();
-            bundle.putParcelable(TEST_KEY, mReceivedDeviceConfig);
-            callback.onResult(bundle);
             Log.e(TAG, "Sent DeviceConfig Update to caller.");
             return;
         }
@@ -407,13 +411,21 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         if (processingState.containsKey(
                 OnDeviceSandboxedInferenceService.KEY_DEVICE_CONFIG_UPDATE)) {
             Log.e(TAG, "DeviceConfig Update callback received.");
-            mReceivedDeviceConfig = processingState.getParcelable(
+            PersistableBundle update = processingState.getParcelable(
                     OnDeviceSandboxedInferenceService.KEY_DEVICE_CONFIG_UPDATE,
                     PersistableBundle.class);
+
+            if (update != null) {
+                synchronized (mConfigLock) {
+                    mReceivedDeviceConfig.putAll(update);
+                    // Wake up the waiting thread whenever there is a config update.
+                    mConfigLock.notifyAll();
+                }
+            }
+
             PersistableBundle resultBundle = new PersistableBundle();
             resultBundle.putBoolean("deviceConfig", true);
             callback.onResult(resultBundle);
-            mConfigUpdateLatch.countDown();
             return;
         }
 

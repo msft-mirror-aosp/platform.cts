@@ -213,7 +213,6 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
                 AppExitInfoConstants.TEST_PKG,
                 AppExitInfoConstants.TEST_CLASS,
                 testMethod);
-        RunUtil.getDefault().sleep(AppExitInfoConstants.APP_EXIT_INFO_STATSD_LOG_DEBOUNCE_MSEC);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 

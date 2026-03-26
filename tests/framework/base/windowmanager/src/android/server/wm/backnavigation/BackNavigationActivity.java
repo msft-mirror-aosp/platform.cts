@@ -29,11 +29,13 @@ public class BackNavigationActivity extends Activity {
     boolean mOnBackPressedCalled;
     boolean mOnUserInteractionCalled;
     CountDownLatch mReceiveMotionCancel;
+    CountDownLatch mGestureStarted;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mReceiveMotionCancel = new CountDownLatch(1);
+        mGestureStarted = new CountDownLatch(1);
     }
 
     @Override
@@ -52,6 +54,9 @@ public class BackNavigationActivity extends Activity {
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_CANCEL) {
             mReceiveMotionCancel.countDown();
+        } else if (event.getAction() == MotionEvent.ACTION_DOWN
+                || event.getAction() == MotionEvent.ACTION_MOVE) {
+            mGestureStarted.countDown();
         }
         return super.onTouchEvent(event);
     }
