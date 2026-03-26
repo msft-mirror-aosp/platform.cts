@@ -54,6 +54,11 @@ open class ControlService : MyForegroundService() {
                         }
                     )
                 }
+                PREFIX + ACTION_SET_MEDIA_VOLUME ->
+                    intent.getIntExtra(EXTRA_VOLUME_INDEX, -1).let {
+                        getSystemService(AudioManager::class.java)
+                            .setStreamVolume(AudioManager.STREAM_MUSIC, it, 0)
+                    }
                 PREFIX + ACTION_START_BACKGROUND -> {} // nothing to do
                 PREFIX + ACTION_START_FOREGROUND ->
                     intent.getIntExtra(EXTRA_CAP_OVERRIDE, getCapabilities()).let {
