@@ -24,24 +24,4 @@ public class WifiFeature {
         PackageManager packageManager = context.getPackageManager();
         return packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI);
     }
-
-    public static boolean isP2pSupported(Context context) {
-        PackageManager packageManager = context.getPackageManager();
-        return packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_DIRECT);
-    }
-
-    public static boolean isTelephonySupported(Context context) {
-        final PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
-    }
-
-    public static boolean isRttSupported(Context context) {
-        final PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_WIFI_RTT);
-    }
-
-    public static boolean isAwareSupported(Context context) {
-        final PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE);
-    }
 }
