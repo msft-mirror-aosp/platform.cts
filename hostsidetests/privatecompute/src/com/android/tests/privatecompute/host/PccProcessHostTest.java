@@ -52,8 +52,7 @@ public class PccProcessHostTest extends BaseHostJUnit4Test {
     @Before
     public void setUp() throws Exception {
         getDevice().enableAdbRoot();
-        mUserId = getDevice().createUser("test_user");
-        getDevice().switchUser(mUserId);
+        mUserId = getDevice().getCurrentUser();
     }
 
     @Test
