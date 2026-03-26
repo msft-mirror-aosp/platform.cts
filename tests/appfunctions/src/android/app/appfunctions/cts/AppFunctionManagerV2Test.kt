@@ -23,18 +23,19 @@ import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.TestAllowlistPackage
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
-import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
-import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils
+import android.app.appfunctions.testutils.AppFunctionUtils.TestAllowlistPackage
+import android.app.appfunctions.testutils.AppFunctionUtils.executeAppFunction
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllRuntimeMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.installExistingPackageAsUser
+import android.app.appfunctions.testutils.AppFunctionUtils.runWithInteractionAllowlisted
+import android.app.appfunctions.testutils.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.testutils.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.testutils.CtsTestUtil.assertReadAccessible
 import android.app.appfunctions.testutils.CtsTestUtil.assertReadInaccessible
 import android.app.appfunctions.testutils.CtsTestUtil.assertWriteAccessible
@@ -379,8 +380,8 @@ class AppFunctionManagerV2Test {
                 // package is installed or not.
                 assertThat(response.appFunctionException().errorMessage)
                     .endsWith(
-                        "Caller android.app.appfunctions.cts is not allowed to call"
-                            + " android.app.appfunctions.cts.helper"
+                        "Caller android.app.appfunctions.cts is not allowed to call" +
+                            " android.app.appfunctions.cts.helper"
                     )
                 assertServiceWasNotCreated()
             }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.appfunctions.cts
+package android.app.appfunctions.testutils
 
 import android.app.appfunctions.AppFunctionMetadata
 import android.app.appfunctions.AppFunctionMetadata.PROPERTY_SCHEMA_CATEGORY
@@ -22,7 +22,7 @@ import android.app.appfunctions.AppFunctionMetadata.PROPERTY_SCHEMA_VERSION
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
-import android.app.appfunctions.cts.AppFunctionUtils.TestAllowlistPackage
+import android.app.appfunctions.testutils.AppFunctionUtils.TestAllowlistPackage
 import android.app.appsearch.GenericDocument
 import kotlin.collections.minus
 

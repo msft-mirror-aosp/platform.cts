@@ -25,11 +25,12 @@ import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.AppFunctionState
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils.assertFunctionEnabledState
+import android.app.appfunctions.testutils.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
@@ -335,15 +336,15 @@ class AppFunctionActivityScopedRegistrationTest {
     fun register_finishActivity_unregistersFunction() = doBlocking {
         var registration: AppFunctionRegistration? = null
         try {
-            ActivityScenario.launch<DynamicRegistrationActivity>(
-                internalLaunchIntent
-            ).use { scenario ->
+            ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use {
+                scenario ->
                 scenario.moveToState(Lifecycle.State.STARTED)
                 scenario.onActivity { activity ->
-                    registration = activity.manager.registerAppFunction(
+                    registration =
+                        activity.manager.registerAppFunction(
                             ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                             activity.mainExecutor,
-                            ConcatStrings()
+                            ConcatStrings(),
                         )
                 }
                 assertFunctionEnabledState(
@@ -372,45 +373,49 @@ class AppFunctionActivityScopedRegistrationTest {
     fun register_twoRegistrations_finishOneOfActivity_unregistersOnce() = doBlocking {
         var registration: AppFunctionRegistration? = null
         try {
-            ActivityScenario.launch<DynamicRegistrationActivity>(
-                internalLaunchIntent
-            ).use { scenario ->
+            ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use {
+                scenario ->
                 scenario.moveToState(Lifecycle.State.STARTED)
                 scenario.onActivity { activity ->
-                    registration = activity.manager.registerAppFunction(
+                    registration =
+                        activity.manager.registerAppFunction(
                             ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
                             activity.mainExecutor,
-                            ConcatStrings()
+                            ConcatStrings(),
                         )
                 }
-                val activityIdFinished = awaitRegisteredActivityIds(
-                    CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
-                    numRegistrations = 1
-                ).first()
+                val activityIdFinished =
+                    awaitRegisteredActivityIds(
+                            CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                            numRegistrations = 1,
+                        )
+                        .first()
 
-                ActivityScenario.launch<DynamicRegistrationActivity>(
-                    internalLaunchIntent
-                ).use { scenario2 ->
+                ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use {
+                    scenario2 ->
                     scenario2.moveToState(Lifecycle.State.STARTED)
                     scenario2.onActivity { activity ->
-                        activity.registerAppFunction(
-                            ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+                        activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
                     }
 
-                    val activityIdsBoth = awaitRegisteredActivityIds(
-                        CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
-                        numRegistrations = 2
-                    )
+                    val activityIdsBoth =
+                        awaitRegisteredActivityIds(
+                            CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                            numRegistrations = 2,
+                        )
 
                     scenario.onActivity { activity -> activity.finish() }
 
-                    val activityIdSecond = awaitRegisteredActivityIds(
-                        CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
-                        numRegistrations = 1
-                    ).first()
+                    val activityIdSecond =
+                        awaitRegisteredActivityIds(
+                                CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                                numRegistrations = 1,
+                            )
+                            .first()
 
                     assertThat(activityIdSecond).isNotEqualTo(activityIdFinished)
-                    assertThat(activityIdsBoth).containsExactly(activityIdFinished, activityIdSecond)
+                    assertThat(activityIdsBoth)
+                        .containsExactly(activityIdFinished, activityIdSecond)
                 }
             }
         } finally {
@@ -759,13 +764,13 @@ class AppFunctionActivityScopedRegistrationTest {
         val activityIds1 =
             awaitRegisteredActivityIds(
                 DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID,
-                numRegistrations = 1
+                numRegistrations = 1,
             )
 
         startExternalReturnInstanceIdActivity("instance2")
         awaitRegisteredActivityIds(
             DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID,
-            numRegistrations = 2
+            numRegistrations = 2,
         )
 
         // Target execution request to the first activity
@@ -1017,14 +1022,12 @@ class AppFunctionActivityScopedRegistrationTest {
 
     private fun startExternalReturnInstanceIdActivity(instanceId: String) {
         val functionId =
-            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID.functionIdentifier
+            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_RETURN_INSTANCE_ID
+                .functionIdentifier
         context.startActivity(
             Intent().apply {
                 component =
-                    ComponentName(
-                        DynamicSchemaHelperApp.PACKAGE_NAME,
-                        REGISTRATION_ACTIVITY,
-                    )
+                    ComponentName(DynamicSchemaHelperApp.PACKAGE_NAME, REGISTRATION_ACTIVITY)
                 action = ACTION_REGISTER_APP_FUNCTION
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
                 putExtra(DynamicRegistrationActivity.EXTRA_FUNCTION_ID, functionId)

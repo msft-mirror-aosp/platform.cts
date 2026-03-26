@@ -23,20 +23,20 @@ import android.app.appfunctions.AppFunctionObserver
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionSearchSpec
 import android.app.appfunctions.cts.AppFunctionActivityScopedRegistrationTest.Companion.REGISTRATION_ACTIVITY
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.assertAppFunctionPackageMetadataEquals
-import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
-import android.app.appfunctions.cts.AppFunctionUtils.getAllAppFunctionPackages
-import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
-import android.app.appfunctions.cts.AppFunctionUtils.installPackage
-import android.app.appfunctions.cts.AppFunctionUtils.searchAppFunctions
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
-import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
-import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.UpdatableHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils.assertAppFunctionPackageMetadataEquals
+import android.app.appfunctions.testutils.AppFunctionUtils.assertFunctionEnabledState
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllAppFunctionPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.installExistingPackageAsUser
+import android.app.appfunctions.testutils.AppFunctionUtils.installPackage
+import android.app.appfunctions.testutils.AppFunctionUtils.searchAppFunctions
+import android.app.appfunctions.testutils.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.testutils.AppFunctionUtils.setAppFunctionEnabledRemote
+import android.app.appfunctions.testutils.AppFunctionUtils.uninstallPackage
+import android.app.appfunctions.testutils.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.CtsTestUtil.freezeProcess
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
@@ -158,6 +158,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
     )
+    @RequireRootInstrumentation("To remove EXECUTE_APP_FUNCTIONS which is granted in manifest")
     fun packageInstalled_withDiscoverAndQueryAllPermissions_shouldSeeUpdate() = doBlocking {
         assertPackageInstallationNotified()
     }
@@ -175,6 +176,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
+    @RequireRootInstrumentation("To remove EXECUTE_APP_FUNCTIONS which is granted in manifest")
     fun packageInstalled_withExecuteSystemAndQueryAllPermissions_shouldSeeUpdate() = doBlocking {
         assertPackageInstallationNotified()
     }
@@ -189,6 +191,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
+    @RequireRootInstrumentation("To remove EXECUTE_APP_FUNCTIONS which is granted in manifest")
     fun packageInstalled_withoutAnyPermissions_shouldNotSeeUpdates() = doBlocking {
         assertPackageInstallationNotNotified()
     }
@@ -263,14 +266,13 @@ class ObserveAppFunctionsTest {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            installPackage(
+            observation = observeAppFunctions(observer)
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.NO_TOP_LEVEL_DOCS,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
-            observation = observeAppFunctions(observer)
-            assertThat(observer.updatedPackagesHistory).isEmpty()
 
             // Static metadata (top-level documents) are updated for
             // DynamicSchemaHelperApp.PACKAGE_NAME.
@@ -312,14 +314,13 @@ class ObserveAppFunctionsTest {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            installPackage(
+            observation = observeAppFunctions(observer)
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.BASE_APP,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
-            observation = observeAppFunctions(observer)
-            assertThat(observer.updatedPackagesHistory).isEmpty()
 
             // Static metadata (top-level documents) are updated for
             // DynamicSchemaHelperApp.PACKAGE_NAME.
@@ -361,14 +362,13 @@ class ObserveAppFunctionsTest {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            installPackage(
+            observation = observeAppFunctions(observer)
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.ONE_FUNCTION_REMOVED,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
-            observation = observeAppFunctions(observer)
-            assertThat(observer.updatedPackagesHistory).isEmpty()
 
             // Install app version with additional function.
             installPackage(
@@ -409,14 +409,13 @@ class ObserveAppFunctionsTest {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            installPackage(
+            observation = observeAppFunctions(observer)
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.BASE_APP,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
-            observation = observeAppFunctions(observer)
-            assertThat(observer.updatedPackagesHistory).isEmpty()
 
             // Install app version with one less function.
             installPackage(
@@ -456,14 +455,20 @@ class ObserveAppFunctionsTest {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
+            observation = observeAppFunctions(observer)
             installPackage(
                 UpdatableHelperApp.ApkPaths.NO_FUNCTIONS,
                 UpdatableHelperApp.PACKAGE_NAME,
                 context,
                 checkIndexation = false, // No functions to index
             )
-            observation = observeAppFunctions(observer)
-            assertThat(observer.updatedPackagesHistory).isEmpty()
+            // Ensure that the test only finish when the debounced callback is
+            // triggered. To avoid affecting other tests.
+            safeRetryAssert {
+                assertThat(observer.updatedPackagesHistory.flatten())
+                    .contains(UpdatableHelperApp.PACKAGE_NAME)
+            }
+            observer.clearHistory()
 
             // Static metadata is updated for UpdatableHelperApp.PACKAGE_NAME.
             installPackage(
@@ -752,6 +757,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
+    @RequireRootInstrumentation("To remove EXECUTE_APP_FUNCTIONS which is granted in manifest")
     fun changeEnabledState_withoutAnyPermission_shouldOnlySeeSelfUpdate() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -1300,9 +1306,8 @@ class ObserveAppFunctionsTest {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
-
             observation = observeAppFunctions(observer)
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
 
             installPackage(
                 UpdatableHelperApp.ApkPaths.BASE_APP,
@@ -1492,6 +1497,7 @@ class ObserveAppFunctionsTest {
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
             assertThat(observer.updatedPackagesHistory.flatten()).contains(packageName)
         }
+        observer.clearHistory()
     }
 
     private suspend fun awaitApkReinstall(
@@ -1510,6 +1516,7 @@ class ObserveAppFunctionsTest {
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
             assertThat(observer.updatedPackagesHistory.flatten()).contains(packageName)
         }
+        observer.clearHistory()
     }
 
     private fun bindToRegistrationService(
