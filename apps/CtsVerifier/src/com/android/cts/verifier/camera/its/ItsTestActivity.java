@@ -360,6 +360,8 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
                     .put("default_jca_ip_camera_hardware_level", TYPE_STRING)
                     .put("default_jca_ip_mean_brightness_diff", TYPE_DOUBLE)
                     .put("default_jca_ip_mean_white_balance_diff", TYPE_DOUBLE)
+                    .put("default_jca_ip_mean_delta_ab_diff", TYPE_DOUBLE)
+                    .put("jca_jpegr_ip_mean_white_balance_diff", TYPE_DOUBLE)
                     .put("preview_stabilization_fov_reduction_percentage", TYPE_DOUBLE)
                     .put("has_gainmap", TYPE_STRING)
                     .put("camera_launch_time_ms", TYPE_DOUBLE)
@@ -1135,32 +1137,51 @@ public abstract class ItsTestActivity extends DialogTestListActivity {
     private void addSceneIpPerfMetricsResult(String perfMetricsResult,
             JSONObject obj) throws org.json.JSONException {
         Log.i(TAG, "Adding Scene IP perf metrics results");
-        String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
-        if (parts.length == 2) {
-            String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
-            String value = parts[1].trim();
-            // TODO: b/442698260: value must be float/double
-            Log.i(TAG, "Key: " + key);
-            Log.i(TAG, "Value: " + value);
-            float valueF = Float.parseFloat(value);
-            obj.put(key, valueF);
-        } else {
-            Log.i(TAG, "Invalid output string");
-        }
+        addTypedPerfMetricsResult(perfMetricsResult, obj);
     }
 
     private void addJpegRPerfMetricsResult(String perfMetricsResult,
             JSONObject obj) throws org.json.JSONException {
         Log.i(TAG, "Adding JPEG_R perf metrics results");
+        addTypedPerfMetricsResult(perfMetricsResult, obj);
+    }
+
+    private void addTypedPerfMetricsResult(String perfMetricsResult,
+            JSONObject obj) throws org.json.JSONException {
         String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
         if (parts.length == 2) {
             String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
             String value = parts[1].trim();
-            // TODO: b/442698260: value must be float/double
             Log.i(TAG, "Key: " + key);
             Log.i(TAG, "Value: " + value);
-            float valueF = Float.parseFloat(value);
-            obj.put(key, valueF);
+
+            if (mPerfMetricsTypeMap.containsKey(key)) {
+                int type = mPerfMetricsTypeMap.get(key);
+                switch (type) {
+                    case TYPE_DOUBLE:
+                        obj.put(key, Float.parseFloat(value));
+                        break;
+                    case TYPE_BOOLEAN:
+                        obj.put(key, Boolean.parseBoolean(value));
+                        break;
+                    case TYPE_REPEAT_INT32:
+                        JSONArray intArray = new JSONArray();
+                        String[] intStrings = value.replace("[", "").replace("]", "").split(",");
+                        for (String s : intStrings) {
+                            if (!s.trim().isEmpty()) {
+                                intArray.put(Integer.parseInt(s.trim()));
+                            }
+                        }
+                        obj.put(key, intArray);
+                        break;
+                    case TYPE_STRING:
+                    default:
+                        obj.put(key, value);
+                        break;
+                }
+            } else {
+                obj.put(key, value);
+            }
         } else {
             Log.i(TAG, "Invalid output string");
         }

@@ -471,7 +471,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       mean_delta_ab_diff, _ = ip_metrics_utils.get_color_rendering_variation(
           default_cropped_color_cells, jca_cropped_color_cells, gainmap_present)
       # logging for data collection
-      print(f'{_NAME}mean_delta_ab_diff: {mean_delta_ab_diff}')
+      print(f'{_NAME}_mean_delta_ab_diff: {mean_delta_ab_diff}')
       logging.debug('mean_delta_ab_diff: %.2f', mean_delta_ab_diff)
       if abs(mean_delta_ab_diff) > _COLOR_DIFF_THRESHOLD:
         e_msg.append('Device fails the color rendering difference criteria.')
