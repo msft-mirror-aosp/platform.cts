@@ -15,6 +15,10 @@
  */
 package com.android.cts.packagemanager.stats.host;
 
+import static com.android.cts.packagemanager.stats.host.Utils.isPiaMetricsSupported;
+
+import static org.junit.Assume.assumeTrue;
+
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
@@ -47,6 +51,7 @@ public class PiaStagesLatencyTrackerStatsTest extends BaseHostJUnit4Test {
     public void setUp() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        assumeTrue(isPiaMetricsSupported(getDevice()));
     }
 
     @After
