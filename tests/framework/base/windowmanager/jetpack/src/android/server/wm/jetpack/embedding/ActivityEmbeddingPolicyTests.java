@@ -31,6 +31,8 @@ import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.start
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
 
+import static com.android.compatibility.common.util.FeatureUtil.isAutomotive;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -214,6 +216,7 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
     })
     @Test
     public void testIgnoreOrientationRequestForActivityEmbeddingSplits() {
+        assumeFalse(isAutomotive()); // Automotive devices don't support rotation
         // Skip the test on devices without WM extensions.
         assumeTrue(SystemProperties.getBoolean("persist.wm.extensions.enabled", false));
 
