@@ -36,6 +36,10 @@ import java.util.Map;
 
 public final class Utils {
     public static final String SIGNATURE_FILE_SUFFIX = ".idsig";
+    public static final String FEATURE_AUTO = "android.hardware.type.automotive";
+    public static final String FEATURE_TELEVISION = "android.hardware.type.automotive";
+    public static final String FEATURE_WATCH = "android.hardware.type.watch";
+    public static final String FEATURE_LEANBACK = "android.software.leanback";
 
     public static String pushApkToRemote(String apkName, String remoteDirPath, IBuildInfo ctsBuild,
             ITestDevice device) throws Exception {
@@ -130,5 +134,40 @@ public final class Utils {
     public static boolean hasIncrementalFeature(ITestDevice device) throws Exception {
         return "true\n".equals(device.executeShellCommand(
                 "pm has-feature android.software.incremental_delivery"));
+    }
+
+    /**
+     * Check if PiaMetrics is enabled.
+     *
+     * @param device
+     * @return true if PiaMetrics is enabled, false otherwise.
+     */
+    public static boolean isPiaMetricsSupported(ITestDevice device) throws Exception {
+        if (isAuto(device) || isTV(device) || isWatch(device)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static boolean hasSystemFeature(ITestDevice device, String featureName)
+            throws DeviceNotAvailableException {
+        return device.hasFeature(featureName);
+    }
+
+    private static boolean isAuto(ITestDevice device) throws DeviceNotAvailableException {
+        // Equivalent to PackageManager.FEATURE_AUTOMOTIVE
+        return hasSystemFeature(device, FEATURE_AUTO);
+    }
+
+    private static boolean isWatch(ITestDevice device) throws DeviceNotAvailableException {
+        // Equivalent to PackageManager.FEATURE_WATCH
+        return hasSystemFeature(device, FEATURE_WATCH);
+    }
+
+    private static boolean isTV(ITestDevice device) throws DeviceNotAvailableException {
+        // Equivalent to PackageManager.FEATURE_TELEVISION and PackageManager.FEATURE_LEANBACK
+        return hasSystemFeature(device, FEATURE_TELEVISION)
+                || hasSystemFeature(device, FEATURE_LEANBACK);
     }
 }
