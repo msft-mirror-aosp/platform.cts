@@ -187,8 +187,8 @@ class AudioPlaybackForegroundTests {
         startServicePlayback(TEST_PACKAGE)
 
         val apc = future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS)
-        assertTrue(apc.isMuted())
-        assertEquals(apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO, MUTED_BY_OP_CONTROL_AUDIO)
+        assertTrue(apc.isMuted() &&
+            (apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO) == MUTED_BY_OP_CONTROL_AUDIO)
     }
 
     @Test
@@ -207,7 +207,7 @@ class AudioPlaybackForegroundTests {
         val apc = mAudioManager.getActivePlaybackConfigurations().find {
             x -> x.getClientUid() == mTestUid
         }!!
-        assertFalse(apc.isMuted())
+        assertEquals(0, apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO)
     }
 
     @Test
@@ -226,7 +226,7 @@ class AudioPlaybackForegroundTests {
         val apc = mAudioManager.getActivePlaybackConfigurations().find {
             x -> x.getClientUid() == mTestUid
         }!!
-        assertFalse(apc.isMuted())
+        assertEquals(0, apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO)
     }
 
     @Test
@@ -245,8 +245,8 @@ class AudioPlaybackForegroundTests {
 
         // Expect that the stream is muted. Future completes when APC change which mutes is received
         val apc = future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS)
-        assertTrue(apc.isMuted())
-        assertEquals(apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO, MUTED_BY_OP_CONTROL_AUDIO)
+        assertTrue(apc.isMuted() &&
+            (apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO) == MUTED_BY_OP_CONTROL_AUDIO)
     }
 
     @Test
@@ -269,7 +269,7 @@ class AudioPlaybackForegroundTests {
 
         val apc = mAudioManager.getActivePlaybackConfigurations().find {
             x -> x.getClientUid() == mTestUid }!!
-        assertFalse(apc.isMuted())
+        assertEquals(0, apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO)
     }
 
     @Test
@@ -280,7 +280,9 @@ class AudioPlaybackForegroundTests {
         val setupFuture = getPlayerFuture(true)
         startServicePlayback(TEST_PACKAGE)
         // we should start in the muted state
-        assertTrue(setupFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS).isMuted())
+        val setupApc = setupFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS)
+        assertTrue(setupApc.isMuted() &&
+            (setupApc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO) == MUTED_BY_OP_CONTROL_AUDIO)
 
         val future = getPlayerFuture(false)
 
@@ -289,7 +291,7 @@ class AudioPlaybackForegroundTests {
 
         // This future completes when we get an un-muted player event
         val apc = future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS)
-        assertFalse(apc.isMuted())
+        assertEquals(0, apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO)
     }
 
     fun startService(packageName: String, isFg: Boolean) {
@@ -364,7 +366,11 @@ class AudioPlaybackForegroundTests {
             SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky $packageName")
 
     private fun getPlayerFuture(expectedMuteState: Boolean) = getPlayerFutureForPred { apc ->
-        apc.getClientUid() == mTestUid && apc.isMuted() == expectedMuteState
+        apc.getClientUid() == mTestUid && when (expectedMuteState) {
+            true -> apc.isMuted() &&
+                    (apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO) == MUTED_BY_OP_CONTROL_AUDIO
+            false -> (apc.getMutedBy() and MUTED_BY_OP_CONTROL_AUDIO) == 0
+        }
     }
 
     private fun getPlayerFutureForPred(pred: (AudioPlaybackConfiguration) -> Boolean) :
