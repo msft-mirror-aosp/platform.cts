@@ -71,9 +71,17 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     public void onReady() {
         Log.d(TAG, "onReady()");
         sService = this;
-        if (sConnectLatch != null) {
-            sConnectLatch.countDown();
-        }
+        mAsyncRequestExecutor.execute(() -> {
+            try {
+                File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+                populateTestContent(testFile);
+            } catch (IOException e) {
+                Log.w(TAG, "Received failure when creating file.", e);
+            }
+            if (sConnectLatch != null) {
+                sConnectLatch.countDown();
+            }
+        });
     }
 
     public static OnDeviceIntelligenceService getServiceInstance() {
@@ -138,16 +146,6 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
 
     @Override
     public void onInferenceServiceConnected() {
-        mAsyncRequestExecutor.execute(() -> {
-            try {
-                File testFile = new File(getFilesDir(), TEST_FILE_NAME);
-                File testFile2 = new File(TEST_FILE_NAME);
-                populateTestContent(testFile);
-                populateTestContent(testFile2);
-            } catch (IOException e) {
-                Log.w(TAG, "Received failure when creating file.", e);
-            }
-        });
         Log.i(TAG, "Received onInferenceServiceStarted");
     }
 
@@ -170,22 +168,19 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetReadOnlyFeatureFileDescriptorMap(@NonNull Feature feature,
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
-        mAsyncRequestExecutor.execute(() -> createAndPopulateTestFile(fileDescriptorMapConsumer));
+        mAsyncRequestExecutor.execute(() -> populateTestFileInMap(fileDescriptorMapConsumer));
     }
 
-    private void createAndPopulateTestFile(
+    private void populateTestFileInMap(
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
-        try {
-            File testFile = new File(getFilesDir(), TEST_FILE_NAME);
-            populateTestContent(testFile);
-            try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(testFile,
-                    ParcelFileDescriptor.MODE_READ_ONLY)) {
-                Map<String, ParcelFileDescriptor> fileDescriptorMap = new ArrayMap<>();
-                fileDescriptorMap.put(testFile.getName(), pfd);
-                fileDescriptorMapConsumer.accept(fileDescriptorMap);
-            } catch (FileNotFoundException e) {
-                Log.e(TAG, "File Not Found", e);
-            }
+        File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+        try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(testFile,
+                ParcelFileDescriptor.MODE_READ_ONLY)) {
+            Map<String, ParcelFileDescriptor> fileDescriptorMap = new ArrayMap<>();
+            fileDescriptorMap.put(testFile.getName(), pfd);
+            fileDescriptorMapConsumer.accept(fileDescriptorMap);
+        } catch (FileNotFoundException e) {
+            Log.e(TAG, "File Not Found", e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
