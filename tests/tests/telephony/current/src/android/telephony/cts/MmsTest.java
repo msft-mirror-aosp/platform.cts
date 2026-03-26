@@ -39,9 +39,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
@@ -73,9 +78,12 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Random;
@@ -113,6 +121,18 @@ public class MmsTest {
             "<smil><head><layout><root-layout/><region height=\"100%%\" id=\"Text\" left=\"0%%\""
                 + " top=\"0%%\" width=\"100%%\"/></layout></head><body><par dur=\"8000ms\"><text"
                 + " src=\"%s\" region=\"Text\"/></par></body></smil>";
+    private static final String IMAGE_PART_FILENAME = "image_0.jpg";
+    private static final String sSmilWithImageText =
+            "<smil><head><layout><root-layout width=\"320\" height=\"480\"/><region id=\"Image\""
+                    + " left=\"0\" top=\"0\" width=\"320\" height=\"240\" fit=\"meet\"/><region"
+                    + " id=\"Text\" left=\"0\" top=\"240\" width=\"320\" height=\"240\""
+                    + " fit=\"meet\"/></layout></head><body><par dur=\"8000ms\"><img src=\""
+                    + IMAGE_PART_FILENAME
+                    + "\" region=\"Image\"/>"
+                    + "<text src=\""
+                    + TEXT_PART_FILENAME
+                    + "\" region=\"Text\"/>"
+                    + "</par></body></smil>";
 
     private static final long SENT_TIMEOUT = 1000 * 60 * 5; // 5 minutes
     private static final int SHORT_TIME_OUT = 1000 * 5; // 5 seconds
@@ -121,6 +141,9 @@ public class MmsTest {
     private static final int DMA_CHANGE_PROPAGATION_DELAY = 100;
 
     private static final String PROVIDER_AUTHORITY = "telephonyctstest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private Random mRandom;
@@ -419,6 +442,26 @@ public class MmsTest {
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_PROMOTION)
+    @Ignore("b/443345141 - Need to fix and re-enable this test.")
+    public void testSendMmsMessageWithImageAttachment() throws Exception {
+        Log.i("MmsTest", "testSendMmsMessageWithImageAttachment");
+        SmsManager smsManager = mContext.getSystemService(SmsManager.class);
+        try {
+            DefaultSmsAppHelper.setDefaultSmsApp(mContext, MESSAGE_UPGRADE_APP);
+            waitFor(DMA_CHANGE_PROPAGATION_DELAY);
+
+            sendUpgradeMmsWithImageAttachment(
+                    smsManager, SUBJECT_UPGRADE_ACCEPTED, UPGRADE_STATUS_ACCEPTED);
+            //            TODO(b/496425299): Fix NO_SUITABLE_DATA_PROFILE issue
+            //            sendUpgradeMmsWithImageAttachment(
+            //                    smsManager, SUBJECT_UPGRADE_REJECTED, UPGRADE_STATUS_REJECTED);
+        } finally {
+            DefaultSmsAppHelper.removeDefaultSmsAppRole(MESSAGE_UPGRADE_APP);
+        }
+    }
+
     private void sendMmsMessage(long messageId, int expectedErrorResultCode,
             SmsManager smsManager, boolean defaultSmsApp) {
         if (!doesSupportMMS()
@@ -533,6 +576,70 @@ public class MmsTest {
         }
         assertTrue(mDeliveryReceiver.verifyNoCalls(NO_CALLS_TIMEOUT));
         sendFile.delete();
+    }
+
+    private void sendUpgradeMmsWithImageAttachment(
+            SmsManager smsManager, String subject, int expectedUpgradeStatus) throws Exception {
+        if (!doesSupportMMS()) {
+            Log.i(TAG, "testSendMmsMessageWithImageAttachment skipped: MMS not supported");
+            return;
+        }
+
+        File imageFile = null;
+        File pduFile = null;
+        try {
+            imageFile = createImageFile(IMAGE_PART_FILENAME);
+            byte[] imageData = readFileAsBytes(imageFile);
+            assertNotNull("Failed to read image data", imageData);
+
+            final String fileName =
+                    "send_with_image." + Long.toUnsignedString(mRandom.nextLong()) + ".dat";
+            pduFile = new File(mContext.getCacheDir(), fileName);
+            String selfNumber = getValidSelfNumber();
+            final Uri contentUri =
+                    setupMmsPduWithImage(pduFile, selfNumber, subject, MESSAGE_BODY, imageData);
+
+            resetBroadcastReceivers();
+            mSentReceiver.setSkipSendConfPduParsing(
+                    expectedUpgradeStatus == UPGRADE_STATUS_ACCEPTED);
+            final PendingIntent pendingIntent = getMmsSentPendingIntent();
+
+            smsManager.sendMultimediaMessage(
+                    mContext,
+                    contentUri,
+                    null /*locationUrl*/,
+                    null /*configOverrides*/,
+                    pendingIntent);
+
+            assertTrue(
+                    "Message upgrade broadcast not received.",
+                    mMessageUpgradeReceiver.waitForUpgrade(SHORT_TIME_OUT));
+            assertEquals(
+                    "Incorrect message upgrade received: " + mMessageUpgradeReceiver.mUpgradeStatus,
+                    expectedUpgradeStatus,
+                    mMessageUpgradeReceiver.mUpgradeStatus.get());
+            assertTrue(
+                    "Could not send MMS message. Check signal.",
+                    mSentReceiver.waitForSuccess(SENT_TIMEOUT));
+            if (expectedUpgradeStatus == UPGRADE_STATUS_REJECTED) {
+                int carrierId = mTelephonyManager.getSimCarrierId();
+                assumeFalse(
+                        "Carrier [carrier-id: "
+                                + carrierId
+                                + "] does not support "
+                                + "loop back messages. Use another carrier.",
+                        CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
+            }
+            assertTrue(mDeliveryReceiver.verifyNoCalls(NO_CALLS_TIMEOUT));
+
+        } finally {
+            if (imageFile != null) {
+                imageFile.delete();
+            }
+            if (pduFile != null) {
+                pduFile.delete();
+            }
+        }
     }
 
     /** Retrieves the device's phone number and verifies it exists. */
@@ -746,6 +853,101 @@ public class MmsTest {
                     null /* configOverrides */,
                     pendingIntent,
                     MESSAGE_ID);
+        }
+    }
+
+    /** Creates a PDU with text and an image, writes it to a file, and returns the Content Uri. */
+    private Uri setupMmsPduWithImage(
+            File pduFile, String selfNumber, String subject, String text, byte[] imageData) {
+        final byte[] pdu = buildPduWithImage(mContext, selfNumber, subject, text, imageData);
+        assertNotNull("PDU with image should not be null", pdu);
+        assertTrue("Failed to write PDU file", writePdu(pduFile, pdu));
+
+        return new Uri.Builder()
+                .authority(PROVIDER_AUTHORITY)
+                .path(pduFile.getName())
+                .scheme(ContentResolver.SCHEME_CONTENT)
+                .build();
+    }
+
+    /** Builds a PDU with both a text part and an image part. */
+    private byte[] buildPduWithImage(
+            Context context, String selfNumber, String subject, String text, byte[] imageData) {
+        final SendReq req = new SendReq();
+        req.setFrom(new EncodedStringValue(selfNumber));
+        final EncodedStringValue[] encodedNumbers =
+                EncodedStringValue.encodeStrings(new String[] {selfNumber});
+        if (encodedNumbers != null) {
+            req.setTo(encodedNumbers);
+        }
+        if (!TextUtils.isEmpty(subject)) {
+            req.setSubject(new EncodedStringValue(subject));
+        }
+        req.setDate(System.currentTimeMillis() / 1000);
+
+        final PduBody body = new PduBody();
+        int totalSize = 0;
+
+        // Add text part, but don't add a SMIL part yet.
+        totalSize += addTextPart(body, text, false /* addTextSmil */);
+
+        // Add image part
+        totalSize += addImagePart(body, imageData, IMAGE_PART_FILENAME);
+
+        // Add a SMIL part that includes both text and image.
+        addSmilPart(body, sSmilWithImageText);
+
+        req.setBody(body);
+        req.setMessageSize(totalSize);
+        req.setMessageClass(PduHeaders.MESSAGE_CLASS_PERSONAL_STR.getBytes());
+        req.setExpiry(DEFAULT_EXPIRY_TIME);
+        try {
+            req.setPriority(DEFAULT_PRIORITY);
+            req.setDeliveryReport(PduHeaders.VALUE_NO);
+            req.setReadReport(PduHeaders.VALUE_NO);
+        } catch (InvalidHeaderValueException e) {
+            Log.e(TAG, "Invalid PDU header value", e);
+            return null;
+        }
+
+        return new PduComposer(context, req).make();
+    }
+
+    /** Adds an image part to the PDU body. */
+    private static int addImagePart(PduBody pb, byte[] data, String filename) {
+        final PduPart part = new PduPart();
+        part.setContentType(ContentType.IMAGE_JPEG.getBytes());
+        part.setData(data);
+        part.setFilename(filename.getBytes());
+        part.setContentLocation(filename.getBytes());
+        int index = filename.lastIndexOf(".");
+        String contentId = (index == -1) ? filename : filename.substring(0, index);
+        part.setContentId(("<" + contentId + ">").getBytes());
+        pb.addPart(part);
+        return data.length;
+    }
+
+    /** Creates a simple 1x1 pixel JPEG file for testing. */
+    private File createImageFile(String fileName) throws IOException {
+        File imageFile = new File(mContext.getCacheDir(), fileName);
+        Bitmap bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+        bitmap.setPixel(0, 0, Color.RED);
+        try (FileOutputStream out = new FileOutputStream(imageFile)) {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+        }
+        return imageFile;
+    }
+
+    /** Reads a file into a byte array. */
+    private static byte[] readFileAsBytes(File file) throws IOException {
+        try (FileInputStream fis = new FileInputStream(file);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = fis.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            return bos.toByteArray();
         }
     }
 
