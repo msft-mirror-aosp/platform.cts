@@ -25,8 +25,10 @@ import com.android.bedstead.nene.TestApis
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.android.queryable.queries.IntentFilterQuery.intentFilter
 import com.android.queryable.queries.ServiceQuery.service
+import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
@@ -65,11 +67,22 @@ open class BaseContentRestrictionTest {
         val apps = installContentRestrictionApps(testAppProvider, count)
         val packageNames = apps.map { it.packageName() }
 
+        // Ensure we are in a clean state before starting.
+        setDevicePolicyContentRestrictionApps(emptyList())
+        assertThat(contentRestrictionManager.isContentRestrictionEnabled).isFalse()
+
         try {
             setDevicePolicyContentRestrictionApps(packageNames)
+            assertThat(contentRestrictionManager.isContentRestrictionEnabled).isTrue()
+
+            for (app in apps) {
+                assertThat(app.events().serviceBound()).eventOccurred()
+                assertThat(app.events().contentRestrictionEnabled()).eventOccurred()
+            }
             action(apps)
         } finally {
             setDevicePolicyContentRestrictionApps(emptyList())
+            assertThat(contentRestrictionManager.isContentRestrictionEnabled).isFalse()
             runBlocking { apps.forEachParallel { it.uninstall() } }
         }
     }
