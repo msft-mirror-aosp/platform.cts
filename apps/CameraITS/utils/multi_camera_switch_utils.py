@@ -231,7 +231,7 @@ def get_error_msg(failed_awb_msg, failed_ae_msg):
 
 
 def check_lens_switch_conditions(props, first_api_level, zoom_range_lenses,
-                                 ultrawide_camera_found):
+                                 logical_camera_found):
   """Check the camera properties for lens switch conditions.
 
   Camera only switches if 3A converges
@@ -239,7 +239,7 @@ def check_lens_switch_conditions(props, first_api_level, zoom_range_lenses,
     props: Camera properties dictionary.
     first_api_level: First API level.
     zoom_range_lenses: Tuple of two zoom ratio.
-    ultrawide_camera_found: Boolean indicating if ultrawide camera is found.
+    logical_camera_found: Boolean indicating if logical camera is found.
   Raises:
     SkipTest: If the device doesn't support the required properties or API
               level.
@@ -249,7 +249,7 @@ def check_lens_switch_conditions(props, first_api_level, zoom_range_lenses,
       camera_properties_utils.zoom_ratio_range(props) and
       camera_properties_utils.logical_multi_camera(props) and
       camera_properties_utils.ae_regions(props) and
-      ultrawide_camera_found)
+      logical_camera_found)
 
   # Check the zoom range
   zoom_range = props['android.control.zoomRatioRange']
