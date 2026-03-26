@@ -320,6 +320,8 @@ int getMediaPerformanceClass();
 
 int getSpeakerDeviceId();
 
+void reportMmapSupportedToMediaPerfClass(bool hasSpeaker, bool mmapOnSpeakerPathSupported);
+
 void permissionBarrier();
 
 class AAudioTestEnvironment : public ::testing::Environment {

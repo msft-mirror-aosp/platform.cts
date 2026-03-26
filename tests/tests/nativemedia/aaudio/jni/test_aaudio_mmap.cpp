@@ -77,10 +77,6 @@ TEST_F(AAudioTestMMap, testElevatingMMapPolicy) {
 
 // MMAP should be supported on devices with media performance class 37 and higher.
 TEST_F(AAudioTestMMap, testMmapSupportedForPerfClass37) {
-    if (getMediaPerformanceClass() < 37) {
-        return;
-    }
-
     if (!deviceSupportsFeature(FEATURE_PLAYBACK)) {
         return;
     }
@@ -88,37 +84,48 @@ TEST_F(AAudioTestMMap, testMmapSupportedForPerfClass37) {
     int speakerDeviceId = getSpeakerDeviceId();
     // If there is no speaker device, then we cannot test MMAP.
     if (speakerDeviceId == 0) {
+        reportMmapSupportedToMediaPerfClass(false, false);
         return;
     }
 
     aaudio_policy_t policy = AAudioExtensions::getInstance().getPlatformMMapPolicy(
             AAUDIO_DEVICE_BUILTIN_SPEAKER, AAUDIO_DIRECTION_OUTPUT);
-    ASSERT_TRUE(AAudioExtensions::isPolicyEnabled(policy));
+    bool isPolicyEnabled = AAudioExtensions::isPolicyEnabled(policy);
 
-    aaudio_result_t result = AAUDIO_OK;
-    AAudioStreamBuilder *builder = nullptr;
-    AAudioStream *stream = nullptr;
+    bool isMmapUsed = false;
+    int32_t routedDeviceId = -1;
+    if (isPolicyEnabled) {
+        aaudio_result_t result = AAUDIO_OK;
+        AAudioStreamBuilder *builder = nullptr;
+        AAudioStream *stream = nullptr;
 
-    EXPECT_EQ(AAUDIO_OK, AAudio_createStreamBuilder(&builder));
+        EXPECT_EQ(AAUDIO_OK, AAudio_createStreamBuilder(&builder));
 
-    // LOW_LATENCY required for MMAP
-    AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
-    AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
-    AAudioStreamBuilder_setDeviceId(builder, speakerDeviceId);
+        // LOW_LATENCY required for MMAP
+        AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
+        AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
+        AAudioStreamBuilder_setDeviceId(builder, speakerDeviceId);
 
-    // If we do not specify any other parameters then we should get an MMAP stream.
-    result = AAudioStreamBuilder_openStream(builder, &stream);
-    EXPECT_EQ(AAUDIO_OK, result);
-    AAudioStreamBuilder_delete(builder);
-    ASSERT_NE(nullptr, stream);
+        // If we do not specify any other parameters then we should get an MMAP stream.
+        result = AAudioStreamBuilder_openStream(builder, &stream);
 
-    EXPECT_TRUE(AAudioExtensions::getInstance().isMMapUsed(stream));
+        if (result == AAUDIO_OK && stream != nullptr) {
+            isMmapUsed = AAudioExtensions::getInstance().isMMapUsed(stream);
+            routedDeviceId = AAudioStream_getDeviceId(stream);
 
-    const int32_t routedDeviceId = AAudioStream_getDeviceId(stream);
-    EXPECT_EQ(speakerDeviceId, routedDeviceId);
+            AAudioStream_close(stream);
+        }
 
-    // These should not crash if NULL.
-    AAudioStream_close(stream);
+        AAudioStreamBuilder_delete(builder);
+    }
+
+    reportMmapSupportedToMediaPerfClass(true, isMmapUsed);
+
+    if (getMediaPerformanceClass() >= 37) {
+        EXPECT_TRUE(isPolicyEnabled);
+        EXPECT_TRUE(isMmapUsed);
+        EXPECT_EQ(speakerDeviceId, routedDeviceId);
+    }
 }
 
 // An application should be able to create a low-latency MMAP output stream
