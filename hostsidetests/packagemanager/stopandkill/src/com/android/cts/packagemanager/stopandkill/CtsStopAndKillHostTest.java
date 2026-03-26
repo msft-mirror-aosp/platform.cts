@@ -386,11 +386,16 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             mSharedApp1.assertProcessRunning(true);
             mSharedApp2.assertProcessRunning(true);
 
+            int oldPid = mSharedApp1.getPid();
+
             // Update shared app 1.
             mSharedApp1.installPackage("-r");
 
-            // Assert that shared app 1 was terminated.
-            mSharedApp1.assertProcessRunning(false);
+            // Assert that shared app 1 was terminated for the correct reason.
+            String description = getExitInfoDescription(mSharedApp1.pkg, oldPid);
+            assertWithMessage("Expected force-kill description for PID " + oldPid)
+                    .that(description)
+                    .contains("force-kill");
 
             // Assert that shared app 2 is STILL RUNNING.
             mSharedApp2.assertProcessRunning(true);
@@ -470,6 +475,29 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
         // Assert that the app was NOT stopped since the flag is disabled.
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+    }
+
+    private String getExitInfoDescription(String packageName, int pid) throws Exception {
+        String output =
+                getDevice().executeShellCommand("dumpsys activity exit-info " + packageName);
+        // Look for the block containing the PID and extract the description.
+        // Format:
+        //   #0: [REASON_PACKAGE_UPDATED]
+        //     ...
+        //     pid=1234
+        //     ...
+        //     description=force-kill
+        String[] blocks = output.split("  #\\d+:");
+        for (String block : blocks) {
+            if (block.contains("pid=" + pid)) {
+                Pattern pattern = Pattern.compile("description=(.*)");
+                Matcher matcher = pattern.matcher(block);
+                if (matcher.find()) {
+                    return matcher.group(1).trim();
+                }
+            }
+        }
+        return "";
     }
 
     private void launchActivityAndAssertResumed(String componentName) throws Exception {
@@ -590,9 +618,16 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             getDevice().executeShellCommand("pm uninstall --user " + mUserId + " " + pkg);
         }
 
-        boolean isProcessRunning() throws Exception {
+        int getPid() throws Exception {
             String pid = getDevice().executeShellCommand("pidof " + pkg).trim();
-            return !pid.isEmpty();
+            if (pid.isEmpty()) {
+                return -1;
+            }
+            return Integer.parseInt(pid);
+        }
+
+        boolean isProcessRunning() throws Exception {
+            return getPid() != -1;
         }
 
         void assertProcessRunning(boolean shouldBeRunning) throws Exception {
