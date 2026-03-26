@@ -127,16 +127,18 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     public final WindowExtensionTestRule mWindowManagerJetpackTestRule =
             new WindowExtensionTestRule(WindowAreaComponent.class);
 
+    private int mRearDisplayState = INVALID_DEVICE_STATE;
+
     @Before
     @Override
     public void setUp() throws Exception {
-        super.setUp();
         mWindowAreaComponent =
                 (WindowAreaComponent) mWindowManagerJetpackTestRule.getExtensionComponent();
         mSupportedDeviceStates = mDeviceStateManager.getSupportedDeviceStates();
         assumeTrue(mSupportedDeviceStates.size() > 1);
         mRearDisplayAddress = getRearDisplayAddress();
-        assumeTrue(hasRearDisplayState(mSupportedDeviceStates));
+        mRearDisplayState = getRearDisplayState(mSupportedDeviceStates);
+        assumeTrue(mRearDisplayState != INVALID_DEVICE_STATE);
         mDeviceStateManager.registerCallback(Runnable::run, this);
         mWindowAreaComponent.addRearDisplayStatusListener(mStatusListener);
         unlockDeviceIfNeeded();
@@ -415,24 +417,24 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
      * @return {@code true} if the state is a rear device state.
      */
     private boolean isRearDisplayState(@NonNull DeviceState deviceState) {
-        return deviceState.hasProperty(DeviceState.PROPERTY_FEATURE_REAR_DISPLAY);
+        return deviceState.getIdentifier() == mRearDisplayState;
     }
 
-    private boolean hasRearDisplayState(@NonNull List<DeviceState> supportedStates) {
+    private int getRearDisplayState(@NonNull List<DeviceState> supportedStates) {
         if (ExtensionsUtil.isExtensionVersionAtLeast(7)) {
             for (DeviceState state : supportedStates) {
-                if (isRearDisplayState(state)) {
-                    return true;
+                if (state.hasProperty(DeviceState.PROPERTY_FEATURE_REAR_DISPLAY)) {
+                    return state.getIdentifier();
                 }
             }
-            return false;
-        } else {
-            int rearDisplayState =
-                    getInstrumentation().getTargetContext().getResources().getInteger(
-                            Resources.getSystem().getIdentifier("config_deviceStateRearDisplay",
-                                    "integer", "android"));
-            return rearDisplayState != INVALID_DEVICE_STATE;
         }
+        return getInstrumentation()
+                .getTargetContext()
+                .getResources()
+                .getInteger(
+                        Resources.getSystem()
+                                .getIdentifier(
+                                        "config_deviceStateRearDisplay", "integer", "android"));
     }
 
     private void resetActivityConfigurationChangeValues(@NonNull TestRearDisplayActivity activity) {
