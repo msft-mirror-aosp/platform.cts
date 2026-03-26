@@ -356,7 +356,13 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         } else {
             mSwipeHelper.cancelSwipe();
         }
-        assertInvoked(activity.mReceiveMotionCancel);
+        boolean gestureDetected = activity.mGestureStarted.await(1000, TimeUnit.MILLISECONDS);
+        if (gestureDetected) {
+            // If the app saw the DOWN/MOVE events, it MUST receive the CANCEL event.
+            assertInvoked(activity.mReceiveMotionCancel);
+        } else {
+            assertNotInvoked(activity.mReceiveMotionCancel);
+        }
     }
 
     @Test
