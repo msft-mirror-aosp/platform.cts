@@ -107,3 +107,4 @@ com.android.server.devicepolicy.MostRecent<V>
 android.text.Layout
 android.companion.virtual.VirtualDeviceParams.Builder
 android.service.personalcontext.refiner.HintFilter
+android.view.inspector.InspectableProperty
