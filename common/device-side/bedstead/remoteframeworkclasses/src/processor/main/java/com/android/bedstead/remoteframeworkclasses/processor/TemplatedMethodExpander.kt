@@ -109,6 +109,16 @@ class TemplatedMethodExpander(private val originalApi: Api) {
                 "string" to ClassName.get(String::class.java),
                 "integer" to ClassName.get(java.lang.Integer::class.java),
                 "long" to ClassName.get(java.lang.Long::class.java),
+                "listOfInteger" to
+                    ParameterizedTypeName.get(
+                        ClassName.get(java.util.List::class.java),
+                        ClassName.get(Integer::class.java),
+                    ),
+                "listOfPackage" to
+                    ParameterizedTypeName.get(
+                        ClassName.get(java.util.List::class.java),
+                        ClassName.get("android.app.admin", "PackageIdentifier"),
+                    ),
                 "listOfString" to
                     ParameterizedTypeName.get(
                         ClassName.get(java.util.List::class.java),
