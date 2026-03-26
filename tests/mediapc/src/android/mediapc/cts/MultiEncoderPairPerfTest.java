@@ -23,6 +23,7 @@ import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
 import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.AutoConstants;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.PerformanceClassTestRule;
@@ -39,7 +40,6 @@ import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -117,7 +117,11 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-3", "2.2.7.1/5.1/H-1-4"})
     public void test720p() throws Exception {
-        Assume.assumeTrue(Utils.isSPerfClass() || Utils.isRPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAnyOf(
+                AutoConstants.MPC_10,
+                AutoConstants.MPC_20,
+                AutoConstants.MPC_30,
+                AutoConstants.MPC_31);
 
         boolean hasVP9 = mFirstPair.first.equals(MediaFormat.MIMETYPE_VIDEO_VP9) ||
                 mSecondPair.first.equals(MediaFormat.MIMETYPE_VIDEO_VP9);
@@ -135,7 +139,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-3", "2.2.7.1/5.1/H-1-4"})
     public void test1080p() throws Exception {
-        Assume.assumeTrue(Utils.isTPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAnyOf(AutoConstants.MPC_33);
         testCodec(1080, 1920, 10000000, REQUIRED_MIN_CONCURRENT_INSTANCES);
     }
 
@@ -149,7 +153,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-3", "2.2.7.1/5.1/H-1-4"})
     public void test4k() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAtLeast(AutoConstants.MPC_34);
         testCodec(2160, 3840, 30000000, REQUIRED_MIN_CONCURRENT_INSTANCES);
     }
 

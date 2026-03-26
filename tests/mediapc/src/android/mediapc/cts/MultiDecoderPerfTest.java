@@ -21,6 +21,7 @@ import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
 import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.AutoConstants;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.PerformanceClassTestRule;
@@ -103,7 +104,11 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-1", "2.2.7.1/5.1/H-1-2"})
     public void test720p() throws Exception {
-        Assume.assumeTrue(Utils.isSPerfClass() || Utils.isRPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAnyOf(
+                AutoConstants.MPC_10,
+                AutoConstants.MPC_20,
+                AutoConstants.MPC_30,
+                AutoConstants.MPC_31);
         Assume.assumeFalse("Skipping regular performance tests for secure codecs",
                 isSecureSupportedCodec(mDecoderName, mMediaType));
         boolean hasVP9 = mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9);
@@ -123,7 +128,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
             "2.2.7.1/5.1/H-1-2",
             "2.2.7.1/5.1/H-1-9",})
     public void test1080p() throws Exception {
-        Assume.assumeTrue(Utils.isTPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAnyOf(AutoConstants.MPC_33);
         if (isSecureSupportedCodec(mDecoderName, mMediaType)) {
             testCodec(m1080pWidevineTestFiles, 1080, 1920,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
@@ -145,7 +150,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
             "2.2.7.1/5.1/H-1-2",
             "2.2.7.1/5.1/H-1-9",})
     public void test4k() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAtLeast(AutoConstants.MPC_34);
 
         if (isSecureSupportedCodec(mDecoderName, mMediaType)) {
             testCodec(m1080pWidevineTestFiles, 2160, 3840,
@@ -164,7 +169,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-9"})
     public void test1080pHbd() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAtLeast(AutoConstants.MPC_34);
         Assume.assumeTrue("Skipping regular performance tests for non-secure codecs",
                 isSecureSupportedCodec(mDecoderName, mMediaType));
         testCodec(m1080pWidevine10bitTestFiles, 2160, 3840,

@@ -17,6 +17,7 @@
 package android.mediapc.cts;
 
 import android.media.MediaCodecInfo;
+import android.mediapc.cts.common.AutoConstants;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.PerformanceClassTestRule;
 import android.mediapc.cts.common.Preconditions;
@@ -29,7 +30,6 @@ import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,9 +80,7 @@ public class AdaptivePlaybackFrameDropTest extends FrameDropTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.3/H-1-2"})
     public void test30Fps() throws Exception {
-        Assume.assumeTrue("Test is limited to R performance class devices or devices that do not " +
-                "advertise performance class",
-            Utils.isRPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAnyOf(AutoConstants.MPC_30);
         int frameRate = 30;
 
         PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
@@ -107,9 +105,7 @@ public class AdaptivePlaybackFrameDropTest extends FrameDropTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.3/H-1-2"})
     public void test60Fps() throws Exception {
-        Assume.assumeTrue("Test is limited to S/T performance class devices or devices that do " +
-                "not advertise performance class",
-            Utils.isSPerfClass() || Utils.isTPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAnyOf(AutoConstants.MPC_31, AutoConstants.MPC_33);
         int frameRate = 60;
 
         PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();
@@ -134,9 +130,7 @@ public class AdaptivePlaybackFrameDropTest extends FrameDropTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.3/H-1-2"})
     public void test4k() throws Exception {
-        Assume.assumeTrue("Test is limited to U,V performance class devices or devices that do"
-                        + "not advertise performance class",
-                Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
+        Utils.assumeMpcIfDeclaredIsAtLeast(AutoConstants.MPC_34);
         int frameRate = 60;
 
         PerformanceClassEvaluator pce = pcRule.getPerformanceClassEvaluator();

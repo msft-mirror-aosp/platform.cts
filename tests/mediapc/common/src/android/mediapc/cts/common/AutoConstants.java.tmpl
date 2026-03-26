@@ -35,6 +35,10 @@ public final class AutoConstants {
         {{- end}}
      );
 
+{{- range $m := .ReqList.AllMpcs}}
+    public static final int MPC_{{$m}} = {{$m}};
+{{- end}}
+
 {{range $r := .ReqList.GetRequirements }}
     /** {{ $r.GetId }} */
     public static final String {{SafeReqID $r.GetId | UpperCase }} = "{{SafeReqID $r.GetId }}";
