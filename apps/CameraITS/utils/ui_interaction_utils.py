@@ -43,6 +43,7 @@ UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
 
 # JCA_PATH ui/components/capture/src/main/java/com/google/jetpackcamera/ui/components/capture/TestTags.kt  pylint: disable=line-too-long
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
+QUICK_SETTINGS_SCROLL_CONTAINER = 'QuickSettingsScrollContainer'
 QUICK_SETTINGS_HDR_RESOURCE_ID = 'QuickSettingsHdrButton'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
 QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
@@ -461,6 +462,30 @@ def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode,
   _set_jca_video_quality(dut, log_path, video_quality)
 
 
+def _click_jca_settings_button(dut):
+  """Click Quick Settings then scroll to find and click Settings button.
+
+  Args:
+    dut: An Android controller device object.
+  """
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  scrollable_menu = dut.ui(res=QUICK_SETTINGS_SCROLL_CONTAINER)
+  if not scrollable_menu.exists:
+    # Fallback to generic scrollable if container not found
+    scrollable_menu = dut.ui(scrollable=True)
+
+  # Try scrolling down first (vertical layout)
+  found = scrollable_menu.scroll.down(res=SETTINGS_BUTTON_RESOURCE_ID)
+  if not found:
+    # Try scrolling right (horizontal layout - common on foldables)
+    found = scrollable_menu.scroll.right(res=SETTINGS_BUTTON_RESOURCE_ID)
+
+  if not found and not dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).exists:
+    raise AssertionError('Settings button not found even after scrolling!')
+
+  dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+
+
 def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
   """Change video stabilization mode using the UI.
 
@@ -483,18 +508,7 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
   OPTICAL: optical stabilization is turned on in the default camera app
     when the video stabilization mode is OFF
   """
-  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
-  scrollable_menu = dut.ui(scrollable=True)
-  if scrollable_menu.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
-    logging.debug('Scrolling down to find settings button.')
-    found = scrollable_menu.scroll.down(res=SETTINGS_BUTTON_RESOURCE_ID)
-    if not found:
-      dut.take_screenshot(log_path, prefix='failed_to_find_settings_button')
-      raise AssertionError(
-            'Settings button not found even after scrolling!')
-    else:
-      logging.debug('Found settings button after scrolling.')
-      dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  _click_jca_settings_button(dut)
   dut.ui(scrollable=True).scroll.down(
       res=SETTINGS_VIDEO_STABILIZATION_RESOURCE_ID)
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
@@ -571,8 +585,7 @@ def _set_jca_video_quality(dut, log_path, video_quality):
     log_path: str; log path to save screenshots.
     video_quality: str.
   """
-  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
-  dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  _click_jca_settings_button(dut)
   scrollable_menu = dut.ui(scrollable=True)
   scrollable_menu.scroll.down(res=SETTINGS_VIDEO_QUALITY_RESOURCE_ID)
   if not dut.ui(text=SETTINGS_VIDEO_QUALITY_MODE_TEXT).wait.exists(
