@@ -757,10 +757,10 @@ public final class Processor extends AbstractProcessor {
             if (method.getReturnType().getKind().equals(TypeKind.VOID)) {
                 logicLambda.addStatement(
                         "mProfileTargetedRemoteActivity.other().$L($L)", method.getSimpleName(),
-                        String.join(", ", params));
+                        params);
             } else {
                 logicLambda.addStatement("return mProfileTargetedRemoteActivity.other().$L($L)",
-                        method.getSimpleName(), String.join(", ", params));
+                        method.getSimpleName(), params);
             }
             logicLambda.endControlFlow().unindent().add("}");
 
