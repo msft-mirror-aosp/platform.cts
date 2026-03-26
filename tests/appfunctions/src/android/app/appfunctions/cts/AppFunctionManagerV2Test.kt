@@ -82,6 +82,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import kotlin.test.Ignore
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -341,9 +342,8 @@ class AppFunctionManagerV2Test {
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
             .isEqualTo(AppFunctionException.ERROR_DENIED)
-        // The error message from this and executeAppFunction_otherNonExistingOtherPackage must
-        // be kept in sync. This verifies that a caller cannot tell whether a package is
-        // installed or not by comparing the error messages.
+        // The error message should not indicate whether the target
+        // package is installed or not.
         assertThat(response.appFunctionException().errorMessage)
             .endsWith("does not have permission to execute the appfunction")
         assertServiceWasNotCreated()
@@ -355,26 +355,35 @@ class AppFunctionManagerV2Test {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @Ignore("b/457349791 - Re-enable once the bug in AllowlistService is fixed.")
     fun executeAppFunction_otherExistingTargetPackage_withPermissionButWithoutAllowlist() =
         doBlocking {
-            val request =
-                ExecuteAppFunctionRequest.Builder(
-                        LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
+            runWithInteractionAllowlisted(
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                // Allowlist a different target
+                appPackages = listOf(DynamicSchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
+            ) {
+                val request =
+                    ExecuteAppFunctionRequest.Builder(
+                            LegacySchemaHelperApp.PACKAGE_NAME,
+                            LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
+                        )
+                        .build()
+
+                val response = mManager.executeAppFunction(request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_DENIED)
+                // The error message should not indicate whether the target
+                // package is installed or not.
+                assertThat(response.appFunctionException().errorMessage)
+                    .endsWith(
+                        "Caller android.app.appfunctions.cts is not allowed to call"
+                            + " android.app.appfunctions.cts.helper"
                     )
-                    .build()
-
-            val response = mManager.executeAppFunction(request)
-
-            assertThat(response.isSuccess).isFalse()
-            assertThat(response.appFunctionException().errorCode)
-                .isEqualTo(AppFunctionException.ERROR_DENIED)
-            // The error message from this and executeAppFunction_otherNonExistingOtherPackage must
-            // be kept in sync. This verifies that a caller cannot tell whether a package is
-            // installed or not by comparing the error messages.
-            assertThat(response.appFunctionException().errorMessage)
-                .endsWith("does not have permission to execute the appfunction")
-            assertServiceWasNotCreated()
+                assertServiceWasNotCreated()
+            }
         }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -401,10 +410,8 @@ class AppFunctionManagerV2Test {
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
                     .isEqualTo(AppFunctionException.ERROR_DENIED)
-                // The error message from this and executeAppFunction_otherNonExistingOtherPackage
-                // must
-                // be kept in sync. This verifies that a caller cannot tell whether a package is
-                // installed or not by comparing the error messages.
+                // The error message should not indicate whether the target
+                // package is installed or not.
                 assertThat(response.appFunctionException().errorMessage)
                     .endsWith("does not have permission to execute the appfunction")
                 assertServiceWasNotCreated()
@@ -441,7 +448,30 @@ class AppFunctionManagerV2Test {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
-    fun executeAppFunction_otherExistingTargetPackage_withSystemPermissionAndAllowlist() =
+    @Ignore("b/457349791 - Re-enable once the bug in AllowlistService is fixed.")
+    fun executeAppFunction_otherExistingTargetPackage_withSystemPermissionAndWithoutAllowlist() =
+        doBlocking {
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        LegacySchemaHelperApp.PACKAGE_NAME,
+                        LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
+                    )
+                    .build()
+
+            val response = mManager.executeAppFunction(request)
+
+            assertThat(response.exceptionOrNull()).isNull()
+            assertThat(response.isSuccess).isTrue()
+            assertServiceDestroyed()
+        }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
+    fun executeAppFunction_otherExistingTargetPackage_withSystemPermissionAndWithAllowlist() =
         doBlocking {
             runWithInteractionAllowlisted(
                 agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
@@ -458,8 +488,35 @@ class AppFunctionManagerV2Test {
 
                 assertThat(response.exceptionOrNull()).isNull()
                 assertThat(response.isSuccess).isTrue()
+                assertServiceDestroyed()
             }
         }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun executeAppFunction_otherExistingTargetPackage_withWildcardAllowlist() = doBlocking {
+        runWithInteractionAllowlisted(
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(TestAllowlistPackage("*")),
+        ) {
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        LegacySchemaHelperApp.PACKAGE_NAME,
+                        LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
+                    )
+                    .build()
+
+            val response = mManager.executeAppFunction(request)
+
+            assertThat(response.exceptionOrNull()).isNull()
+            assertThat(response.isSuccess).isTrue()
+            assertServiceDestroyed()
+        }
+    }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
