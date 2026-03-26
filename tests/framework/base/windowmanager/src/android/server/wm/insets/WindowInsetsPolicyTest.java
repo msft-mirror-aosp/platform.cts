@@ -52,6 +52,8 @@ import android.view.WindowManager.LayoutParams;
 
 import androidx.test.core.app.ActivityScenario;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -70,6 +72,7 @@ import java.util.function.Supplier;
 @android.server.wm.annotation.Group2
 public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
     private static final String TAG = WindowInsetsPolicyTest.class.getSimpleName();
+    private static final long TIMEOUT_MS = 2000;
 
     private ComponentName mTestActivityComponentName;
 
@@ -203,10 +206,13 @@ public class WindowInsetsPolicyTest extends ActivityManagerTestBase {
             fullscreenOptions.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
             TestActivity immersiveActivity =
                     launchAndWait(ImmersiveFullscreenTestActivity.class, fullscreenOptions);
-            WindowInsets insets = getOnMainSync(immersiveActivity::getDispatchedInsets);
 
-            assertFalse(insets.isVisible(WindowInsets.Type.statusBars()));
-            assertFalse(insets.isVisible(WindowInsets.Type.navigationBars()));
+            // The system bars might animate to hide, so we should wait for them first to be hidden.
+            PollingCheck.waitFor(TIMEOUT_MS, () -> {
+                final WindowInsets insets = getOnMainSync(immersiveActivity::getDispatchedInsets);
+                return !insets.isVisible(WindowInsets.Type.statusBars())
+                        && !insets.isVisible(WindowInsets.Type.navigationBars());
+            });
 
             WindowInsets rootInsets = getOnMainSync(immersiveActivity::getRootInsets);
             assertFalse(rootInsets.isVisible(WindowInsets.Type.statusBars()));
