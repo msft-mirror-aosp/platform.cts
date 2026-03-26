@@ -97,15 +97,7 @@ class InputAtomsTest : DeviceTestCase() {
         // are processed.
         val minUsageDuration = 5_000 - 100
 
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
-
-        val data: List<EventMetricData> = ReportUtils.getEventMetricDataList(device, registry)
-
-        assertThat(
-            "No InputDeviceUsageReported atoms logged!",
-            data.size,
-            greaterThanOrEqualTo(1)
-        )
+        val data = waitForMetricData()
 
         val matchesAtom = Matchers.allOf<InputDeviceUsageReported>(
             member("vendorId", { vendorId }, equalTo(0x18d1)),
