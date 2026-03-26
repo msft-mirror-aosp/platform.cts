@@ -723,6 +723,22 @@ public class TelephonyManagerTest {
         return mPackageManager.hasSystemFeature(feature);
     }
 
+    /** Checks whether the telephony feature is supported. */
+    private boolean hasFeatureWithLegacySetting(String feature, int legacySetting) {
+        if (mPackageManager.hasSystemFeature(feature)) return true;
+
+        // Check SDK version of the vendor partition.
+        final int vendorApiLevel = SystemProperties.getInt(
+                "ro.vendor.api_level", Build.VERSION.DEVICE_INITIAL_SDK_INT);
+        // Devices shipped with 2024Q2 or later are required to declare FEATURE_TELEPHONY_*
+        // for individual sub-features (calling, messaging, data), so there's no need to check
+        // the legacy setting.
+        if (vendorApiLevel < Build.VENDOR_API_2024_Q2) {
+            return getContext().getResources().getBoolean(legacySetting);
+        }
+        return false;
+    }
+
     @Test
     @RequiresFlagsEnabled(
             android.telecom.flags.Flags.FLAG_MOVE_GET_TTY_MODE_TO_TELEPHONY_MANAGER)
@@ -752,9 +768,11 @@ public class TelephonyManagerTest {
     public void testDeviceDataCapable() {
         boolean isDataCapable = mTelephonyManager.isDataCapable();
         // Note: there's no mTelephonyManager.isDeviceDataCapable()
-        boolean hasDataFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_DATA);
+        boolean hasDataFeature = hasFeatureWithLegacySetting(
+                PackageManager.FEATURE_TELEPHONY_DATA,
+                com.android.internal.R.bool.config_mobile_data_capable);
 
-        assertEquals("isDataCapable is not aligned with FEATURE_TELEPHONY_MESSAGING",
+        assertEquals("isDataCapable is not aligned with FEATURE_TELEPHONY_DATA",
                 hasDataFeature, isDataCapable);
     }
 
@@ -762,7 +780,9 @@ public class TelephonyManagerTest {
     public void testDeviceSmsCapable() {
         boolean isSmsCapable = mTelephonyManager.isSmsCapable();
         boolean isDeviceSmsCapable = mTelephonyManager.isDeviceSmsCapable();
-        boolean hasMessagingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING);
+        boolean hasMessagingFeature = hasFeatureWithLegacySetting(
+                PackageManager.FEATURE_TELEPHONY_MESSAGING,
+                com.android.internal.R.bool.config_sms_capable);
 
         assertEquals("isSmsCapable should return the same as isDeviceSmsCapable",
                 isDeviceSmsCapable, isSmsCapable);
@@ -773,7 +793,9 @@ public class TelephonyManagerTest {
     @Test
     public void testDeviceVoiceCapable() {
         boolean isDeviceVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
-        boolean hasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
+        boolean hasCallingFeature = hasFeatureWithLegacySetting(
+                PackageManager.FEATURE_TELEPHONY_CALLING,
+                com.android.internal.R.bool.config_voice_capable);
 
         assertEquals("isDeviceVoiceCapable is not aligned with FEATURE_TELEPHONY_CALLING",
                 hasCallingFeature, isDeviceVoiceCapable);
