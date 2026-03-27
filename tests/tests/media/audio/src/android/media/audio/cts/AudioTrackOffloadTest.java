@@ -274,7 +274,6 @@ public class AudioTrackOffloadTest {
     @RequiresFlagsEnabled(Flags.FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD)
     @Test
     public void testFlushWrittenFramesFromPosition() throws Exception {
-        // TODO: b/456196601 - add detailed tests when the HAL is ready.
         final int sampleRate = 44100;
         final AudioFormat format =
                 new AudioFormat.Builder()
@@ -296,16 +295,37 @@ public class AudioTrackOffloadTest {
                     + "PCM offload not supported");
             return;
         }
-        try {
-            assertEquals(0, track.flushWrittenFramesFromPosition(
-                    0, AudioTrack.FLUSH_FROM_ACCURACY_BEST_EFFORT));
-            assertEquals(0, track.flushWrittenFramesFromPosition(
-                    0, AudioTrack.FLUSH_FROM_ACCURACY_EXACT));
+
+        try (AssetFileDescriptor audioToOffload = getContext().getResources()
+                .openRawResourceFd(R.raw.sinesweepraw);
+             InputStream audioInputStream = audioToOffload.createInputStream()) {
+
+            int bufferSizeInBytes3sec = bitRateInKbps * 1000 * BUFFER_SIZE_SEC / 8;
+            bufferSizeInBytes3sec -= bufferSizeInBytes3sec % format.getFrameSizeInBytes();
+            final byte[] data = new byte[bufferSizeInBytes3sec];
+            final int read = audioInputStream.read(data);
+            assertWithMessage("Could not read enough audio from the resource file")
+                    .that(read)
+                    .isEqualTo(bufferSizeInBytes3sec);
+
+            track.play();
+            writeAllBlocking(track, data, "testAudioTrackOffload");
+
+            try {
+                track.flushWrittenFramesFromPosition(
+                        0, AudioTrack.FLUSH_FROM_ACCURACY_EXACT);
+                fail("Must not be able to flush from 0 exactly after playing");
+            } catch (IllegalArgumentException e) {
+                // expected, cannot flush from 0 exactly as it is already played.
+            }
+
+            assertThat(track.flushWrittenFramesFromPosition(
+                    0, AudioTrack.FLUSH_FROM_ACCURACY_BEST_EFFORT)).isGreaterThan(0);
 
             assertWithMessage("getWrittenFramesCount() equals "
                     + "successful return from flushWrittenFramesFromPosition()")
                     .that(track.getWrittenFramesCount())
-                    .isEqualTo(0);
+                    .isGreaterThan(0);
         } finally {
             track.pause();
             track.release();
