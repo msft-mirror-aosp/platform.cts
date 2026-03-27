@@ -51,6 +51,7 @@ import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.stats.devicepolicy.EventId
 import android.telecom.TelecomManager
+import android.view.Display
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
@@ -890,8 +891,12 @@ class LockTaskTest {
                                 deviceState.dpc().componentName(),
                                 LOCK_TASK_FEATURE_BLOCK_ACTIVITY_START_IN_TASK
                             )
+                    // Explicitly start the activity on the DEFAULT_DISPLAY. Otherwise the activity
+                    // may go to the last focused display on a multi-display device.
+                    val options = ActivityOptions.makeBasic()
+                            .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
                     val firstActivity: Activity<TestAppActivity> =
-                        testApp.activities().any().start()
+                        testApp.activities().any().start(options.toBundle())
                     firstActivity.startLockTask()
                     val secondActivity = testApp2.activities().any()
                     val secondActivityIntent = Intent()
