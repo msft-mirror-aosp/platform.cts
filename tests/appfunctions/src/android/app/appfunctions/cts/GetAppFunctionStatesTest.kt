@@ -19,13 +19,13 @@ import android.Manifest
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionState
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllRuntimeMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.installExistingPackageAsUser
+import android.app.appfunctions.testutils.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
@@ -308,10 +308,7 @@ class GetAppFunctionStatesTest {
     fun getAppFunctionState_dynamicRegistrationAfterRegister() = doBlocking {
         val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         try {
-            assertThat(
-                    registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
-                )
-                .isTrue()
+            assertThat(registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
 
             val results =
                 getAppFunctionStates(
@@ -335,15 +332,8 @@ class GetAppFunctionStatesTest {
     fun getAppFunctionState_dynamicRegistrationAfterRegisterThenUnregister() = doBlocking {
         val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         try {
-            assertThat(
-                    registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
-                )
-                .isTrue()
-            assertThat(
-                    registrationService.unregisterAppFunction(
-                        CONCAT_STRINGS_FUNCTION_ID
-                    )
-                )
+            assertThat(registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
+            assertThat(registrationService.unregisterAppFunction(CONCAT_STRINGS_FUNCTION_ID))
                 .isTrue()
 
             val results =

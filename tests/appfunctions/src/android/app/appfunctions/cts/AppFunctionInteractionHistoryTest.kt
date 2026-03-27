@@ -21,14 +21,15 @@ import android.app.AppInteractionAttribution
 import android.app.AppInteractionContract
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
-import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.setInteractionAllowlist
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils
+import android.app.appfunctions.testutils.AppFunctionUtils.clearInteractionAllowlist
+import android.app.appfunctions.testutils.AppFunctionUtils.executeAppFunction
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllRuntimeMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.setInteractionAllowlist
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
@@ -288,8 +289,9 @@ class AppFunctionInteractionHistoryTest {
                             context.getAppInteractionHistoryUri(),
                             timestamp = testStartTime,
                         )
-                    val helperHistories =
-                        accessHistories?.filter { it.targetPackageName == CtsApp.PACKAGE_NAME }
+                    val helperHistories = accessHistories?.filter {
+                        it.targetPackageName == CtsApp.PACKAGE_NAME
+                    }
                     assertThat(helperHistories).isEmpty()
                 }
             }

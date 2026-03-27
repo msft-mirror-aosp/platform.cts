@@ -23,8 +23,9 @@ import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionRuntimeMetadata
 import android.app.appfunctions.AppFunctionSchemaMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
-import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper
+import android.app.appfunctions.testutils.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appsearch.GenericDocument
@@ -353,11 +354,7 @@ class RuntimeMetadataTest {
 
         val searchResults: SearchResultsShim =
             globalSearchSession.search(
-                String.format(
-                    "%s:\"%s\"",
-                    PROPERTY_PACKAGE_NAME,
-                    packageName
-                ),
+                String.format("%s:\"%s\"", PROPERTY_PACKAGE_NAME, packageName),
                 SearchSpec.Builder()
                     .addFilterNamespaces(
                         AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE

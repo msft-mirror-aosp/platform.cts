@@ -372,16 +372,15 @@ class AppFunctionAccessTest {
     fun addAndRemoveAccessListener_listenerRespondsToUpdates() {
         val latch = CountDownLatch(1)
         val latch2 = CountDownLatch(1)
-        val listener =
-            AppFunctionManager.OnAppFunctionAccessChangedListener { aUid ->
-                if (aUid == android.os.Process.myUid()) {
-                    if (latch.count != 0L) {
-                        latch.countDown()
-                    } else {
-                        latch2.countDown()
-                    }
+        val listener = AppFunctionManager.OnAppFunctionAccessChangedListener { aUid ->
+            if (aUid == android.os.Process.myUid()) {
+                if (latch.count != 0L) {
+                    latch.countDown()
+                } else {
+                    latch2.countDown()
                 }
             }
+        }
         try {
             val executor = Executor { it.run() }
             runWithShellPermissionIdentity {

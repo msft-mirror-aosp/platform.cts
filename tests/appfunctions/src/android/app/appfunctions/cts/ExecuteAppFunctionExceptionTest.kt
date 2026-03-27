@@ -31,19 +31,15 @@ import org.junit.runner.RunWith
 class AppFunctionExceptionTest {
     @ApiTest(
         apis =
-        [
-            "android.app.appfunctions.AppFunctionException#getErrorMessage",
-            "android.app.appfunctions.AppFunctionException#getErrorCode",
-            "android.app.appfunctions.AppFunctionException#getExtras",
-        ]
+            [
+                "android.app.appfunctions.AppFunctionException#getErrorMessage",
+                "android.app.appfunctions.AppFunctionException#getErrorCode",
+                "android.app.appfunctions.AppFunctionException#getExtras",
+            ]
     )
     @Test
     fun testConstructor_withErrorCodeAndMessage() {
-        val exception =
-            AppFunctionException(
-                AppFunctionException.ERROR_DENIED,
-                "Permission denied",
-            )
+        val exception = AppFunctionException(AppFunctionException.ERROR_DENIED, "Permission denied")
         assertThat(exception.errorCode).isEqualTo(AppFunctionException.ERROR_DENIED)
         assertThat(exception.errorMessage).isEqualTo("Permission denied")
         assertThat(exception.extras).isEqualTo(Bundle.EMPTY)
@@ -51,77 +47,49 @@ class AppFunctionExceptionTest {
 
     @ApiTest(
         apis =
-        [
-            "android.app.appfunctions.AppFunctionException#getErrorMessage",
-            "android.app.appfunctions.AppFunctionException#getErrorCode",
-            "android.app.appfunctions.AppFunctionException#getExtras",
-        ]
+            [
+                "android.app.appfunctions.AppFunctionException#getErrorMessage",
+                "android.app.appfunctions.AppFunctionException#getErrorCode",
+                "android.app.appfunctions.AppFunctionException#getExtras",
+            ]
     )
     @Test
     fun testConstructor_withErrorCodeMessageAndExtras() {
         val extras = Bundle().apply { putString("key", "value") }
         val exception =
-            AppFunctionException(
-                AppFunctionException.ERROR_SYSTEM_ERROR,
-                "System error",
-                extras,
-            )
+            AppFunctionException(AppFunctionException.ERROR_SYSTEM_ERROR, "System error", extras)
         assertThat(exception.errorCode).isEqualTo(AppFunctionException.ERROR_SYSTEM_ERROR)
         assertThat(exception.errorMessage).isEqualTo("System error")
         assertThat(exception.extras).isEqualTo(extras)
     }
 
-    @ApiTest(
-        apis =
-        [
-            "android.app.appfunctions.AppFunctionException#getErrorCategory",
-        ]
-    )
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionException#getErrorCategory"])
     @Test
     fun testGetErrorCategory() {
+        assertThat(AppFunctionException(AppFunctionException.ERROR_DENIED, null).errorCategory)
+            .isEqualTo(AppFunctionException.ERROR_CATEGORY_REQUEST_ERROR)
         assertThat(
-                AppFunctionException(AppFunctionException.ERROR_DENIED, null)
+                AppFunctionException(AppFunctionException.ERROR_INVALID_ARGUMENT, null)
                     .errorCategory
             )
             .isEqualTo(AppFunctionException.ERROR_CATEGORY_REQUEST_ERROR)
-        assertThat(
-                AppFunctionException(
-                        AppFunctionException.ERROR_INVALID_ARGUMENT,
-                        null,
-                    )
-                    .errorCategory
-            )
+        assertThat(AppFunctionException(AppFunctionException.ERROR_DISABLED, null).errorCategory)
             .isEqualTo(AppFunctionException.ERROR_CATEGORY_REQUEST_ERROR)
         assertThat(
-                AppFunctionException(AppFunctionException.ERROR_DISABLED, null)
-                    .errorCategory
-            )
-            .isEqualTo(AppFunctionException.ERROR_CATEGORY_REQUEST_ERROR)
-        assertThat(
-                AppFunctionException(
-                        AppFunctionException.ERROR_FUNCTION_NOT_FOUND,
-                        null,
-                    )
+                AppFunctionException(AppFunctionException.ERROR_FUNCTION_NOT_FOUND, null)
                     .errorCategory
             )
             .isEqualTo(AppFunctionException.ERROR_CATEGORY_REQUEST_ERROR)
 
         assertThat(
-                AppFunctionException(AppFunctionException.ERROR_SYSTEM_ERROR, null)
-                    .errorCategory
+                AppFunctionException(AppFunctionException.ERROR_SYSTEM_ERROR, null).errorCategory
             )
             .isEqualTo(AppFunctionException.ERROR_CATEGORY_SYSTEM)
-        assertThat(
-                AppFunctionException(AppFunctionException.ERROR_CANCELLED, null)
-                    .errorCategory
-            )
+        assertThat(AppFunctionException(AppFunctionException.ERROR_CANCELLED, null).errorCategory)
             .isEqualTo(AppFunctionException.ERROR_CATEGORY_SYSTEM)
 
         assertThat(
-                AppFunctionException(
-                        AppFunctionException.ERROR_APP_UNKNOWN_ERROR,
-                        null,
-                    )
+                AppFunctionException(AppFunctionException.ERROR_APP_UNKNOWN_ERROR, null)
                     .errorCategory
             )
             .isEqualTo(AppFunctionException.ERROR_CATEGORY_APP)
@@ -132,20 +100,16 @@ class AppFunctionExceptionTest {
 
     @ApiTest(
         apis =
-        [
-            "android.app.appfunctions.AppFunctionException#CREATOR",
-            "android.app.appfunctions.AppFunctionException#writeToParcel",
-        ]
+            [
+                "android.app.appfunctions.AppFunctionException#CREATOR",
+                "android.app.appfunctions.AppFunctionException#writeToParcel",
+            ]
     )
     @Test
     fun testParcelable() {
         val extras = Bundle().apply { putString("key", "value") }
         val exception =
-            AppFunctionException(
-                AppFunctionException.ERROR_CANCELLED,
-                "Cancelled",
-                extras,
-            )
+            AppFunctionException(AppFunctionException.ERROR_CANCELLED, "Cancelled", extras)
 
         val parcel = Parcel.obtain()
         exception.writeToParcel(parcel, 0)
@@ -161,15 +125,14 @@ class AppFunctionExceptionTest {
 
     @ApiTest(
         apis =
-        [
-            "android.app.appfunctions.AppFunctionException#CREATOR",
-            "android.app.appfunctions.AppFunctionException#writeToParcel",
-        ]
+            [
+                "android.app.appfunctions.AppFunctionException#CREATOR",
+                "android.app.appfunctions.AppFunctionException#writeToParcel",
+            ]
     )
     @Test
     fun testParcel_nullErrorMessage() {
-        val exception =
-            AppFunctionException(AppFunctionException.ERROR_CANCELLED, null)
+        val exception = AppFunctionException(AppFunctionException.ERROR_CANCELLED, null)
 
         val parcel = Parcel.obtain()
         exception.writeToParcel(parcel, 0)

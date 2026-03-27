@@ -16,14 +16,13 @@
 package android.app.appfunctions.cts
 
 import android.app.appfunctions.AppFunctionManager
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
 import android.app.appfunctions.flags.Flags
-import android.app.appfunctions.cts.AppFunctionUtils.installPackage
-import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils.installPackage
+import android.app.appfunctions.testutils.AppFunctionUtils.uninstallPackage
 import android.content.Context
 import android.content.pm.PackageManager.NameNotFoundException
-import org.junit.Assert.assertThrows
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -34,6 +33,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule

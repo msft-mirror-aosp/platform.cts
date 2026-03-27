@@ -19,11 +19,12 @@ package android.app.appfunctions.cts
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.ServiceHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
-import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.ServiceHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils
+import android.app.appfunctions.testutils.AppFunctionUtils.executeAppFunction
+import android.app.appfunctions.testutils.AppFunctionUtils.runWithInteractionAllowlisted
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.flags.annotations.RequireFlagsDisabled
