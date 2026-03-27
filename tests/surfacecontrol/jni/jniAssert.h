@@ -21,6 +21,10 @@
 
 // Raises a java exception
 static void fail(JNIEnv *env, const char *format, ...) {
+    if (env->ExceptionCheck()) {
+        return;
+    }
+
     va_list args;
 
     va_start(args, format);
@@ -35,8 +39,8 @@ static void fail(JNIEnv *env, const char *format, ...) {
     free(msg);
 }
 
-#define ASSERT(condition, format, args...) \
-    if (!(condition)) {                    \
-        fail(env, format, ##args);         \
-        return;                            \
+#define ASSERT(condition, format, args...)       \
+    if (env->ExceptionCheck() || !(condition)) { \
+        fail(env, format, ##args);               \
+        return;                                  \
     }
