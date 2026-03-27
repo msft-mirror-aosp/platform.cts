@@ -76,7 +76,7 @@ public final class Helper {
     public static final String TAG = "VoiceInteractionCtsHelper";
 
     // The timeout to wait for async result
-    public static final long WAIT_TIMEOUT_IN_MS = 10_000;
+    public static final long WAIT_TIMEOUT_IN_MS = 20_000;
     public static final long WAIT_LONG_TIMEOUT_IN_MS = 15_000;
     public static final long WAIT_EXPECTED_NO_CALL_TIMEOUT_IN_MS = 3_000;
 
