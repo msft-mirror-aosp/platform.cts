@@ -53,6 +53,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.RequiredServiceRule;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,6 +65,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+// TODO(b/497020098): Re-enable.
+@Ignore("b/496398871")
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
 public class InsightWorkflowTest {
