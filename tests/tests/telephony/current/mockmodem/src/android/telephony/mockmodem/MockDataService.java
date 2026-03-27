@@ -466,6 +466,7 @@ public class MockDataService {
     }
 
     public synchronized boolean isSupportedCapability(String capability) {
+        if (capability == null || capability.isEmpty()) return false;
         for (String cap : sSupportedCapabilities) {
             Log.d(mTag, "Supported Capability:" + cap + ", Requested Capability:" + capability);
             if (cap.contains(capability)) {
