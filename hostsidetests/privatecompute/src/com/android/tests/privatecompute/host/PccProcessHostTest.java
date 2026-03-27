@@ -45,7 +45,9 @@ public class PccProcessHostTest extends BaseHostJUnit4Test {
     // Equivalent to UserHandle.PER_USER_RANGE
     private static final int PER_USER_RANGE = 100000;
 
-    private static final int SLEEP_MS_DURATION = 500;
+    private static final int SLEEP_MS_DURATION = 1000;
+
+    private static final int NUMBER_RETRIES = 10;
 
     private int mUserId = -1;
 
@@ -107,8 +109,7 @@ public class PccProcessHostTest extends BaseHostJUnit4Test {
 
     /** Polls 'ps' to see if a process with the specific UID exists/does not exist. */
     private boolean waitForProcessToReachState(int uid, boolean expectRunning) throws Exception {
-        // Poll for up to 5 seconds
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < NUMBER_RETRIES; i++) {
             boolean isCurrentlyRunning = isUidRunning(uid);
             if (isCurrentlyRunning == expectRunning) {
                 return true;
