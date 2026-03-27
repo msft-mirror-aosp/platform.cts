@@ -440,6 +440,14 @@ class AppFunctionMetadataTestHelper {
         }
     }
 
+    object CtsNoQueryAllApp {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.noqueryallpackages"
+
+        object FunctionNames {
+            val ADD = AppFunctionName(PACKAGE_NAME, "add")
+        }
+    }
+
     object UpdatableHelperApp {
         const val PACKAGE_NAME: String = "com.android.cts.appsearch.indexertestapp.a"
 

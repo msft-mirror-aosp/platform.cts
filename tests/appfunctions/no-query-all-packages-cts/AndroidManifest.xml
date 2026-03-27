@@ -26,7 +26,7 @@
         tools:node="remove" />
 
     <queries>
-        <package android:name="android.app.appfunctions.cts.dynamic.schema" />
+        <package android:name="android.app.appfunctions.cts.helper" />
     </queries>
 
     <application>

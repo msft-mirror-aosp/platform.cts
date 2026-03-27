@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2026 The Android Open Source Project
+<!-- Copyright (C) 2024 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -28,16 +28,18 @@
         <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
         <option name="restore-settings" value="true" />
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <option name="test-file-name" value="CtsAppFunctionNoQueryAllPackagesTestCases.apk" />
+    </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAV2.apk->/data/local/tmp/cts/appfunctions/CtsAppSearchIndexerTestAppAV2.apk" />
         <option name="push"
             value="CtsAppFunctionsTestHelper.apk->/data/local/tmp/cts/appfunctions/CtsAppFunctionTestHelper.apk" />
         <option name="push"
             value="CtsAppFunctionsTestHelperDynamicSchema.apk->/data/local/tmp/cts/appfunctions/CtsAppFunctionsTestHelperDynamicSchema.apk" />
-    </target_preparer>
-    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-        <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsAppFunctionNoQueryAllPackagesTestCases.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
