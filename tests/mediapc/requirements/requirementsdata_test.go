@@ -20,6 +20,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	mpcpb "google3/third_party/android/mediapc_requirements/mpc_go_proto"
 	"google3/third_party/android/mediapc_requirements/requirements"
 	pb "cts/test/mediapc/requirements/requirements_go_proto"
 	"github.com/google/go-cmp/cmp"
@@ -159,6 +160,31 @@ func TestConfigVariantsValid(t *testing.T) {
 						prev = variants
 					}
 				})
+			}
+		})
+	}
+}
+
+func TestRequirementSpecsMPCValid(t *testing.T) {
+	reqList := mustUnmarshalRequirementList(t)
+
+	for _, req := range reqList.GetRequirements() {
+		if !req.HasName() {
+			continue // Do not check requirements that are not implemented yet
+		}
+
+		t.Run(req.GetId(), func(t *testing.T) {
+			for mpcKey, spec := range req.GetSpecs() {
+				mpcValue := spec.GetMpc()
+				if mpcValue == mpcpb.MediaPerformanceClass_MEDIA_PERFORMANCE_CLASS_UNSPECIFIED {
+					t.Errorf("Requirement [%s] spec for MPC [%d] has UNSPECIFIED mpc value", req.GetId(), mpcKey)
+				}
+				if mpcValue == mpcpb.MediaPerformanceClass_MEDIA_PERFORMANCE_CLASS_INVALID {
+					t.Errorf("Requirement [%s] spec for MPC [%d] has INVALID mpc value", req.GetId(), mpcKey)
+				}
+				if int64(mpcValue) != mpcKey {
+					t.Errorf("Requirement [%s] spec for MPC [%d] has mismatched mpc value [%d]", req.GetId(), mpcKey, mpcValue)
+				}
 			}
 		})
 	}
