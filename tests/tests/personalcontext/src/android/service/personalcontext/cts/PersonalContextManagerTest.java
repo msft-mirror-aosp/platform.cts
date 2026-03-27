@@ -203,10 +203,9 @@ public class PersonalContextManagerTest {
     @Test
     public void testPersonalContextMode_defaultValue() {
         try (TestAppInstance testApp = testApp(sDeviceState)) {
-            // TODO(b/481494584): flip the default to disabled (0).
             // Default value is enabled.
             assertThat(mPersonalContextManager.isPersonalContextModeEnabled(testApp.packageName()))
-                    .isEqualTo(true);
+                    .isEqualTo(false);
         }
     }
 
@@ -220,17 +219,16 @@ public class PersonalContextManagerTest {
     @EnsureTestAppInstalled
     @Test
     public void testPersonalContextMode_noPermissions_fails() {
-        // TODO(b/481494584): flip the default to disabled (0).
         try (TestAppInstance testApp = testApp(sDeviceState)) {
             assertThrows(
                     SecurityException.class,
                     () ->
                             mPersonalContextManager.setPersonalContextModeEnabled(
-                                    testApp.packageName(), false));
+                                    testApp.packageName(), true));
 
             // Value has not changed since the call failed.
             assertThat(mPersonalContextManager.isPersonalContextModeEnabled(testApp.packageName()))
-                    .isEqualTo(true);
+                    .isEqualTo(false);
         }
     }
 
