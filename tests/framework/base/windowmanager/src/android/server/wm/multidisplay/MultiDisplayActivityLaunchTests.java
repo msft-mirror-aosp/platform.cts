@@ -65,6 +65,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -90,7 +91,6 @@ import android.server.wm.WindowManagerState.Task;
 import android.view.SurfaceView;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -374,6 +374,12 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchNonResizeableActivityFromSecondaryDisplayNewTask() {
+        // TODO(b/496765654): Re-enable all such skipped tests once per user last focused
+        // display fallback is implemented.
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
@@ -411,6 +417,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testConsequentLaunchActivity() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
@@ -437,6 +447,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testConsequentLaunchActivityInNewProcess_onFocusedDisplay() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         // Create new virtual display.
         final DisplayContent newDisplay =
                 createManagedVirtualDisplaySession().setSimulateDisplay(true).createDisplay();
@@ -469,6 +483,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testConsequentLaunchActivityFromSecondaryDisplay() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         // Create new simulated display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
@@ -494,6 +512,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testConsequentLaunchActivityFromVirtualDisplay() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
@@ -558,6 +580,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchExistingActivityReparentDisplay() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
@@ -732,6 +758,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchSameAffinityLaunchesSameDisplay() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
 
@@ -855,6 +885,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testNewTaskSameDisplay() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .createDisplay();
@@ -930,6 +964,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchingFromApplicationContext() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .createDisplay();
@@ -948,6 +986,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchingFromPendingIntent() {
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
+
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .createDisplay();
