@@ -60,12 +60,26 @@ struct RefreshRateCallback {
 
 struct RefreshRateCallbackWithDisplayManager {
     RefreshRateCallbackWithDisplayManager(const char* name, JNIEnv* env, jobject clazz)
-          : name(name), env(env), clazz(clazz) {}
+          : name(name), clazz(env->NewGlobalRef(clazz)) {
+        env->GetJavaVM(&vm);
+    }
+    ~RefreshRateCallbackWithDisplayManager() { getenv()->DeleteGlobalRef(clazz); }
     std::string name;
-    JNIEnv* env;
+    JavaVM* vm;
     jobject clazz;
     int count{0};
     std::chrono::nanoseconds vsyncPeriod{0LL};
+
+    JNIEnv* getenv() {
+        JNIEnv* env;
+        int result = vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+        if (result == JNI_EDETACHED) {
+            if (vm->AttachCurrentThreadAsDaemon(&env, nullptr) != JNI_OK) {
+                return nullptr;
+            }
+        }
+        return env;
+    }
 };
 
 static void refreshRateCallback(int64_t vsyncPeriodNanos, void* data) {
@@ -81,9 +95,12 @@ static void refreshRateCallbackWithDisplayManager(int64_t vsyncPeriodNanos, void
             static_cast<RefreshRateCallbackWithDisplayManager*>(data);
     cb->count++;
     cb->vsyncPeriod = std::chrono::nanoseconds{vsyncPeriodNanos};
-    cb->env->CallVoidMethod(cb->clazz,
+    JNIEnv* env = cb->getenv();
+    if (env) {
+        env->CallVoidMethod(cb->clazz,
                             gJni.choreographerNativeTest.checkRefreshRateIsCurrentAndSwitch,
                             static_cast<int>(std::round(1e9f / cb->vsyncPeriod.count())));
+    }
 }
 
 static std::string dumpSupportedRefreshPeriods() {
@@ -151,8 +168,8 @@ static void
 android_view_surfacecontrol_cts_ChoreographerNativeTest_testPostVsyncCallbackWithoutDelayEventuallyRunsCallback(
         JNIEnv* env, jclass, jlong choreographerPtr) {
     AChoreographer* choreographer = reinterpret_cast<AChoreographer*>(choreographerPtr);
-    VsyncCallback cb1("cb1", env);
-    VsyncCallback cb2("cb2", env);
+    VsyncCallback cb1("cb1");
+    VsyncCallback cb2("cb2");
     auto start = now();
 
     AChoreographer_postVsyncCallback(choreographer, vsyncCallback, &cb1);
@@ -178,7 +195,7 @@ android_view_surfacecontrol_cts_ChoreographerNativeTest_testPostVsyncCallbackWit
 static void android_view_surfacecontrol_cts_ChoreographerNativeTest_testFrameCallbackDataVsyncIdValid(
         JNIEnv* env, jclass, jlong choreographerPtr) {
     AChoreographer* choreographer = reinterpret_cast<AChoreographer*>(choreographerPtr);
-    VsyncCallback cb1("cb1", env);
+    VsyncCallback cb1("cb1");
     auto start = now();
 
     AChoreographer_postVsyncCallback(choreographer, vsyncCallback, &cb1);
@@ -200,7 +217,7 @@ static void android_view_surfacecontrol_cts_ChoreographerNativeTest_testFrameCal
 static void android_view_surfacecontrol_cts_ChoreographerNativeTest_testFrameCallbackDataDeadlineInFuture(
         JNIEnv* env, jclass, jlong choreographerPtr) {
     AChoreographer* choreographer = reinterpret_cast<AChoreographer*>(choreographerPtr);
-    VsyncCallback cb1("cb1", env);
+    VsyncCallback cb1("cb1");
     auto start = now();
 
     AChoreographer_postVsyncCallback(choreographer, vsyncCallback, &cb1);
@@ -240,7 +257,7 @@ static void
 android_view_surfacecontrol_cts_ChoreographerNativeTest_testFrameCallbackDataExpectedPresentTimeInFuture(
         JNIEnv* env, jclass, jlong choreographerPtr) {
     AChoreographer* choreographer = reinterpret_cast<AChoreographer*>(choreographerPtr);
-    VsyncCallback cb1("cb1", env);
+    VsyncCallback cb1("cb1");
     auto start = now();
 
     AChoreographer_postVsyncCallback(choreographer, vsyncCallback, &cb1);

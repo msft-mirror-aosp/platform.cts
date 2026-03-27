@@ -828,7 +828,7 @@ jobject SurfaceControlTest_getFrameTimelines(JNIEnv* env, jclass) {
     ATrace_endSection();
     verifyChoreographer(env, choreographer);
 
-    VsyncCallback cb1("cb1", env);
+    VsyncCallback cb1("cb1");
     auto start = now();
     ATrace_beginSection("postVsyncCallback");
     AChoreographer_postVsyncCallback(choreographer, vsyncCallback, &cb1);
