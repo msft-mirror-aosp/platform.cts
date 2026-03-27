@@ -4348,34 +4348,65 @@ public class TelephonyManagerTest {
         // Perform this test on default data subscription.
         mTelephonyManager = getContext().getSystemService(TelephonyManager.class)
                 .createForSubscriptionId(SubscriptionManager.getDefaultDataSubscriptionId());
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager,
-                (tm) -> tm.setDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_CARRIER,
-                        false));
 
-        waitForMs(1000);
-        boolean isDataEnabledForReason = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.isDataEnabledForReason(
-                        TelephonyManager.DATA_ENABLED_REASON_CARRIER));
-        assertFalse("isDataEnabledForReason", isDataEnabledForReason);
+        boolean isUserDataEnabled =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager,
+                        (tm) ->
+                                tm.isDataEnabledForReason(
+                                        TelephonyManager.DATA_ENABLED_REASON_USER));
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
+                    (tm) ->
+                            tm.setDataEnabledForReason(
+                                    TelephonyManager.DATA_ENABLED_REASON_USER, true));
 
-        boolean isDataConnectionAvailable = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isDataConnectionAllowed);
-        assertFalse("isDataConnectionAvailable", isDataConnectionAvailable);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
+                    (tm) ->
+                            tm.setDataEnabledForReason(
+                                    TelephonyManager.DATA_ENABLED_REASON_CARRIER, false));
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager,
-                (tm) -> tm.setDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_CARRIER,
-                        true));
+            waitForMs(1000);
+            boolean isDataEnabledForReason =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager,
+                            (tm) ->
+                                    tm.isDataEnabledForReason(
+                                            TelephonyManager.DATA_ENABLED_REASON_CARRIER));
+            assertFalse("isDataEnabledForReason", isDataEnabledForReason);
 
-        waitForMs(1000);
-        isDataEnabledForReason = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.isDataEnabledForReason(
-                        TelephonyManager.DATA_ENABLED_REASON_CARRIER));
-        assertTrue("isDataEnabledForReason", isDataEnabledForReason);
-        isDataConnectionAvailable = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isDataConnectionAllowed);
-        assertTrue("isDataConnectionAvailable", isDataConnectionAvailable);
+            boolean isDataConnectionAvailable =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager, TelephonyManager::isDataConnectionAllowed);
+            assertFalse("isDataConnectionAvailable", isDataConnectionAvailable);
+
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
+                    (tm) ->
+                            tm.setDataEnabledForReason(
+                                    TelephonyManager.DATA_ENABLED_REASON_CARRIER, true));
+
+            waitForMs(1000);
+            isDataEnabledForReason =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager,
+                            (tm) ->
+                                    tm.isDataEnabledForReason(
+                                            TelephonyManager.DATA_ENABLED_REASON_CARRIER));
+            assertTrue("isDataEnabledForReason", isDataEnabledForReason);
+            isDataConnectionAvailable =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager, TelephonyManager::isDataConnectionAllowed);
+            assertTrue("isDataConnectionAvailable", isDataConnectionAvailable);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
+                    (tm) ->
+                            tm.setDataEnabledForReason(
+                                    TelephonyManager.DATA_ENABLED_REASON_USER, isUserDataEnabled));
+        }
     }
 
     @Test
