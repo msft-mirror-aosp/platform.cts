@@ -64,16 +64,21 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
         device_id=self.dut.serial,
         camera_id=self.camera_id,
         hidden_physical_id=None) as cam:
-      camera_properties_utils.skip_unless(self.hidden_physical_id is not None)
       props = cam.get_camera_properties()
       failed_awb_msg = []
       failed_ae_msg = []
       failed_af_msg = []
 
-      # Check SKIP conditions
-      physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
+      # Check if camera is tele
+      if self.hidden_physical_id:
+        physical_props = cam.get_camera_properties_by_id(
+            self.hidden_physical_id)
+      else:
+        physical_props = props
       is_tele = cam.get_camera_type(physical_props) == (
           its_session_utils.CAMERA_TYPE_TELE)
+
+      # Check SKIP conditions
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       multi_camera_switch_utils.check_lens_switch_conditions(
           props, first_api_level, _ZOOM_RANGE_W_TELE, is_tele)
