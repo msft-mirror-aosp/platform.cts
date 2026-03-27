@@ -65,7 +65,7 @@ def get_target_exposure_combos(output_path, its_session=None):
 
   sens_range = props['android.sensor.info.sensitivityRange']
   exp_time_range = props['android.sensor.info.exposureTimeRange']
-  logging.debug('Target exposure*sensitivity: %d', exp_sens_prod)
+  logging.debug('Target exposure*sensitivity: %s', str(exp_sens_prod))
   logging.debug('sensor exp time range: %s', str(exp_time_range))
   logging.debug('sensor sensitivity range: %s', str(sens_range))
 
@@ -256,5 +256,8 @@ def do_target_exposure_measurement(its_session):
   logging.debug('Target exposure cap luma: %.4f', luma_mean[0])
 
   # Compute the exposure value that would result in a luma of 0.5.
+  if luma_mean[0] == 0:
+    logging.error('Luma mean is 0. Check scene lighting or camera output.')
+    return 0
   return sens * exp_time * 0.5 / luma_mean[0]
 
