@@ -20,14 +20,18 @@ import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appfunctions.flags.Flags
 import android.app.appsearch.GenericDocument
+import android.content.pm.PackageManager
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import android.util.Log
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.utils.BlockingCallback.DefaultBlockingCallback
+import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.settings.LOG_TAG
 import com.android.bedstead.settings.SETTINGS_PACKAGE_NAME
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 /**
@@ -114,35 +118,87 @@ class AppFunctionsBlockingClient(private val packageName: String = SETTINGS_PACK
     private fun executeAppFunction(
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse? {
-        val callback = DefaultBlockingCallback<ExecuteAppFunctionResponse?>()
+        try {
+            setAppFunctionAllowlist(request.targetPackageName)
+            val callback = DefaultBlockingCallback<ExecuteAppFunctionResponse?>()
+            TestApis.permissions().withPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS).use {
+                appFunctionManager.executeAppFunction(
+                    request,
+                    context.mainExecutor,
+                    CancellationSignal(),
+                    object : OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
+                        override fun onResult(result: ExecuteAppFunctionResponse) {
+                            Log.d(LOG_TAG, "Successfully executed ${request.functionIdentifier}")
+                            callback.triggerCallback(result)
+                        }
 
-        TestApis.permissions().withPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS).use {
-            appFunctionManager.executeAppFunction(
-                request,
-                context.mainExecutor,
-                CancellationSignal(),
-                object : OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
-                    override fun onResult(result: ExecuteAppFunctionResponse) {
-                        Log.d(LOG_TAG, "Successfully executed ${request.functionIdentifier}")
-                        callback.triggerCallback(result)
+                        override fun onError(error: AppFunctionException) {
+                            Log.e(
+                                LOG_TAG,
+                                "Error executing ${request.functionIdentifier}: ${error.errorMessage}",
+                                error
+                            )
+                            callback.triggerCallback(null)
+                        }
                     }
-
-                    override fun onError(error: AppFunctionException) {
-                        Log.e(
-                            LOG_TAG,
-                            "Error executing ${request.functionIdentifier}: ${error.errorMessage}",
-                            error
-                        )
-                        callback.triggerCallback(null)
-                    }
-                }
-            )
-
+                )
+            }
             return callback.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } finally {
+            clearAppFunctionAllowlist()
         }
+    }
+
+    private fun setAppFunctionAllowlist(targetPackage: String) {
+        if (!Flags.enableAppFunctionPermissionV2()) return
+        val packageInfo =
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNING_CERTIFICATES,
+            )
+        val signatures = packageInfo.signingInfo?.signingCertificateHistory
+        val certificate =
+            if (!signatures.isNullOrEmpty()) {
+                val digest =
+                    MessageDigest.getInstance("SHA-256")
+                        .digest(signatures.last().toByteArray())
+                digest.joinToString("") { "%02X".format(it) }
+            } else {
+                throw IllegalStateException(
+                    "No signatures found for package ${context.packageName}")
+            }
+        val signedPackage = "${context.packageName}:$certificate"
+
+        ShellCommand.builder("cmd app_function purge-allowlist-cache")
+            .validate { output -> output.contains("Purge allowlist cache") }
+            .execute()
+        ShellCommand.builder(
+            buildString {
+                append("cmd allowlist add-package-multimap")
+                append(" ")
+                append("$APP_FUNCTION_ALLOWLIST_TYPE")
+                append(" ")
+                append(signedPackage)
+                append(" ")
+                append(targetPackage)
+            }
+        )
+            .validate { output -> output.startsWith("Added") }
+            .execute()
+    }
+
+    private fun clearAppFunctionAllowlist() {
+        if (!Flags.enableAppFunctionPermissionV2()) return
+        ShellCommand.builder("cmd app_function purge-allowlist-cache")
+            .validate { output -> output.contains("Purge allowlist cache") }
+            .execute()
+        ShellCommand.builder(
+            "cmd allowlist clear-shell-allowlist $APP_FUNCTION_ALLOWLIST_TYPE")
+            .execute()
     }
 
     companion object {
         private const val TIMEOUT_SECONDS = 90L
+        private const val APP_FUNCTION_ALLOWLIST_TYPE = 2
     }
 }

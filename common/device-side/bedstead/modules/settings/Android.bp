@@ -12,6 +12,7 @@ android_library {
     sdk_version: "system_current",
     min_sdk_version: "36",
     static_libs: [
+        "android.app.appfunctions.flags-aconfig-java",
         "bedstead",
     ],
     lint: {

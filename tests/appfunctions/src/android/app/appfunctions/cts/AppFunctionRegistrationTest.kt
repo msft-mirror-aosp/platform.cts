@@ -146,7 +146,6 @@ class AppFunctionRegistrationTest {
         uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
 
         if (android.app.appfunctions.flags.Flags.enableAppFunctionPermissionV2()) {
-            AppFunctionUtils.enableAllowlist()
             setInteractionAllowlist(
                 CtsApp.TEST_ALLOWLIST_PACKAGE,
                 listOf(DynamicSchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
@@ -164,7 +163,6 @@ class AppFunctionRegistrationTest {
         TestAppFunctionServiceLifecycleReceiver.reset()
 
         if (android.app.appfunctions.flags.Flags.enableAppFunctionPermissionV2()) {
-            AppFunctionUtils.disableAllowlist()
             clearInteractionAllowlist()
         }
 

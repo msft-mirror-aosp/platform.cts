@@ -259,18 +259,6 @@ object AppFunctionUtils {
     fun getAllRuntimeMetadataPackages(context: Context? = null) =
         searchRuntimeMetadata(context).map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
 
-    /** Enable allowlist. */
-    fun enableAllowlist() {
-        assertThat(ShellCommand.builder("cmd app_function enable-allowlist").execute())
-            .isEqualTo("Enable allowlist\n")
-    }
-
-    /** Disable allowlist. */
-    fun disableAllowlist() {
-        assertThat(ShellCommand.builder("cmd app_function disable-allowlist").execute())
-            .isEqualTo("Disable allowlist\n")
-    }
-
     /** Sets interaction allowlist. */
     fun setInteractionAllowlist(
         agentPackage: TestAllowlistPackage,
