@@ -50,6 +50,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
@@ -535,6 +536,11 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
     /** Tests that an activity can launch an activity from a different UID into its own task. */
     @Test
     public void testPermissionLaunchMultiUidTask() {
+        // TODO(b/496765654): Re-enable all such skipped tests once per user last focused
+        // display fallback is implemented.
+        assumeFalse(
+                "Fallback to last focused display is not currently supported on MUMD devices",
+                isVisibleBackgroundUserSupported());
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .createDisplay();
