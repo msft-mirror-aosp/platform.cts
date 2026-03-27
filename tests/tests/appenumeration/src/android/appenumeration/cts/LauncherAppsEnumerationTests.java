@@ -58,6 +58,7 @@ import static android.content.Intent.EXTRA_PACKAGES;
 import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
 import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
+import static android.content.pm.cts.util.PackageTestUtils.setPackageAppLockEnabledScoped;
 import static android.os.Process.INVALID_UID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -205,10 +206,7 @@ public class LauncherAppsEnumerationTests extends AppEnumerationTestsBase {
                 AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(sContext);
                 AutoCloseable withLockScreen = new LockSettingsUtil(sContext).withLockScreen()) {
             assertThat(hasLockAppsPermission(sContext), is(true));
-            assertAppLockStateChangeResults(QUERIES_NOTHING_PERM, /* newAppLockState= */ true,
-                    /* expectVisible= */ true);
-            assertAppLockStateChangeResults(QUERIES_NOTHING_PERM, /* newAppLockState= */ false,
-                    /* expectVisible= */ true);
+            assertAppLockLifecycle(QUERIES_NOTHING_PERM, /* expectVisible= */ true);
         }
     }
 
@@ -223,37 +221,7 @@ public class LauncherAppsEnumerationTests extends AppEnumerationTestsBase {
                 AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(sContext);
                 AutoCloseable withLockScreen = new LockSettingsUtil(sContext).withLockScreen()) {
             assertThat(hasLockAppsPermission(sContext), is(true));
-            assertAppLockStateChangeResults(QUERIES_NOTHING, /* newAppLockState= */ true,
-                    /* expectVisible= */ false);
-            assertAppLockStateChangeResults(QUERIES_NOTHING, /* newAppLockState= */ false,
-                    /* expectVisible= */ false);
-        }
-    }
-
-    private void assertAppLockStateChangeResults(String sourcePackageName, boolean newAppLockState,
-            boolean expectVisible) throws Exception {
-        final Result result = sendCommandAndWaitForLauncherAppsCallback(sourcePackageName,
-                CALLBACK_EVENT_PACKAGE_CHANGED, new String[]{TARGET_APP_LOCK_SUPPORTED_APP});
-
-        // Trigger the App Lock state change
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            sContext.getPackageManager().setPackageAppLockEnabled(TARGET_APP_LOCK_SUPPORTED_APP,
-                    newAppLockState);
-        }, Manifest.permission.TEST_LOCK_APPS);
-
-        final ApplicationInfo applicationInfo = sContext.getPackageManager().getApplicationInfo(
-                TARGET_APP_LOCK_SUPPORTED_APP, PackageManager.ApplicationInfoFlags.of(
-                        PackageManager.GET_APP_LOCK_INFO));
-        assertThat(applicationInfo.isAppLockEnabled, is(newAppLockState));
-
-        final Bundle response = result.await();
-        if (expectVisible) {
-            assertThat(response.getInt(EXTRA_FLAGS), equalTo(CALLBACK_EVENT_PACKAGE_CHANGED));
-            assertThat(response.getStringArray(EXTRA_PACKAGES),
-                    arrayContainingInAnyOrder(new String[]{TARGET_APP_LOCK_SUPPORTED_APP}));
-        } else {
-            assertThat(response.getInt(EXTRA_FLAGS), equalTo(CALLBACK_EVENT_INVALID));
-            assertThat(response.getStringArray(EXTRA_PACKAGES), emptyArray());
+            assertAppLockLifecycle(QUERIES_NOTHING, /* expectVisible= */ false);
         }
     }
 
@@ -649,5 +617,58 @@ public class LauncherAppsEnumerationTests extends AppEnumerationTestsBase {
         final Bundle response = sendCommandBlocking(sourcePackageName, targetPackageName, extraData,
                 ACTION_LAUNCHER_APPS_SHOULD_HIDE_FROM_SUGGESTIONS);
         return response.getBoolean(Intent.EXTRA_RETURN_RESULT);
+    }
+
+    /**
+     * Asserts the lifecycle of App Lock for a specific package, verifying that visibility changes
+     * are correctly reported via LauncherApps callbacks when App Lock is enabled and disabled.
+     *
+     * @param sourcePackageName The package name of the app receiving the callbacks.
+     * @param expectVisible Whether the package change events are expected to be visible to the
+     * source.
+     */
+    private void assertAppLockLifecycle(String sourcePackageName, boolean expectVisible)
+            throws Exception {
+        final PackageManager pm = sContext.getPackageManager();
+
+        final Result resultEnable = sendCommandAndWaitForLauncherAppsCallback(sourcePackageName,
+                CALLBACK_EVENT_PACKAGE_CHANGED, new String[]{TARGET_APP_LOCK_SUPPORTED_APP});
+
+        final Result resultDisable;
+        try (AutoCloseable ignored = setPackageAppLockEnabledScoped(TARGET_APP_LOCK_SUPPORTED_APP,
+                pm)) {
+            final ApplicationInfo appInfoEnable = pm.getApplicationInfo(
+                    TARGET_APP_LOCK_SUPPORTED_APP, PackageManager.ApplicationInfoFlags.of(
+                        PackageManager.GET_APP_LOCK_INFO));
+            assertThat(appInfoEnable.isAppLockEnabled, is(true));
+            assertAppLockCallbackResult(resultEnable.await(), expectVisible);
+
+            resultDisable = sendCommandAndWaitForLauncherAppsCallback(sourcePackageName,
+                    CALLBACK_EVENT_PACKAGE_CHANGED, new String[]{TARGET_APP_LOCK_SUPPORTED_APP});
+        }
+
+        final ApplicationInfo appInfoDisable = pm.getApplicationInfo(TARGET_APP_LOCK_SUPPORTED_APP,
+                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_APP_LOCK_INFO));
+
+        assertThat(appInfoDisable.isAppLockEnabled, is(false));
+        assertAppLockCallbackResult(resultDisable.await(), expectVisible);
+    }
+
+    /**
+     * Asserts that the provided LauncherApps callback result matches the expected visibility.
+     *
+     * @param response The result Bundle returned from the callback.
+     * @param expectVisible Whether the package change event is expected to be received.
+     */
+    private void assertAppLockCallbackResult(Bundle response, boolean expectVisible) {
+        if (expectVisible) {
+            assertThat(response.getInt(EXTRA_FLAGS),
+                    equalTo(CALLBACK_EVENT_PACKAGE_CHANGED));
+            assertThat(response.getStringArray(EXTRA_PACKAGES),
+                    arrayContainingInAnyOrder(new String[]{TARGET_APP_LOCK_SUPPORTED_APP}));
+        } else {
+            assertThat(response.getInt(EXTRA_FLAGS), equalTo(CALLBACK_EVENT_INVALID));
+            assertThat(response.getStringArray(EXTRA_PACKAGES), emptyArray());
+        }
     }
 }

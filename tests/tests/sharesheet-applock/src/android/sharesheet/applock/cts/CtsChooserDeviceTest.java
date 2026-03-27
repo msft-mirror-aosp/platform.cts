@@ -16,6 +16,7 @@
 package android.sharesheet.applock.cts;
 
 import static android.Manifest.permission.START_ACTIVITIES_FROM_BACKGROUND;
+import static android.content.pm.cts.util.PackageTestUtils.setPackageAppLockEnabledScoped;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -23,7 +24,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.content.ComponentName;
@@ -179,16 +179,16 @@ public class CtsChooserDeviceTest {
                     launchChooser(shareIntent);
                     waitAndAssertTextContains(mSharingShortcutLabel);
 
-                    setAppLockState(true);
-                    waitAndAssertNoTextContains(mSharingShortcutLabel);
+                    try (AutoCloseable ignored = setPackageAppLockEnabledScoped(mPkg,
+                            mContext.getPackageManager())) {
+                        waitAndAssertNoTextContains(mSharingShortcutLabel);
+                    }
 
-                    setAppLockState(false);
                     waitAndAssertTextContains(mSharingShortcutLabel);
                 },
                 () -> {
                     closeChooser();
                     clearShortcuts();
-                    setAppLockState(false);
                 });
     }
 
@@ -361,28 +361,5 @@ public class CtsChooserDeviceTest {
         if (exceptionToRethrow != null) {
             throw new RuntimeException(exceptionToRethrow);
         }
-    }
-
-    /**
-     * Enables App Lock for the current package and returns an {@link AutoCloseable} that reverts
-     * the state when closed.
-     */
-    private void setAppLockState(boolean isLocked) {
-        final String packageName = mContext.getPackageName();
-        final PackageManager packageManager = mContext.getPackageManager();
-
-        // Enable App Lock.
-        setAppLockState(packageManager, packageName, /* state= */ isLocked);
-    }
-
-    /** Helper method to set the App Lock state. */
-    private void setAppLockState(PackageManager packageManager, String packageName, boolean state) {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    final boolean isAppLockStateChanged =
-                            packageManager.setPackageAppLockEnabled(packageName, state);
-                    assertThat(isAppLockStateChanged).isTrue();
-                },
-                Manifest.permission.TEST_LOCK_APPS);
     }
 }
