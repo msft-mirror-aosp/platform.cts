@@ -35,7 +35,8 @@
         <service
             android:name=".services.PccForegroundService"
             android:exported="true"
-            android:privateComputeCore="true">
+            android:privateComputeCore="true"
+            android:foregroundServiceType="shortService">
             <intent-filter>
                 <action android:name="com.example.pccapp.TEST_PCC_FOREGROUND_SERVICE" />
             </intent-filter>
