@@ -66,7 +66,7 @@ specs {
 measurements {
   key: "avif_image_decoder_boolean"
   value {
-    description: "has decoder supporting AVIF Baseline Profile supported."
+    description: "has decoder supporting AVIF Baseline Profile."
     measurement_type: MEASUREMENT_TYPE_BOOL
     comparison: COMPARISON_EQUAL
     proto_field_number: 3

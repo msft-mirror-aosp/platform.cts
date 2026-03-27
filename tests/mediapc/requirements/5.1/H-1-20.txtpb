@@ -53,7 +53,7 @@ specs {
 measurements {
   key: "hlg_editing"
   value {
-    description: "Is hdr Editing supported."
+    description: "Is HDR editing supported."
     measurement_type: MEASUREMENT_TYPE_BOOL
     comparison: COMPARISON_EQUAL
     proto_field_number: 3
