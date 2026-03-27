@@ -148,6 +148,20 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Test
     @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
+    public void testPersistTetheringCarSetting_tetheringEnabledUserSwitch_tetheringOnSwitch()
+            throws Exception {
+        assumeTrue(
+                "Skipping test: tethering capability disabled",
+                isPersistTetheringCapabilityEnabled());
+        int newUserid = createFullUser("CarWifiHostTest_User");
+        enablePersistTetheringAndSwitchUser(/* userId= */ newUserid);
+
+        PollingCheck.check("Tethering NOT enabled", TIMEOUT_MS, this::isTetheringEnabled);
+        assertThat(isAutoShutdownEnabled()).isFalse();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_withCapabilityTetheringDisabled_noTetheringOnReboot()
             throws Exception {
         assumeTrue("Skipping test: tethering capability disabled",
@@ -210,5 +224,17 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
         reboot();
         waitForCarServiceReady();
         waitForUserInitialized(/* userId= */ 0);
+    }
+
+    private void enablePersistTetheringAndSwitchUser(int userId) throws Exception {
+        String hotspotResult = executeCommand(WIFI_HOTSPOT_ON);
+
+        // Tethering must be enabled successfully for testing to validate.
+        assumeTrue(
+                "Skipping test: wi-fi hotspot was not successfully enabled",
+                hotspotResult.contains("SAP is enabled"));
+
+        executeCommand(ENABLE_PERSISTENT_TETHERING);
+        switchUser(userId);
     }
 }
