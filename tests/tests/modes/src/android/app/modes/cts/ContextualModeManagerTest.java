@@ -277,18 +277,27 @@ public class ContextualModeManagerTest {
         ContextualMode mode1 = addTestAutomaticZenRule(TYPE_OTHER);
         ContextualMode mode2 = addTestAutomaticZenRule(TYPE_OTHER);
 
-        // Batch flip state.
+        // Flip mode 1
+        mContextualModeManager.mutateModes(
+                new ContextualModesMutation.Builder().addUpdatedMode(flipState(mode1)).build());
+
+        // Verify mode 1 state changed.
+        List<ContextualMode> modes = mContextualModeManager.getModes();
+        assertThat(findModeById(modes, mode1.getId())).isEqualTo(flipState(mode1));
+        assertThat(isAutomaticZenRuleActive(mode1.getId())).isEqualTo(isActive(flipState(mode1)));
+
+        // Batch flip state to disable mode 1 and enable mode 2.
         mContextualModeManager.mutateModes(
                 new ContextualModesMutation.Builder()
-                        .addUpdatedMode(flipState(mode1))
+                        .addUpdatedMode(mode1)
                         .addUpdatedMode(flipState(mode2))
                         .build());
 
-        // Verify state changed.
-        List<ContextualMode> modes = mContextualModeManager.getModes();
-        assertThat(findModeById(modes, mode1.getId())).isEqualTo(flipState(mode1));
+        // Verify both states changed.
+        modes = mContextualModeManager.getModes();
+        assertThat(findModeById(modes, mode1.getId())).isEqualTo(mode1);
         assertThat(findModeById(modes, mode2.getId())).isEqualTo(flipState(mode2));
-        assertThat(isAutomaticZenRuleActive(mode1.getId())).isEqualTo(isActive(flipState(mode1)));
+        assertThat(isAutomaticZenRuleActive(mode1.getId())).isEqualTo(isActive(mode1));
         assertThat(isAutomaticZenRuleActive(mode2.getId())).isEqualTo(isActive(flipState(mode2)));
     }
 
@@ -439,18 +448,27 @@ public class ContextualModeManagerTest {
         mModeListener = newTestModeListener(modeChangeWaiter, null);
         mContextualModeManager.registerModeListener(directExecutor(), mModeListener);
 
-        // Batch update triggers callback at once.
+        // Flip mode 1
+        mContextualModeManager.mutateModes(
+                new ContextualModesMutation.Builder().addUpdatedMode(flipState(mode1)).build());
+
+        assertThat(
+                        modeChangeWaiter.waitFor(
+                                modes -> modes.contains(flipState(mode1)),
+                                LISTENER_TIMEOUT_SEC,
+                                TimeUnit.SECONDS))
+                .isTrue();
+
+        // Batch flip mode 1 and mode 2 at once.
         mContextualModeManager.mutateModes(
                 new ContextualModesMutation.Builder()
-                        .addUpdatedMode(flipState(mode1))
+                        .addUpdatedMode(mode1)
                         .addUpdatedMode(flipState(mode2))
                         .build());
 
         assertThat(
                         modeChangeWaiter.waitFor(
-                                modes ->
-                                        modes.containsAll(
-                                                List.of(flipState(mode1), flipState(mode2))),
+                                modes -> modes.containsAll(List.of(mode1, flipState(mode2))),
                                 LISTENER_TIMEOUT_SEC,
                                 TimeUnit.SECONDS))
                 .isTrue();
