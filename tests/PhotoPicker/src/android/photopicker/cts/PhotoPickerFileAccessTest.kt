@@ -96,6 +96,22 @@ class PhotoPickerFileAccessTest {
         assertCanTakePersistedGrant(uri)
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
+    fun testPickerLaunched_onTPlusDevices_isModernPicker() {
+	    assertThat(
+            photoPickerRule.getActivePhotoPickerVersion()
+        ).isEqualTo(PhotoPickerTestRule.PhotoPickerVersion.MODERN)
+    }
+
+    @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.S_V2)
+    @Test
+    fun testPickerLaunched_belowTDevices_isLegacyPicker() {
+	    assertThat(
+            photoPickerRule.getActivePhotoPickerVersion()
+        ).isEqualTo(PhotoPickerTestRule.PhotoPickerVersion.LEGACY)
+    }
+
     // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
     @SdkSuppress(excludedSdks = [Build.VERSION_CODES.S, Build.VERSION_CODES.S_V2])
     @Test
