@@ -1090,7 +1090,7 @@ def main():
       for setup_try in range(NUM_TRIES):
         try:
           dut = android_device.AndroidDevice(device_id)
-          its_device_utils.click_on_app_icon(dut, mobly_output_logs_path)
+          its_device_utils.click_on_app_icon(dut, mobly_output_logs_path, testing_scene)
           break
         except (mobly_errors.Error, Exception) as e:
           logging.warning('Try %d/%d: Failed to click on app icon: %s',

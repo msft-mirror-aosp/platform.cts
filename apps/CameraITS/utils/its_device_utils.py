@@ -23,6 +23,7 @@ from snippet_uiautomator import uiautomator
 
 ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsDefaultTestActivity'
 ITS_SENSOR_FUSION_ACTIVITY = 'com.android.cts.verifier/.camera.its.SensorFusionTestActivity'
+CAMERA_ITS_SENSOR_FUSION_TEST_TEXT = 'Camera ITS Sensor Fusion Rig Test'
 CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 SYSTEM_USER = '0'
 WAIT_TIME_SEC = 5
@@ -114,7 +115,7 @@ def get_current_user(device_id):
   return output
 
 
-def click_on_app_icon(dut, log_path):
+def click_on_app_icon(dut, log_path, scene_name):
   """Clicks on the Camera ITS app icon.
 
     In order to click on the app icon, we need to find the app in the scrollable
@@ -123,7 +124,15 @@ def click_on_app_icon(dut, log_path):
     Args:
       dut: android_device object.
       log_path: Path to save screenshot if setup fails.
+      scene_name: Name of the scene.
   """
+  if scene_name == 'sensor_fusion' or scene_name == 'feature_combination':
+    activity_name = ITS_SENSOR_FUSION_ACTIVITY
+    text_name = CAMERA_ITS_SENSOR_FUSION_TEST_TEXT
+  else:
+    activity_name = ITS_TEST_ACTIVITY
+    text_name = CAMERA_ITS_TEST_TEXT
+
   dut.services.register(
       uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
   )
@@ -140,33 +149,33 @@ def click_on_app_icon(dut, log_path):
     # First, try to start the activity directly as it's more robust.
     # Note: --activity-brought-to-front and --activity-reorder-to-front are used
     # to ensure the activity is shown if it was already running in the background.
-    logging.debug('Attempting to start %s directly.', ITS_TEST_ACTIVITY)
-    dut.adb.shell(['am', 'start', '-n', ITS_TEST_ACTIVITY,
+    logging.debug('Attempting to start %s directly.', activity_name)
+    dut.adb.shell(['am', 'start', '-n', activity_name,
                    '--activity-brought-to-front',
                    '--activity-reorder-to-front'])
     time.sleep(WAIT_TIME_SEC)
 
     # Check if already on the correct page.
-    if dut.ui(text=CAMERA_ITS_TEST_TEXT).wait.exists(WAIT_TIME_SEC) and \
+    if dut.ui(text=text_name).wait.exists(WAIT_TIME_SEC) and \
        dut.ui(desc=NAVIGATE_UP_DESCRIPTION).wait.exists(WAIT_TIME_SEC):
-      logging.debug('Successfully launched %s directly.', ITS_TEST_ACTIVITY)
+      logging.debug('Successfully launched %s directly.', activity_name)
       dut.ui(desc=NAVIGATE_UP_DESCRIPTION).click()
       time.sleep(WAIT_TIME_SEC)
 
     scrollable_menu = dut.ui(scrollable=True)
     if scrollable_menu.wait.exists(WAIT_TIME_SEC):
       logging.debug('Scrolling down to find CameraITS')
-      if dut.ui(text=CAMERA_ITS_TEST_TEXT).exists:
+      if dut.ui(text=text_name).exists:
         found = True
       else:
-        found = scrollable_menu.scroll.down(text=CAMERA_ITS_TEST_TEXT)
+        found = scrollable_menu.scroll.down(text=text_name)
 
       if not found:
         dut.take_screenshot(log_path, prefix='failed_to_find_CameraITS')
         logging.error('Failed to find Camera ITS Test icon in the menu.')
       else:
         logging.debug('Found CameraITS icon, clicking.')
-        dut.ui(text=CAMERA_ITS_TEST_TEXT).click()
+        dut.ui(text=text_name).click()
         time.sleep(WAIT_TIME_SEC)
   finally:
     dut.ui._ui._conn.settimeout(original_timeout)
