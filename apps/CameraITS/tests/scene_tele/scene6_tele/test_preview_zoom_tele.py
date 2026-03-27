@@ -74,12 +74,15 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
         camera_id=self.camera_id,
         # Use logical camera for captures. Physical ID only for result tracking
         hidden_physical_id=None) as cam:
-      camera_properties_utils.skip_unless(self.hidden_physical_id is not None)
 
       debug = self.debug_mode
 
       props = cam.get_camera_properties()
-      physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
+      if self.hidden_physical_id:
+        physical_props = cam.get_camera_properties_by_id(
+            self.hidden_physical_id)
+      else:
+        physical_props = props
       is_tele = cam.get_camera_type(physical_props) == (
           its_session_utils.CAMERA_TYPE_TELE)
       camera_properties_utils.skip_unless(
