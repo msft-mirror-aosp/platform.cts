@@ -18,7 +18,6 @@ package android.companion.cts.uiautomation
 
 import android.companion.AssociationRequest
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
-import android.companion.cts.common.MAC_ADDRESS_A
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertEquals
@@ -48,7 +47,6 @@ class TransportFlagsTest : UiAutomationTestBase(null, null) {
     fun test_flagSet_extendPatchDiff() {
         // Creating an association with WEARABLE_SENSING should set the transport flag
         targetApp.associateSelfManaged(
-            MAC_ADDRESS_A,
             AssociationRequest.DEVICE_PROFILE_WEARABLE_SENSING
         )
         val association = cdm.myAssociations[0]
