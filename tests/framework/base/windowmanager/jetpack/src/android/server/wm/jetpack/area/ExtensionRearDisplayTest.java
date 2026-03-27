@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.area;
 
+import static android.hardware.devicestate.DeviceState.PROPERTY_FEATURE_REAR_DISPLAY;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.jetpack.utils.WindowAreaComponentUtils.waitAndAssert;
@@ -417,13 +418,14 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
      * @return {@code true} if the state is a rear device state.
      */
     private boolean isRearDisplayState(@NonNull DeviceState deviceState) {
-        return deviceState.getIdentifier() == mRearDisplayState;
+        return deviceState.hasProperty(PROPERTY_FEATURE_REAR_DISPLAY)
+                || (deviceState.getIdentifier() == mRearDisplayState);
     }
 
     private int getRearDisplayState(@NonNull List<DeviceState> supportedStates) {
         if (ExtensionsUtil.isExtensionVersionAtLeast(7)) {
             for (DeviceState state : supportedStates) {
-                if (state.hasProperty(DeviceState.PROPERTY_FEATURE_REAR_DISPLAY)) {
+                if (state.hasProperty(PROPERTY_FEATURE_REAR_DISPLAY)) {
                     return state.getIdentifier();
                 }
             }
