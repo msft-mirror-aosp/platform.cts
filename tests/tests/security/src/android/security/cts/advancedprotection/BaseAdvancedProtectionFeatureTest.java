@@ -78,6 +78,11 @@ public abstract class BaseAdvancedProtectionFeatureTest extends BaseAdvancedProt
 
     @After
     public void teardown() throws InterruptedException {
+        // mManager may be null if AAPM is not supported on the device.
+        // In that case, no provisioning was done, so no teardown is necessary.
+        if (mManager == null) {
+            return;
+        }
         removeAdbProvisioning(getFeatureId());
     }
 
