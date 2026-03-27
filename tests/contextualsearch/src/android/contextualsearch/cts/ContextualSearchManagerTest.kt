@@ -16,6 +16,8 @@
 
 package android.contextualsearch.cts
 
+import android.app.ActivityOptions
+import android.app.WindowConfiguration
 import android.app.contextualsearch.CallbackToken
 import android.app.contextualsearch.ContextualSearchConfig
 import android.app.contextualsearch.ContextualSearchManager
@@ -381,8 +383,11 @@ class ContextualSearchManagerTest {
         }
 
         // Start a new activity to push the test activity to the background.
+        val options = ActivityOptions.makeBasic()
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN)
         ctx.startActivity(
-            Intent(ctx, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(ctx, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            options.toBundle()
         )
         await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
 
@@ -788,8 +793,11 @@ class ContextualSearchManagerTest {
         }
 
         // Start a new activity to push the test activity to the background.
+        val options = ActivityOptions.makeBasic()
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN)
         ctx.startActivity(
-            Intent(ctx, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(ctx, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            options.toBundle()
         )
         await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
 
