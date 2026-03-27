@@ -23,7 +23,6 @@ import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_DISAPPEARED
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_NEARBY
 import android.companion.DevicePresenceEvent.EVENT_SELF_MANAGED_NOT_NEARBY
-import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.core.CoreTestBase
 import android.util.Log
@@ -38,7 +37,7 @@ open class CrossDeviceSyncTestBase : CoreTestBase() {
     override fun setUp() {
         super.setUp()
         with(targetApp) {
-            associateSelfManaged(MAC_ADDRESS_A, remoteDeviceProfile)
+            associateSelfManaged(null)
             Thread.sleep(500)
             associationId = cdm.myAssociations[0].id
         }
