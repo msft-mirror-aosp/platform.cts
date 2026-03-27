@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -87,7 +88,7 @@ public class TestCompatAllowViewSandboxActivity extends Activity implements
         mView.getLocationOnScreen(location);
 
         if (isCompatChangeEnabled
-                && visibleDisplayFrame.left == 0
+                && visibleDisplayFrame.left == getLeftInset()
                 && displayFrame.left == 0
                 && boundsOnScreen.left == 0
                 && location[0] == 0) {
@@ -105,5 +106,17 @@ public class TestCompatAllowViewSandboxActivity extends Activity implements
             Log.e(TAG, "boundsOnScreen " + boundsOnScreen);
             Log.e(TAG, "location " + Arrays.toString(location));
         }
+    }
+
+    private int getLeftInset() {
+        WindowInsets insets = mView.getRootWindowInsets();
+        if (insets == null) {
+            return 0;
+        }
+
+        // This returns the left inset caused by either the system bars
+        // (like the nav bar in landscape) or the display cutout (camera hole).
+        return insets.getInsets(
+                WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()).left;
     }
 }
