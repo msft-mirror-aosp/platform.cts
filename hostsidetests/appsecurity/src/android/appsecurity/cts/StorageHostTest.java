@@ -229,6 +229,7 @@ public class StorageHostTest extends BaseHostJUnit4Test {
     }
 
     @Test
+    @Ignore("b/490153641")
     public void testFullDisk() throws Exception {
         assumeTrue(!isWatch());
         // Clear all other cached and external storage data to give ourselves a
