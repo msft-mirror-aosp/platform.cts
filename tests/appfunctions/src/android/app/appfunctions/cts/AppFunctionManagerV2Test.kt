@@ -83,7 +83,6 @@ import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import kotlin.test.Ignore
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -356,7 +355,6 @@ class AppFunctionManagerV2Test {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    @Ignore("b/457349791 - Re-enable once the bug in AllowlistService is fixed.")
     fun executeAppFunction_otherExistingTargetPackage_withPermissionButWithoutAllowlist() =
         doBlocking {
             runWithInteractionAllowlisted(
@@ -449,7 +447,6 @@ class AppFunctionManagerV2Test {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
-    @Ignore("b/457349791 - Re-enable once the bug in AllowlistService is fixed.")
     fun executeAppFunction_otherExistingTargetPackage_withSystemPermissionAndWithoutAllowlist() =
         doBlocking {
             val request =
