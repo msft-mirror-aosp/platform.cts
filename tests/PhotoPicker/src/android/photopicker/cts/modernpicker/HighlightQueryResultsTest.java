@@ -25,21 +25,21 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.cts.photopicker.lib.PhotoPickerTestRule;
-import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.DeviceConfig;
 import android.provider.MediaStore;
 
 import androidx.test.espresso.intent.Intents;
 import androidx.test.espresso.intent.matcher.IntentMatchers;
-import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.PollValueFailedException;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.providers.media.flags.Flags;
 
 import org.junit.After;
@@ -51,7 +51,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
 public class HighlightQueryResultsTest {
     @Rule
@@ -69,6 +68,7 @@ public class HighlightQueryResultsTest {
         mContext = mInstrumentation.getTargetContext();
         mPackageManager = mContext.getPackageManager();
         Assume.assumeTrue(PhotoPickerTestRule.Companion.isHardwareSupported());
+        Assume.assumeTrue(isModernPickerEnabled());
 
         // Wake up the device and dismiss the keyguard before the test starts
         mDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
@@ -81,6 +81,13 @@ public class HighlightQueryResultsTest {
     public void tearDown() {
         Intents.release();
         TestApis.activities().clearAllActivities();
+    }
+
+    boolean isModernPickerEnabled() {
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(READ_DEVICE_CONFIG_PERMISSION)) {
+            return DeviceConfig.getBoolean("mediaprovider", "enable_modern_picker", false);
+        }
     }
 
     @Test

@@ -22,7 +22,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Build;
+import android.provider.DeviceConfig;
 import android.view.Display;
 
 import androidx.annotation.Nullable;
@@ -94,9 +94,15 @@ public class PhotoPickerBaseTest {
     }
 
     static boolean isModernPickerEnabled() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
+        sInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(READ_DEVICE_CONFIG_PERMISSION);
+        try {
+            return DeviceConfig.getBoolean("mediaprovider", "enable_modern_picker", false);
+        } finally {
+            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
     }
-
 
     static boolean isHardwareSupported() {
         // These UI tests are not optimised for Watches, TVs, Auto;
