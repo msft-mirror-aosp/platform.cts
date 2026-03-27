@@ -1468,6 +1468,7 @@ public class SingleCallingTest extends BaseAppVerifier {
 
     private void verifyToggleMute(AppControlWrapper appControlWrapper) throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
+        verifyCallIsInState(mo, STATE_DIALING);
         setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
         executeShellCommand(
                 InstrumentationRegistry.getInstrumentation(), COMMAND_WAIT_FOR_AUDIO_ACTIVE);
