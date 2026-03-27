@@ -49,18 +49,8 @@ class AppFunctionServiceTest {
 
     @Before
     fun setup() {
-        if (Flags.enableAppFunctionPermissionV2()) {
-            AppFunctionUtils.enableAllowlist()
-        }
         context = ApplicationProvider.getApplicationContext()
         manager = context.getSystemService(AppFunctionManager::class.java)
-    }
-
-    @After
-    fun teardown() {
-        if (Flags.enableAppFunctionPermissionV2()) {
-            AppFunctionUtils.disableAllowlist()
-        }
     }
 
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
