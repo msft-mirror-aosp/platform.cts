@@ -57,7 +57,6 @@ import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -103,15 +102,6 @@ public class CtsSettingsIntentTest {
     public void killSettings() {
         // Make sure there's no Settings activity left, as it could fail future tests.
         runShellCommand("am force-stop com.android.settings");
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-        // Skip all tests if the device is Automotive
-        PackageManager pm = getInstrumentation().getContext().getPackageManager();
-        assumeFalse(
-                "Skipping tests: Device has FEATURE_AUTOMOTIVE",
-                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
     }
 
     @Before

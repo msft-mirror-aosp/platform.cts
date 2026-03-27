@@ -18,7 +18,6 @@ package android.credentials.cts;
 
 import static android.credentials.cts.testcore.CtsCredentialManagerUtils.DEVICE_CONFIG_ENABLE_CREDENTIAL_MANAGER;
 import static android.credentials.cts.testcore.CtsCredentialManagerUtils.enableCredentialManagerDeviceConfigFlag;
-import static android.credentials.cts.testcore.CtsCredentialManagerUtils.isWatch;
 import static android.credentials.flags.Flags.FLAG_SETTINGS_ACTIVITY_ENABLED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -73,7 +72,6 @@ import com.android.compatibility.common.util.UserSettings;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -155,21 +153,12 @@ public class CtsCredentialProviderServiceDeviceTest {
     public ActivityScenarioRule mActivityScenarioRule =
             new ActivityScenarioRule(TestCredentialActivity.class);
 
-    @BeforeClass
-    public static void setUpClass() {
-        Log.i(TAG, "Skipping all tests in the file if we are not on the right SDK level...");
-        assumeTrue("VERSION.SDK_INT=" + VERSION.SDK_INT, BuildCompat.isAtLeastU());
-
-        // Skip all tests if the device is Automotive
-        PackageManager pm = getInstrumentation().getContext().getPackageManager();
-        assumeFalse(
-                "Skipping tests: Device has FEATURE_AUTOMOTIVE",
-                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-    }
-
     // To be run before every test
     @Before
     public void setUpTest() {
+        Log.i(TAG, "Skipping all tests in the file if we are not on the right SDK level...");
+        assumeTrue("VERSION.SDK_INT=" + VERSION.SDK_INT, BuildCompat.isAtLeastU());
+
         Log.i(TAG, "Skipping all tests in the file if we are not on the right device type...");
         assumeFalse("Skipping test: Auto does not support CredentialManager yet",
                 CtsCredentialManagerUtils.isAuto(mContext));
