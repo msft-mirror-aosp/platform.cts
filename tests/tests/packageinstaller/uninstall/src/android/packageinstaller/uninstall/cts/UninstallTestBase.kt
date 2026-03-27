@@ -36,8 +36,11 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.annotations.BeforeClass
+import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.users.UserType
 import com.android.compatibility.common.util.AppOpsUtils
+import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.UserHelper
 import java.io.ByteArrayOutputStream
@@ -48,6 +51,7 @@ import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 
 open class UninstallTestBase {
@@ -96,6 +100,17 @@ open class UninstallTestBase {
     @Before
     @Throws(java.lang.Exception::class)
     fun setup() {
+        val isUnsupportedFormFactor = FeatureUtil.isTV() ||
+                FeatureUtil.isWatch() ||
+                FeatureUtil.isAutomotive()
+
+        val isWorkProfile = TestApis.users().instrumented().type().name() == UserType.MANAGED_PROFILE_TYPE_NAME
+
+        assumeFalse(
+            "Skipping test: TV, Wear OS, and Automotive do not support work profiles.",
+            isUnsupportedFormFactor && isWorkProfile
+        )
+
         if (!uiDevice.isScreenOn) {
             uiDevice.wakeUp()
         }
