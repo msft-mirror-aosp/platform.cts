@@ -75,7 +75,6 @@ import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Trace;
 import android.platform.test.annotations.RequiresDevice;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -2302,9 +2301,16 @@ public class ASurfaceControlTest {
                 });
     }
 
+    private static boolean isEmulator() {
+        return SystemProperties.getBoolean("ro.boot.qemu", false)
+                || SystemProperties.getBoolean("ro.kernel.qemu", false);
+    }
+
     // Returns success of the surface transaction to decide whether to continue the test, such as
     // additional assertions.
     private boolean verifySetFrameTimeline(boolean usePreferredIndex, SurfaceHolder holder) {
+        assumeTrue("Skipping test on emulator", !isEmulator());
+
         TimedTransactionListener onCompleteCallback = new TimedTransactionListener();
         long surfaceControl = nSurfaceControl_createFromWindow(holder.getSurface());
         assertTrue("failed to create surface control", surfaceControl != 0);
