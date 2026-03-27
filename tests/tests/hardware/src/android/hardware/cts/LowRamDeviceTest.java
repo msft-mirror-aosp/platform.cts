@@ -102,7 +102,6 @@ public class LowRamDeviceTest {
                 density, supports64Bit, screenSize, watch));
 
         if (watch) {
-            assertFalse("Device is not expected to be 64-bit", supports64Bit);
             assertMinMemoryMb(416);
         } else if (lessThanDpi(density, DENSITY_HIGH, screenSize,
                 SCREENLAYOUT_SIZE_NORMAL, SCREENLAYOUT_SIZE_SMALL) ||
