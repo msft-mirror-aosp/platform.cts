@@ -84,6 +84,7 @@ class AudioControlForegroundTests {
 
     // Used in teardown
     private var mStartedActivity = false
+    private var mStartedService = false
 
     private var mTestUid: Int = -1
 
@@ -96,7 +97,7 @@ class AudioControlForegroundTests {
     @After
     fun teardown() {
         if (mStartedActivity) stopActivity()
-        stopService()
+        if (mStartedService) stopService()
     }
 
     @Test
@@ -156,6 +157,7 @@ class AudioControlForegroundTests {
         // We have to wait until the app is actually running to mark it freezer ineligible
         unfreezePackage(TEST_PACKAGE)
         if (shouldLaunch) stopActivity()
+        mStartedService = true
     }
 
     fun startActivity() {
