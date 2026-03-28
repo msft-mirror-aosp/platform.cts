@@ -26,6 +26,8 @@ import android.telecom.cts.apps.AttributesUtil;
 import android.telecom.cts.apps.VoipConnection;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class VoipConnectionServiceMain extends ConnectionService {
@@ -34,12 +36,14 @@ public class VoipConnectionServiceMain extends ConnectionService {
     public static VoipConnection sLastConnection = null;
     public static ConnectionRequest sLastFailedRequest = null;
     public static CountDownLatch sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+    public static final List<VoipConnection> sOngoingConnections = new ArrayList<>();
 
     @Override
     public void onBindClient(Intent intent) {
         Log.i(TAG, String.format("onBindClient: intent=[%s]", intent));
         sConnectionService = this;
         sLastConnection = null;
+        sOngoingConnections.clear();
         // sLastFailedRequest needs to be cleaned up by the control interface for verification after
         // unbind in some cases.
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
@@ -50,6 +54,7 @@ public class VoipConnectionServiceMain extends ConnectionService {
         Log.i(TAG, String.format("onUnbind: intent=[%s]", intent));
         sConnectionService = null;
         sLastConnection = null;
+        sOngoingConnections.clear();
         // sLastFailedRequest needs to be cleaned up by the control interface for verification after
         // unbind in some cases.
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
@@ -91,7 +96,19 @@ public class VoipConnectionServiceMain extends ConnectionService {
     }
 
     private Connection createConnection(ConnectionRequest request, boolean isOutgoing) {
+        java.util.Iterator<VoipConnection> it = sOngoingConnections.iterator();
+        while (it.hasNext()) {
+            if (it.next().getState() == Connection.STATE_DISCONNECTED) {
+                it.remove();
+            }
+        }
+
         VoipConnection connection = new VoipConnection(getApplicationContext(), isOutgoing);
+        connection.setOngoingConnections(sOngoingConnections);
+        for (VoipConnection c : sOngoingConnections) {
+            c.attachOngoingConnection(connection);
+        }
+        sOngoingConnections.add(connection);
         sLastConnection = connection;
         if (isOutgoing) {
             connection.setDialing();
