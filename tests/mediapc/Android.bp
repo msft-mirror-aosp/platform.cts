@@ -28,6 +28,7 @@ android_test {
         "ctsmediav2common",
         "ctstestrunner-axt",
         "MediaPerformanceClassCommon",
+        "mediapc-auto-constants",
         "mediapc-requirements",
         "mpc_proto",
         "truth",

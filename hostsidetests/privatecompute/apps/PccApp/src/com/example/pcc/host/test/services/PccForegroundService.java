@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.pccapp.services;
+package com.example.pcc.host.test.services;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

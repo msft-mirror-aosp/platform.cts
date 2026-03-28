@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.appfunctions.cts
+package android.app.appfunctions.testutils
 
-import android.Manifest
+import android.Manifest.permission.EXECUTE_APP_FUNCTIONS
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionManager.EnabledState
@@ -27,8 +27,8 @@ import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
-import android.app.appfunctions.cts.AppSearchUtils.sanitizeGenericDocument
+import android.app.appfunctions.testutils.AppSearchUtils.collectAllSearchResults
+import android.app.appfunctions.testutils.AppSearchUtils.sanitizeGenericDocument
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appsearch.GenericDocument
@@ -37,7 +37,6 @@ import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
-import android.Manifest.permission.EXECUTE_APP_FUNCTIONS
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import androidx.core.os.asOutcomeReceiver
@@ -79,18 +78,18 @@ object AppFunctionUtils {
         isEnabled: Boolean,
     ) {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS) {
-            val result = manager.isAppFunctionEnabled(packageName, functionId)
-
-            assertThat(result.exceptionOrNull()).isNull()
-            if (isEnabled) {
-                assertThat(result.getOrThrow()).isTrue()
-            } else {
-                assertThat(result.getOrThrow()).isFalse()
-            }
+            assertThat(
+                    ShellCommand.builder("cmd app_function is-enabled")
+                        .addOption("--package", packageName)
+                        .addOption("--function", functionId)
+                        .execute()
+                        .trim()
+                )
+                .isEqualTo(isEnabled.toString())
         }
     }
 
-    /** Checks if target AppFunction is enable or not. */
+    /** Checks if target AppFunction is enabled or not. */
     suspend fun AppFunctionManager.isAppFunctionEnabled(
         packageName: String,
         functionIdentifier: String,
@@ -204,12 +203,7 @@ object AppFunctionUtils {
             .isEqualTo("Success\n")
 
         if (checkIndexation) {
-            retryAssert {
-                assertThat(getAllStaticMetadataPackages(userContext)).contains(packageName)
-            }
-            runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
-                retryAssert { assertThat(getAllRuntimeMetadataPackages()).contains(packageName) }
-            }
+            retryAssert { assertThat(isMetadataIndexed(packageName, userContext.userId)).isTrue() }
         }
     }
 
@@ -225,22 +219,7 @@ object AppFunctionUtils {
             .isEqualTo("Package $packageName installed for user: $userId\n")
 
         if (checkIndexation) {
-            retryAssert {
-                runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
-                    assertThat(
-                            getAllStaticMetadataPackages(
-                                context?.createContextAsUser(user.userHandle(), 0)
-                            )
-                        )
-                        .contains(packageName)
-                    assertThat(
-                            getAllRuntimeMetadataPackages(
-                                context?.createContextAsUser(user.userHandle(), 0)
-                            )
-                        )
-                        .contains(packageName)
-                }
-            }
+            retryAssert { assertThat(isMetadataIndexed(packageName, userId)).isTrue() }
         }
     }
 
@@ -252,21 +231,24 @@ object AppFunctionUtils {
         SystemUtil.runShellCommand("pm uninstall --user ${userContext.userId} $packageName")
 
         if (checkIndexation) {
-            // Blocked until the AppFunctions are removed
-            retryAssert {
-                assertThat(getAllStaticMetadataPackages(userContext)).doesNotContain(packageName)
-            }
-            runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
-                retryAssert {
-                    assertThat(getAllRuntimeMetadataPackages()).doesNotContain(packageName)
-                }
-            }
+            retryAssert { assertThat(isMetadataIndexed(packageName, userContext.userId)).isFalse() }
         }
     }
 
     fun uninstallPackageAsUser(packageName: String, user: UserReference) {
         val userId = user.id()
         SystemUtil.runShellCommand("pm uninstall --user $userId $packageName")
+    }
+
+    fun isMetadataIndexed(packageName: String, userId: Int): Boolean {
+        val shellResult =
+            ShellCommand.builder("cmd app_function list-app-functions")
+                .addOption("--package", packageName)
+                .addOption("--user", userId.toString())
+                .execute()
+        return shellResult.contains(
+            "${AppFunctionStaticMetadataHelper.STATIC_SCHEMA_TYPE}-$packageName"
+        ) && shellResult.contains("${AppFunctionRuntimeMetadata.RUNTIME_SCHEMA_TYPE}-$packageName")
     }
 
     /** Gets all the static metadata packages. */
@@ -314,7 +296,8 @@ object AppFunctionUtils {
     /** Clear interaction allowlist. */
     fun clearInteractionAllowlist() {
         purgeAllowlistCache()
-        ShellCommand.builder("cmd allowlist clear-shell-allowlist $APP_FUNCTION_ALLOWLIST_TYPE").execute()
+        ShellCommand.builder("cmd allowlist clear-shell-allowlist $APP_FUNCTION_ALLOWLIST_TYPE")
+            .execute()
     }
 
     /** Runs [runnable] with interaction between [agentPackage] and [appPackages] allowlisted. */

@@ -40,6 +40,7 @@ import com.android.server.security.advancedprotection.config.XmlParser;
 import com.google.testing.junit.testparameterinjector.TestParameter;
 import com.google.testing.junit.testparameterinjector.TestParameterInjector;
 
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,6 +74,16 @@ public abstract class BaseAdvancedProtectionFeatureTest extends BaseAdvancedProt
     @BeforeClass
     public static void setupClass() {
         readSystemConfigForFeatureAvailability();
+    }
+
+    @After
+    public void teardown() throws InterruptedException {
+        // mManager may be null if AAPM is not supported on the device.
+        // In that case, no provisioning was done, so no teardown is necessary.
+        if (mManager == null) {
+            return;
+        }
+        removeAdbProvisioning(getFeatureId());
     }
 
     protected abstract int getFeatureId();

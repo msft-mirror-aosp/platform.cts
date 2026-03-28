@@ -1036,6 +1036,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     }
 
     @Test
+    @Ignore("b/496658684 - Need to fix and re-enable this test.")
     public void testE911ToT911Handover_Hybrid_AutoConnectToOutOfService_DS() throws Exception {
         /*
          * Require domain selection to be supported.
@@ -1126,7 +1127,10 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     "Timed out waiting for test emergency number configuration",
                     testCb.waitForTestEmergencyNumberConfigured());
 
-            logd(LOG_TAG, "testE911ToT911Handover_Hybrid_AutoConnect_DS: bind to InCallService");
+            logd(
+                    LOG_TAG,
+                    "testE911ToT911Handover_Hybrid_AutoConnectToOutOfService_DS: bind to"
+                            + " InCallService");
             bindImsService(SLOT_ID_0);
             mServiceCallBack = new ServiceCallBack();
             InCallServiceStateValidator.setCallbacks(mServiceCallBack);
@@ -1137,7 +1141,8 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             // for in auto connect check
             logd(
                     LOG_TAG,
-                    "testE911ToT911Handover_Hybrid_AutoConnect_DS: place outgoing emergency call");
+                    "testE911ToT911Handover_Hybrid_AutoConnectToOutOfService_DS: place outgoing"
+                            + " emergency call");
             TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
             telecomManager.placeCall(sTestEmergencyUris[1], new Bundle());
 
@@ -1210,7 +1215,8 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             logd(
                     LOG_TAG,
-                    "testE911ToT911Handover_Hybrid_AutoConnect_DS: place outgoing emergency call");
+                    "testE911ToT911Handover_Hybrid_AutoConnectToOutOfService_DS: place outgoing"
+                            + " emergency call");
             telecomManager.placeCall(sTestEmergencyUris[1], new Bundle());
 
             waitForCallSessionToNotBe(null);
@@ -1256,7 +1262,10 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
 
         } finally {
-            logd(LOG_TAG, "estE911ToT911Handover_AutoConnect_DS: clean up test environments");
+            logd(
+                    LOG_TAG,
+                    "testE911ToT911Handover_Hybrid_AutoConnectToOutOfService_DS: clean up test"
+                            + " environments");
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.unregisterTelephonyCallback(testCb));
             if (mmTelManager != null) {

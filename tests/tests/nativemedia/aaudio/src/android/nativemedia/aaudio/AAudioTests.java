@@ -25,9 +25,12 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioSystem;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.ServiceManager;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -41,6 +44,8 @@ import java.util.Arrays;
 @RunWith(GtestRunner.class)
 @TargetLibrary("nativeaaudiotest")
 public class AAudioTests {
+    final static String TAG = "AAudioTests";
+
     static IBinder getAudioFlinger() {
         return ServiceManager.getService("media.audio_flinger");
     }
@@ -152,5 +157,21 @@ public class AAudioTests {
             }
         }
         return 0; // Corresponds to AAUDIO_UNSPECIFIED
+    }
+
+    static void reportMmapSupportedToMediaPerfClass(boolean hasSpeaker,
+            boolean mmapOnSpeakerPathSupported) {
+        try {
+            PerformanceClassEvaluator pce =
+                    new PerformanceClassEvaluator("AAudioTestMMap_testMmapSupportedForPerfClass37");
+            var r = Requirements.addR5_2__H_2_2().to(pce);
+            r.setHasSpeaker(hasSpeaker);
+            r.setMmapOnSpeakerPathSupported(mmapOnSpeakerPathSupported);
+            pce.submitAndCheck();
+        } catch (Throwable t) {
+            // Catch all exceptions to prevent JNI from crashing due to pending exceptions.
+            // The C++ test has its own assertions (EXPECT_TRUE) to fail the test.
+            Log.e(TAG, "An error occurred with PerformanceClassEvaluator", t);
+        }
     }
 }

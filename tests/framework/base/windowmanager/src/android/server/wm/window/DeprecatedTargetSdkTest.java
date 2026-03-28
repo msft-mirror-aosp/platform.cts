@@ -16,6 +16,8 @@
 
 package android.server.wm.window;
 
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
+import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.deprecatedsdk.Components.MAIN_ACTIVITY;
 
@@ -27,6 +29,7 @@ import android.server.wm.deprecatedsdk.Components;
 import androidx.test.filters.FlakyTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -37,8 +40,26 @@ import org.junit.Test;
  */
 @Presubmit
 public class DeprecatedTargetSdkTest extends ActivityManagerTestBase {
+    private static final String DISABLE_DEPRECATED_TARGET_SDK_DIALOG =
+            "debug.wm.disable_deprecated_target_sdk_dialog";
+    private String mOriginalDisableDeprecatedTargetSdkDialog;
+
+    @Before
+    public void setUpProp() {
+        final String disabled = executeShellCommandAndGetStdout(
+                "getprop " + DISABLE_DEPRECATED_TARGET_SDK_DIALOG);
+        if (!disabled.isEmpty()) {
+            mOriginalDisableDeprecatedTargetSdkDialog = disabled;
+            executeShellCommand("setprop " + DISABLE_DEPRECATED_TARGET_SDK_DIALOG + " 0");
+        }
+    }
+
     @After
     public void tearDown() {
+        if (mOriginalDisableDeprecatedTargetSdkDialog != null) {
+            executeShellCommand("setprop " + DISABLE_DEPRECATED_TARGET_SDK_DIALOG + " "
+                    + mOriginalDisableDeprecatedTargetSdkDialog);
+        }
         // Ensure app process is stopped.
         Components.forceStopPackage();
     }

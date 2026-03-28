@@ -53,6 +53,7 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.aware.AttachCallback;
+import android.net.wifi.aware.AwareDataPathRequest;
 import android.net.wifi.aware.AwarePairingConfig;
 import android.net.wifi.aware.AwareParams;
 import android.net.wifi.aware.AwareResources;
@@ -70,6 +71,7 @@ import android.net.wifi.aware.SubscribeConfig;
 import android.net.wifi.aware.SubscribeDiscoverySession;
 import android.net.wifi.aware.WifiAwareDataPathSecurityConfig;
 import android.net.wifi.aware.WifiAwareManager;
+import android.net.wifi.aware.WifiAwareNetworkInfo;
 import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.net.wifi.cts.WifiBuildCompat;
@@ -146,6 +148,12 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
     private static final int AVAILABLE_PUBLISH_SESSION_COUNT = 8;
     private static final int AVAILABLE_SUBSCRIBE_SESSION_COUNT = 8;
     private static final int MIN_RTT_BURST_SIZE = 2;
+
+    private static final int TEST_PORT = 1234;
+
+    private static final int TEST_TRANSPORT_PROTOCOL = 6; // TCP
+
+    private static final String TEST_PASSPHRASE = "somePassword";
 
     private final Object mLock = new Object();
     private final HandlerThread mHandlerThread = new HandlerThread("SingleDeviceTest");
@@ -384,6 +392,10 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         static final int ON_BOOTSTRAPPING_SUCCEEDED = 19;
         static final int ON_BOOTSTRAPPING_FAILED = 20;
         static final int ON_RANGING_RESULTS_RECEIVED = 21;
+        static final int ON_DATA_PATH_CONNECTED = 22;
+        static final int ON_DATA_PATH_REQUEST_FAILED = 23;
+        static final int ON_DATA_PATH_DISCONNECTED = 24;
+        static final int ON_DATA_PATH_REQUEST_RECEIVED = 25;
 
         private final Object mLocalLock = new Object();
         private final ArrayDeque<Integer> mCallbackQueue = new ArrayDeque<>();
@@ -549,6 +561,32 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         public void onRangingResultsReceived(@NonNull List<RangingResult> rangingResults) {
             super.onRangingResultsReceived(rangingResults);
             processCallback(ON_RANGING_RESULTS_RECEIVED);
+        }
+
+        @Override
+        public void onDataPathConnected(@android.annotation.NonNull PeerHandle peerHandle,
+                @android.annotation.NonNull WifiAwareNetworkInfo info) {
+            super.onDataPathConnected(peerHandle, info);
+            processCallback(ON_DATA_PATH_CONNECTED);
+        }
+
+        @Override
+        public void onDataPathRequestFailed(@android.annotation.NonNull PeerHandle peerHandle,
+                int reason) {
+            super.onDataPathRequestFailed(peerHandle, reason);
+            processCallback(ON_DATA_PATH_REQUEST_FAILED);
+        }
+
+        @Override
+        public void onDataPathDisconnected(@android.annotation.NonNull PeerHandle peerHandle) {
+            super.onDataPathDisconnected(peerHandle);
+            processCallback(ON_DATA_PATH_DISCONNECTED);
+        }
+
+        @Override
+        public void onDataPathRequestReceived(@android.annotation.NonNull PeerHandle peerHandle) {
+            super.onDataPathRequestReceived(peerHandle);
+            processCallback(ON_DATA_PATH_REQUEST_RECEIVED);
         }
 
         /**
@@ -2558,4 +2596,34 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         assertEquals(txtRecord.size(), rereadTxtRecord.size());
         assertEquals(txtRecord, rereadTxtRecord);
     }
+
+    @Test
+    public void testAwareDataPathRequestBuilder() {
+        WifiAwareDataPathSecurityConfig securityConfig =
+                new WifiAwareDataPathSecurityConfig.Builder(
+                        Characteristics.WIFI_AWARE_CIPHER_SUITE_NCS_SK_128)
+                        .setPskPassphrase(TEST_PASSPHRASE)
+                        .build();
+
+        AwareDataPathRequest request = new AwareDataPathRequest.Builder()
+                .setPort(TEST_PORT)
+                .setTransportProtocol(TEST_TRANSPORT_PROTOCOL)
+                .setDataPathSecurityConfig(securityConfig)
+                .build();
+
+        assertEquals(TEST_PORT, request.getPort());
+        assertEquals(TEST_TRANSPORT_PROTOCOL, request.getTransportProtocol());
+        assertEquals(securityConfig, request.getDataPathSecurityConfig());
+    }
+
+    @Test
+    public void testAwareDataPathRequestBuilderDefaults() {
+        AwareDataPathRequest request = new AwareDataPathRequest.Builder().build();
+
+        assertEquals(0, request.getPort());
+        assertEquals(-1, request.getTransportProtocol());
+        assertEquals(null, request.getDataPathSecurityConfig());
+    }
+
+
 }

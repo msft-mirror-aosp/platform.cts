@@ -747,6 +747,15 @@ int getSpeakerDeviceId() {
     return kSpeakerDeviceId;
 }
 
+void reportMmapSupportedToMediaPerfClass(bool hasSpeaker, bool mmapOnSpeakerPathSupported) {
+    jboolean jHasSpeaker = hasSpeaker ? JNI_TRUE : JNI_FALSE;
+    jboolean jMmapSupported = mmapOnSpeakerPathSupported ? JNI_TRUE : JNI_FALSE;
+    callJavaStaticVoidFunction(nullptr,
+                               "android/nativemedia/aaudio/AAudioTests",
+                               "reportMmapSupportedToMediaPerfClass", "(ZZ)V",
+                               jHasSpeaker, jMmapSupported);
+}
+
 void permissionBarrier() {
     __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "%s start", __func__);
     callJavaStaticVoidFunction(nullptr /*env*/, "android/nativemedia/aaudio/AAudioTests",

@@ -18,6 +18,7 @@ package com.android.compatibility.common.util;
 import static junit.framework.Assert.fail;
 
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.util.Log;
 
 import java.util.function.BooleanSupplier;
@@ -28,7 +29,9 @@ public class TestUtils {
     private TestUtils() {
     }
 
-    public static final int DEFAULT_TIMEOUT_SECONDS = 30;
+    private static final int HW_TIMEOUT_MULTIPLIER =
+            SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
+    public static final int DEFAULT_TIMEOUT_SECONDS = 30 * HW_TIMEOUT_MULTIPLIER;
 
     /** Print an error log and fail. */
     public static void failWithLog(String message) {

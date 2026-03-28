@@ -15,7 +15,7 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
-import static android.Manifest.permission.TEST_LOCK_APPS;
+import static android.content.pm.cts.util.PackageTestUtils.setPackageAppLockEnabledScoped;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -566,37 +566,5 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
                         .isFalse();
             });
         }
-    }
-
-    /**
-     * Enables App Lock for the specified package and returns an {@link AutoCloseable} that
-     * automatically disables it upon closing. Using {@link PackageManager#setPackageAppLockEnabled}
-     * requires either {@link TEST_LOCK_APPS} or {@link android.Manifest.permission#LOCK_APPS}
-     * permission. This method uses {@link TEST_LOCK_APPS} by adopting shell permission identity.
-     *
-     * <p>This method asserts that the operation to enable App Lock is successful. The returned
-     * {@link AutoCloseable} also asserts that the operation to disable App Lock is successful
-     * when closed.
-     *
-     * <p><b>Preconditions:</b>
-     * <ul>
-     *   <li>A screen lock must be set up on the device. See {@link setLskfScoped}</li>
-     *   <li>The package must support the App Lock feature.</li>
-     * </ul>
-     *
-     * @param packageName the name of the package for which App Lock should be enabled.
-     * @param pm the {@link PackageManager} instance to use for the operation.
-     * @return an {@link AutoCloseable} that disables App Lock for the package when closed.
-     */
-    private AutoCloseable setPackageAppLockEnabledScoped(String packageName, PackageManager pm) {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ true)).isTrue();
-        }, TEST_LOCK_APPS);
-
-        return () -> {
-            SystemUtil.runWithShellPermissionIdentity(() -> {
-                assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ false)).isTrue();
-            }, TEST_LOCK_APPS);
-        };
     }
 }

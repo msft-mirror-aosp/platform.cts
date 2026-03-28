@@ -445,6 +445,22 @@ public class MockDataService {
         }
     }
 
+    /**
+     * Sets all PDNs in the data call list as INACTIVE. Used to simulate explicit disconnect HAL
+     * behaviour for all active connections.
+     */
+    public synchronized void deactivateAllDataCalls() {
+        synchronized (mDataCallListLock) {
+            for (SetupDataCallResult dc : sDataCallLists) {
+                dc.active = DATA_CONNECTION_STATUS_INACTIVE;
+            }
+            Log.d(
+                    mTag,
+                    "deactivateAllDataCalls: Marked all calls as INACTIVE. Count="
+                            + sDataCallLists.size());
+        }
+    }
+
     public synchronized void resetCapability() {
         sSupportedCapabilities = new ArrayList<>();
     }

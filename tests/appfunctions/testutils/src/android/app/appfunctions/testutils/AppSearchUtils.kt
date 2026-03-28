@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.app.appfunctions.cts
+package android.app.appfunctions.testutils
 
 import android.app.appsearch.GenericDocument
 import android.app.appsearch.SearchResult

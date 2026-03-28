@@ -58,7 +58,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_34
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST meet the minimum quality target defined by the video encoder "
       "rate-distortion curves for hardware AVC and HEVC codecs, as defined in "

@@ -24,15 +24,17 @@ import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.RegisterAppFunctionRequest
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
-import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
-import android.app.appfunctions.cts.AppFunctionUtils.installPackage
-import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
-import android.app.appfunctions.cts.AppFunctionUtils.setInteractionAllowlist
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.testutils.AppFunctionMetadataTestHelper.UpdatableHelperApp
+import android.app.appfunctions.testutils.AppFunctionUtils
+import android.app.appfunctions.testutils.AppFunctionUtils.assertFunctionEnabledState
+import android.app.appfunctions.testutils.AppFunctionUtils.clearInteractionAllowlist
+import android.app.appfunctions.testutils.AppFunctionUtils.executeAppFunction
+import android.app.appfunctions.testutils.AppFunctionUtils.installPackage
+import android.app.appfunctions.testutils.AppFunctionUtils.isAppFunctionEnabled
+import android.app.appfunctions.testutils.AppFunctionUtils.setInteractionAllowlist
 import android.app.appfunctions.testutils.CheckAttribution.Companion.CHECK_ATTRIBUTION_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
@@ -51,7 +53,6 @@ import android.app.appfunctions.testutils.DisabledByDefault.Companion.DISABLED_B
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.GetUris.Companion.GET_URIS_FUNCTION_ID
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
-import android.app.appfunctions.testutils.TestLocalAppFunctionRegistrationService
 import android.app.appfunctions.testutils.LongRunning
 import android.app.appfunctions.testutils.LongRunning.Companion.LONG_RUNNING_FUNCTION_ID
 import android.app.appfunctions.testutils.OutputInvalidArgumentException
@@ -60,6 +61,7 @@ import android.app.appfunctions.testutils.StopProcess.Companion.STOP_PROCESS_FUN
 import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForCancelListenerSet
+import android.app.appfunctions.testutils.TestLocalAppFunctionRegistrationService
 import android.app.appfunctions.testutils.ThrowInvalidArgumentException
 import android.app.appfunctions.testutils.ThrowInvalidArgumentException.Companion.THROW_INVALID_ARGUMENT_FUNCTION_ID
 import android.app.appfunctions.testutils.ThrowUnknownException
@@ -453,10 +455,10 @@ class AppFunctionRegistrationTest {
         assertThat(serviceAFManager).isNotNull()
         val registration =
             serviceAFManager!!.registerAppFunction(
-            CONCAT_STRINGS_FUNCTION_ID,
-            TestLocalAppFunctionRegistrationService.registrationExecutor,
-            ConcatStrings()
-        )
+                CONCAT_STRINGS_FUNCTION_ID,
+                TestLocalAppFunctionRegistrationService.registrationExecutor,
+                ConcatStrings(),
+            )
         assertThat(registration).isNotNull()
 
         try {
@@ -465,7 +467,7 @@ class AppFunctionRegistrationTest {
                 CURRENT_PKG,
                 CONCAT_STRINGS_FUNCTION_ID,
                 appContextAppFunctionManager,
-                isEnabled = true
+                isEnabled = true,
             )
 
             serviceTestRule.unbindService()
@@ -474,7 +476,7 @@ class AppFunctionRegistrationTest {
                 CURRENT_PKG,
                 CONCAT_STRINGS_FUNCTION_ID,
                 appContextAppFunctionManager,
-                isEnabled = false
+                isEnabled = false,
             )
         } finally {
             registration.unregister()
@@ -489,31 +491,33 @@ class AppFunctionRegistrationTest {
         var registration: AppFunctionRegistration? = null
         try {
             ActivityScenario.launch<DynamicRegistrationActivity>(
-                Intent(context, DynamicRegistrationActivity::class.java)
-            ).use { scenario ->
-                scenario.moveToState(Lifecycle.State.STARTED)
-                scenario.onActivity { activity ->
-                    registration = activity.manager.registerAppFunction(
-                            CONCAT_STRINGS_FUNCTION_ID,
-                            activity.mainExecutor,
-                            ConcatStrings()
-                        )
-                    assertThat(registration).isNotNull()
-                }
-                assertFunctionEnabledState(
-                    AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
-                    CONCAT_STRINGS_FUNCTION_ID,
-                    appContextAppFunctionManager,
-                    isEnabled = true
+                    Intent(context, DynamicRegistrationActivity::class.java)
                 )
-                scenario.onActivity { activity -> activity.finish() }
-            }
+                .use { scenario ->
+                    scenario.moveToState(Lifecycle.State.STARTED)
+                    scenario.onActivity { activity ->
+                        registration =
+                            activity.manager.registerAppFunction(
+                                CONCAT_STRINGS_FUNCTION_ID,
+                                activity.mainExecutor,
+                                ConcatStrings(),
+                            )
+                        assertThat(registration).isNotNull()
+                    }
+                    assertFunctionEnabledState(
+                        AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
+                        CONCAT_STRINGS_FUNCTION_ID,
+                        appContextAppFunctionManager,
+                        isEnabled = true,
+                    )
+                    scenario.onActivity { activity -> activity.finish() }
+                }
             retryAssert {
                 assertFunctionEnabledState(
                     AppFunctionMetadataTestHelper.CtsApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                     appContextAppFunctionManager,
-                    isEnabled = false
+                    isEnabled = false,
                 )
             }
         } finally {
@@ -835,8 +839,7 @@ class AppFunctionRegistrationTest {
         cancellationSignal.cancel()
 
         retryAssert(checkInterval = LONG_TIMEOUT_SECOND * 1000) {
-            val callbackReceived =
-                latch.await(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            val callbackReceived = latch.await(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
             assertThat(callbackReceived).isTrue()
             assertThat(blockingQueue).isEmpty()
             assertThat(exceptionQueue).hasSize(1)

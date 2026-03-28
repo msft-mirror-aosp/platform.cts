@@ -23,11 +23,11 @@ import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
-import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.testutils.AppFunctionUtils.executeAppFunction
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllRuntimeMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.testutils.AppFunctionUtils.installExistingPackageAsUser
+import android.app.appfunctions.testutils.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
@@ -113,8 +113,7 @@ class AppFunctionManagerTest {
         retryAssert {
             // Doing containsAtLeast instead of containsExactly here in case there app preloaded
             // apps having app functions.
-            assertThat(getAllStaticMetadataPackages())
-                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
+            assertThat(getAllStaticMetadataPackages()).containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
             // required permission because runtime metadata is only visible to owner package
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                 assertThat(getAllRuntimeMetadataPackages())

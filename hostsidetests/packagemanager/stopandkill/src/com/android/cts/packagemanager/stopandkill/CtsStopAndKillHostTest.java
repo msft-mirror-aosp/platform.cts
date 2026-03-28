@@ -19,8 +19,6 @@ package com.android.cts.packagemanager.stopandkill;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.fail;
-
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.ReportUtils;
@@ -31,6 +29,7 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
+import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
@@ -164,15 +163,21 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         // Activity shouldn't have been stopped before we update
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
 
-        long startTime = System.currentTimeMillis();
+        PackageInstallMetrics.setup(getDevice(), mApp1.pkg);
         mApp1.installPackage("-r");
-        long installTime = System.currentTimeMillis() - startTime;
+        PackageInstallMetrics metrics =
+                PackageInstallMetrics.collect(getDevice(), getAppUid(mApp1.pkg));
 
         // Assert that the app was not stopped because it timed out.
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
 
-        // Assert that the installation did not wait for the full timeout of the app: 30s
-        assertThat(installTime).isLessThan(25 * 1000);
+        // Assert that the wait step duration was high (indicates it hit the system STOP_TIMEOUT of
+        // 11s).
+        long duration = metrics.getStopAndKillDurationMs();
+        assertWithMessage("Expected long wait duration for timeout activity")
+                .that(duration)
+                .isAtLeast(10000);
+        assertThat(duration).isLessThan(20000);
     }
 
     /** Verifies that a multi-package install stops both apps to save their state. */
@@ -262,39 +267,22 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
     public void testUpdate_flagEnabled_emitsStopAndKillMetric() throws Exception {
-        ConfigUtils.uploadConfigForPushedAtom(
-                getDevice(),
-                mApp1.pkg,
-                AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        PackageInstallMetrics.setup(getDevice(), mApp1.pkg);
 
         mApp1.installPackage();
 
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        PackageInstallMetrics metrics =
+                PackageInstallMetrics.collect(getDevice(), getAppUid(mApp1.pkg));
+        long duration = metrics.getStopAndKillDurationMs();
 
-        List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
-        for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
-            if (data.getAtom().hasPackageInstallationSessionReported()) {
-                reports.add(data.getAtom().getPackageInstallationSessionReported());
-            }
-        }
+        assertWithMessage("Didn't find report with STOP_AND_KILL step").that(duration).isAtLeast(0);
 
-        assertThat(reports.size()).isEqualTo(1);
-        AtomsProto.PackageInstallationSessionReported report = reports.get(0);
-
-        // Find a report that contains the STEP_FREEZE_INSTALL_STOP_AND_KILL
-        for (int i = 0; i < report.getInstallStepsCount(); i++) {
-            if (report.getInstallSteps(i) == STEP_FREEZE_INSTALL_STOP_AND_KILL) {
-                assertThat(report.getStepDurationMillis(i)).isAtLeast(0);
-                // INSTALL_FROM_ADB is true
-                assertThat(report.getInstallFlags() & 0x00000020).isNotEqualTo(0);
-                // When installed from adb, package name is empty
-                assertThat(report.getPackageName()).isEmpty();
-                assertThat(report.getUid()).isEqualTo(getAppUid(mApp1.pkg));
-                return;
-            }
-        }
-        fail("Didn't find report with STOP_AND_KILL step");
+        AtomsProto.PackageInstallationSessionReported report = metrics.getReport(0);
+        // INSTALL_FROM_ADB is true
+        assertThat(report.getInstallFlags() & 0x00000020).isNotEqualTo(0);
+        // When installed from adb, package name is empty
+        assertThat(report.getPackageName()).isEmpty();
+        assertThat(report.getUid()).isEqualTo(getAppUid(mApp1.pkg));
     }
 
     /**
@@ -304,42 +292,23 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
     public void testUpdate_flagDisabled_doesNotEmitStopAndKillMetric() throws Exception {
-        ConfigUtils.uploadConfigForPushedAtom(
-                getDevice(),
-                mApp1.pkg,
-                AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        PackageInstallMetrics.setup(getDevice(), mApp1.pkg);
 
         mApp1.installPackage();
 
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        PackageInstallMetrics metrics =
+                PackageInstallMetrics.collect(getDevice(), getAppUid(mApp1.pkg));
+        long duration = metrics.getStopAndKillDurationMs();
 
-        List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
-        for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
-            if (data.getAtom().hasPackageInstallationSessionReported()) {
-                reports.add(data.getAtom().getPackageInstallationSessionReported());
-            }
-        }
-
-        assertThat(reports.size()).isEqualTo(1);
-        AtomsProto.PackageInstallationSessionReported report = reports.get(0);
-
-        // Find a report that contains the STEP_FREEZE_INSTALL_STOP_AND_KILL
-        for (int i = 0; i < report.getInstallStepsCount(); i++) {
-            if (report.getInstallSteps(i) == STEP_FREEZE_INSTALL_STOP_AND_KILL) {
-                fail("Emitted STOP_AND_KILL step when flag disabled");
-            }
-        }
+        assertWithMessage("Emitted STOP_AND_KILL step when flag disabled")
+                .that(duration)
+                .isEqualTo(-1);
     }
 
     /** Verifies that the app's importance is captured and reported in the installation metrics. */
     @Test
     public void testUpdate_emitsAppImportanceMetric() throws Exception {
-        ConfigUtils.uploadConfigForPushedAtom(
-                getDevice(),
-                mApp1.pkg,
-                AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        PackageInstallMetrics.setup(getDevice(), mApp1.pkg);
 
         mApp1.installPackage();
         launchActivityAndAssertResumed(mApp1.persistableActivity);
@@ -347,21 +316,16 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         // Update the package
         mApp1.installPackage("-r");
 
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
-
-        List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
-        for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
-            if (data.getAtom().hasPackageInstallationSessionReported()) {
-                reports.add(data.getAtom().getPackageInstallationSessionReported());
-            }
-        }
+        PackageInstallMetrics metrics =
+                PackageInstallMetrics.collect(getDevice(), getAppUid(mApp1.pkg));
 
         // We expect two reports: one for the initial install, and one for the update (-r)
-        assertThat(reports.size()).isAtLeast(2);
+        assertThat(metrics.getReportCount()).isAtLeast(2);
 
         // The update report should have the app_importance captured
         boolean foundUpdateReportWithImportance = false;
-        for (AtomsProto.PackageInstallationSessionReported report : reports) {
+        for (int i = 0; i < metrics.getReportCount(); i++) {
+            AtomsProto.PackageInstallationSessionReported report = metrics.getReport(i);
             if (report.getIsReplace()) {
                 // ActivityManager.IMPORTANCE_FOREGROUND == 100
                 assertThat(report.getAppImportance()).isEqualTo(100);
@@ -387,14 +351,18 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             launchActivityInFreeForm(
                     mSharedApp1.persistableActivity, mSharedApp2.persistableActivity);
 
-            long startTime = System.currentTimeMillis();
+            PackageInstallMetrics.setup(getDevice(), mSharedApp1.pkg);
             // Update shared app 1. This should trigger the shared UID timeout logic.
             mSharedApp1.installPackage("-r");
-            long installTime = System.currentTimeMillis() - startTime;
+            PackageInstallMetrics metrics =
+                    PackageInstallMetrics.collect(getDevice(), getAppUid(mSharedApp1.pkg));
 
             // Assert that the installation was fast (timeout is 3s).
-            // It should be significantly less than the 15s default.
-            assertThat(installTime).isLessThan(8 * 1000);
+            long duration = metrics.getStopAndKillDurationMs();
+            assertWithMessage("Expected shared-UID optimized wait duration (3s)")
+                    .that(duration)
+                    .isAtLeast(2500);
+            assertThat(duration).isLessThan(4000);
         } finally {
             getDevice()
                     .executeShellCommand("settings put global " + setting + " " + originalSetting);
@@ -418,11 +386,16 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             mSharedApp1.assertProcessRunning(true);
             mSharedApp2.assertProcessRunning(true);
 
+            int oldPid = mSharedApp1.getPid();
+
             // Update shared app 1.
             mSharedApp1.installPackage("-r");
 
-            // Assert that shared app 1 was terminated.
-            mSharedApp1.assertProcessRunning(false);
+            // Assert that shared app 1 was terminated for the correct reason.
+            String description = getExitInfoDescription(mSharedApp1.pkg, oldPid);
+            assertWithMessage("Expected force-kill description for PID " + oldPid)
+                    .that(description)
+                    .contains("force-kill");
 
             // Assert that shared app 2 is STILL RUNNING.
             mSharedApp2.assertProcessRunning(true);
@@ -444,16 +417,19 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         mSharedApp1.assertProcessRunning(true);
         mSharedApp2.assertProcessRunning(false);
 
-        // Activity shouldn't have been stopped before we update
-        mSharedApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
-
+        PackageInstallMetrics.setup(getDevice(), mSharedApp1.pkg);
         // Update shared app 1. Since no sibling apps are running, it should wait for the full
         // timeout (15s) instead of the optimized shared-UID timeout (3s).
         // A 9s delay is enough for the app to save its state if we wait 15s, but NOT if we wait 3s.
         mSharedApp1.installPackage("-r");
+        PackageInstallMetrics metrics =
+                PackageInstallMetrics.collect(getDevice(), getAppUid(mSharedApp1.pkg));
 
-        // Assert that the app was stopped and managed to save its state.
-        mSharedApp1.assertStateFileCreatedOnStop(/* shouldExist= */ true);
+        // Confirm wait duration was ~9s (not 3s).
+        long duration = metrics.getStopAndKillDurationMs();
+        assertWithMessage("Expected long wait duration for non-shared update")
+                .that(duration)
+                .isAtLeast(8000);
     }
 
     /**
@@ -499,6 +475,29 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
         // Assert that the app was NOT stopped since the flag is disabled.
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+    }
+
+    private String getExitInfoDescription(String packageName, int pid) throws Exception {
+        String output =
+                getDevice().executeShellCommand("dumpsys activity exit-info " + packageName);
+        // Look for the block containing the PID and extract the description.
+        // Format:
+        //   #0: [REASON_PACKAGE_UPDATED]
+        //     ...
+        //     pid=1234
+        //     ...
+        //     description=force-kill
+        String[] blocks = output.split("  #\\d+:");
+        for (String block : blocks) {
+            if (block.contains("pid=" + pid)) {
+                Pattern pattern = Pattern.compile("description=(.*)");
+                Matcher matcher = pattern.matcher(block);
+                if (matcher.find()) {
+                    return matcher.group(1).trim();
+                }
+            }
+        }
+        return "";
     }
 
     private void launchActivityAndAssertResumed(String componentName) throws Exception {
@@ -619,9 +618,16 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             getDevice().executeShellCommand("pm uninstall --user " + mUserId + " " + pkg);
         }
 
-        boolean isProcessRunning() throws Exception {
+        int getPid() throws Exception {
             String pid = getDevice().executeShellCommand("pidof " + pkg).trim();
-            return !pid.isEmpty();
+            if (pid.isEmpty()) {
+                return -1;
+            }
+            return Integer.parseInt(pid);
+        }
+
+        boolean isProcessRunning() throws Exception {
+            return getPid() != -1;
         }
 
         void assertProcessRunning(boolean shouldBeRunning) throws Exception {
@@ -654,6 +660,66 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
                                     + (shouldExist ? "exist" : "not exist"))
                     .that(fileExists)
                     .isEqualTo(shouldExist);
+        }
+    }
+
+    public static class PackageInstallMetrics {
+        private final List<AtomsProto.PackageInstallationSessionReported> mReports;
+
+        private PackageInstallMetrics(List<AtomsProto.PackageInstallationSessionReported> reports) {
+            mReports = reports;
+        }
+
+        /** Prepares the device to collect metrics for a specific package. */
+        public static void setup(ITestDevice device, String pkgName) throws Exception {
+            ConfigUtils.removeConfig(device);
+            ReportUtils.clearReports(device);
+            ConfigUtils.uploadConfigForPushedAtom(
+                    device,
+                    pkgName,
+                    AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
+            // Short sleep to ensure config is active
+            RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        }
+
+        /** Collects the reports from the device for a specific package. */
+        public static PackageInstallMetrics collect(ITestDevice device, int uid) throws Exception {
+            RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+            List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
+            for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(device)) {
+                if (data.getAtom().hasPackageInstallationSessionReported()) {
+                    AtomsProto.PackageInstallationSessionReported report =
+                            data.getAtom().getPackageInstallationSessionReported();
+                    if (report.getUid() == uid) {
+                        reports.add(report);
+                    }
+                }
+            }
+            return new PackageInstallMetrics(reports);
+        }
+
+        /** Returns the total number of collected reports. */
+        public int getReportCount() {
+            return mReports.size();
+        }
+
+        /** Returns the report at the specified index. */
+        public AtomsProto.PackageInstallationSessionReported getReport(int index) {
+            return mReports.get(index);
+        }
+
+        /** Extracts the duration of the 'Stop and Kill' step (Step 9). */
+        public long getStopAndKillDurationMs() {
+            for (int i = 0; i < mReports.size(); i++) {
+                AtomsProto.PackageInstallationSessionReported report = mReports.get(i);
+                if (report.getInstallStepsCount() == 0) continue;
+                for (int j = 0; j < report.getInstallStepsCount(); j++) {
+                    if (report.getInstallSteps(j) == STEP_FREEZE_INSTALL_STOP_AND_KILL) {
+                        return report.getStepDurationMillis(j);
+                    }
+                }
+            }
+            return -1;
         }
     }
 }
