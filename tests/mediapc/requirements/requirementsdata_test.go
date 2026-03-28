@@ -20,8 +20,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	mpcpb "google3/third_party/android/mediapc_requirements/mpc_go_proto"
-	"google3/third_party/android/mediapc_requirements/requirements"
+	mpcpb "cts/test/mediapc/requirements/mpc_go_proto"
+	"cts/test/mediapc/requirements/requirements"
 	pb "cts/test/mediapc/requirements/requirements_go_proto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"

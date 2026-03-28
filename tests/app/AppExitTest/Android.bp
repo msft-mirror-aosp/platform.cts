@@ -39,6 +39,7 @@ android_test {
     jni_libs: [
         "libcts_jni",
     ],
+    compile_multilib: "both",
     srcs: [
         ":libtombstone_proto-src",
         ":AnrWarningListenerService",

@@ -314,6 +314,15 @@ public class IRadioDataImpl extends IRadioData.Stub {
                         dc = mMockDataService.setupDataCall(mMockDataService.APN_TYPE_DEFAULT);
                     }
                 } else {
+                    // For all other requests (including Traffic Descriptors used in CTS),
+                    // we return REQUEST_NOT_SUPPORTED. The test will still pass because
+                    // it only verifies the request attempt in the modem history.
+                    Log.d(
+                            mTag,
+                            "setupDataCall: Request not supported. APN="
+                                    + dataProfileInfo.apn
+                                    + " TrafficDescriptor: "
+                                    + dataProfileInfo.trafficDescriptor);
                     rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
                 }
             }

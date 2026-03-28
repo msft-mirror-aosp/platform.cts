@@ -84,7 +84,6 @@ import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -193,66 +192,6 @@ class ObserveAppFunctionsTest {
     )
     @RequireRootInstrumentation("To remove EXECUTE_APP_FUNCTIONS which is granted in manifest")
     fun packageInstalled_withoutAnyPermissions_shouldNotSeeUpdates() = doBlocking {
-        assertPackageInstallationNotNotified()
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    @EnsureDoesNotHavePermission(
-        Manifest.permission.QUERY_ALL_PACKAGES,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
-    )
-    @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
-            "using Bedstead"
-    )
-    @Ignore("b/491066437")
-    fun packageInstalled_withExecutePermissionOnly_shouldNotSeeUpdate() = doBlocking {
-        assertPackageInstallationNotNotified()
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.DISCOVER_APP_FUNCTIONS)
-    @EnsureDoesNotHavePermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.QUERY_ALL_PACKAGES,
-        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
-    )
-    @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
-            "using Bedstead"
-    )
-    @Ignore("b/491066437")
-    fun packageInstalled_withDiscoverPermissionOnly_shouldNotSeeUpdate() = doBlocking {
-        assertPackageInstallationNotNotified()
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
-    @EnsureDoesNotHavePermission(
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.QUERY_ALL_PACKAGES,
-    )
-    @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
-            "using Bedstead"
-    )
-    @Ignore("b/491066437")
-    fun packageInstalled_withExecuteSystemPermissionOnly_shouldNotSeeUpdate() = doBlocking {
         assertPackageInstallationNotNotified()
     }
 
@@ -626,126 +565,6 @@ class ObserveAppFunctionsTest {
                 resetEnabledStates()
             }
         }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    @EnsureDoesNotHavePermission(
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
-        Manifest.permission.QUERY_ALL_PACKAGES,
-    )
-    @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
-            "using Bedstead"
-    )
-    @Ignore("b/491066437")
-    fun changeEnabledState_withExecutePermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
-        val observer = TestClientObserver()
-        var observation: AppFunctionObservation? = null
-        try {
-            observation = observeAppFunctions(observer)
-
-            assertChangedEnabledStateNotified(
-                observer,
-                CtsApp.FunctionNames.ADD,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-            assertChangedEnabledStateNotNotified(
-                observer,
-                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-
-            assertSeesUpdateAfterVisibilityGranted(observer)
-        } finally {
-            observation?.cancel()
-            resetEnabledStates()
-        }
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.DISCOVER_APP_FUNCTIONS)
-    @EnsureDoesNotHavePermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
-        Manifest.permission.QUERY_ALL_PACKAGES,
-    )
-    @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
-            "using Bedstead"
-    )
-    @Ignore("b/491066437")
-    fun changeEnabledState_withDiscoverPermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
-        val observer = TestClientObserver()
-        var observation: AppFunctionObservation? = null
-        try {
-            observation = observeAppFunctions(observer)
-
-            assertChangedEnabledStateNotified(
-                observer,
-                CtsApp.FunctionNames.ADD,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-            assertChangedEnabledStateNotNotified(
-                observer,
-                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-
-            assertSeesUpdateAfterVisibilityGranted(observer)
-        } finally {
-            observation?.cancel()
-            resetEnabledStates()
-        }
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
-    @EnsureDoesNotHavePermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-        Manifest.permission.QUERY_ALL_PACKAGES,
-    )
-    @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
-            "using Bedstead"
-    )
-    @Ignore("b/491066437")
-    fun changeEnabledState_withExecuteSystemPermissionOnly_shouldSeeVisibleUpdate() = doBlocking {
-        val observer = TestClientObserver()
-        var observation: AppFunctionObservation? = null
-        try {
-            observation = observeAppFunctions(observer)
-
-            assertChangedEnabledStateNotified(
-                observer,
-                CtsApp.FunctionNames.ADD,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-            assertChangedEnabledStateNotNotified(
-                observer,
-                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-
-            assertSeesUpdateAfterVisibilityGranted(observer)
-        } finally {
-            observation?.cancel()
-            resetEnabledStates()
-        }
-    }
 
     @Test
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])

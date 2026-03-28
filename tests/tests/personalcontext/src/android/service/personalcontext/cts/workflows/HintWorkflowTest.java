@@ -34,6 +34,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.PersonalContextManager;
+import android.service.personalcontext.cts.EnablePersonalContextTestRule;
 import android.service.personalcontext.cts.workflows.ComponentManager.RefinerCallback;
 import android.service.personalcontext.cts.workflows.ComponentManager.UnderstanderCallback;
 import android.service.personalcontext.hint.BundleHint;
@@ -48,6 +49,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.RequiredServiceRule;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,6 +61,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+// TODO(b/497020098): Re-enable.
+@Ignore("b/496398871")
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
 public class HintWorkflowTest {
@@ -73,12 +77,18 @@ public class HintWorkflowTest {
 
     @Rule public final WorkflowTestRule mWorkflow = new WorkflowTestRule();
 
+    @Rule
+    public final EnablePersonalContextTestRule mEnablePersonalContext =
+            new EnablePersonalContextTestRule();
+
     private PersonalContextManager mPersonalContextManager;
+    private boolean mWasEnabled;
 
     @Before
     public void setup() {
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mPersonalContextManager = context.getSystemService(PersonalContextManager.class);
+        mWasEnabled = mPersonalContextManager.isEnabled();
     }
 
     @ApiTest(

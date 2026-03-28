@@ -103,6 +103,14 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
+        // Ensure data is enabled
+        TelephonyManager telephonyManager =
+                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        if (telephonyManager != null) {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    telephonyManager, (tm) -> tm.setDataEnabled(true));
+        }
+
         MockModemTestBase.afterAllTestsBase();
     }
 

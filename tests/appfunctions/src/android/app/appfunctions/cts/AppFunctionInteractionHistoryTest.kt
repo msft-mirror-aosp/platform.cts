@@ -86,7 +86,6 @@ class AppFunctionInteractionHistoryTest {
     fun setup() = doBlocking {
         TestAppFunctionServiceLifecycleReceiver.reset()
         if (Flags.enableAppFunctionPermissionV2()) {
-            AppFunctionUtils.enableAllowlist()
             setInteractionAllowlist(
                 CtsApp.TEST_ALLOWLIST_PACKAGE,
                 listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
@@ -97,7 +96,6 @@ class AppFunctionInteractionHistoryTest {
     @After
     fun teardown() = doBlocking {
         if (Flags.enableAppFunctionPermissionV2()) {
-            AppFunctionUtils.disableAllowlist()
             clearInteractionAllowlist()
         }
     }

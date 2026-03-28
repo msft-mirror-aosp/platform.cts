@@ -57,4 +57,16 @@ public class FutureConnection<T extends IInterface> implements ServiceConnection
         Log.w(TAG, name.flattenToShortString() + " disconnected");
         mFuture = new CompletableFuture<>();
     }
+
+    @Override
+    public void onBindingDied(ComponentName name) {
+        Log.w(TAG, name.flattenToShortString() + " binding died");
+        onServiceDisconnected(name);
+    }
+
+    @Override
+    public void onNullBinding(ComponentName name) {
+        Log.w(TAG, name.flattenToShortString() + " null binding");
+        onServiceDisconnected(name);
+    }
 }

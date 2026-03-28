@@ -23,6 +23,7 @@ import android.telecom.DisconnectCause;
 import android.telecom.VideoProfile;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -35,6 +36,7 @@ public class VoipConnection extends Connection {
     private final Context mContext;
     private final boolean mIsOutgoingCall;
     private boolean mHasUpdatedCallStyleNotification = false;
+    private List<VoipConnection> mOngoingConnections = new ArrayList<>();
     // Delegates the completion of call state transition operations to potentially another entity
     // to control the completion.
     private Consumer<CallStateTransitionOperation> mOperationConsumer;
@@ -42,6 +44,29 @@ public class VoipConnection extends Connection {
     public VoipConnection(Context context, boolean isOutgoingCall) {
         mContext = context;
         mIsOutgoingCall = isOutgoingCall;
+    }
+
+    public void setOngoingConnections(List<VoipConnection> ongoingConnections) {
+        mOngoingConnections.clear();
+        mOngoingConnections.addAll(ongoingConnections);
+        mOngoingConnections.remove(this);
+    }
+
+    public void attachOngoingConnection(VoipConnection connection) {
+        if (connection != this && !mOngoingConnections.contains(connection)) {
+            mOngoingConnections.add(connection);
+        }
+    }
+
+    public void removeOngoingConnection(VoipConnection connection) {
+        mOngoingConnections.remove(connection);
+    }
+
+    private void removeFromPeers() {
+        for (VoipConnection c : mOngoingConnections) {
+            c.removeOngoingConnection(this);
+        }
+        mOngoingConnections.clear();
     }
 
     public boolean isMuted() {
@@ -86,11 +111,13 @@ public class VoipConnection extends Connection {
     }
 
     public void setCallToDisconnected(Context context) {
+        removeFromPeers();
         this.setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
         mCallResources.destroyResources(context);
     }
 
     public void setCallToDisconnected(Context context, DisconnectCause cause) {
+        removeFromPeers();
         this.setDisconnected(cause);
         mCallResources.destroyResources(context);
     }
@@ -143,6 +170,20 @@ public class VoipConnection extends Connection {
     @Override
     public void onAnswer(int videoState) {
         setVideoState(videoState);
+
+        if (mOngoingConnections != null) {
+            for (VoipConnection c : new ArrayList<>(mOngoingConnections)) {
+                if (c.getState() != Connection.STATE_DISCONNECTED) {
+                    if ((c.getConnectionCapabilities() & Connection.CAPABILITY_HOLD)
+                            == Connection.CAPABILITY_HOLD) {
+                        c.setCallToInactive();
+                    } else {
+                        c.setCallToDisconnected(mContext);
+                    }
+                }
+            }
+        }
+
         setActive();
         mCallResources.updateNotificationToOngoing(mContext);
         mHasUpdatedCallStyleNotification = true;
@@ -162,6 +203,7 @@ public class VoipConnection extends Connection {
 
     @Override
     public void onDisconnect() {
+        removeFromPeers();
         setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
         destroy();
         mCallResources.destroyResources(mContext);

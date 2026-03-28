@@ -329,8 +329,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                 assertTrue("Failed to verify NTN mode is enabled", ntnStateListener.getNtnMode());
 
                 Context context = getContext();
-                String expectedTitle = context.getString(R.string.satellite_notification_title);
-                String expectedSummary = context.getString(R.string.satellite_notification_summary);
+                String expectedTitle = sMockSatelliteServiceManager.readStringFromOverlayConfig(
+                        "satellite_notification_title");
+                String expectedSummary = sMockSatelliteServiceManager.readStringFromOverlayConfig(
+                        "satellite_notification_summary");
 
                 NotificationListenerQuery satelliteNotificationQuery =
                         listener.query()

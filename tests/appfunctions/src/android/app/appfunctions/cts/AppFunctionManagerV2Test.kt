@@ -121,8 +121,6 @@ class AppFunctionManagerV2Test {
 
     @Before
     fun setup() = doBlocking {
-        AppFunctionUtils.enableAllowlist()
-
         TestAppFunctionServiceLifecycleReceiver.reset()
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
@@ -139,8 +137,6 @@ class AppFunctionManagerV2Test {
             }
         }
     }
-
-    @After fun tearDown() = doBlocking { AppFunctionUtils.disableAllowlist() }
 
     @Test
     @IncludeRunOnSecondaryUser

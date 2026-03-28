@@ -28,7 +28,7 @@ from snippet_uiautomator import uiautomator
 _CLOSE_CAMERA_WAIT_TIME_SEC = 5
 
 
-class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
+class DefaultCameraHdrTest(its_base_test.ItsBaseTest):
   """Checks if the default camera capture is Ultra HDR or not.
 
   Test default camera capture is Ultra HDR for VIC performance class as
@@ -48,7 +48,7 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
     super().on_fail(record)
     self.dut.take_screenshot(self.log_path, prefix='on_test_fail')
 
-  def test_default_camera_launch(self):
+  def test_default_camera_hdr(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,

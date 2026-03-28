@@ -58,15 +58,18 @@ class AppHelper(
         runShellCommand(cmd)
     }
 
-    fun associateSelfManaged(macAddress: MacAddress, role: String) {
+    fun associateSelfManaged(
+        role: String? = null
+    ) {
         if (Flags.cmdOptions()) {
-            runShellCommand(
-                "cmd companiondevice associate $userId $packageName --mac-address $macAddress" +
-                        " --profile $role --self-managed true"
-            )
+            var cmd = "cmd companiondevice associate $userId $packageName --self-managed true"
+            if (role != null) {
+                cmd += " --profile $role"
+            }
+            runShellCommand(cmd)
         } else {
             runShellCommand(
-                "cmd companiondevice associate $userId $packageName $macAddress $role true"
+                "cmd companiondevice associate $userId $packageName $role 00:11:22:AA:BB:CC true"
             )
         }
     }

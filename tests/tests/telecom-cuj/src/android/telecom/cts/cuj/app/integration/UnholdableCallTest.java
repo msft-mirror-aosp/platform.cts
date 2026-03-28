@@ -37,6 +37,7 @@ import android.telecom.CallEventCallback;
 import android.telecom.CallException;
 import android.telecom.Connection;
 import android.telecom.cts.apps.AppControlWrapper;
+import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
 
 import org.junit.Test;
@@ -332,8 +333,78 @@ public class UnholdableCallTest extends BaseAppVerifier {
     }
 
     /*********************************************************************************************
+     *             InCallService Tests: Answering Incoming drops Ongoing Unholdable
+     * /******************************************************************************************/
+
+    /**
+     * Tests that answering an incoming call from a Transactional VoIP App via InCallService
+     * successfully disconnects an ongoing, unholdable Transactional VoIP call.
+     */
+    @Test
+    public void answerIncoming_dropsOngoing_TxVoipToTxVoip() throws Exception {
+        verifyAnswerIncomingWithOngoingUnholdableCall(
+                TransactionalVoipAppMain, TransactionalVoipAppMain);
+    }
+
+    /**
+     * Tests that answering an incoming call from a Legacy VoIP App via InCallService successfully
+     * disconnects an ongoing, unholdable Legacy VoIP call.
+     */
+    @Test
+    public void answerIncoming_dropsOngoing_LegacyVoipToLegacyVoip() throws Exception {
+        verifyAnswerIncomingWithOngoingUnholdableCall(
+                ConnectionServiceVoipAppMain, ConnectionServiceVoipAppMain);
+    }
+
+    /*********************************************************************************************
      *                           Helpers
-     /*********************************************************************************************/
+     * /******************************************************************************************/
+
+    private void verifyAnswerIncomingWithOngoingUnholdableCall(
+            TelecomTestApp ongoingApp, TelecomTestApp incomingApp) throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        AppControlWrapper ongoingAppWrapper = null;
+        AppControlWrapper incomingAppWrapper = null;
+        boolean isHoldable = false;
+
+        try {
+            // 1. Set up the ongoing, unholdable call
+            ongoingAppWrapper = bindToApp(ongoingApp);
+            String ongoingCallId = addOutgoingCallAndVerify(ongoingAppWrapper, isHoldable);
+
+            verifyCallIsInState(ongoingCallId, STATE_DIALING);
+            setCallStateAndVerify(ongoingAppWrapper, ongoingCallId, STATE_ACTIVE);
+
+            // 2. Set up the incoming call wrapper
+            incomingAppWrapper =
+                    ongoingApp.equals(incomingApp) ? ongoingAppWrapper : bindToApp(incomingApp);
+
+            String incomingCallId = addIncomingCallAndVerify(incomingAppWrapper, isHoldable);
+
+            // 3. Answer the incoming call via InCallService
+            answerViaInCallService(incomingCallId, android.telecom.VideoProfile.STATE_AUDIO_ONLY);
+
+            // 4. Verify the telecom system swapped the calls correctly
+            verifyCallIsInState(incomingCallId, STATE_ACTIVE);
+            verifyCallIsInState(ongoingCallId, STATE_DISCONNECTED);
+
+            // 5. Clean up the active call
+            setCallStateAndVerify(incomingAppWrapper, incomingCallId, STATE_DISCONNECTED);
+
+        } finally {
+            // Tear down incoming app if it was distinctly bound
+            if (incomingAppWrapper != null && incomingAppWrapper != ongoingAppWrapper) {
+                tearDownApp(incomingAppWrapper);
+            }
+            // Always tear down the ongoing app
+            if (ongoingAppWrapper != null) {
+                tearDownApp(ongoingAppWrapper);
+            }
+        }
+    }
 
     private void verifyHoldFails_ConnectionService(AppControlWrapper appControlWrapper)
             throws Exception {
