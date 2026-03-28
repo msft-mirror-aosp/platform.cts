@@ -34,6 +34,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.PersonalContextManager;
+import android.service.personalcontext.cts.EnablePersonalContextTestRule;
 import android.service.personalcontext.cts.workflows.ComponentManager.RefinerCallback;
 import android.service.personalcontext.cts.workflows.ComponentManager.UnderstanderCallback;
 import android.service.personalcontext.hint.BundleHint;
@@ -76,12 +77,18 @@ public class HintWorkflowTest {
 
     @Rule public final WorkflowTestRule mWorkflow = new WorkflowTestRule();
 
+    @Rule
+    public final EnablePersonalContextTestRule mEnablePersonalContext =
+            new EnablePersonalContextTestRule();
+
     private PersonalContextManager mPersonalContextManager;
+    private boolean mWasEnabled;
 
     @Before
     public void setup() {
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mPersonalContextManager = context.getSystemService(PersonalContextManager.class);
+        mWasEnabled = mPersonalContextManager.isEnabled();
     }
 
     @ApiTest(
