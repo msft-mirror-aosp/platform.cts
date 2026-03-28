@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.alarmmanager.alarmtestapp.cts.TestAlarmReceiver;
 import android.alarmmanager.alarmtestapp.cts.TestAlarmScheduler;
 import android.alarmmanager.util.AlarmManagerDeviceConfigHelper;
@@ -35,6 +36,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -182,6 +184,8 @@ public class AppStandbyTests {
                 Context.RECEIVER_EXPORTED_UNAUDITED);
 
         setBatteryCharging(false);
+
+        disableBatterySaverAndAdaptiveBattery();
         updateAlarmManagerConstants();
     }
 
@@ -370,6 +374,17 @@ public class AppStandbyTests {
         if (!sOrigAppStandbyEnabled) {
             AppStandbyUtils.setAppStandbyEnabledAtRuntime(sOrigAppStandbyEnabled);
         }
+    }
+
+    private void disableBatterySaverAndAdaptiveBattery() {
+        final PowerManager powerManager = sContext.getSystemService(PowerManager.class);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    powerManager.setPowerSaveModeEnabled(false);
+                    powerManager.setAdaptivePowerSaveEnabled(false);
+                },
+                Manifest.permission.DEVICE_POWER);
     }
 
     private void updateAlarmManagerConstants() {
