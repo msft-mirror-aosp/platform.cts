@@ -1311,7 +1311,11 @@ class LockTaskTest {
                     deviceState.dpc().componentName(),
                     LOCK_TASK_FEATURE_KEYGUARD
                 )
-                val activity = testApp.activities().any().start()
+                // Ensure the activity starts on the default display to avoid it
+                // launching on a secondary display on multi-display devices.
+                val options = ActivityOptions.makeBasic()
+                        .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
+                val activity = testApp.activities().any().start(options.toBundle())
                 try {
                     activity.startLockTask()
                     val intent = Intent(ACTION_EMERGENCY_DIAL)
