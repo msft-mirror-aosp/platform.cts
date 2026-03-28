@@ -585,7 +585,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
 
     /**
      * Tests the validation(e.g., length, out of bounds) of {@link
-     * CarrierConfigManager#KEY_NTN_5G_NR_SSRSRQ_THRESHOLDS_INT_ARRAY}.
+     * CarrierConfigManager#KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY}.
      */
     @Test
     public void testNtn5gNrSsrsrpThresholdsValidCheck() throws Exception {
@@ -637,7 +637,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                             pollIntArrayFromCarrierConfig(
                                     subId,
                                     CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
-                                    validThresholds),
+                                    boundaryThresholds),
                             false));
 
             int[] outOfBoundsLower = new int[] {-141, -110, -100, -90};
@@ -653,7 +653,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                             pollIntArrayFromCarrierConfig(
                                     subId,
                                     CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
-                                    validThresholds),
+                                    outOfBoundsLower),
                             true));
 
             int[] outOfBoundsUpper = new int[] {-120, -110, -100, -43};
@@ -669,7 +669,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                             pollIntArrayFromCarrierConfig(
                                     subId,
                                     CarrierConfigManager.KEY_NTN_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
-                                    validThresholds),
+                                    outOfBoundsUpper),
                             true));
         } finally {
             // Final restoration to ensure defaults are set
