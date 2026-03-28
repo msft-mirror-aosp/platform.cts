@@ -863,6 +863,11 @@ public class VolumeShaperTest {
                 player.start();
                 Thread.sleep(WARMUP_TIME_MS);
 
+                // TODO: b/497066807 investigate longer mediaplayer setup time.
+                if (p == PLAYER_TYPE_MEDIA_PLAYER_OFFLOADED) {
+                    Thread.sleep(300 /* millis */);
+                }
+
                 Log.d(TAG, " we join several LINEAR_RAMPS together "
                         + " this effectively is one LINEAR_RAMP (volume increasing).");
                 final long durationMs = 5000;
