@@ -163,7 +163,7 @@ test_configs {
 test_configs {
   key: "HDR"
   value {
-    description: "Test config for hdr tests"
+    description: "Test config for HDR tests"
     proto_field_number: 22
   }
 }
