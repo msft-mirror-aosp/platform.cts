@@ -20,7 +20,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.personalcontext.cts.testapp">
 
-    <application>
+    <application
+        android:testOnly="true">
 
         <!-- Control harness -->
 
