@@ -28,7 +28,6 @@ import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAp
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
 
 import android.os.Bundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.CallAttributes;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
@@ -36,8 +35,6 @@ import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
 import android.util.Log;
-
-import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -193,7 +190,6 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
      * B.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_SELECT_PHONE_ACCOUNT_BEFORE_MAKING_ROOM})
     public void testHoldAfterSelectPhoneAccount() throws Exception {
         if (!mShouldTestTelecom) {
             return;
