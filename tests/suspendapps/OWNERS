@@ -2,5 +2,5 @@
 patb@google.com
 include platform/frameworks/base:/PACKAGE_MANAGER_OWNERS
 
-suprabh@google.com
-varunshah@google.com
+suprabh@google.com #{LAST_RESORT_SUGGESTION}
+rajekumar@google.com #{LAST_RESORT_SUGGESTION}
