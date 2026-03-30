@@ -309,7 +309,6 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
     @Test
     @NotificationsTest
-    @Ignore("b/497038193 - Need to fix and re-enable this test.")
     public void testNotificationContent_AutoConnect() throws Exception {
         logd(TAG, "testNotificationContent_AutoConnect");
         if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
@@ -332,8 +331,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                 Context context = getContext();
                 String expectedTitle = sMockSatelliteServiceManager.readStringFromOverlayConfig(
                         "satellite_notification_title");
+                logd(TAG, "expectedTitle: " + expectedTitle);
                 String expectedSummary = sMockSatelliteServiceManager.readStringFromOverlayConfig(
                         "satellite_notification_summary");
+                logd(TAG, "expectedSummary: " + expectedSummary);
 
                 NotificationListenerQuery satelliteNotificationQuery =
                         listener.query()
@@ -363,7 +364,9 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                 assertNotNull(notificationContents);
 
                 String actualTitle = notificationContents.getString(Notification.EXTRA_TITLE);
+                logd(TAG, "actualTitle: " + actualTitle);
                 String actualText = notificationContents.getString(Notification.EXTRA_TEXT);
+                logd(TAG, "actualText: " + actualText);
 
                 assertEquals(expectedTitle, actualTitle);
                 assertEquals(expectedSummary, actualText);
