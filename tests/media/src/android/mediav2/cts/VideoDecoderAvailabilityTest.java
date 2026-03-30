@@ -789,9 +789,18 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                     currentDecBundle == null))) {
                 int result = compareResources(lastGlobalResourceForFormat,
                         currentGlobalResourcesForFormat, testLogs);
-                Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
-                        + " is expected to consume more resources than format : " + currentFormat
-                        + testLogs + mTestEnv + mTestConfig, RHS_RESOURCE_GE, result);
+                if (lastDecBundle == currentDecBundle && lastDecBundle != null) {
+                    Assert.assertEquals("format : " + lastDecBundle.mFormats.get(0)
+                                    + " is expected to consume same resources as format : "
+                                    + currentDecBundle.mFormats.get(0) + testLogs + mTestEnv
+                                    + mTestConfig,
+                            RESOURCE_EQ, result);
+                } else {
+                    Assert.assertEquals("format : " + lastFormat
+                                    + " is expected to consume more resources than format : "
+                                    + currentFormat + testLogs + mTestEnv + mTestConfig,
+                            RHS_RESOURCE_GE, result);
+                }
             }
             lastGlobalResourceForFormat = currentGlobalResourcesForFormat;
             lastFormat = currentFormat;
