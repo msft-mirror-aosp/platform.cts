@@ -17,6 +17,7 @@ package android.packageinstaller.install.cts
 
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
+import android.platform.test.annotations.AppModeFull
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.concurrent.TimeUnit
@@ -27,6 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@AppModeFull(reason = "Instant apps cannot install packages")
 class PiaStagesLatencyTrackerTest : PackageInstallerTestBase() {
 
     @Before
