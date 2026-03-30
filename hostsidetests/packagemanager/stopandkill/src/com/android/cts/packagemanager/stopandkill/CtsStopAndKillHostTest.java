@@ -36,6 +36,7 @@ import com.android.tradefed.util.RunUtil;
 import com.android.window.flags.Flags;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -184,80 +185,73 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
     public void testUpdate_multiplePackages_stopsBothApps() throws Exception {
+        // We need to have both apps in foreground for this test
+        Assume.assumeTrue(
+                "Device does not support freeform mode",
+                getDevice().hasFeature("android.software.freeform_window_management"));
+
         mApp1.installPackage();
         mApp2.installPackage();
 
-        String setting = "enable_freeform_support";
-        String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
-        try {
-            getDevice().executeShellCommand("settings put global " + setting + " 1");
-            // Launch both activities in split screen to ensure they are resumed.
-            launchActivityInFreeForm(mApp1.persistableActivity, mApp2.persistableActivity);
+        // Launch both activities in split screen to ensure they are resumed.
+        launchActivityInFreeForm(mApp1.persistableActivity, mApp2.persistableActivity);
 
-            // Neither app should have been stopped yet.
-            mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
-            mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        // Neither app should have been stopped yet.
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ false);
 
-            // Perform the multi-package update and time it.
-            InstallMultiple installer = new InstallMultiple(this);
-            installer.addArg("-r");
-            installer.addApk(mApp1.apk);
-            installer.addApk(mApp2.apk);
-            installer.forUser(mUserId).run();
+        // Perform the multi-package update and time it.
+        InstallMultiple installer = new InstallMultiple(this);
+        installer.addArg("-r");
+        installer.addApk(mApp1.apk);
+        installer.addApk(mApp2.apk);
+        installer.forUser(mUserId).run();
 
-            // Assert that both apps were stopped to save state.
-            mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ true);
-            mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ true);
-        } finally {
-            getDevice()
-                    .executeShellCommand("settings put global " + setting + " " + originalSetting);
-        }
+        // Assert that both apps were stopped to save state.
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ true);
+        mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ true);
     }
 
     /** Verifies that when we install multiple packages, we wait in parallel */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
     public void testUpdate_multiplePackages_waitsInParallel() throws Exception {
+        // We need to have all apps in foreground for this test
+        Assume.assumeTrue(
+                "Device does not support freeform mode",
+                getDevice().hasFeature("android.software.freeform_window_management"));
+
         mApp1.installPackage();
         mApp2.installPackage();
         mApp3.installPackage();
 
-        String setting = "enable_freeform_support";
-        String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
-        try {
-            getDevice().executeShellCommand("settings put global " + setting + " 1");
-            // Launch both activities in split screen to ensure they are resumed.
-            launchActivityInFreeForm(
-                    mApp1.persistableTimeoutActivity,
-                    mApp2.persistableTimeoutActivity,
-                    mApp3.persistableTimeoutActivity);
+        launchActivityInFreeForm(
+                mApp1.persistableTimeoutActivity,
+                mApp2.persistableTimeoutActivity,
+                mApp3.persistableTimeoutActivity);
 
-            // Neither app should have been stopped yet.
-            mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
-            mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ false);
-            mApp3.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        // Neither app should have been stopped yet.
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        mApp3.assertStateFileCreatedOnStop(/* shouldExist= */ false);
 
-            // Perform the multi-package update and time it.
-            InstallMultiple installer = new InstallMultiple(this);
-            installer.addArg("-r");
-            installer.addApk(mApp1.apk);
-            installer.addApk(mApp2.apk);
-            installer.addApk(mApp3.apk);
-            long installTime = installer.forUser(mUserId).run();
+        // Perform the multi-package update and time it.
+        InstallMultiple installer = new InstallMultiple(this);
+        installer.addArg("-r");
+        installer.addApk(mApp1.apk);
+        installer.addApk(mApp2.apk);
+        installer.addApk(mApp3.apk);
+        long installTime = installer.forUser(mUserId).run();
 
-            // Assert that both apps were killed before they were able to write file
-            mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
-            mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ false);
-            mApp3.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        // Assert that both apps were killed before they were able to write file
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        mApp2.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+        mApp3.assertStateFileCreatedOnStop(/* shouldExist= */ false);
 
-            // Assert that the installation was reasonably fast. All apps timeout in 11 seconds
-            // each, but the install should complete faster than 33 seconds since they should be
-            // waiting in parallel.
-            assertThat(installTime).isLessThan(25 * 1000);
-        } finally {
-            getDevice()
-                    .executeShellCommand("settings put global " + setting + " " + originalSetting);
-        }
+        // Assert that the installation was reasonably fast. All apps timeout in 11 seconds
+        // each, but the install should complete faster than 33 seconds since they should be
+        // waiting in parallel.
+        assertThat(installTime).isLessThan(25 * 1000);
     }
 
     /**
@@ -343,30 +337,22 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         mSharedApp1.installPackage();
         mSharedApp2.installPackage();
 
-        String setting = "enable_freeform_support";
-        String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
-        try {
-            getDevice().executeShellCommand("settings put global " + setting + " 1");
-            // Launch both shared UID activities.
-            launchActivityInFreeForm(
-                    mSharedApp1.persistableActivity, mSharedApp2.persistableActivity);
+        // Launch both shared UID activities. mSharedApp1 launched last to be on foreground.
+        launchActivityAndAssertResumed(mSharedApp2.persistableActivity);
+        launchActivityAndAssertResumed(mSharedApp1.persistableActivity);
 
-            PackageInstallMetrics.setup(getDevice(), mSharedApp1.pkg);
-            // Update shared app 1. This should trigger the shared UID timeout logic.
-            mSharedApp1.installPackage("-r");
-            PackageInstallMetrics metrics =
-                    PackageInstallMetrics.collect(getDevice(), getAppUid(mSharedApp1.pkg));
+        PackageInstallMetrics.setup(getDevice(), mSharedApp1.pkg);
+        // Update shared app 1. This should trigger the shared UID timeout logic.
+        mSharedApp1.installPackage("-r");
+        PackageInstallMetrics metrics =
+                PackageInstallMetrics.collect(getDevice(), getAppUid(mSharedApp1.pkg));
 
-            // Assert that the installation was fast (timeout is 3s).
-            long duration = metrics.getStopAndKillDurationMs();
-            assertWithMessage("Expected shared-UID optimized wait duration (3s)")
-                    .that(duration)
-                    .isAtLeast(2500);
-            assertThat(duration).isLessThan(4000);
-        } finally {
-            getDevice()
-                    .executeShellCommand("settings put global " + setting + " " + originalSetting);
-        }
+        // Assert that the installation was fast (timeout is 3s).
+        long duration = metrics.getStopAndKillDurationMs();
+        assertWithMessage("Expected shared-UID optimized wait duration (3s)")
+                .that(duration)
+                .isAtLeast(2500);
+        assertThat(duration).isLessThan(4000);
     }
 
     @Test
@@ -375,34 +361,26 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         mSharedApp1.installPackage();
         mSharedApp2.installPackage();
 
-        String setting = "enable_freeform_support";
-        String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
-        try {
-            getDevice().executeShellCommand("settings put global " + setting + " 1");
-            // Launch both shared UID activities. Shared app 1 uses timeout activity.
-            launchActivityInFreeForm(
-                    mSharedApp1.persistableTimeoutActivity, mSharedApp2.persistableActivity);
+        // Launch both shared UID activities. mSharedApp1 launched last to be on foreground.
+        launchActivityAndAssertResumed(mSharedApp2.persistableActivity);
+        launchActivityAndAssertResumed(mSharedApp1.persistableTimeoutActivity);
 
-            mSharedApp1.assertProcessRunning(true);
-            mSharedApp2.assertProcessRunning(true);
+        mSharedApp1.assertProcessRunning(true);
+        mSharedApp2.assertProcessRunning(true);
 
-            int oldPid = mSharedApp1.getPid();
+        int oldPid = mSharedApp1.getPid();
 
-            // Update shared app 1.
-            mSharedApp1.installPackage("-r");
+        // Update shared app 1.
+        mSharedApp1.installPackage("-r");
 
-            // Assert that shared app 1 was terminated for the correct reason.
-            String description = getExitInfoDescription(mSharedApp1.pkg, oldPid);
-            assertWithMessage("Expected force-kill description for PID " + oldPid)
-                    .that(description)
-                    .contains("force-kill");
+        // Assert that shared app 1 was terminated for the correct reason.
+        String description = getExitInfoDescription(mSharedApp1.pkg, oldPid);
+        assertWithMessage("Expected force-kill description for PID " + oldPid)
+                .that(description)
+                .contains("force-kill");
 
-            // Assert that shared app 2 is STILL RUNNING.
-            mSharedApp2.assertProcessRunning(true);
-        } finally {
-            getDevice()
-                    .executeShellCommand("settings put global " + setting + " " + originalSetting);
-        }
+        // Assert that shared app 2 is STILL RUNNING.
+        mSharedApp2.assertProcessRunning(true);
     }
 
     @Test
@@ -425,11 +403,11 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         PackageInstallMetrics metrics =
                 PackageInstallMetrics.collect(getDevice(), getAppUid(mSharedApp1.pkg));
 
-        // Confirm wait duration was ~9s (not 3s).
+        // Confirm wait duration is longer than 3-seconds
         long duration = metrics.getStopAndKillDurationMs();
         assertWithMessage("Expected long wait duration for non-shared update")
                 .that(duration)
-                .isAtLeast(8000);
+                .isAtLeast(5000); // Wear devices get ANR in 5 seconds
     }
 
     /**
