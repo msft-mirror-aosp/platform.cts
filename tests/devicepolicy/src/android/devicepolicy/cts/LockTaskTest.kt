@@ -521,9 +521,12 @@ class LockTaskTest {
         )
         deviceState.dpc().devicePolicyManager()
                 .setLockTaskPackages(deviceState.dpc().componentName(), arrayOf())
+        val options = ActivityOptions.makeBasic()
+                .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
         try {
             testApp.install().use { testApp ->
-                val activity: Activity<TestAppActivity> = testApp.activities().any().start()
+                val activity: Activity<TestAppActivity> = testApp.activities().any()
+                    .start(options.toBundle())
                 activity.activity().startLockTask()
                 try {
                     assertThat(TestApis.activities().foregroundActivity()).isEqualTo(
