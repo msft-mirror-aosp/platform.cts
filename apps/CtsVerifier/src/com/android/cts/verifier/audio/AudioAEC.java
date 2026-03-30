@@ -42,6 +42,20 @@ import com.android.cts.verifier.audio.wavelib.DspBufferDouble;
 import com.android.cts.verifier.audio.wavelib.DspBufferMath;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
 
+/**
+ * AcousticEchoCanceler (AEC) is an audio effect that removes the audio output signal from the
+ * input stream.
+ *
+ * We can test AEC is enabled by playing output and recording its input. If AEC is enabled, the
+ * input should not sound like the output.
+ *
+ * Similarly, we can test AEC is disabled by playing output and recording input. If AEC is
+ * disabled, the input should sound like the output.
+ *
+ * On devices that support AEC on the VOICE_COMMUNICATION path, we test AEC enabled and disabled.
+ * On devices that don't support AEC on the VOICE_COMMUNICATION path, we test only AEC disabled to
+ * make sure there is unreported AEC (as required by the CDD).
+ */
 public class AudioAEC extends AudioFrequencyActivity implements View.OnClickListener {
     private static final String TAG = "AudioAEC";
 
