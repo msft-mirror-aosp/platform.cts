@@ -236,7 +236,9 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
             )
         return parameterizedTestGenerator?.let {
             val generator: ParameterizedTestGenerator = mLocator.get(it.value)
-            return generator.generateReplacementAnnotations(annotation, classAnnotations)
+            val replacementAnnotations: List<Annotation> =
+                generator.generateReplacementAnnotations(annotation, classAnnotations)
+            return replacementAnnotations.sortedByPriority()
         }
     }
 
@@ -253,6 +255,7 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
                 maybeReplaceUsingParameterizedTestGenerator(it, classAnnotations) ?: listOf(it)
             }
             .toList()
+            .sortedByPriority()
     }
 
     /**
@@ -295,16 +298,19 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
     ): ImmutableList<Annotation> {
         val localAnnotations =
             maybeReplaceUsingParameterizedTestGenerator(
-                method.declaringClass.annotations + method.annotations,
+                method.declaringClass.annotations,
                 runtimeClassAnnotations,
-            )
+            ) +
+                maybeReplaceUsingParameterizedTestGenerator(
+                    method.annotations,
+                    runtimeClassAnnotations,
+                )
 
         val resolvedAnnotations =
-            resolveRecursiveAnnotationsUnsorted(localAnnotations, parameterizedAnnotations)
+            resolveRecursiveAnnotations(localAnnotations, parameterizedAnnotations)
 
         return ImmutableList.copyOf(
-            (resolvedAnnotations + createRunOnAnnotationsIfNeeded(resolvedAnnotations))
-                .sortedByPriority()
+            resolvedAnnotations + createRunOnAnnotationsIfNeeded(resolvedAnnotations)
         )
     }
 
@@ -391,19 +397,18 @@ class BedsteadAnnotationGenerator(val isHeadlessSystemUserMode: Boolean) {
     }
 
     /**
-     * Resolves annotations recursively. The output is sorted by annotation priority.
+     * Resolves annotations recursively.
      *
      * @param parameterizedAnnotations The class of the parameterized annotation to expand, if any
      */
-    fun resolveRecursiveAnnotations(annotations: List<Annotation>): List<Annotation> {
-        return resolveRecursiveAnnotationsUnsorted(annotations).sortedByPriority()
-    }
-
-    private fun resolveRecursiveAnnotationsUnsorted(
+    @JvmOverloads
+    fun resolveRecursiveAnnotations(
         annotations: List<Annotation>,
         parameterizedAnnotations: ImmutableList<Annotation> = ImmutableList.of(),
     ): List<Annotation> {
-        return annotations.flatMap { getReplacementAnnotations(it, parameterizedAnnotations) }
+        return annotations
+            .flatMap { getReplacementAnnotations(it, parameterizedAnnotations).sortedByPriority() }
+            .toList()
     }
 
     /**
