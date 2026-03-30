@@ -69,7 +69,7 @@ class AppHelper(
             runShellCommand(cmd)
         } else {
             runShellCommand(
-                "cmd companiondevice associate $userId $packageName $role 00:11:22:AA:BB:CC true"
+                "cmd companiondevice associate $userId $packageName 00:11:22:AA:BB:CC $role true"
             )
         }
     }
