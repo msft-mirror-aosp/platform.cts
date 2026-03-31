@@ -70,6 +70,8 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
     private static final boolean DEBUG = true;
 
+    private static final int ANR_INPUT_DISPATCH_TIMEOUT = 5000;
+
     private int mUserId;
     private TestApp mApp1 =
             new TestApp("com.android.cts.stopandkillapp1", "CtsStopAndKillTestApp1.apk");
@@ -172,13 +174,13 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         // Assert that the app was not stopped because it timed out.
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
 
-        // Assert that the wait step duration was high (indicates it hit the system STOP_TIMEOUT of
-        // 11s).
+        // Assert that the wait step duration was high. While stop timeout is set at 11 seconds,
+        // on devices with high load, it's possible for it to hit input dispatch ANR at 5000.
         long duration = metrics.getStopAndKillDurationMs();
         assertWithMessage("Expected long wait duration for timeout activity")
                 .that(duration)
-                .isAtLeast(10000);
-        assertThat(duration).isLessThan(20000);
+                .isAtLeast(ANR_INPUT_DISPATCH_TIMEOUT);
+        assertThat(duration).isLessThan(15000);
     }
 
     /** Verifies that a multi-package install stops both apps to save their state. */
@@ -407,7 +409,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         long duration = metrics.getStopAndKillDurationMs();
         assertWithMessage("Expected long wait duration for non-shared update")
                 .that(duration)
-                .isAtLeast(5000); // Wear devices get ANR in 5 seconds
+                .isAtLeast(ANR_INPUT_DISPATCH_TIMEOUT);
     }
 
     /**
