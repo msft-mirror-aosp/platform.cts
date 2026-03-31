@@ -27,6 +27,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.systemui.dump.nano.SystemUIProtoDump;
@@ -347,6 +348,7 @@ public class MotionCuesTest {
     @ApiTest(apis = {"android.app.StatusBarManager#startMotionCuesSession"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MOTION_CUES)
     @EnsureHasPermission(Manifest.permission.DRAW_MOTION_CUES)
+    @EnsureCanAddSecondaryUser
     public void testSessionEnds_onUserSwitchFromPrimary() throws Exception {
         // Start a session as the primary user
         startSessionAndAwait();
@@ -375,6 +377,7 @@ public class MotionCuesTest {
     @ApiTest(apis = {"android.app.StatusBarManager#startMotionCuesSession"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MOTION_CUES)
     @EnsureHasPermission(Manifest.permission.DRAW_MOTION_CUES)
+    @EnsureCanAddSecondaryUser
     public void testSessionEnds_onUserSwitchToPrimary() throws Exception {
         // Create and switch to a secondary user
         try (UserReference secondaryUser = TestApis.users().createUser().createAndStart()) {
