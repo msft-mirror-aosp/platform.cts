@@ -31,6 +31,18 @@
         <option name="teardown-command" value="cmd personal_context set-test-mode disabled" />
     </target_preparer>
 
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="test-user-token" value="%TEST_USER%"/>
+        <option name="run-command" value="settings put --user %TEST_USER% secure personal_context_enabled 1" />
+        <option name="teardown-command" value="settings put --user %TEST_USER% secure personal_context_enabled 0" />
+    </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="test-user-token" value="%TEST_USER%"/>
+        <option name="run-command" value="settings put --user %TEST_USER% secure personal_context_mode_enabled_default 1" />
+        <option name="teardown-command" value="settings put --user %TEST_USER% secure personal_context_mode_enabled_default 0" />
+    </target_preparer>
+
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="install-arg" value="-t" />
