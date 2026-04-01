@@ -265,9 +265,16 @@ def switch_jca_camera(dut, log_path, facing):
                              dut.ui(res=QUICK_SET_FLIP_CAMERA_RESOURCE_ID))
   if not dut.ui(desc=ui_facing_description).wait.exists(
       UI_OBJECT_WAIT_TIME_SECONDS):
-    dut.take_screenshot(log_path, prefix='failed_to_switch_camera')
-    logging.debug('JCA UI dump: %s', dut.ui.dump())
-    raise AssertionError(f'Failed to switch to {ui_facing_description}!')
+    logging.debug('Failed to find %s after flip. Refreshing menu.',
+                  ui_facing_description)
+    # Close and reopen the Quick Settings menu to refresh stale UI hierarchy
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+    dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+    if not dut.ui(desc=ui_facing_description).wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      dut.take_screenshot(log_path, prefix='failed_to_switch_camera')
+      logging.debug('JCA UI dump: %s', dut.ui.dump())
+      raise AssertionError(f'Failed to switch to {ui_facing_description}!')
   dut.take_screenshot(
       log_path, prefix=f"switched_to_{ui_facing_description.replace(' ', '_')}"
   )
