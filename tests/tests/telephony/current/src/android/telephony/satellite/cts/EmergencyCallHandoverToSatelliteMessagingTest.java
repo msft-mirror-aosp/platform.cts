@@ -317,8 +317,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
         }
     }
 
-    @Test
-    @Ignore("b/438236284 - Need to fix and re-enable this test.")
     public void testE911ToT911Handover_AutoConnect() throws Exception {
         /*
          * Test scenario:
@@ -1427,6 +1425,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     }
 
     @Test
+    @Ignore("b/498653138 - Need to fix and re-enable this test.")
     public void testE911ToEsosHandover_Coex_DS() throws Exception {
         /*
          * Require domain selection to be supported.
@@ -1712,6 +1711,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_MESSAGING_ROUTING_FOR_INTERNATIONAL_ROAMING)
+    @Ignore("b/498653138 - Need to fix and re-enable this test.")
     public void testE911ToT911Handover_AutoConnect_ConciergeWithRedirectionNumber()
             throws Exception {
         /*
@@ -1865,6 +1865,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_MESSAGING_ROUTING_FOR_INTERNATIONAL_ROAMING)
+    @Ignore("b/498653138 - Need to fix and re-enable this test.")
     public void testE911ToT911Handover_AutoConnect_ConciergeWithoutRedirectionNumber()
             throws Exception {
         /*

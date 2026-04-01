@@ -99,6 +99,7 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
 
     protected static ImsServiceConnector sServiceConnector;
     protected static boolean sIsBound = false;
+    private static boolean sImsEnvironmentEstablished = false;
     protected static long sPreviousOptInStatus = 0;
     protected static long sPreviousEn4GMode = 0;
     protected static String sPreviousDefaultDialer;
@@ -220,6 +221,7 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
             bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_VOLTE_TTY_SUPPORTED_BOOL, true);
             bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_IMS_GBA_REQUIRED_BOOL, false);
             overrideCarrierConfig(subId, bundle);
+            sImsEnvironmentEstablished = true;
         } finally {
             ui.dropShellPermissionIdentity();
         }
@@ -244,13 +246,12 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
             setDefaultDialer(InstrumentationRegistry.getInstrumentation(), sPreviousDefaultDialer);
 
             // Restore all ImsService configurations that existed before the test.
-            if (sServiceConnector != null && sIsBound) {
-                logd(LOG_TAG, "clearAllActiveImsServices");
-                sServiceConnector.clearAllActiveImsServices(slotId);
+            if (sServiceConnector != null && sImsEnvironmentEstablished) {
                 logd(LOG_TAG, "disconnectServices");
                 sServiceConnector.disconnectServices();
-                sIsBound = false;
             }
+            sImsEnvironmentEstablished = false;
+            sIsBound = false;
             overrideCarrierConfig(subId, null);
         } finally {
             ui.dropShellPermissionIdentity();
