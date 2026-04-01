@@ -55,7 +55,14 @@ public final class AmUtils {
         }
 
         // Step 2: Send the SIGKILL signal directly to the PID.
-        SystemUtil.runShellCommandForNoOutput("run-as " + packageName + " kill -9 " + pidString);
+        // Use --user to ensure we target the correct user context for the package.
+        SystemUtil.runShellCommandForNoOutput(
+                "run-as "
+                        + packageName
+                        + " --user "
+                        + Process.myUserHandle().getIdentifier()
+                        + " kill -9 "
+                        + pidString);
 
         if (!wait) {
             return;

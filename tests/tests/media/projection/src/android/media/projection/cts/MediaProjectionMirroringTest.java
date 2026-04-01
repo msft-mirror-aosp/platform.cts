@@ -213,7 +213,7 @@ public class MediaProjectionMirroringTest {
 
                             final Point mirroredSize =
                                     calculateScaledMirroredActivitySize(
-                                            activity.getWindowManager().getCurrentWindowMetrics(),
+                                            maxWindowMetrics,
                                             virtualDisplay,
                                             new Point(activityRect.width(), activityRect.height()));
                             validateMirroredHierarchy(
@@ -255,54 +255,44 @@ public class MediaProjectionMirroringTest {
     }
 
     /**
-     * Calculate the size of the activity, scaled to fit on the VirtualDisplay.
+     * Calculates the expected size of a mirrored activity on a VirtualDisplay.
      *
-     * @param currentWindowMetrics The size of the source activity, before it is mirrored
-     * @param virtualDisplay       The VirtualDisplay the mirrored content is sent to and scaled to
-     *                             fit
-     * @return The expected size of the mirrored activity on the VirtualDisplay
+     * <p>In "Single App" capture, the system mirrors the entire Task container. This container is
+     * scaled to fit the VirtualDisplay using a "fit-center" approach, preserving aspect ratio. The
+     * scale factor is determined by the ratio between the container's bounds and the
+     * VirtualDisplay's surface size.
+     *
+     * @param containerMetrics The metrics of the container being mirrored (usually the Task).
+     * @param virtualDisplay The VirtualDisplay where the content is mirrored and scaled.
+     * @param activitySize The original size of the activity being mirrored. If null, the
+     *     container's size is used.
+     * @return The expected size of the mirrored activity on the VirtualDisplay.
      */
     private static Point calculateScaledMirroredActivitySize(
-            @NonNull WindowMetrics currentWindowMetrics,
-            @NonNull VirtualDisplay virtualDisplay, @Nullable Point visibleBounds) {
-        // Calculate the aspect ratio of the original activity.
-        final Point currentBounds = new Point(currentWindowMetrics.getBounds().width(),
-                currentWindowMetrics.getBounds().height());
-        final float aspectRatio = currentBounds.x * 1f / currentBounds.y;
+            @NonNull WindowMetrics containerMetrics,
+            @NonNull VirtualDisplay virtualDisplay,
+            @Nullable Point activitySize) {
+        // The container being scaled is defined by containerMetrics.
+        final Rect containerBounds = containerMetrics.getBounds();
+
         // Find the size of the surface we are mirroring to.
         final Point surfaceSize = virtualDisplay.getSurface().getDefaultSize();
-        int mirroredWidth;
-        int mirroredHeight;
 
-        // Calculate any width & height deltas caused by DisplayCutout insets
-        Point sizeDifference = new Point();
-        if (visibleBounds != null) {
-            int widthDifference = currentBounds.x - visibleBounds.x;
-            int heightDifference = currentBounds.y - visibleBounds.y;
-            sizeDifference.set(widthDifference, heightDifference);
-        }
+        // System scaling logic: scale = min(target_width / source_width, target_height /
+        // source_height)
+        float scaleX = (float) surfaceSize.x / containerBounds.width();
+        float scaleY = (float) surfaceSize.y / containerBounds.height();
+        float scale = Math.min(scaleX, scaleY);
 
-        if (surfaceSize.x < surfaceSize.y) {
-            // Output surface is portrait, so its width constrains. The mirrored activity is
-            // scaled down to fill the width entirely, and will have horizontal black bars at the
-            // top and bottom.
-            // Also apply scaled insets, to handle case where device has a display cutout which
-            // shifts the content horizontally when landscape.
-            int adjustedHorizontalInsets = Math.round(sizeDifference.x / aspectRatio);
-            int adjustedVerticalInsets = Math.round(sizeDifference.y / aspectRatio);
-            mirroredWidth = surfaceSize.x - adjustedHorizontalInsets;
-            mirroredHeight = Math.round(surfaceSize.x / aspectRatio) - adjustedVerticalInsets;
-        } else {
-            // Output surface is landscape, so its height constrains. The mirrored activity is
-            // scaled down to fill the height entirely, and will have horizontal black bars on the
-            // left and right.
-            // Also apply scaled insets, to handle case where device has a display cutout which
-            // shifts the content vertically when portrait.
-            int adjustedHorizontalInsets = Math.round(sizeDifference.x * aspectRatio);
-            int adjustedVerticalInsets = Math.round(sizeDifference.y * aspectRatio);
-            mirroredWidth = Math.round(surfaceSize.y * aspectRatio) - adjustedHorizontalInsets;
-            mirroredHeight = surfaceSize.y - adjustedVerticalInsets;
-        }
+        // The activity size to be scaled.
+        final Point sourceSize =
+                activitySize != null
+                        ? activitySize
+                        : new Point(containerBounds.width(), containerBounds.height());
+
+        int mirroredWidth = Math.round(sourceSize.x * scale);
+        int mirroredHeight = Math.round(sourceSize.y * scale);
+
         return new Point(mirroredWidth, mirroredHeight);
     }
 
