@@ -103,15 +103,16 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        // Ensure data is enabled
+
+        MockModemTestBase.afterAllTestsBase();
+
+        // Ensure data is enabled after MockModem Disconnect
         TelephonyManager telephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         if (telephonyManager != null) {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     telephonyManager, (tm) -> tm.setDataEnabled(true));
         }
-
-        MockModemTestBase.afterAllTestsBase();
     }
 
     @Before
@@ -130,6 +131,7 @@ public class DataConfigTestOnMockModem extends MockModemTestBase {
         assumeTrue("CONFIGUPDATER is not installed", isConfigUpdaterInstalled());
 
         Log.d(TAG, "setUp: Resetting version and stabilizing...");
+        runShellCommand("pm clear " + CONFIG_UPDATER_PACKAGE);
         runShellCommand("cmd phone override-config-data-version -r");
         runShellCommand("am wait-for-broadcast-idle --user 0");
 
