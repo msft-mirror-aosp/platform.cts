@@ -333,6 +333,10 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+         synchronized (mLock) {
+            mSurfaceWidth = width;
+            mSurfaceHeight = height;
+        }
     }
 
     @Override
