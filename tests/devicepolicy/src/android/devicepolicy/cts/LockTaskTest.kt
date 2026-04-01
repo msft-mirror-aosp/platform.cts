@@ -490,7 +490,9 @@ class LockTaskTest {
         )
         try {
             testApp.install().use { testApp ->
-                val activity = testApp.activities().any().start()
+                val options = ActivityOptions.makeBasic()
+                        .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
+                val activity = testApp.activities().any().start(options.toBundle())
                 activity.startLockTask()
                 try {
                     assertThat(TestApis.activities().foregroundActivity()).isEqualTo(
