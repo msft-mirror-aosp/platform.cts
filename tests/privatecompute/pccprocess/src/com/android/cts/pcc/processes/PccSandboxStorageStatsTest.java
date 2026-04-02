@@ -46,15 +46,21 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 
-// TODO: b/498514621 - Move PccSandboxStorageStatsTest to featuretests apk
+/**
+ * App data dir data and helper app data (both app and pcc) initialization is flaky. Migration to
+ * featuretests as per b/498514621 should fix this problem
+ */
+@Ignore("b/499044223")
 @RunWith(BedsteadJUnit4.class)
 @RequiresFlagsEnabled(FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
+// TODO: b/498514621 - Move PccSandboxStorageStatsTest to featuretests apk
 public class PccSandboxStorageStatsTest {
     private Context mContext;
     private StorageStatsManager mStorageStatsManager;
