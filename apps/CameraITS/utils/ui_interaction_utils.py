@@ -826,7 +826,18 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     _click_if_exists(dut, AGREE_BUTTON)
     _click_if_exists(dut, AGREE_AND_CONTINUE_BUTTON)
     _click_if_exists(dut, OK_BUTTON_TXT)
-    _click_if_exists(dut, MORE_BUTTON_TXT)
+
+    # Click More button ONLY if it is a pop-up and not the mode scroll item
+    more_obj = dut.ui(text=MORE_BUTTON_TXT)
+    if more_obj.wait.exists(timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      # Exclude the mode scroll text which is not the pop-up we want
+      resource_name = more_obj.resource_id
+      if 'scroll' not in resource_name:
+        logging.debug('Clicking pop-up More button (resource: %s)', resource_name)
+        more_obj.click.wait()
+      else:
+        logging.debug('Skipping scroll menu More button')
+
     _click_if_exists(dut, DONE_BUTTON_TXT)
     _click_if_exists(dut, CANCEL_BUTTON_TXT)
     _click_if_exists(dut, LOCATION_ON_TXT)
