@@ -27,6 +27,7 @@ android_test {
         enabled: false,
     },
     srcs: ["src/**/*.java"],
+    exclude_srcs: ["src/**/staticdevicestatetests/DisplayManagerSingleDeviceStateTest.java"],
     static_libs: [
         "android.hardware.flags-aconfig-java",
         "servicestests-utils",
@@ -42,7 +43,6 @@ android_test {
         "SurfaceFlingerProperties",
         "junit-params",
         "desktop-test-lib",
-        "cts-device_state_manager-util",
     ],
     libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact
@@ -59,4 +59,42 @@ android_test {
         ":TopologyTestApp",
     ],
     per_testcase_directory: true,
+    manifest: "AndroidManifest.xml",
+}
+
+android_test {
+    name: "CtsDisplayStaticDeviceStateTestCases",
+    defaults: ["cts_defaults"],
+    dex_preopt: {
+        enabled: false,
+    },
+    optimize: {
+        enabled: false,
+    },
+    srcs: ["src/**/staticdevicestatetests/DisplayManagerSingleDeviceStateTest.java"],
+    static_libs: [
+        "androidx.test.core",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "flag-junit",
+        "display_flags_lib",
+        "junit-params",
+        "cts-device_state_manager-util",
+    ],
+    libs: ["android.test.base.stubs.test"],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+        "sts",
+        "dts",
+    ],
+    sdk_version: "test_current",
+    data: [
+        ":CtsAppTestStubs",
+        ":DisplayManagerTestApp",
+    ],
+    per_testcase_directory: true,
+    test_config: "src/**/staticdevicestatetests/AndroidTest.xml",
+    manifest: "src/**/staticdevicestatetests/AndroidManifest.xml",
 }
