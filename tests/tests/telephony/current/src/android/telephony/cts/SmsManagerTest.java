@@ -34,6 +34,7 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.internal.telephony.flags.Flags.FLAG_MESSAGE_PROMOTION;
+import static com.android.internal.telephony.flags.Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 
@@ -78,6 +79,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1125,6 +1127,7 @@ public class SmsManagerTest {
     }
 
     @Test
+    @RequiresFlagsDisabled({FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES})
     public void testContentProviderAccessRestriction() throws Exception {
         Uri dummySmsUri = null;
         Context context = getInstrumentation().getContext();
