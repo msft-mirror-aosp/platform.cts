@@ -533,6 +533,10 @@ public class AudioPlaybackParametersActivity
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Control recording saved to: " + mControlRecordingFile.getAbsolutePath());
 
+                sendMessage(AudioTestRunner.TEST_MESSAGE,
+                        "Adjusting volume of 1.0x recording to match original...");
+                adjustVolumeToMatch(mControlRecordingFile, R.raw.speech_short);
+
                 // Step 2: Play speech at 2.0x speed and record it.
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Playing at 2.0x speed and recording...");
@@ -546,6 +550,10 @@ public class AudioPlaybackParametersActivity
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Recording 1 saved to: " + mRecording1File.getAbsolutePath());
 
+                sendMessage(AudioTestRunner.TEST_MESSAGE,
+                        "Adjusting volume of 2.0x recording to match original...");
+                adjustVolumeToMatch(mRecording1File, R.raw.speech_short);
+
                 // Step 3: Play the first recording at 0.5x speed and record it again.
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Playing first recording at 0.5x speed and recording...");
@@ -558,6 +566,10 @@ public class AudioPlaybackParametersActivity
                 Log.d(TAG, "Recording 2 size: " + mRecording2File.length());
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Recording 2 saved to: " + mRecording2File.getAbsolutePath());
+
+                sendMessage(AudioTestRunner.TEST_MESSAGE,
+                        "Adjusting volume of second recording to match original...");
+                adjustVolumeToMatch(mRecording2File, R.raw.speech_short);
 
                 try {
                     File publicDir = Environment.getExternalStoragePublicDirectory(
@@ -1016,6 +1028,66 @@ public class AudioPlaybackParametersActivity
         short[] shorts = new short[bytes.length / 2];
         ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts);
         return shorts;
+    }
+
+    private byte[] shortToByte(short[] shorts) {
+        byte[] bytes = new byte[shorts.length * 2];
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(shorts);
+        return bytes;
+    }
+
+    private void adjustVolumeToMatch(File targetFile, Object referenceSource) {
+        try {
+            AudioDataSource refData = getAudioData(referenceSource);
+            short[] refShorts = byteToShort(refData.data);
+            double refRmsSum = 0;
+            for (short s : refShorts) {
+                refRmsSum += (double) s * s;
+            }
+            double refRms = Math.sqrt(refRmsSum / refShorts.length);
+
+            AudioDataSource targetData = getAudioData(targetFile);
+            short[] targetShorts = byteToShort(targetData.data);
+            double targetRmsSum = 0;
+            double maxEnergy = 0;
+            for (short s : targetShorts) {
+                double energy = (double) s * s;
+                targetRmsSum += energy;
+                if (energy > maxEnergy) {
+                    maxEnergy = energy;
+                }
+            }
+            double targetRms = Math.sqrt(targetRmsSum / targetShorts.length);
+
+            if (targetRms > 0 && refRms > 0) {
+                double gain = refRms / targetRms;
+                if (gain > 20.0) gain = 20.0;
+
+                if (maxEnergy * gain * gain > (double) Short.MAX_VALUE * Short.MAX_VALUE) {
+                    gain = Math.sqrt((double) Short.MAX_VALUE * Short.MAX_VALUE / maxEnergy);
+                }
+
+                Log.d(TAG, "Adjusting volume with gain: " + gain + " (refRms: " +
+                        refRms + ", targetRms: " + targetRms + ")");
+                for (int i = 0; i < targetShorts.length; i++) {
+                    double val = targetShorts[i] * gain;
+                    if (val > Short.MAX_VALUE) val = Short.MAX_VALUE;
+                    if (val < Short.MIN_VALUE) val = Short.MIN_VALUE;
+                    targetShorts[i] = (short) val;
+                }
+
+                byte[] newBytes = shortToByte(targetShorts);
+                try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+                    int bitsPerSample = (targetData.encoding == AudioFormat.ENCODING_PCM_8BIT)
+                            ? 8 : 16;
+                    writeWavHeader(fos, newBytes.length, targetData.sampleRate,
+                            targetData.channelCount, bitsPerSample);
+                    fos.write(newBytes);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error adjusting volume", e);
+        }
     }
 
     private static final String SECTION_PLAYBACK_PARAMS = "playback_params_activity";
