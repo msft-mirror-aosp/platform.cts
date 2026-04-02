@@ -45,10 +45,16 @@ import java.util.List;
 
 public class UsbStatsTests extends DeviceTestCase implements IBuildReceiver {
     private IBuildInfo mCtsBuild;
+    private boolean mIsUsbSupported = true;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        if (!DeviceUtils.hasFeature(getDevice(), "android.hardware.usb.host")
+                || !DeviceUtils.hasFeature(getDevice(), "android.hardware.usb.accessory")) {
+            mIsUsbSupported = false;
+            return;
+        }
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -96,6 +102,9 @@ public class UsbStatsTests extends DeviceTestCase implements IBuildReceiver {
      * Tests that each compliance warning gets logged
      */
     public void testUsbComplianceWarnings() throws Exception {
+         if (!mIsUsbSupported) {
+            return;
+        }
         ComplianceWarning[] warnings = new ComplianceWarning[] {
                 COMPLIANCE_WARNING_DEBUG_ACCESSORY,
                 COMPLIANCE_WARNING_BC_1_2,
