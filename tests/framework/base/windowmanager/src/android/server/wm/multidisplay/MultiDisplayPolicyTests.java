@@ -208,6 +208,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testRotationNotAffectingSecondaryScreen() {
+        assumeFalse(isAutomotive()); // Automotive devices don't support rotation
         final VirtualDisplayLauncher virtualLauncher =
                 mObjectTracker.manage(new VirtualDisplayLauncher());
         // Create new virtual display.
