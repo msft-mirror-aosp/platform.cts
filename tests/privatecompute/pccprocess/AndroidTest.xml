@@ -21,13 +21,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
 
-    <object type="module_controller"
-        class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController">
-        <!--Skip the test if enable_pcc_framework_support is disabled. -->
-        <option name="run-command"
-            value="aflags list | grep 'android.app.privatecompute.flags.enable_pcc_framework_support' | awk '{print $2}' | grep 'enabled'" />
-    </object>
-
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.processes" />
         <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.appops" />
