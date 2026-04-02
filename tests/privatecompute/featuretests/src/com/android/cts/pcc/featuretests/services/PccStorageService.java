@@ -25,6 +25,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.os.ResultReceiver;
 import android.os.storage.FileManager;
 import android.os.storage.operations.FileOperationEnqueueResult;
 import android.os.storage.operations.FileOperationRequest;
@@ -52,11 +53,11 @@ public class PccStorageService extends PccService {
             "start_file_operation_and_listen";
     public static final String COMMAND_LISTEN_FOR_FILE_OPERATION = "listen_for_file_operation";
     public static final String EXTRA_REQUEST_ID = "request_id";
+    public static final String EXTRA_RESULT_RECEIVER = "result_receiver";
 
     public static final String EXTRA_FILE_SIZE_BYTES = "file_size_bytes";
     public static final String EXTRA_PFD = "pfd";
     public static final String EXTRA_FILE_PATH = "file_path";
-    public static final String EXTRA_RESULT_RECEIVER = "result_receiver";
 
     public static final String PCC_FILE = "test_pcc_file.dat";
     private static final String PCC_CACHE_FILE = "test_pcc_cache_file.dat";
@@ -108,14 +109,16 @@ public class PccStorageService extends PccService {
             }
         } else if (COMMAND_LISTEN_FOR_FILE_OPERATION.equals(command)) {
             String reqId = data.getString(EXTRA_REQUEST_ID);
+            ResultReceiver rr = data.getParcelable(EXTRA_RESULT_RECEIVER, ResultReceiver.class);
             if (reqId != null) {
                 FileManager fileManager = getSystemService(FileManager.class);
                 if (fileManager != null) {
-                    listenForFileOperationCompletion(fileManager, reqId);
+                    listenForFileOperationCompletion(fileManager, reqId, rr);
                 }
             }
         } else if (COMMAND_START_FILE_OPERATION_AND_LISTEN.equals(command)) {
             FileManager fileManager = getSystemService(FileManager.class);
+            ResultReceiver rr = data.getParcelable(EXTRA_RESULT_RECEIVER, ResultReceiver.class);
             if (fileManager != null) {
                 File dummyFile = new File(getFilesDir(), "dummy.txt");
                 try {
@@ -133,12 +136,13 @@ public class PccStorageService extends PccService {
                 FileOperationEnqueueResult enqueueResult = fileManager.enqueueOperation(request);
                 String requestId = enqueueResult.getRequestId();
 
-                listenForFileOperationCompletion(fileManager, requestId);
+                listenForFileOperationCompletion(fileManager, requestId, rr);
             }
         }
     }
 
-    private void listenForFileOperationCompletion(FileManager fileManager, String requestId) {
+    private void listenForFileOperationCompletion(
+            FileManager fileManager, String requestId, ResultReceiver rr) {
         BroadcastReceiver receiver =
                 new BroadcastReceiver() {
                     @Override
@@ -150,7 +154,9 @@ public class PccStorageService extends PccService {
                                     "Successfully received broadcast in PCC process for"
                                             + " requestId: "
                                             + requestId);
-                            System.exit(1); // Signal success by crashing
+                            if (rr != null) {
+                                rr.send(0, null);
+                            }
                         }
                     }
                 };
