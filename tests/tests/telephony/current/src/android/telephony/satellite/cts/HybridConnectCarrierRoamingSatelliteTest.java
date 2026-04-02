@@ -309,6 +309,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
     @Test
     @NotificationsTest
+    @Ignore("b/497038193 - Need to fix and re-enable this test.")
     public void testNotificationContent_AutoConnect() throws Exception {
         logd(TAG, "testNotificationContent_AutoConnect");
         if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;

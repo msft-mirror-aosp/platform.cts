@@ -108,8 +108,8 @@ class Cv2ImageProcessingUtilsTests(unittest.TestCase):
   def _detect_aruco_markers(self, image):
     """Helper to load image and detect ArUco markers."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    corners, ids, _ = cv2.aruco.detectMarkers(gray, self.aruco_dict,
-                                              parameters=self.aruco_params)
+    detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
+    corners, ids, _ = detector.detectMarkers(gray)
     return corners, ids
 
   def test_rotated_scene_with_aruco_markers(self):

@@ -15,6 +15,7 @@
 
 
 import logging
+import math
 import os.path
 import pathlib
 
@@ -101,38 +102,64 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
           self.lighting_control_port, self.lighting_ch,
           lighting_control_utils.LIGHT_OFF, self.use_gen2)
 
-      # TODO: b/462784889 - use do_jca_captures_across_zoom_ratios()
-      zoom_ratios_physical_id = {}
+      # take captures with no flash as baseline
+      logging.debug('Taking captures with no flash.')
+      no_flash_caps = list(cam.do_jca_captures_across_zoom_ratios(
+          self.dut, self.log_path,
+          ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
+          lens_facing, zoom_ratios=zoom_ratios
+      ))
+
+      # take captures with auto flash enabled
+      logging.debug('Taking captures with auto flash enabled.')
+      auto_flash_caps = list(cam.do_jca_captures_across_zoom_ratios(
+          self.dut, self.log_path,
+          ui_interaction_utils.FLASH_MODE_AUTO_CONTENT_DESC,
+          lens_facing, zoom_ratios=zoom_ratios,
+          save_image_delay=_SAVE_IMAGE_DELAY
+      ))
+
       failed_zoom_ratios = {}
       marginal_pass_zoom_ratios = {}
-      for zoom_ratio in zoom_ratios:
-        # take capture with no flash as baseline
-        cap = cam.do_jca_capture(
-            self.dut,
-            self.log_path,
-            flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
-            lens_facing=lens_facing,
-            zoom_ratio=zoom_ratio,
-        )
-        path = pathlib.Path(cap.capture_path)
-        physical_id = cap.physical_id
+
+      # Identify physical ID at 1x zoom for switch avoidance
+      baseline_1x_physical_id = None
+      for requested_zoom, cap in zip(zoom_ratios, no_flash_caps):
+        if math.isclose(requested_zoom, _ZOOM_1X):
+          baseline_1x_physical_id = cap.physical_id
+          break
+
+      for requested_zoom, cap_off, cap_auto in zip(
+          zoom_ratios, no_flash_caps, auto_flash_caps):
+        path_off = pathlib.Path(cap_off.capture_path)
+        path_auto = pathlib.Path(cap_auto.capture_path)
+        physical_id_off = cap_off.physical_id
+        physical_id_auto = cap_auto.physical_id
+        zoom_off = cap_off.zoom_ratio
+        zoom_auto = cap_auto.zoom_ratio
+
         logging.debug(
-            'Zoom Ratio: %f, Physical camera id: %s', zoom_ratio, physical_id)
-        zoom_ratios_physical_id[zoom_ratio] = physical_id
+            'Requested Zoom Ratio: %f, No Flash Zoom: %f, Auto Flash Zoom: %f, '
+            'No Flash Physical ID: %s, Auto Flash Physical ID: %s',
+            requested_zoom, zoom_off, zoom_auto,
+            physical_id_off, physical_id_auto)
+
         # Skip zoom ratios that cause physical camera switch
-        if (zoom_ratio > _ZOOM_1X
-            and physical_id != zoom_ratios_physical_id[_ZOOM_1X]):
+        if (requested_zoom > _ZOOM_1X and
+            physical_id_off != baseline_1x_physical_id):
           logging.debug(
               'Skip zoom ratio %f due to physical camera switch. '
               'Physical camera id at 1x zoom: %s, '
               'Physical camera id at %f zoom: %s',
-              zoom_ratio, zoom_ratios_physical_id[_ZOOM_1X],
-              zoom_ratio, physical_id)
+              requested_zoom, baseline_1x_physical_id,
+              requested_zoom, physical_id_off)
           continue
-        no_flash_capture_path = path.with_name(
-            f'{path.stem}_no_flash_{zoom_ratio}{path.suffix}'
+
+        # process no flash image
+        no_flash_capture_path = path_off.with_name(
+            f'{path_off.stem}_no_flash_{zoom_off}{path_off.suffix}'
         )
-        os.rename(path, no_flash_capture_path)
+        os.rename(path_off, no_flash_capture_path)
         cv2_no_flash_image = cv2.imread(str(no_flash_capture_path))
         y = opencv_processing_utils.convert_to_y(cv2_no_flash_image, _BGR)
         # Add a color channel dimension for interoperability
@@ -144,22 +171,11 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
         image_processing_utils.write_image(y, f'{test_name}_no_flash_Y.jpg')
         logging.debug('No flash frames Y mean: %.4f', no_flash_mean)
 
-        # take capture with auto flash enabled
-        logging.debug('Taking capture with auto flash enabled.')
-        path = pathlib.Path(
-            cam.do_jca_capture(
-                self.dut,
-                self.log_path,
-                flash_mode_desc=ui_interaction_utils.FLASH_MODE_AUTO_CONTENT_DESC,
-                lens_facing=lens_facing,
-                zoom_ratio=zoom_ratio,
-                save_image_delay=_SAVE_IMAGE_DELAY,
-            ).capture_path
+        # process auto flash image
+        auto_flash_capture_path = path_auto.with_name(
+            f'{path_auto.stem}_auto_flash_{zoom_auto}{path_auto.suffix}'
         )
-        auto_flash_capture_path = path.with_name(
-            f'{path.stem}_auto_flash_{zoom_ratio}{path.suffix}'
-        )
-        os.rename(path, auto_flash_capture_path)
+        os.rename(path_auto, auto_flash_capture_path)
         cv2_auto_flash_image = cv2.imread(str(auto_flash_capture_path))
         y = opencv_processing_utils.convert_to_y(cv2_auto_flash_image, _BGR)
         # Add a color channel dimension for interoperability
@@ -174,10 +190,10 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
         # confirm correct behavior
         mean_delta = flash_mean - no_flash_mean
         if mean_delta <= _MEAN_DELTA_ATOL:
-          failed_zoom_ratios[zoom_ratio] = mean_delta
+          failed_zoom_ratios[str(requested_zoom)] = mean_delta
         elif mean_delta <= (
             _MEAN_DELTA_ATOL * its_session_utils.MARGINAL_PASS_FACTOR_FLASH):
-          marginal_pass_zoom_ratios[zoom_ratio] = mean_delta
+          marginal_pass_zoom_ratios[str(requested_zoom)] = mean_delta
 
       if marginal_pass_zoom_ratios:
         marginal_pass_message = (

@@ -656,6 +656,9 @@ class AppOpsLoggingTest {
      * Realistic end-to-end test for getting cell info
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(
+        reason = "telephony is not supported for visible background users"
+    )
     fun getCellInfo() {
         assumeTrue(context.packageManager.hasSystemFeature(FEATURE_TELEPHONY))
 
