@@ -96,6 +96,10 @@ public class UsbPortStatusApiTest {
         PackageManager pm = mContext.getPackageManager();
         MockitoAnnotations.initMocks(this);
 
+        boolean hasUsbHost = pm.hasSystemFeature(PackageManager.FEATURE_USB_HOST);
+        boolean hasUsbAccessory =
+            pm.hasSystemFeature(PackageManager.FEATURE_USB_ACCESSORY);
+        Assume.assumeTrue(hasUsbHost || hasUsbAccessory);
         Assert.assertNotNull(mUsbManagerSys);
         Assert.assertNotNull(mUsbManagerMock =
                 new UsbManager(mContext, mMockUsbService));
