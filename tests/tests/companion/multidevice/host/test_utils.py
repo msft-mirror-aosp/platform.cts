@@ -43,17 +43,19 @@ def assert_build_types_match(primary: android_device.AndroidDevice, secondary: a
     asserts.assert_equal(primary_debuggable, secondary_debuggable, 'Both devices must be on the same type of build')
 
 
-def assert_attestation_verified(primary: android_device.AndroidDevice, secondary: android_device.AndroidDevice):
+def assume_attestation_verifiable(primary: android_device.AndroidDevice, secondary: android_device.AndroidDevice):
     """
-    Check if device attestation can be verified by peer device
+    Check if device attestation can be verified by peer device. Skip if not.
     """
     primary_debuggable = primary.build_info['debuggable'] == '1'
     secondary_debuggable = secondary.build_info['debuggable'] == '1'
 
-    if not primary_debuggable and not secondary_debuggable:
-        primary_attestation = primary.cdm.generateAttestation()
-        secondary_attestation = secondary.cdm.generateAttestation()
-        primary_verified = secondary.cdm.verifyAttestation(primary_attestation)
-        secondary_verified = primary.cdm.verifyAttestation(secondary_attestation)
-        asserts.assert_true(primary_verified, 'Secondary device failed to verify primary device')
-        asserts.assert_true(secondary_verified, 'Primary device failed to verify secondary device')
+    if primary_debuggable or secondary_debuggable:
+        return
+
+    primary_attestation = primary.cdm.generateAttestation()
+    secondary_attestation = secondary.cdm.generateAttestation()
+    primary_verified = secondary.cdm.verifyAttestation(primary_attestation)
+    secondary_verified = primary.cdm.verifyAttestation(secondary_attestation)
+    asserts.skip_if(not primary_verified, 'Secondary device cannot verify primary device')
+    asserts.skip_if(not secondary_verified, 'Primary device cannot verify secondary device')

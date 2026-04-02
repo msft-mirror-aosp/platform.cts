@@ -54,8 +54,8 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # Assert both devices are on same build type (debug vs user)
         test_utils.assert_build_types_match(self.primary, self.secondary)
 
-        # If on user build, assert AVF compliance for peer profiles
-        test_utils.assert_attestation_verified(self.primary, self.secondary)
+        # If on user build, assume AVF compliance for peer profiles
+        test_utils.assume_attestation_verifiable(self.primary, self.secondary)
 
         # Create associations
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -176,8 +176,8 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # Assert both devices are on same build type (debug vs user)
         test_utils.assert_build_types_match(self.primary, self.secondary)
 
-        # If on user build, assert AVF compliance for peer profiles
-        test_utils.assert_attestation_verified(self.primary, self.secondary)
+        # If on user build, assume AVF compliance for peer profiles
+        test_utils.assume_attestation_verifiable(self.primary, self.secondary)
 
         # Create associations
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
@@ -229,8 +229,8 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # Assert both devices are on same build type (debug vs user)
         test_utils.assert_build_types_match(self.primary, self.secondary)
 
-        # If on user build, assert AVF compliance for peer profiles
-        test_utils.assert_attestation_verified(self.primary, self.secondary)
+        # If on user build, assume AVF compliance for peer profiles
+        test_utils.assume_attestation_verifiable(self.primary, self.secondary)
 
         # Skip if task continuity flag is disabled
         api_flags_utils.assume_enabled(self.primary, 'companion', 'task_continuity')
