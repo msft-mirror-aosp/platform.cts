@@ -87,6 +87,8 @@ import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
@@ -94,6 +96,8 @@ import com.android.cts.input.UinputTouchScreen;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -106,8 +110,12 @@ import java.util.function.BiConsumer;
 
 @RunWith(AndroidJUnit4.class)
 @Presubmit
+@RequireNotVisibleBackgroundUsers(
+        reason = "Visible background users are not allowed to perform global action")
 public class ActivityManagerProcessStateTest {
     private static final String TAG = ActivityManagerProcessStateTest.class.getName();
+
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     private static final String STUB_PACKAGE_NAME = "android.app.stubs";
     private static final String PACKAGE_NAME_APP1 = "com.android.app1";
