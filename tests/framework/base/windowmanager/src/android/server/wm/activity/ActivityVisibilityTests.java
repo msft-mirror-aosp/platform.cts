@@ -205,6 +205,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
         assumeFalse(
                 "Skip test on devices with visible background users enabled (primarily Automotive"
@@ -257,6 +261,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_slowLaunch() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
         assumeFalse(
                 "Skip test on devices with visible background users enabled (primarily Automotive"
@@ -722,6 +730,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnShowOnLockAttr() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         assumeFalse("Skip test on devices with visible background users enabled "
                 + "(primarily Automotive Multi User Multi Display) because there "
                 + "is no support for turning off displays in all power groups.",
@@ -764,6 +776,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnAttrRemove() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         assumeFalse("Skip test on devices with visible background users enabled "
                 + "(primarily Automotive Multi User Multi Display) because there "
                 + "is no support for turning off displays in all power groups.",
@@ -793,6 +809,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnSingleTask() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         assumeTrue(supportsLockScreen());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
@@ -841,6 +861,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_withRelayout() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         assumeTrue(supportsLockScreen());
         // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
         assumeFalse(
