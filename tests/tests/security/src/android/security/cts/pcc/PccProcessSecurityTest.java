@@ -26,8 +26,8 @@ import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -46,6 +46,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
+@RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
 public class PccProcessSecurityTest {
     static final String TAG = PccProcessSecurityTest.class.getSimpleName();
 
@@ -89,20 +90,17 @@ public class PccProcessSecurityTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testGetProcessIsIsolated() throws RemoteException {
         Assert.assertFalse(Process.isIsolated());
         Assert.assertFalse(mService.getProcessIsIsolated());
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testPccServiceUidRange() throws RemoteException {
         Assert.assertTrue(Process.isPrivateComputeCoreUid(mService.getUid()));
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     @Ignore("b/455472559")
     public void testCorrectSelinuxDomain() throws RemoteException {
         final String selinuxContext = mService.getSeLinuxContext();

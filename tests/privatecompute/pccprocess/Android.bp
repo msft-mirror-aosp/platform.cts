@@ -34,6 +34,7 @@ android_test {
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
+        "bedstead",
         "flag-junit",
         "android.app.privatecompute.flags-aconfig-java",
         "privatecompute-common",
@@ -53,5 +54,6 @@ android_test {
         ":PccQueryableByIntentFilter",
         ":PccQueryableByProvider",
         ":PccCheckingVisibilityApp",
+        ":DataInitApp",
     ],
 }

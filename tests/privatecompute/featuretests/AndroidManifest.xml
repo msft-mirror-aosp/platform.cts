@@ -35,6 +35,10 @@
             android:name=".services.PccStorageService"
             android:exported="true"
             android:privateComputeCore="true"/>
+        <service
+            android:name=".services.PccVictimService"
+            android:exported="true"
+            android:privateComputeCore="true"/>
     </application>
 
     <instrumentation

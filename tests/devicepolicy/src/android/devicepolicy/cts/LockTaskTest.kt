@@ -490,7 +490,9 @@ class LockTaskTest {
         )
         try {
             testApp.install().use { testApp ->
-                val activity = testApp.activities().any().start()
+                val options = ActivityOptions.makeBasic()
+                        .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
+                val activity = testApp.activities().any().start(options.toBundle())
                 activity.startLockTask()
                 try {
                     assertThat(TestApis.activities().foregroundActivity()).isEqualTo(
@@ -521,9 +523,12 @@ class LockTaskTest {
         )
         deviceState.dpc().devicePolicyManager()
                 .setLockTaskPackages(deviceState.dpc().componentName(), arrayOf())
+        val options = ActivityOptions.makeBasic()
+                .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
         try {
             testApp.install().use { testApp ->
-                val activity: Activity<TestAppActivity> = testApp.activities().any().start()
+                val activity: Activity<TestAppActivity> = testApp.activities().any()
+                    .start(options.toBundle())
                 activity.activity().startLockTask()
                 try {
                     assertThat(TestApis.activities().foregroundActivity()).isEqualTo(
@@ -1311,7 +1316,11 @@ class LockTaskTest {
                     deviceState.dpc().componentName(),
                     LOCK_TASK_FEATURE_KEYGUARD
                 )
-                val activity = testApp.activities().any().start()
+                // Ensure the activity starts on the default display to avoid it
+                // launching on a secondary display on multi-display devices.
+                val options = ActivityOptions.makeBasic()
+                        .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
+                val activity = testApp.activities().any().start(options.toBundle())
                 try {
                     activity.startLockTask()
                     val intent = Intent(ACTION_EMERGENCY_DIAL)

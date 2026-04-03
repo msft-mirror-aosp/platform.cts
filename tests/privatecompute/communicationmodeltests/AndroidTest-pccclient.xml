@@ -15,11 +15,6 @@
  * limitations under the License.
  -->
 <configuration description="Config for CTS PCC Service test cases when client is in PCC sandbox">
-    <object class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController"
-        type="module_controller">
-        <option name="run-command"
-            value="aflags list | grep 'android.app.privatecompute.flags.enable_pcc_framework_support' | awk '{print $2}' | grep 'enabled'" />
-    </object>
     <option name="test-suite-tag" value="cts" />
     <option name="test-tag" value="PccServicePccClientTest" />
     <option name="config-descriptor:metadata" key="component" value="framework" />

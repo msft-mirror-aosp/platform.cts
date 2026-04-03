@@ -23,5 +23,8 @@
     <option name="plan" value="cts-v-host" />
 
     <option name="compatibility:run-suite-tag" value="cts-v-host" />
+    <!-- Disable ABI and parameters for compatibility with CTS-V -->
+    <option name="compatibility:primary-abi-only" value="true" />
+    <option name="compatibility:enable-parameterized-modules" value="false" />
 
 </configuration>
