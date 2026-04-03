@@ -139,6 +139,11 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
         mCallExecutor.execute(() -> {
             ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
 
+            if (getState() == ImsCallSessionImplBase.State.TERMINATED) {
+                Log.d(LOG_TAG, "start :: session already terminated, skipping startInternal");
+                return;
+            }
+
             if (isTestType(TEST_TYPE_MO_FAILED)) {
                 startFailed();
             } else {
