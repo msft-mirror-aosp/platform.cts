@@ -189,11 +189,19 @@ public class ManifestTestListAdapter extends TestListAdapter {
     private static final String USER_TYPE_VISIBLE_BG_USER = "visible_background_non-profile_user";
 
     /** The name of the camera ITS test of a {@link TestListItem}. */
-    private static final String CAMERA_ITS_TEST =
-            "com.android.cts.verifier.camera.its.ItsTestActivity";
+    private static final String CAMERA_ITS_DEFAULT_TEST =
+            "com.android.cts.verifier.camera.its.ItsDefaultTestActivity";
 
     /** The name of the camera ITS test (folded mode) of a {@link TestListItem}. */
-    private static final String CAMERA_ITS_TEST_FOLDED = CAMERA_ITS_TEST + "[folded]";
+    private static final String CAMERA_ITS_DEFAULT_TEST_FOLDED = CAMERA_ITS_DEFAULT_TEST + "[folded]";
+
+    /** The name of the camera ITS sensor fusion test of a {@link TestListItem}. */
+    private static final String CAMERA_ITS_SENSOR_FUSION_TEST =
+            "com.android.cts.verifier.camera.its.SensorFusionTestActivity";
+
+    /** The name of the camera ITS sensor fusion test (folded mode) of a {@link TestListItem}. */
+    private static final String CAMERA_ITS_SENSOR_FUSION_TEST_FOLDED =
+            CAMERA_ITS_SENSOR_FUSION_TEST + "[folded]";
 
     private final HashSet<String> mDisabledTests;
 
@@ -639,7 +647,10 @@ public class ManifestTestListAdapter extends TestListAdapter {
         if (testName == null || !TestListActivity.getIsSystemEnabled()) {
             return true;
         }
-        return !testName.equals(CAMERA_ITS_TEST) && !testName.equals(CAMERA_ITS_TEST_FOLDED);
+        return !testName.equals(CAMERA_ITS_DEFAULT_TEST)
+                && !testName.equals(CAMERA_ITS_DEFAULT_TEST_FOLDED)
+                && !testName.equals(CAMERA_ITS_SENSOR_FUSION_TEST)
+                && !testName.equals(CAMERA_ITS_SENSOR_FUSION_TEST_FOLDED);
     }
 
     private boolean isVisibleBackgroundNonProfileUser() {
