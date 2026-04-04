@@ -402,6 +402,9 @@ public class SplashscreenTests extends ActivityManagerTestBase {
 
     @Test
     public void testSetApplicationNightMode() throws Exception {
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Changing night mode is not supported on visible background users");
+
         final UiModeManager uiModeManager = mContext.getSystemService(UiModeManager.class);
         assumeTrue(uiModeManager != null);
         final int systemNightMode = uiModeManager.getNightMode();

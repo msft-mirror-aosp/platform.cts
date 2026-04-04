@@ -153,6 +153,10 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
      */
     @Test
     public void testLaunchNoHistoryActivityShowWhenLocked() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
         assumeFalse(
                 "Skip test on devices with visible background users enabled (primarily Automotive"
