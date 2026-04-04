@@ -136,7 +136,9 @@ public class BluetoothChatService {
      * Start the chat service. Specifically start AcceptThread to begin a
      * session in listening (server) mode. Called by the Activity onResume() */
     public synchronized void start(boolean secure) {
-        if (D) Log.d(TAG, "start secure: " + secure + UUID.randomUUID() + " - " + UUID.randomUUID());
+        if (D) {
+            Log.d(TAG, "start secure: " + secure + UUID.randomUUID() + " - " + UUID.randomUUID());
+        }
 
         // Cancel any thread attempting to make a connection
         if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread = null;}
@@ -360,7 +362,14 @@ public class BluetoothChatService {
                     }
                 }
             } catch (IOException e) {
-                Log.e(TAG, "Socket Type: " + mSocketType + ", le: " + mBleTransport + " listen() failed", e);
+                Log.e(
+                        TAG,
+                        "Socket Type: "
+                                + mSocketType
+                                + ", le: "
+                                + mBleTransport
+                                + " listen() failed",
+                        e);
             }
             mmServerSocket = tmp;
             if (mBleTransport) {
@@ -568,9 +577,10 @@ public class BluetoothChatService {
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
 
-                    // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer)
-                            .sendToTarget();
+                    if (bytes >= 0) {
+                        // Send the obtained bytes to the UI Activity
+                        mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+                    }
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();

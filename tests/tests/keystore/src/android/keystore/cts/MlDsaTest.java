@@ -34,13 +34,12 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -64,8 +63,8 @@ public class MlDsaTest {
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void setUp() {
         TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
     }
 
