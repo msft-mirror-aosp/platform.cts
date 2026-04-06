@@ -493,11 +493,17 @@ class ProvisioningTest {
 
                     localDevicePolicyManager.provisionFullyManagedDevice(params)
 
+                    // AAOS in HSUM still enables adding users due to the communal nature
+                    // of those devices. See b/241553133
+                    val expectSet = !(TestApis.packages().features().contains(
+                        CommonPackages.FEATURE_AUTOMOTIVE) &&
+                            TestApis.users().isHeadlessSystemUserMode())
+
                     assertThat(
                         TestApis.devicePolicy().userRestrictions()
                             .isSet(CommonUserRestrictions.DISALLOW_ADD_USER)
                     )
-                        .isTrue()
+                        .isEqualTo(expectSet)
                 }
             }
         }
