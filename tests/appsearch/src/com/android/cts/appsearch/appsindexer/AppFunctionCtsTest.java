@@ -1049,8 +1049,9 @@ public class AppFunctionCtsTest {
         Flags.FLAG_ENABLE_HANDLING_MULTIPLE_APP_FUNCTION_XML
     })
     @Test
-    public void indexApp_onlyDynamicAppFunctionsFlagDisabled_onlyIndexesLastServiceFunctions()
-            throws Throwable {
+    public void
+            indexApp_onlyDynamicAppFunctionsFlagDisabled_onlyIndexesLastEnabledServiceFunctions()
+                    throws Throwable {
         // Ensure platform flag is disabled indicating below Android 37.
         assumeFlagIsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS);
         installPackage(mContext, TEST_APP_A_MULTI_SERVICE_PATH);
@@ -1058,20 +1059,20 @@ public class AppFunctionCtsTest {
         // Retry till the indexer has completed a run.
         retryAssert(
                 () -> {
-                    // AppFunctions of a service with the least priority in App A should be
-                    // indexed.
+                    // AppFunctions of a service with the least priority and enabled status in App A
+                    // should be indexed.
                     Map<String, GenericDocument> appFnMap =
                             searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                     assertThat(appFnMap.keySet())
                             .containsExactly(
-                                    TEST_APP_A_PKG + "/com.example.utils#printServiceC",
+                                    TEST_APP_A_PKG + "/com.example.utils#printServiceB",
                                     TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema");
                     assertThat(
                                     appFnMap.get(
                                                     TEST_APP_A_PKG
-                                                            + "/com.example.utils#printServiceC")
+                                                            + "/com.example.utils#printServiceB")
                                             .getPropertyString("serviceName"))
-                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceC");
+                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceB");
                 });
     }
 
@@ -1108,7 +1109,7 @@ public class AppFunctionCtsTest {
      * Installs the multi service apk and asserts that functions from enabled services (A and B) are
      * indexed.
      *
-     * <p> Functions from disabled service C are not indexed.
+     * <p>Functions from disabled service C are not indexed.
      */
     private void installAndAssertMultiServiceApk() throws Throwable {
         installPackage(mContext, TEST_APP_A_MULTI_SERVICE_PATH);
