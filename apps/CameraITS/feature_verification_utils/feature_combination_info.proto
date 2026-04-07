@@ -56,6 +56,11 @@ enum StreamUsecase {
   USECASE_PREVIEW_VIDEO_STILL = 6;
 }
 
+enum StreamUsageFlag {
+  USAGE_FLAG_NONE = 0;
+  USAGE_FLAG_VIDEO_RECORD = 0x10000; // HardwareBuffer.USAGE_VIDEO_ENCODE
+}
+
 message Size {
   uint32 width = 1;
   uint32 height = 2;
@@ -73,6 +78,7 @@ message OutputConfiguration {
   optional Size size = 2;
   optional StreamUsecase stream_usecase = 3;
   optional DynamicRangeProfile dynamic_range_profile = 4;
+  optional StreamUsageFlag usage_flag = 5;
 }
 
 message SessionConfiguration {

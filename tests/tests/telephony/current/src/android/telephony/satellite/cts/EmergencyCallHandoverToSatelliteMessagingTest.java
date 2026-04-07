@@ -46,6 +46,7 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS;
 import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_T911;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EMERGENCY_CALL_MONITORING_DURATION_MILLIS;
 
@@ -141,7 +142,8 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     @BeforeClass
     public static void beforeAllTests() throws Exception {
         logd(LOG_TAG, "beforeAllTests");
-        if (!shouldTestEmergencyHandoverToSatelliteMessaging()) return;
+        disableWifi();
+        if (!shouldTestEmergencyHandoverToSatelliteMessaging(true)) return;
         beforeAllCarrierRoamingTestsBase();
         sServiceConnector = new ImsServiceConnector(InstrumentationRegistry.getInstrumentation());
 
@@ -157,7 +159,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd(LOG_TAG, "afterAllTests");
-        if (!shouldTestEmergencyHandoverToSatelliteMessaging()) return;
+        if (!shouldTestEmergencyHandoverToSatelliteMessaging(true)) return;
         assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(false));
         assertTrue(
                 "Failed to set satellite controller timeout duration",
@@ -176,9 +178,10 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     @Before
     public void beforeTest() throws Exception {
         logd(LOG_TAG, "beforeTest");
+        disableWifi();
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         if (sMockModemManager != null) {
             sMockModemManager.resetImsAllLatchCountdown();
@@ -190,7 +193,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     @After
     public void afterTest() throws Exception {
         logd(LOG_TAG, "afterTest");
-        if (!shouldTestEmergencyHandoverToSatelliteMessaging()) {
+        if (!shouldTestEmergencyHandoverToSatelliteMessaging(false)) {
             return;
         }
 
@@ -223,7 +226,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -253,7 +256,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[0]);
-            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[0]);
+            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[0], true);
             assertTrue(
                     "Timed out waiting for test emergency number configuration",
                     testCb.waitForTestEmergencyNumberConfigured());
@@ -329,7 +332,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -353,7 +356,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], true);
             assertTrue(
                     "Timed out waiting for test emergency number configuration",
                     testCb.waitForTestEmergencyNumberConfigured());
@@ -424,7 +427,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
@@ -457,7 +460,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[2]);
-            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[2]);
+            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[2], true);
             assertTrue(
                     "Timed out waiting for test emergency number configuration",
                     testCb.waitForTestEmergencyNumberConfigured());
@@ -530,7 +533,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
@@ -563,7 +566,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[3]);
-            setupForEmergencyCalling(AUTO_CONNECT_SLOT_ID, sTestEmergencyNumbers[3]);
+            setupForEmergencyCalling(AUTO_CONNECT_SLOT_ID, sTestEmergencyNumbers[3], true);
             assertTrue(
                     "Timed out waiting for test emergency number configuration",
                     testCb.waitForTestEmergencyNumberConfigured());
@@ -636,7 +639,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -691,12 +694,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[0]);
-            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[0]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[0], false);
 
             logd(LOG_TAG, "testE911ToEsosHandover_NtnOnly_DS: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -731,7 +729,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                             LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action = sMockSatelliteServiceManager.readStringFromOverlayConfig(
-                    "config_satellite_test_with_esp_replies_intent_action");
+                    "config_satellite_emergency_handover_intent_action");
             verifyHandoverMessage(EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS, eSosApp.first,
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
@@ -774,7 +772,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -826,12 +824,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], false);
 
             logd(LOG_TAG, "testE911ToT911Handover_AutoConnect_DS: bind to InCallService");
             bindImsService(SLOT_ID_0);
@@ -904,7 +897,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         assumeTrue("VZW AST Skylo fallback flag is not enabled", Flags.vzwAstSkyloFallback());
 
@@ -963,12 +956,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], false);
 
             logd(LOG_TAG, "testE911ToT911Handover_Hybrid_AutoConnect_DS: bind to InCallService");
             bindImsService(SLOT_ID_0);
@@ -1051,7 +1039,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         assumeTrue("VZW AST Skylo fallback flag is not enabled", Flags.vzwAstSkyloFallback());
 
@@ -1118,12 +1106,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], false);
 
             logd(
                     LOG_TAG,
@@ -1201,12 +1184,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     "Timed out waiting for device to go out of service",
                     serviceStateListener.waitUntilOutOfService());
             assertFalse(ntnStateListener.getNtnMode());
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], false);
             bindImsService(SLOT_ID_0);
             mServiceCallBack = new ServiceCallBack();
             InCallServiceStateValidator.setCallbacks(mServiceCallBack);
@@ -1242,7 +1220,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action1 =
                     sMockSatelliteServiceManager.readStringFromOverlayConfig(
-                            "config_satellite_test_with_esp_replies_intent_action");
+                            "config_satellite_emergency_handover_intent_action");
             verifyHandoverMessage(
                     EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS,
                     eSosApp.first,
@@ -1290,7 +1268,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         assumeTrue("VZW AST Skylo fallback flag is not enabled", Flags.vzwAstSkyloFallback());
         boolean supportDomainSelection =
@@ -1351,12 +1329,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[1]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[1], false);
 
             logd(LOG_TAG, "testE911ToeSOSHandover_Hybrid_ManualConnect_DS: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -1395,7 +1368,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action =
                     sMockSatelliteServiceManager.readStringFromOverlayConfig(
-                            "config_satellite_test_with_esp_replies_intent_action");
+                            "config_satellite_emergency_handover_intent_action");
             verifyHandoverMessage(
                     EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS,
                     eSosApp.first,
@@ -1439,7 +1412,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
@@ -1501,12 +1474,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[2]);
-            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[2]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[2], false);
 
             logd(LOG_TAG, "testE911ToEsosHandover_Coex_DS: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -1542,7 +1510,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                             LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action = sMockSatelliteServiceManager.readStringFromOverlayConfig(
-                    "config_satellite_test_with_esp_replies_intent_action");
+                    "config_satellite_emergency_handover_intent_action");
             verifyHandoverMessage(EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS, eSosApp.first,
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
@@ -1581,7 +1549,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
@@ -1643,12 +1611,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
-
-            testCb.setTestEmergencyNumber(sTestEmergencyNumbers[3]);
-            setupForEmergencyCalling(AUTO_CONNECT_SLOT_ID, sTestEmergencyNumbers[3]);
-            assertTrue(
-                    "Timed out waiting for test emergency number configuration",
-                    testCb.waitForTestEmergencyNumberConfigured());
+            setupForEmergencyCalling(AUTO_CONNECT_SLOT_ID, sTestEmergencyNumbers[3], false);
 
             logd(LOG_TAG, "testE911ToT911Handover_Coex_DS: bind to InCallService");
             bindImsService(AUTO_CONNECT_SLOT_ID);
@@ -1727,7 +1690,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -1801,7 +1764,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], true);
             assertTrue(testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToT911Handover_AutoConnect_Concierge_DS: bind to InCallService");
@@ -1881,7 +1844,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -1950,7 +1913,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], true);
             assertTrue(testCb.waitForTestEmergencyNumberConfigured());
 
             logd(
@@ -2031,7 +1994,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -2100,7 +2063,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], true);
             assertTrue(testCb.waitForTestEmergencyNumberConfigured());
 
             logd(
@@ -2179,7 +2142,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          */
         assumeTrue(
                 "Device does not support emergency handover to satellite messaging",
-                shouldTestEmergencyHandoverToSatelliteMessaging());
+                shouldTestEmergencyHandoverToSatelliteMessaging(true));
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -2248,7 +2211,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
-            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
+            setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1], true);
             assertTrue(testCb.waitForTestEmergencyNumberConfigured());
 
             logd(
@@ -2457,7 +2420,12 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                 "CallSession Created");
     }
 
-    private static boolean shouldTestEmergencyHandoverToSatelliteMessaging() {
+    private static boolean shouldTestEmergencyHandoverToSatelliteMessaging(
+            boolean shouldCheckWifiState) {
+        if (shouldCheckWifiState && sWifiManager != null && sWifiManager.isWifiEnabled()) {
+            logd(LOG_TAG, "Wifi is enabled, skipping test");
+            return false;
+        }
         return ImsUtils.shouldTestImsCall() && shouldTestSatelliteWithMockService();
     }
 
@@ -2575,6 +2543,16 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                 quickTimerWhenInService);
 
         return bundle;
+    }
+
+    private static void disableWifi() {
+        if (sWifiManager != null && sWifiManager.isWifiEnabled()) {
+            logd(LOG_TAG, "Disabling wifi");
+            sWifiManager.setWifiEnabled(false);
+            sWifiStateReceiver.setWifiExpectedState(false);
+            runWithShellPermissionIdentity(() -> sWifiManager.setWifiEnabled(false));
+            sWifiStateReceiver.waitUntilWifiStateChanged();
+        }
     }
 
     private static MockEmergencyRegResult getEmergencyRegResult(

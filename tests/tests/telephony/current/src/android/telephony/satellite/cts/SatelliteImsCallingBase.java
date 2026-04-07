@@ -544,12 +544,16 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
         return str;
     }
 
-    protected void setupForEmergencyCalling(int slotId, String testNumber) throws Exception {
+    protected void setupForEmergencyCalling(
+        int slotId, String testNumber, boolean addTestEmergencyNumber) throws Exception {
         logd(LOG_TAG, "setupForEmergencyCalling: slotId=" + slotId + ", testNumber=" + testNumber);
         enableCarrierUseImsFirstForEmergency(slotId);
         TestUtils.setSystemDialerOverride(
                 InstrumentationRegistry.getInstrumentation(), getIncallComponent());
-        TestUtils.addTestEmergencyNumber(InstrumentationRegistry.getInstrumentation(), testNumber);
+        if (addTestEmergencyNumber) {
+            TestUtils.addTestEmergencyNumber(
+                InstrumentationRegistry.getInstrumentation(), testNumber);
+        }
         mIsEmergencyCallingSetup = true;
     }
 

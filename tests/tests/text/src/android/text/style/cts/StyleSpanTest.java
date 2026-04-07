@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.content.Context;
@@ -44,6 +45,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -215,6 +217,12 @@ public class StyleSpanTest {
             bug = 457840588, blockedBy = Settings.class)
     public void testRecreateWithUpdatedFontWeight() {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        UserHelper userHelper = new UserHelper(context);
+        // Skipping for visible background users as they cannot set system font scale.
+        assumeFalse(
+                "Not supported on visible background user", userHelper.isVisibleBackgroundUser());
+
         final int defaultConfigFontWeight =
                 context.getResources().getConfiguration().fontWeightAdjustment;
 

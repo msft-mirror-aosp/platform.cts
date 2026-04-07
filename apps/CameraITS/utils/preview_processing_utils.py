@@ -182,7 +182,7 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   # Record video and return recording object
   min_fps = fps_range[0] if (fps_range is not None) else None
   max_fps = fps_range[1] if (fps_range is not None) else None
-  recording_obj = cam.do_preview_recording_multiple_surfaces(
+  recording_obj = cam.do_recording_multiple_surfaces(
       output_surfaces, video_stream_index, _VIDEO_DURATION, stabilize_mode, ois,
       zoom_ratio=zoom_ratio, ae_target_fps_min=min_fps,
       ae_target_fps_max=max_fps
