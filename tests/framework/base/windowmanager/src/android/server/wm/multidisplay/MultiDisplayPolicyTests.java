@@ -804,6 +804,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
             separateTestJournal();
             // Destroy the display.
         }
+        mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
 
         // Fullscreen tasks will not necessarily reparent to the front; confirm the behavior first.
         final boolean reparentedToFront =
