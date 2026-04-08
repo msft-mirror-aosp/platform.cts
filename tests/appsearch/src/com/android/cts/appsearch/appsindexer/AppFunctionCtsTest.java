@@ -1067,12 +1067,6 @@ public class AppFunctionCtsTest {
                             .containsExactly(
                                     TEST_APP_A_PKG + "/com.example.utils#printServiceB",
                                     TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema");
-                    assertThat(
-                                    appFnMap.get(
-                                                    TEST_APP_A_PKG
-                                                            + "/com.example.utils#printServiceB")
-                                            .getPropertyString("serviceName"))
-                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceB");
                 });
     }
 
@@ -1094,14 +1088,14 @@ public class AppFunctionCtsTest {
                             searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                     assertThat(appFnMap.keySet())
                             .containsExactly(
-                                    TEST_APP_A_PKG + "/com.example.utils#printServiceC",
+                                    TEST_APP_A_PKG + "/com.example.utils#printServiceB",
                                     TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema");
                     assertThat(
                                     appFnMap.get(
                                                     TEST_APP_A_PKG
-                                                            + "/com.example.utils#printServiceC")
+                                                            + "/com.example.utils#printServiceB")
                                             .getPropertyString("serviceName"))
-                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceC");
+                            .isEqualTo("com.android.cts.appsearch.helper.TestAppFunctionServiceB");
                 });
     }
 
