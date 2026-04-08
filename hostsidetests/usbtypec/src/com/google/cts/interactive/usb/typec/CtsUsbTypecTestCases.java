@@ -20,6 +20,7 @@ import static android.Manifest.permission.MANAGE_USB;
 import static android.hardware.usb.UsbManager.ACTION_USB_PORT_CHANGED;
 
 import static com.android.bedstead.harrier.components.BroadcastReceiversComponentKt.registerBroadcastReceiver;
+import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_AUTOMOTIVE;
 
 import android.app.UiAutomation;
 import android.content.Context;
@@ -37,6 +38,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.interactive.Step;
@@ -312,6 +314,7 @@ public class CtsUsbTypecTestCases {
 
     @Test
     @Interactive
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
     @UntetheredTest
     @NotFullyAutomated(reason = "Requires plug and remove of a physical USB device")
     public void testBc12Sdp() throws Exception {
@@ -320,6 +323,7 @@ public class CtsUsbTypecTestCases {
 
     @Test
     @Interactive
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
     @UntetheredTest
     @NotFullyAutomated(reason = "Requires plug and remove of a physical USB device")
     public void testBc12Cdp() throws Exception {
@@ -328,6 +332,7 @@ public class CtsUsbTypecTestCases {
 
     @Test
     @Interactive
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
     @UntetheredTest
     @NotFullyAutomated(reason = "Requires plug and remove of a physical USB device")
     public void testBc12Dcp() throws Exception {
@@ -385,6 +390,7 @@ public class CtsUsbTypecTestCases {
 
     @Test
     @Interactive
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
     @UntetheredTest
     @NotFullyAutomated(reason = "Requires plug and remove of a physical USB device")
     public void testPowerProfileSourceFixed() throws Exception {
