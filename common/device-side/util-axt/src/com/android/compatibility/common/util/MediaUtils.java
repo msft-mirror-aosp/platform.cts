@@ -1430,6 +1430,27 @@ public class MediaUtils {
         return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
+    public static boolean isIamfRequired() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.BAKLAVA) {
+            return false;
+        }
+        if (isWatch()) {
+            return false;
+        }
+        // TV and Automotive are assumed to have spatializer support due to their use model.
+        if (isTv() || isAutomotive()) {
+            return true;
+        }
+        boolean hasSpatializer = false;
+        android.media.AudioManager audioManager =
+                mContext.getSystemService(android.media.AudioManager.class);
+        if (audioManager != null) {
+            hasSpatializer = audioManager.getSpatializer().getImmersiveAudioLevel()
+                    != android.media.Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE;
+        }
+        return hasSpatializer;
+    }
+
     public static boolean isPc() {
         return pm.hasSystemFeature(PackageManager.FEATURE_PC);
     }

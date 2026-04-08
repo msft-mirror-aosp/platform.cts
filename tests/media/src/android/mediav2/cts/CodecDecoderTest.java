@@ -61,6 +61,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Assume;
@@ -277,11 +278,17 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                 }));
             }
         }
-        if (IS_AT_LEAST_B) {
+        // iamf
+        if (IS_AT_LEAST_C) {
+            boolean isRequired = MediaUtils.isIamfRequired();
+            exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
+                    "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L,
+                    isRequired ? CODEC_ALL : CODEC_OPTIONAL});
+        } else if (IS_B) {
             if (iamfDefinitionsApi() && extractorMp4EnableIamf()) {
                 exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
-                    "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L,
-                    IS_AFTER_B ? CODEC_ALL : CODEC_OPTIONAL});
+                        "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L,
+                        CODEC_OPTIONAL});
             }
         }
         if (IS_AFTER_B) {
