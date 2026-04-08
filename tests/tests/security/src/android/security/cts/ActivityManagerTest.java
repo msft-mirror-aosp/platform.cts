@@ -38,6 +38,8 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.SurfaceControl;
 import android.window.IRemoteTransitionFinishedCallback;
@@ -55,6 +57,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,6 +66,9 @@ import java.util.concurrent.Callable;
 
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean canSupportSecondaryUsers() {
         String output = ShellUtils.runShellCommand(
