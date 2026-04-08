@@ -27,12 +27,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -41,7 +44,6 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ActivityScenario;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
@@ -99,7 +101,47 @@ public class TapjackingTest {
             mUiDevice.wakeUp();
         }
         mUiDevice.executeShellCommand(WM_DISMISS_KEYGUARD_COMMAND);
+
+
         mWindowManager = mContext.getSystemService(WindowManager.class);
+        DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
+
+        int displayId = Display.DEFAULT_DISPLAY;
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        if (userManager.isVisibleBackgroundUsersSupported()) {
+            // This fetches the display assigned to the current background user (e.g. passenger)
+            displayId = userManager.getMainDisplayIdAssignedToUser();
+        }
+        Display targetDisplay = displayManager.getDisplay(displayId);
+
+        if (targetDisplay != null) {
+            // Create a strict WindowContext for the overlay
+            Context windowContext =
+                    mContext.createWindowContext(
+                            targetDisplay,
+                            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                            null);
+            mWindowManager = windowContext.getSystemService(WindowManager.class);
+        }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        mUiDevice.pressHome();
+        // Ensure the view is removed on the main thread to avoid leaks
+        if (mOverlayView != null) {
+            mMainHandler.post(
+                    () -> {
+                        try {
+                            mWindowManager.removeView(mOverlayView);
+                            mOverlayView = null;
+                        } catch (Exception e) {
+                            // View might already be gone, ignore.
+                        }
+                    });
+        }
+        // Revoke the permission after the test
+        AppOpsUtils.setOpMode(mContext.getPackageName(), "SYSTEM_ALERT_WINDOW", MODE_DEFAULT);
     }
 
     private void launchPackageInstaller() {
@@ -244,7 +286,6 @@ public class TapjackingTest {
     }
 
     @Test
-    @FlakyTest(bugId = 493053160)
     public void overlaysAreSuppressedWhenConfirmingInstall() throws Exception {
         // 1. Grant permission to draw overlays for the test app
         AppOpsUtils.setOpMode(mContext.getPackageName(), "SYSTEM_ALERT_WINDOW", MODE_ALLOWED);
@@ -306,24 +347,7 @@ public class TapjackingTest {
                 });
     }
 
-    @After
-    public void tearDown() throws Exception {
-        mUiDevice.pressHome();
-        // Ensure the view is removed on the main thread to avoid leaks
-        if (mOverlayView != null) {
-            mMainHandler.post(
-                    () -> {
-                        try {
-                            mWindowManager.removeView(mOverlayView);
-                            mOverlayView = null;
-                        } catch (Exception e) {
-                            // View might already be gone, ignore.
-                        }
-                    });
-        }
-        // Revoke the permission after the test
-        AppOpsUtils.setOpMode(mContext.getPackageName(), "SYSTEM_ALERT_WINDOW", MODE_DEFAULT);
-    }
+
 
     public static final class TestActivity extends Activity {
 

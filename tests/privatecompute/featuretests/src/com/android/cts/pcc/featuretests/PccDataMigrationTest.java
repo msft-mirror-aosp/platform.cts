@@ -31,7 +31,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Parcel;
+import android.os.ResultReceiver;
 import android.os.storage.FileManager;
 import android.os.storage.operations.FileOperationEnqueueResult;
 import android.os.storage.operations.FileOperationRequest;
@@ -45,6 +49,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.pcc.featuretests.services.PccStorageService;
 
 import org.junit.After;
@@ -82,27 +87,40 @@ public class PccDataMigrationTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        SystemUtil.runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
+                "cmd pcc_sandbox enable-trust-instrumented-clients");
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         for (ServiceConnection conn : mPccConnections) {
             mContext.unbindService(conn);
         }
         mPccConnections.clear();
+        SystemUtil.runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
+                "cmd pcc_sandbox disable-trust-instrumented-clients");
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
     public void testPccService_canStartFileOperationAndReceiveBroadcast() throws Exception {
-        CountDownLatch disconnectLatch =
-                sendPccCommand(PccStorageService.COMMAND_START_FILE_OPERATION_AND_LISTEN, null);
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        ResultReceiver rr =
+                new ResultReceiver(new Handler(Looper.getMainLooper())) {
+                    @Override
+                    protected void onReceiveResult(int resultCode, Bundle resultData) {
+                        resultLatch.countDown();
+                    }
+                };
 
-        // If the PCC Service successfully receives the broadcast, it calls System.exit(1),
-        // which triggers the disconnect latch. We wait for up to 5 seconds.
-        boolean didCrash = disconnectLatch.await(DISCONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        sendPccCommand(PccStorageService.COMMAND_START_FILE_OPERATION_AND_LISTEN, null, rr);
 
-        assertThat(didCrash).isTrue();
+        // If the PCC Service successfully receives the broadcast, it calls ResultReceiver.send()
+        boolean success = resultLatch.await(DISCONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        assertThat(success).isTrue();
     }
 
     @Test
@@ -130,20 +148,28 @@ public class PccDataMigrationTest {
 
             Bundle extras = new Bundle();
             extras.putString(PccStorageService.EXTRA_REQUEST_ID, requestId);
-            CountDownLatch disconnectLatch =
-                    sendPccCommand(PccStorageService.COMMAND_LISTEN_FOR_FILE_OPERATION, extras);
 
-            // Wait for the PCC process to crash, indicating it received the broadcast
-            boolean didCrash = disconnectLatch.await(DISCONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            assertThat(didCrash).isTrue();
+            CountDownLatch resultLatch = new CountDownLatch(1);
+            ResultReceiver rr =
+                    new ResultReceiver(new Handler(Looper.getMainLooper())) {
+                        @Override
+                        protected void onReceiveResult(int resultCode, Bundle resultData) {
+                            resultLatch.countDown();
+                        }
+                    };
+
+            sendPccCommand(PccStorageService.COMMAND_LISTEN_FOR_FILE_OPERATION, extras, rr);
+
+            // Wait for the PCC process to send back result
+            boolean success = resultLatch.await(DISCONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertThat(success).isTrue();
         } finally {
             deleteIgnoreException(dummyFile);
         }
     }
 
-    private CountDownLatch sendPccCommand(String command, Bundle extras) throws Exception {
+    private void sendPccCommand(String command, Bundle extras, ResultReceiver rr) throws Exception {
         BlockingQueue<IBinder> binderQueue = new LinkedBlockingQueue<>();
-        CountDownLatch disconnectLatch = new CountDownLatch(1);
 
         ServiceConnection connection =
                 new ServiceConnection() {
@@ -154,8 +180,6 @@ public class PccDataMigrationTest {
 
                     @Override
                     public void onServiceDisconnected(ComponentName name) {
-                        // This fires if the PCC Service process crashes!
-                        disconnectLatch.countDown();
                     }
                 };
 
@@ -174,13 +198,27 @@ public class PccDataMigrationTest {
 
         Bundle data = new Bundle();
         data.putString(PccStorageService.EXTRA_COMMAND, command);
+        if (rr != null) {
+            data.putParcelable(PccStorageService.EXTRA_RESULT_RECEIVER, toPlainResultReceiver(rr));
+        }
         if (extras != null) {
             data.putAll(extras);
         }
 
         pccClient.sendData(data);
+    }
 
-        // Simply return the latch. We stay bound!
-        return disconnectLatch;
+    /**
+     * Converts a ResultReceiver subclass (like an anonymous inner class) into a plain framework
+     * ResultReceiver. This is necessary when passing the receiver to PCC sandbox process to avoid
+     * custom parcelables in the Bundle.
+     */
+    private ResultReceiver toPlainResultReceiver(ResultReceiver rr) {
+        Parcel parcel = Parcel.obtain();
+        rr.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        ResultReceiver plainRR = ResultReceiver.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+        return plainRR;
     }
 }
