@@ -87,6 +87,13 @@ public class TestAppController extends Service {
             }
         }
 
+        private List<ComponentName> getFlusherComponents() throws RemoteException {
+            TestAppController service = getServiceOrThrow();
+            return List.of(
+                    new ComponentName(service, Flusher.Understander.class),
+                    new ComponentName(service, Flusher.Renderer.class));
+        }
+
         @Override
         public List<ComponentName> getRefiners() throws RemoteException {
             TestAppController service = getServiceOrThrow();
@@ -116,7 +123,12 @@ public class TestAppController extends Service {
         @Override
         public void disableAllComponents() throws RemoteException {
             Log.w(TAG, "disableAllComponents()");
-            updateComponentState(false, getRefiners(), getUnderstanders(), getRenderers());
+            updateComponentState(
+                    false,
+                    getRefiners(),
+                    getUnderstanders(),
+                    getRenderers(),
+                    getFlusherComponents());
             sListeners.clear();
         }
 
@@ -130,7 +142,7 @@ public class TestAppController extends Service {
         @Override
         public void enableRegisteredComponents() throws RemoteException {
             Log.w(TAG, "enableRegisteredComponents() -> " + sListeners.size() + " components");
-            updateComponentState(true, sListeners.keySet());
+            updateComponentState(true, sListeners.keySet(), getFlusherComponents());
         }
 
         @Override

@@ -33,7 +33,7 @@
 
         <service android:name="android.service.personalcontext.cts.testapp.Flusher$Understander"
             android:exported="true"
-            android:enabled="true">
+            android:enabled="false">
 
             <intent-filter>
                 <action android:name="android.service.personalcontext.UnderstanderService" />
@@ -42,7 +42,7 @@
 
         <service android:name="android.service.personalcontext.cts.testapp.Flusher$Renderer"
             android:exported="true"
-            android:enabled="true">
+            android:enabled="false">
 
             <intent-filter>
                 <action android:name="android.service.personalcontext.renderer.InsightRendererService" />
