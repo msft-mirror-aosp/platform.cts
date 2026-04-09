@@ -32,6 +32,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -132,6 +133,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsMouseUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
@@ -5047,6 +5049,10 @@ public class ViewTest {
 
     @Test
     public void testUpdateDragShadow() {
+        assumeFalse(
+                "Drag and drop is not supported on visible background users",
+                new UserHelper().isVisibleBackgroundUser());
+
         View view = mActivity.findViewById(R.id.fit_windows);
         assertTrue(view.isAttachedToWindow());
 
@@ -5065,6 +5071,10 @@ public class ViewTest {
 
     @Test
     public void testUpdateDragShadow_detachedView() {
+        assumeFalse(
+                "Drag and drop is not supported on visible background users",
+                new UserHelper().isVisibleBackgroundUser());
+
         View view = new View(mActivity);
         assertFalse(view.isAttachedToWindow());
 
@@ -5084,6 +5094,10 @@ public class ViewTest {
 
     @Test
     public void testUpdateDragShadow_noActiveDrag() {
+        assumeFalse(
+                "Drag and drop is not supported on visible background users",
+                new UserHelper().isVisibleBackgroundUser());
+
         View view = mActivity.findViewById(R.id.fit_windows);
         assertTrue(view.isAttachedToWindow());
 
