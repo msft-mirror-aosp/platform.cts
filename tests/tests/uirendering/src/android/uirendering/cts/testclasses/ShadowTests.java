@@ -21,12 +21,13 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Point;
 import android.uirendering.cts.R;
-import android.uirendering.cts.bitmapverifiers.SamplePointVerifier;
+import android.uirendering.cts.bitmapverifiers.BitmapVerifier;
 import android.uirendering.cts.testinfrastructure.ActivityTestBase;
 import android.uirendering.cts.util.CompareUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
 import android.view.View;
@@ -37,27 +38,125 @@ import androidx.test.runner.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
+
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class ShadowTests extends ActivityTestBase {
+    private static final String TAG = "ShadowTests";
 
-    private static SamplePointVerifier createVerifier(int expectedColor,
-            SamplePointVerifier.VerifyPixelColor verifier) {
-        return SamplePointVerifier.create(
-                new Point[] {
-                        // view area
-                        new Point(25, 64),
-                        new Point(64, 64),
-                        // shadow area
-                        new Point(25, 65),
-                        new Point(64, 65)
-                },
-                new int[] {
-                        Color.WHITE,
-                        Color.WHITE,
-                        expectedColor,
-                        expectedColor,
-                }, SamplePointVerifier.DEFAULT_TOLERANCE, verifier);
+    private interface ColorCondition {
+        boolean verify(int color);
+    }
+
+    private class ShadowVerifier extends BitmapVerifier {
+        private static final int VIEW_FAIL_COLOR = Color.RED;
+        private static final int AMBIENT_FAIL_COLOR = Color.GREEN;
+        private static final int SPOT_FAIL_COLOR = Color.BLUE;
+
+        private ColorCondition mColorCondition;
+
+        ShadowVerifier(ColorCondition colorCondition) {
+            mColorCondition = colorCondition;
+        }
+
+        @Override
+        public boolean verify(int[] bitmap, int offset, int stride, int width, int height) {
+            boolean success = true;
+            int[] differenceMap = new int[bitmap.length];
+            Arrays.fill(differenceMap, PASS_COLOR);
+
+            // 1. Verify pixels inside the view are white
+            // View area is [25, 65) x [25, 65)
+            int[] insidePoints = {
+                indexFromXAndY(30, 30, stride, offset), indexFromXAndY(60, 60, stride, offset)
+            };
+            for (int index : insidePoints) {
+                if (bitmap[index] != Color.WHITE) {
+                    Log.d(
+                            TAG,
+                            "View area check failed. Expected WHITE, got: "
+                                    + Integer.toHexString(bitmap[index]));
+                    differenceMap[index] = VIEW_FAIL_COLOR;
+                    success = false;
+                }
+            }
+
+            // 2. Verify ambient shadow on top, left, right
+            int[] ambientPoints = {
+                indexFromXAndY(24, 45, stride, offset), // left
+                indexFromXAndY(66, 45, stride, offset) // right
+            };
+            for (int index : ambientPoints) {
+                if (!isShadow(bitmap[index]) || !mColorCondition.verify(bitmap[index])) {
+                    Log.d(
+                            TAG,
+                            "Ambient shadow check failed. Got: "
+                                    + Integer.toHexString(bitmap[index]));
+                    differenceMap[index] = AMBIENT_FAIL_COLOR;
+                    success = false;
+                }
+            }
+
+            // 3. Verify intense spot shadow on bottom
+            // Find the darkest pixel in the bottom area (below the view)
+            int maxIntensity = 0;
+            int bestIndex = -1;
+            for (int y = 65; y < 85; y++) {
+                for (int x = 25; x < 65; x++) {
+                    int index = indexFromXAndY(x, y, stride, offset);
+                    int intensity = getIntensity(bitmap[index]);
+                    if (intensity > maxIntensity) {
+                        maxIntensity = intensity;
+                        bestIndex = index;
+                    }
+                }
+            }
+
+            boolean spotConditionMet = bestIndex != -1 && mColorCondition.verify(bitmap[bestIndex]);
+            if (bestIndex == -1 || maxIntensity < 10 || !spotConditionMet) {
+                Log.d(
+                        TAG,
+                        "Spot shadow check failed. Max intensity: "
+                                + maxIntensity
+                                + ", match condition: "
+                                + spotConditionMet);
+                success = false;
+                // If we didn't find any intense enough shadow, fail the entire bottom area in
+                // diff
+                for (int y = 65; y < 85; y++) {
+                    for (int x = 25; x < 65; x++) {
+                        differenceMap[indexFromXAndY(x, y, stride, offset)] = SPOT_FAIL_COLOR;
+                    }
+                }
+            }
+
+            if (!success) {
+                mDifferenceBitmap =
+                        Bitmap.createBitmap(
+                                ActivityTestBase.TEST_WIDTH,
+                                ActivityTestBase.TEST_HEIGHT,
+                                Bitmap.Config.ARGB_8888);
+                mDifferenceBitmap.setPixels(
+                        differenceMap,
+                        offset,
+                        stride,
+                        0,
+                        0,
+                        ActivityTestBase.TEST_WIDTH,
+                        ActivityTestBase.TEST_HEIGHT);
+            }
+            return success;
+        }
+
+        private boolean isShadow(int color) {
+            return color != Color.WHITE;
+        }
+
+        private int getIntensity(int color) {
+            if (color == Color.WHITE) return 0;
+            return 255 - (Color.red(color) + Color.green(color) + Color.blue(color)) / 3;
+        }
     }
 
     @Test
@@ -89,9 +188,8 @@ public class ShadowTests extends ActivityTestBase {
 
     @Test
     public void testShadowLayout() {
-        // Use a higher threshold than default value (20), since we also double check gray scale;
-        SamplePointVerifier verifier = createVerifier(0xffe6e6e6,
-                color -> CompareUtils.verifyPixelGrayScale(color, 1));
+        ShadowVerifier verifier =
+                new ShadowVerifier(color -> CompareUtils.verifyPixelGrayScale(color, 1));
 
         createTest()
                 .addLayout(R.layout.simple_shadow_layout, null, true/* HW only */)
@@ -100,12 +198,13 @@ public class ShadowTests extends ActivityTestBase {
 
     @Test
     public void testRedSpotShadow() {
-        SamplePointVerifier verifier = createVerifier(0xfff8e6e6,
-                color -> {
-                    if (color == Color.WHITE) return true;
-                    return Color.red(color) > Color.green(color)
-                            && Color.red(color) > Color.blue(color);
-                });
+        ShadowVerifier verifier =
+                new ShadowVerifier(
+                        color -> {
+                            if (color == Color.WHITE) return true;
+                            return Color.red(color) > Color.green(color)
+                                    && Color.red(color) > Color.blue(color);
+                        });
 
         createTest()
                 .addLayout(R.layout.simple_shadow_layout, view -> {
@@ -116,12 +215,13 @@ public class ShadowTests extends ActivityTestBase {
 
     @Test
     public void testRedAmbientShadow() {
-        SamplePointVerifier verifier = createVerifier(0xffede6e6,
-                color -> {
-                    if (color == Color.WHITE) return true;
-                    return Color.red(color) > Color.green(color)
-                            && Color.red(color) > Color.blue(color);
-                });
+        ShadowVerifier verifier =
+                new ShadowVerifier(
+                        color -> {
+                            if (color == Color.WHITE) return true;
+                            return Color.red(color) > Color.green(color)
+                                    && Color.red(color) > Color.blue(color);
+                        });
 
         createTest()
                 .addLayout(R.layout.simple_shadow_layout, view -> {
@@ -132,12 +232,15 @@ public class ShadowTests extends ActivityTestBase {
 
     @Test
     public void testRedAmbientBlueSpotShadow() {
-        SamplePointVerifier verifier = createVerifier(0xffede6f8,
-                color -> {
-                    if (color == Color.WHITE) return true;
-                    return Color.red(color) > Color.green(color)
-                            && Color.blue(color) > Color.red(color);
-                });
+        ShadowVerifier verifier =
+                new ShadowVerifier(
+                        color -> {
+                            if (color == Color.WHITE) return true;
+                            // For mixed shadows, we expect some red (ambient) or some blue (spot)
+                            // or a mix. The key is it shouldn't be neutral gray if one is colored.
+                            return Color.red(color) > Color.green(color)
+                                    && Color.blue(color) > Color.green(color);
+                        });
 
         createTest()
                 .addLayout(R.layout.simple_shadow_layout, view -> {

@@ -24,6 +24,7 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HI
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
 
+import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
@@ -36,9 +37,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
-
-import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
 
 import android.app.Instrumentation;
 import android.content.Context;
@@ -53,7 +53,6 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.BaseInputConnection;
@@ -121,6 +120,10 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testInputConnectionStateWhenScreenStateChanges() throws Exception {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final Context context = instrumentation.getTargetContext();
         final InputMethodManager imm = context.getSystemService(InputMethodManager.class);
@@ -621,5 +624,12 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
     private static DescribedPredicate<ImeEvent> onFinishInputMatcher() {
         return withDescription("onFinishInput()",
                 event -> TextUtils.equals("onFinishInput", event.getEventName()));
+    }
+
+    private boolean hasAutomotiveSplitscreenMultitaskingFeature() {
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                && context.getPackageManager().hasSystemFeature(
+                "android.software.car.splitscreen_multitasking");
     }
 }
