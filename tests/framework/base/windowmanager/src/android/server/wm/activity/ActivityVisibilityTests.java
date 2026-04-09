@@ -667,6 +667,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnAttrNoLockScreen() {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         assumeTrue(supportsLockScreen());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
