@@ -3171,6 +3171,13 @@
                 android.provider.Service#EXTRA_CHANNEL_FILTER_LIST" />
         </activity>
 
+        <activity android:name=".notifications.CarMultiTaskingHelperActivity"
+                  android:exported="false"
+                  android:label="Car Multi-Tasking Helper Activity">
+            <meta-data android:name="NonApiTest"
+                       android:value="Helper class. NotificationListenerVerifierActivity" />
+        </activity>
+
         <activity android:name=".notifications.NotificationHidingVerifierActivity"
             android:exported="true"
             android:label="@string/notif_hiding_test">
