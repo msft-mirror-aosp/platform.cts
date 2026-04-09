@@ -576,11 +576,14 @@ public class BluetoothChatService {
                     byte[] buffer = new byte[1024];
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
-
-                    if (bytes >= 0) {
-                        // Send the obtained bytes to the UI Activity
-                        mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+                    if (bytes < 0) {
+                        Log.i(TAG, "read: return -1 on EOF, breaking");
+                        connectionLost();
+                        break;
                     }
+
+                    // Send the obtained bytes to the UI Activity
+                    mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
