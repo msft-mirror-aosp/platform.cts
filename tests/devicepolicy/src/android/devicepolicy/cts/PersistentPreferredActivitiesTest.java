@@ -27,6 +27,7 @@ import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.ActivityOptions;
 import android.app.admin.DpcAuthority;
 import android.app.admin.IntentFilterPolicyKey;
 import android.app.admin.PolicyState;
@@ -41,6 +42,7 @@ import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.stats.devicepolicy.EventId;
+import android.view.Display;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
@@ -140,8 +142,11 @@ public final class PersistentPreferredActivitiesTest {
     @Postsubmit(reason = "new test")
     public void sendIntent_hasMultipleDefaultReceivers_launchesResolverActivity() {
         try (TestAppInstance testAppInstance = sTestAppWithMultipleActivities.install()) {
+            ActivityOptions options = ActivityOptions.makeBasic()
+                    .setLaunchDisplayId(Display.DEFAULT_DISPLAY);
             TestApis.context().instrumentedContext().startActivity(
-                    new Intent(TEST_ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    new Intent(TEST_ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    options.toBundle());
 
             Poll.forValue("Recent Activities contain resolver",
                             this::checkRecentActivitiesContainResolver)
@@ -166,8 +171,11 @@ public final class PersistentPreferredActivitiesTest {
                                 new ComponentName(testAppInstance.packageName(),
                                         PREFERRED_ACTIVITY.className()));
 
+                ActivityOptions options = ActivityOptions.makeBasic()
+                        .setLaunchDisplayId(Display.DEFAULT_DISPLAY);
                 TestApis.context().instrumentedContext().startActivity(
-                        new Intent(TEST_ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                        new Intent(TEST_ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        options.toBundle());
 
                 Poll.forValue("Recent activities contain preferred activity",
                                 () -> recentActivitiesContainsActivity(
@@ -241,8 +249,11 @@ public final class PersistentPreferredActivitiesTest {
                     .clearPackagePersistentPreferredActivities(
                             dpc(sDeviceState).componentName(),
                             testAppInstance.packageName());
+            ActivityOptions options = ActivityOptions.makeBasic()
+                    .setLaunchDisplayId(Display.DEFAULT_DISPLAY);
             TestApis.context().instrumentedContext().startActivity(
-                    new Intent(TEST_ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    new Intent(TEST_ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    options.toBundle());
 
             Poll.forValue("Recent Activities contain resolver",
                             this::checkRecentActivitiesContainResolver)

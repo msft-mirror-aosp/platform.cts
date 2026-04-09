@@ -1767,11 +1767,14 @@ class ItsSession(object):
       A ui_interaction_utils.JcaCapture object describing each capture.
     """
     physical_camera_ids = []
+    zoom_ratio_results = []
     ui_interaction_utils.open_jca_viewfinder(dut, log_path)
     ui_interaction_utils.switch_jca_camera(dut, log_path, lens_facing)
     ui_interaction_utils.set_jca_flash_mode(dut, log_path, flash_mode_desc)
     for zoom_ratio in zoom_ratios:
-      ui_interaction_utils.jca_ui_zoom(dut, zoom_ratio, log_path)
+      zoom_ratio_result = ui_interaction_utils.jca_ui_zoom(
+          dut, zoom_ratio, log_path)
+      zoom_ratio_results.append(zoom_ratio_result)
       # Get physical ID
       try:
         physical_camera_id = int(
@@ -1794,10 +1797,12 @@ class ItsSession(object):
       time.sleep(save_image_delay)
     dut.ui.press.back()
     number_of_captures = 0
-    for capture_path, physical_camera_id in zip(
-        self.get_and_pull_jca_capture(dut, log_path), physical_camera_ids):
+    for capture_path, physical_camera_id, zoom_ratio_result in zip(
+        self.get_and_pull_jca_capture(dut, log_path), physical_camera_ids,
+        zoom_ratio_results):
       number_of_captures += 1
-      yield ui_interaction_utils.JcaCapture(capture_path, physical_camera_id)
+      yield ui_interaction_utils.JcaCapture(
+          capture_path, physical_camera_id, zoom_ratio_result)
     if number_of_captures != len(zoom_ratios):
       raise AssertionError(
           f'Expected {len(zoom_ratios)} captures, got {number_of_captures}!'

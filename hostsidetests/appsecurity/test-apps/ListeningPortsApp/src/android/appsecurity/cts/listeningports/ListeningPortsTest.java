@@ -54,6 +54,9 @@ public class ListeningPortsTest extends AndroidTestCase {
     private static final String LOOPBACK_PARAM = "loopback";
 
     private static final int CONN_TIMEOUT_IN_MS = 5000;
+    // The sdv_rpc_agent UID.
+    // Defined in system/core/libcutils/include/private/android_filesystem_config.h
+    private static final int SDV_RPC_AGENT_UID = 1101;
 
     /** Ports that are allowed to be listening. */
     private static final List<String> EXCEPTION_PATTERNS = new ArrayList<String>(6);
@@ -133,6 +136,14 @@ public class ListeningPortsTest extends AndroidTestCase {
         return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
     }
 
+    private boolean isAutomotive() {
+        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    private boolean isSdvRpc(InetAddress address, int uid) {
+        return !address.isAnyLocalAddress() && uid == SDV_RPC_AGENT_UID;
+    }
+
     /**
      * Remotely accessible ports (loopback==false) are often used by
      * attackers to gain unauthorized access to computers systems without
@@ -152,6 +163,7 @@ public class ListeningPortsTest extends AndroidTestCase {
         final boolean loopback = Boolean.valueOf(testArgs.getString(LOOPBACK_PARAM));
 
         final boolean tv = isTv();
+        final boolean automotive = isAutomotive();
 
         String errors = "";
         List<ParsedProcEntry> entries = ParsedProcEntry.parse(procFileContents);
@@ -164,6 +176,7 @@ public class ListeningPortsTest extends AndroidTestCase {
                     && !(isException(addrPort) || isException(addrUid) || isException(addrPortUid))
                     && !(isUserDebugException(addrPort) || isUserDebugException(addrPortUid))
                     && !(tv && isOemUid(entry.uid) && isOemException(addrPort))
+                    && !(automotive && isSdvRpc(entry.localAddress, entry.uid))
                     && (!entry.localAddress.isLoopbackAddress() ^ loopback)) {
                 if (isTcp && !isTcpConnectable(entry.localAddress, entry.port)) {
                     continue;

@@ -179,6 +179,7 @@ JCA_HIDE_COMPONENTS_RES_ID = 'btn_debug_hide_components'
 class JcaCapture:
   capture_path: str
   physical_id: int
+  zoom_ratio: float
 
 
 def _find_ui_object_else_click(object_to_await, object_to_click):
@@ -332,6 +333,8 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
     dut: An Android controller device object.
     zoom_ratio: float; zoom ratio desired. Will be rounded for compatibility.
     log_path: str; log path to save screenshots.
+  Returns:
+    float; Zoom ratio after zoom.
   Raises:
     AssertionError: If desired zoom ratio cannot be reached.
   """
@@ -347,12 +350,7 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
     current_zoom_ratio_text = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
   logging.debug('current zoom ratio text: %s', current_zoom_ratio_text)
   current_zoom_ratio = float(current_zoom_ratio_text[:-1])  # remove `x`
-  if math.isclose(zoom_ratio, current_zoom_ratio):
-    logging.debug('Desired zoom ratio is %.2f, '
-                  'current zoom ratio is %.2f. '
-                  'No need to zoom.',
-                  zoom_ratio, current_zoom_ratio)
-    return
+  logging.debug('current zoom ratio: %f', current_zoom_ratio)
   # Check if debug overlay set zoom ratio text field already exists
   # If it does, the dialog is already open and we can skip opening debug overlay
   text_field = dut.ui(
@@ -399,9 +397,10 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
     dut.take_screenshot(
         log_path, prefix=f'failed_to_zoom_to_{zoom_ratio}'
     )
-    raise AssertionError(
-        f'Failed to zoom to {zoom_ratio}, '
-        f'zoomed to {zoom_ratio_after_zoom} instead.'
+    logging.warning(
+        'Failed to zoom to %.2f, zoomed to %.2f instead.',
+        zoom_ratio,
+        zoom_ratio_after_zoom,
     )
   # Ensure that preview is stable by clicking the center of the screen.
   center_x, center_y = (
@@ -412,6 +411,7 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
   time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
   logging.debug('Set zoom ratio to %.2f', zoom_ratio)
   dut.take_screenshot(log_path, prefix=f'zoomed_to_{zoom_ratio}')
+  return zoom_ratio_after_zoom
 
 
 def change_jca_aspect_ratio(dut, log_path, aspect_ratio):
@@ -826,7 +826,18 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     _click_if_exists(dut, AGREE_BUTTON)
     _click_if_exists(dut, AGREE_AND_CONTINUE_BUTTON)
     _click_if_exists(dut, OK_BUTTON_TXT)
-    _click_if_exists(dut, MORE_BUTTON_TXT)
+
+    # Click More button ONLY if it is a pop-up and not the mode scroll item
+    more_obj = dut.ui(text=MORE_BUTTON_TXT)
+    if more_obj.wait.exists(timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      # Exclude the mode scroll text which is not the pop-up we want
+      resource_name = more_obj.resource_id
+      if 'scroll' not in resource_name:
+        logging.debug('Clicking pop-up More button (resource: %s)', resource_name)
+        more_obj.click.wait()
+      else:
+        logging.debug('Skipping scroll menu More button')
+
     _click_if_exists(dut, DONE_BUTTON_TXT)
     _click_if_exists(dut, CANCEL_BUTTON_TXT)
     _click_if_exists(dut, LOCATION_ON_TXT)

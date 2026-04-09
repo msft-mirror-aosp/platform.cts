@@ -2016,6 +2016,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
             })
     @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
     public void getFadeTowardFront() {
+        assumeCurrentZoneIsPrimary();
         assumeDynamicRoutingIsEnabled();
         mCarAudioManager.setFadeTowardFront(TEST_FADE_LEVEL);
 
@@ -2045,6 +2046,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
             })
     @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
     public void getBalanceTowardRight() {
+        assumeCurrentZoneIsPrimary();
         assumeDynamicRoutingIsEnabled();
         mCarAudioManager.setBalanceTowardRight(TEST_BALANCE_LEVEL);
 
@@ -2164,6 +2166,12 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         assertWithMessage("No CarAudioZone in proto dump").that(zoneProtoList).isNotEmpty();
         mZoneId = zoneProtoList.get(0).getId();
         readFirstVolumeGroupAndVolumeGroupCountFromProto(zoneProtoList.get(0));
+    }
+
+    private void assumeCurrentZoneIsPrimary() {
+        OccupantZoneInfo info = mCarOccupantZoneManager.getMyOccupantZone();
+        assumeTrue("Current zone and user is not primary",
+                info != null && info.occupantType == CarOccupantZoneManager.OCCUPANT_TYPE_DRIVER);
     }
 
     private void assumePrimaryZone() {
