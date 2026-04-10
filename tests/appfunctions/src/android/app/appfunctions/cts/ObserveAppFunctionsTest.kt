@@ -738,24 +738,31 @@ class ObserveAppFunctionsTest {
         val observer = TestClientObserver()
         try {
             observation = observeAppFunctions(observer)
-            installExistingPackageAsUser(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                secondaryUser,
-                context,
-                checkIndexation = true,
-            )
+            // First install the package on the primary user.
             installPackage(
                 UpdatableHelperApp.ApkPaths.BASE_APP,
                 UpdatableHelperApp.PACKAGE_NAME,
                 context,
                 checkIndexation = true,
             )
+            // Then install the package on the secondary user.
+            installExistingPackageAsUser(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                secondaryUser,
+                context,
+                checkIndexation = true,
+            )
 
             retryAssert {
-                assertThat(observer.updatedPackagesHistory).hasSize(1)
-                assertThat(observer.updatedFunctionStatesHistory).isEmpty()
+                // Verify that the package installed on the secondary user is notified to the
+                // observer, before asserting that the package installed on the primary user is not
+                // notified to the observer, to avoid false positive for doesNotContain.
                 assertThat(observer.updatedPackagesHistory.flatten())
                     .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
+                // Verify that the package installed on the primary user is not notified to the
+                // observer registered in the secondary user.
+                assertThat(observer.updatedPackagesHistory.flatten())
+                    .doesNotContain(UpdatableHelperApp.PACKAGE_NAME)
 
                 assertPackageHasAppFunctions(DynamicSchemaHelperApp.PACKAGE_NAME)
             }
