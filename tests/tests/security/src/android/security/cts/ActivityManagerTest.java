@@ -38,6 +38,8 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.SurfaceControl;
 import android.window.IRemoteTransitionFinishedCallback;
@@ -50,19 +52,27 @@ import android.window.TransitionRequestInfo;
 import android.window.WindowOrganizer;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Callable;
 
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean canSupportSecondaryUsers() {
         String output = ShellUtils.runShellCommand(
@@ -75,6 +85,11 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
 
     @AsbSecurityTest(cveBugId = 217934898)
     @Test
+    @RequireNotAutomotive(
+            reason =
+                    "On AAOS, switching away from the current user triggers the 'early stop user"
+                            + " packages' policy, which force-stops the test process and  causes a"
+                            + " crash.")
     public void testActivityManager_registerUidChangeObserver_onlyNoInteractAcrossPermission()
             throws Exception {
         if (!canSupportSecondaryUsers()) {
@@ -106,6 +121,11 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
 
     @AsbSecurityTest(cveBugId = 217934898)
     @Test
+    @RequireNotAutomotive(
+            reason =
+                    "On AAOS, switching away from the current user triggers the 'early stop user"
+                            + " packages' policy, which force-stops the test process and  causes a"
+                            + " crash.")
     public void testActivityManager_registerUidChangeObserver_allPermission()
             throws Exception {
         if (!canSupportSecondaryUsers()) {

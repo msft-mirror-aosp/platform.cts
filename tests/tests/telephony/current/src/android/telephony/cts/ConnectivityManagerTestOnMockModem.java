@@ -226,6 +226,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     @Before
     public void beforeTest() throws Exception {
         super.beforeTest();
+        assumeTrue("MockModemManager is null", sMockModemManager != null);
         if (sInitError != null) throw sInitError;
         registerNetworkCallback();
     }
@@ -550,10 +551,12 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
                     "Network should be connected",
                     mPreciseDataConnectionState.getState() == TelephonyManager.DATA_DISCONNECTED);
         } finally {
-            if (sMockModemManager.isSimCardPresent(slotId_0)) {
+            if (sMockModemManager != null && sMockModemManager.isSimCardPresent(slotId_0)) {
                 sMockModemManager.removeSimCard(slotId_0);
             }
-            sTelephonyManager.unregisterTelephonyCallback(mPreciseDataConnectionStateCallback);
+            if (mPreciseDataConnectionStateCallback != null) {
+                sTelephonyManager.unregisterTelephonyCallback(mPreciseDataConnectionStateCallback);
+            }
         }
     }
 
@@ -612,11 +615,15 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
                     "Network should not be connected",
                     mPreciseDataConnectionState.getState() == TelephonyManager.DATA_DISCONNECTED);
         } finally {
-            sMockModemManager.setUseNewHalDataCallListChanged(slotId_0, true);
-            if (sMockModemManager.isSimCardPresent(slotId_0)) {
-                sMockModemManager.removeSimCard(slotId_0);
+            if (sMockModemManager != null) {
+                sMockModemManager.setUseNewHalDataCallListChanged(slotId_0, true);
+                if (sMockModemManager.isSimCardPresent(slotId_0)) {
+                    sMockModemManager.removeSimCard(slotId_0);
+                }
             }
-            sTelephonyManager.unregisterTelephonyCallback(mPreciseDataConnectionStateCallback);
+            if (mPreciseDataConnectionStateCallback != null) {
+                sTelephonyManager.unregisterTelephonyCallback(mPreciseDataConnectionStateCallback);
+            }
         }
     }
 

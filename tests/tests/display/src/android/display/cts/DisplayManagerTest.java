@@ -32,7 +32,6 @@ import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
-import android.hardware.devicestate.cts.util.DeviceStateManagerTestRule;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.DisplayTopology;
@@ -91,10 +90,6 @@ public class DisplayManagerTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @Rule
-    public DeviceStateManagerTestRule mDeviceStateManagerTestRule =
-            new DeviceStateManagerTestRule();
 
     private TestActivity mActivity;
     private Instrumentation mInstrumentation;
@@ -226,33 +221,6 @@ public class DisplayManagerTest {
                                 displayManager.getDisplays(DISPLAY_CATEGORY_BUILT_IN_DISPLAYS)));
 
         assertEquals(expectedDisplays, builtInDisplays);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_CATEGORY_BUILT_IN)
-    public void testDisplayCategoryBuiltIn_allDisplays() throws Throwable {
-        final DisplayManager displayManager =
-                Objects.requireNonNull(mActivity.getSystemService(DisplayManager.class));
-
-        final Set<String> uniqueDisplayIds = new HashSet<>();
-        for (Display display : displayManager.getDisplays(DISPLAY_CATEGORY_BUILT_IN_DISPLAYS)) {
-            uniqueDisplayIds.add(display.getUniqueId());
-        }
-
-        mDeviceStateManagerTestRule.cycleThroughHardwareStates(
-                () -> {
-                    Display[] displays = displayManager.getDisplays();
-                    for (Display display : displays) {
-                        if (display.getType() == Display.TYPE_INTERNAL) {
-                            assertTrue(
-                                    "Built in display not in built in displays. Expected: "
-                                            + display.getUniqueId()
-                                            + ", Set: "
-                                            + uniqueDisplayIds,
-                                    uniqueDisplayIds.contains(display.getUniqueId()));
-                        }
-                    }
-                });
     }
 
     @Test

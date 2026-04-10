@@ -28,6 +28,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.Postsubmit;
 import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.BuildUtils;
 import android.server.wm.annotation.Group3;
 import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
@@ -203,7 +204,7 @@ public class UnsupportedErrorDialogTests extends ActivityManagerTestBase {
     private UiObject2 findCloseButton() {
         return mUiDevice.wait(
                 Until.findObject(By.res("android:id/aerr_close")),
-                2_000);
+                2_000 * BuildUtils.HW_TIMEOUT_MULTIPLIER);
     }
 
     private void resetAppErrors() {

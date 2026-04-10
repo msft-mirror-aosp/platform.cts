@@ -22,13 +22,14 @@ import android.content.Intent;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.test.AndroidTestCase;
 import android.util.Log;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
-import androidx.test.InstrumentationRegistry;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(AndroidJUnit4.class)
 public class CVE_2021_0327 extends StsExtraBusinessLogicTestCase {
@@ -54,6 +55,11 @@ public class CVE_2021_0327 extends StsExtraBusinessLogicTestCase {
     @AsbSecurityTest(cveBugId = 172935267)
     public void testPocCVE_2021_0327() throws Exception {
         Log.d(TAG, "test start");
+        assumeTrue("Managed users feature not supported",
+                InstrumentationRegistry.getInstrumentation()
+                .getContext()
+                .getPackageManager()
+                .hasSystemFeature(android.content.pm.PackageManager.FEATURE_MANAGED_USERS));
         testActivityCreated=false;
         testActivityRequested=false;
         launchActivity(IntroActivity.class);

@@ -16,8 +16,6 @@
 
 package android.security.cts.CVE_2021_0472;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static com.android.sts.common.SystemUtil.poll;
 import static com.android.sts.common.SystemUtil.withSetting;
 
@@ -37,6 +35,7 @@ import android.platform.test.annotations.AsbSecurityTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.sts.common.LockSettingsUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
@@ -60,6 +59,7 @@ public class CVE_2021_0472 extends StsExtraBusinessLogicTestCase {
     public void testPocCVE_2021_0472() {
         Instrumentation instrumentation = null;
         Context context = null;
+        int userId = 0;
         try {
             final int pollFreqMs = 100;
             final int pollTimeoutMs = 5000;
@@ -67,6 +67,8 @@ public class CVE_2021_0472 extends StsExtraBusinessLogicTestCase {
             context = instrumentation.getContext();
             KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
             final ActivityManager activityManager = context.getSystemService(ActivityManager.class);
+            UserHelper userHelper = new UserHelper(context);
+            userId = userHelper.getUserId();
 
             // Fetch and add the flag 'RECEIVER_EXPORTED' for 'TIRAMISU' and above versions to
             // keep the code consistent
@@ -112,7 +114,8 @@ public class CVE_2021_0472 extends StsExtraBusinessLogicTestCase {
                             withSetting(
                                     instrumentation, "secure", "lock_to_app_exit_locked", "1")) {
                 // Pin PocActivity using retrieved mTaskId
-                SystemUtil.runShellCommand(instrumentation, "am task lock " + mTaskId);
+                SystemUtil.runShellCommand(
+                        instrumentation, "am task lock " + mTaskId + "  --user " + userId);
 
                 // Wait for app to get pinned
                 assume().that(
@@ -154,14 +157,18 @@ public class CVE_2021_0472 extends StsExtraBusinessLogicTestCase {
                 // Revert the side-effects of command "am task lock"
                 if (context.getSystemService(ActivityManager.class).getLockTaskModeState()
                         != ActivityManager.LOCK_TASK_MODE_PINNED) {
-                    SystemUtil.runShellCommand(instrumentation, "am task lock stop");
+                    SystemUtil.runShellCommand(
+                            instrumentation, "am task lock stop --user " + userId);
                 }
 
                 // Goto HOME from lockscreen
-                SystemUtil.runShellCommand(instrumentation, "input keyevent KEYCODE_HOME");
-                SystemUtil.runShellCommand(instrumentation, "input keyevent KEYCODE_WAKEUP");
-                SystemUtil.runShellCommand(instrumentation, "wm dismiss-keyguard");
-                SystemUtil.runShellCommand(instrumentation, "input keyevent KEYCODE_POWER");
+                SystemUtil.runShellCommand(
+                        instrumentation, "input keyevent KEYCODE_HOME --user " + userId);
+                SystemUtil.runShellCommand(
+                        instrumentation, "input keyevent KEYCODE_WAKEUP --user " + userId);
+                SystemUtil.runShellCommand(instrumentation, "wm dismiss-keyguard --user " + userId);
+                SystemUtil.runShellCommand(
+                        instrumentation, "input keyevent KEYCODE_POWER --user " + userId);
             } catch (Exception e) {
                 // Ignore unintended exceptions here
             }

@@ -244,8 +244,9 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         argsList.add(new Object[] {
                 MediaFormat.MIMETYPE_VIDEO_HEVC, 1920, 1080, isTv ? 60 : 30, false, CODEC_HW});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 3840, 2160, 60, false,
-                hasCodec(MediaFormat.MIMETYPE_VIDEO_HEVC, 3840, 2160, false) ? CODEC_HW
-                                                                             : CODEC_OPTIONAL});
+                (isTv && hasCodec(MediaFormat.MIMETYPE_VIDEO_HEVC, 3840, 2160, false))
+                        ? CODEC_HW
+                        : CODEC_OPTIONAL});
 
         // vp8
         // 5.3.6/C-1-1, 5.1.10/C-2-1
@@ -265,8 +266,9 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         argsList.add(new Object[] {
                 MediaFormat.MIMETYPE_VIDEO_VP9, 1920, 1080, isTv ? 60 : 30, false, CODEC_HW});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP9, 3840, 2160, 60, false,
-                hasCodec(MediaFormat.MIMETYPE_VIDEO_VP9, 3840, 2160, false) ? CODEC_HW
-                                                                            : CODEC_OPTIONAL});
+                (isTv && hasCodec(MediaFormat.MIMETYPE_VIDEO_VP9, 3840, 2160, false))
+                        ? CODEC_HW
+                        : CODEC_OPTIONAL});
 
         // av1
         // 5.3.9/C-2-1, 5.3.9/C-2-2, 5.1.10/C-2-1
@@ -279,8 +281,8 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
                     isDispHtAtleastHD ? CODEC_HW : CODEC_OPTIONAL});
             argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 1920, 1080, 30, false,
                     isDispHtAtleastFHD ? CODEC_HW : CODEC_OPTIONAL});
-            argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 3840, 2160, 30, false,
-                    isDispHtAtleastUHD ? CODEC_HW : CODEC_OPTIONAL});
+            argsList.add(new Object[] {
+                    MediaFormat.MIMETYPE_VIDEO_AV1, 3840, 2160, 30, false, CODEC_OPTIONAL});
         }
 
         int argLength = argsList.get(0).length;

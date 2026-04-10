@@ -140,6 +140,7 @@ public class AudioTap2ToneActivity
     private int mActiveTestAPI = TEST_API_NATIVE;
 
     private int[] mNumMeasurements = new int[NUM_TEST_APIS];
+    private int[] mNumAverageFilterUsed = new int[NUM_TEST_APIS];
     private int[] mLatencySumSamples = new int[NUM_TEST_APIS];
     private double[] mLatencyMin = new double[NUM_TEST_APIS];   // ms
     private double[] mLatencyMax = new double[NUM_TEST_APIS];   // ms
@@ -344,6 +345,7 @@ public class AudioTap2ToneActivity
 
     private void resetStats() {
         mNumMeasurements[mActiveTestAPI] = 0;
+        mNumAverageFilterUsed[mActiveTestAPI] = 0;
         mLatencySumSamples[mActiveTestAPI] = 0;
         mLatencyMin[mActiveTestAPI] =
             mLatencyMax[mActiveTestAPI] =
@@ -443,6 +445,7 @@ public class AudioTap2ToneActivity
         public float[] filtered;
         public int frameRate;
         public TapLatencyAnalyzer.TapLatencyEvent[] events;
+        public boolean isAverageFilterUsed;
     }
 
     private void processTest(TestResult result) {
@@ -458,6 +461,9 @@ public class AudioTap2ToneActivity
         int latencySamples = cursors[1] - cursors[0];
         mLatencySumSamples[mActiveTestAPI] += latencySamples;
         mNumMeasurements[mActiveTestAPI]++;
+        if (result.isAverageFilterUsed) {
+            mNumAverageFilterUsed[mActiveTestAPI]++;
+        }
 
         double latencyMillis = (1000.0 * Double.valueOf(latencySamples)) / result.frameRate;
         mLatencyMillis[mTestPhase] = latencyMillis;
@@ -503,6 +509,7 @@ public class AudioTap2ToneActivity
         result.frameRate = sampleRate;
         result.events = mTapLatencyAnalyzer.analyze(buffer, 0, numRead);
         result.filtered = mTapLatencyAnalyzer.getFilteredBuffer();
+        result.isAverageFilterUsed = mTapLatencyAnalyzer.getIfAverageFilterUsed();
 
         // This will come in on a background thread, so switch to the UI thread to update the UI.
         runOnUiThread(new Runnable() {
@@ -582,6 +589,7 @@ public class AudioTap2ToneActivity
     private static final String KEY_LATENCY_THRESHOLD = "latency_threshold_";
     private static final String KEY_LATENCY_NUM_MEASUREMENTS = "latency_num_measurements_";
     private static final String KEY_STATUS = "status";
+    private static final String KEY_NUM_AVERAGE_FILTER_USED = "num_average_filter_used_";
 
     private void reportTestResultForApi(int api) {
         CtsVerifierReportLog reportLog = getReportLog();
@@ -613,6 +621,11 @@ public class AudioTap2ToneActivity
         reportLog.addValue(
                 KEY_LATENCY_NUM_MEASUREMENTS + api,
                 mNumMeasurements[api],
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_NUM_AVERAGE_FILTER_USED + api,
+                mNumAverageFilterUsed[api],
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
     }

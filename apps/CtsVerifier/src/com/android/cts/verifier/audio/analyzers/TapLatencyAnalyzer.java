@@ -23,10 +23,12 @@ import java.util.ArrayList;
  */
 public class TapLatencyAnalyzer {
     public static final int TYPE_TAP = 0;
-    float[] mHighPassBuffer;
+    private float[] mFilteredBuffer;
+    private boolean mAverageFilterUsed = false;
 
     private float mDroop = 0.995f;
     private static final float EDGE_THRESHOLD = 0.01f;
+    private static final double AVG_FILTER_FACTOR = 1.5;
     private static final float LOW_FRACTION = 0.5f;
 
     public static class TapLatencyEvent {
@@ -48,11 +50,31 @@ public class TapLatencyAnalyzer {
      */
     public TapLatencyEvent[] analyze(float[] buffer, int offset, int numSamples) {
         // Use high pass filter to remove rumble from air conditioners.
-        mHighPassBuffer = new float[numSamples];
-        highPassFilter(buffer, offset, numSamples, mHighPassBuffer);
+        mAverageFilterUsed = false;
+        float[] highPassBuffer = new float[numSamples];
+        highPassFilter(buffer, offset, numSamples, highPassBuffer);
+        TapLatencyEvent[] events = applyEnvelopeFollowerAndScanForEdges(highPassBuffer, numSamples);
+        if (events.length == 2) {
+            mFilteredBuffer = highPassBuffer;
+            return events;
+        } else {
+            // If the high-pass filter alone doesn't yield two clear events, it's possible
+            // the recording is noisy, perhaps due to high microphone sensitivity.
+            // In that case, additionally apply an average filter which helps to isolate
+            // the significant tap and blip peaks while attenuating noise.
+            float[] avgFilteredBuffer = new float[numSamples];
+            averageFilter(highPassBuffer, numSamples, avgFilteredBuffer);
+            events = applyEnvelopeFollowerAndScanForEdges(avgFilteredBuffer, numSamples);
+            mFilteredBuffer = avgFilteredBuffer;
+            mAverageFilterUsed = true;
+            return events;
+        }
+    }
+
+    public TapLatencyEvent[] applyEnvelopeFollowerAndScanForEdges(float[] buffer, int numSamples) {
         // Apply envelope follower.
         float[] peakBuffer = new float[numSamples];
-        fillPeakBuffer(mHighPassBuffer, 0, numSamples, peakBuffer);
+        fillPeakBuffer(buffer, 0, numSamples, peakBuffer);
         // Look for two attacks.
         return scanForEdges(peakBuffer, numSamples);
     }
@@ -62,7 +84,11 @@ public class TapLatencyAnalyzer {
      *   High-pass filtered to emphasize high-frequency events such as edges.
      */
     public float[] getFilteredBuffer() {
-        return mHighPassBuffer;
+        return mFilteredBuffer;
+    }
+
+    public boolean getIfAverageFilterUsed() {
+        return mAverageFilterUsed;
     }
 
     // Based on https://en.wikipedia.org/wiki/High-pass_filter
@@ -82,6 +108,33 @@ public class TapLatencyAnalyzer {
             highPassBuffer[i] = yn;
             xn1 = xn;
             yn1 = yn;
+        }
+    }
+
+    private void averageFilter(float[] buffer, int numSamples, float[] averageBuffer) {
+        if (numSamples == 0) {
+            return;
+        }
+        double sum = 0.0;
+        for (int i = 0; i < numSamples; i++) {
+            sum += buffer[i];
+        }
+        double avg = sum / numSamples;
+
+        double sumSq = 0.0;
+        for (int i = 0; i < numSamples; i++) {
+            double diff = buffer[i] - avg;
+            sumSq += diff * diff;
+        }
+        double stdDev = Math.sqrt(sumSq / numSamples);
+
+        for (int i = 0; i < numSamples; i++) {
+            if ( (buffer[i] >= avg + stdDev * AVG_FILTER_FACTOR)
+                || (buffer[i] <= avg - stdDev * AVG_FILTER_FACTOR)) {
+                averageBuffer[i] = buffer[i];
+            } else {
+                averageBuffer[i] = 0.0f;
+            }
         }
     }
 
