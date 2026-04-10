@@ -58,7 +58,7 @@ public class WalletRoleTest {
 
     private boolean supportsHardware() {
         final PackageManager pm = mContext.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_NFC);
+        return pm.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
     }
 
     @Test
