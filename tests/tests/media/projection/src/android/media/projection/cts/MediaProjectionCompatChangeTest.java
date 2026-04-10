@@ -20,6 +20,7 @@ import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES
 import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
 import static android.media.cts.MediaProjectionActivity.SINGLE_APP_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
+import static android.media.cts.MultiDisplayUtil.assumeDeviceHasOnlyOnePhysicalDisplay;
 import static android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay;
 import static android.media.projection.MediaProjectionConfig.createConfigForUserChoice;
 import static android.media.projection.MediaProjectionManager.OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION;
@@ -77,6 +78,8 @@ public class MediaProjectionCompatChangeTest {
 
     @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
+    private Context mContext;
+
     /** Set up necessary values which only need to be set once */
     @BeforeClass
     public static void setUp() {
@@ -92,6 +95,8 @@ public class MediaProjectionCompatChangeTest {
 
     @Before
     public void setUpTest() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        assumeDeviceHasOnlyOnePhysicalDisplay(mContext);
         assumeFalse(sIsWatch);
         mMediaProjectionRule.enableConsentFlow();
         initializePartialScreenshareSupport();
