@@ -856,6 +856,10 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
             instrumentation.waitForIdleSync();
             PollingCheck.waitFor(TIMEOUT, () -> !rootView.getRootWindowInsets().isVisible(ime()));
 
+            // Wait for the animation to have at least one frame where the background window
+            // has received the updated insets.
+            PollingCheck.waitFor(TIMEOUT, () -> firstWindowInsetsDuringAnimation[0] != null);
+
             assertNotNull(firstWindowInsetsDuringAnimation[0]);
             assertFalse(firstWindowInsetsDuringAnimation[0].isVisible(ime()));
             assertNotNull(firstWindowInsetsDuringAnimation[0].getInsets(ime()));
