@@ -28,7 +28,6 @@
         <package android:name="com.android.cts.pcc.appops" />
         <package android:name="com.android.cts.pcc.checkingvisibilityapp" />
         <package android:name="com.android.cts.pcc.queryablebypackage" />
-        <package android:name="com.android.cts.pcc.datainit" />
         <intent>
             <action android:name="com.android.cts.pcc.queryablebyintentfilter.TEST_ACTION" />
         </intent>
