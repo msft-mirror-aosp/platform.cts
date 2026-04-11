@@ -88,7 +88,7 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
@@ -110,7 +110,7 @@ import java.util.function.BiConsumer;
 
 @RunWith(AndroidJUnit4.class)
 @Presubmit
-@RequireNotVisibleBackgroundUsers(
+@RequireRunNotOnVisibleBackgroundNonProfileUser(
         reason = "Visible background users are not allowed to perform global action")
 public class ActivityManagerProcessStateTest {
     private static final String TAG = ActivityManagerProcessStateTest.class.getName();
