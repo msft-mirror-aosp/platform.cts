@@ -21,6 +21,7 @@ import static android.media.cts.MediaProjectionActivity.ACCEPT_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
+import static android.media.cts.MultiDisplayUtil.assumeDeviceHasOnlyOnePhysicalDisplay;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -28,13 +29,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
-import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.ImageReader;
 import android.media.cts.MediaProjectionActivity;
@@ -42,7 +41,6 @@ import android.media.cts.MediaProjectionRule;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.view.Display;
 import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -104,25 +102,9 @@ public class MediaProjectionSDK33Test {
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        assumeDeviceHasOnlyOnePhysicalDisplay();
+        assumeDeviceHasOnlyOnePhysicalDisplay(mContext);
         mTimeoutMs = 1000 * HW_TIMEOUT_MULTIPLIER;
         mMediaProjectionRule.enableConsentFlow();
-    }
-
-    // TODO(b/500029429): Add the missing step to select the physical display when running on
-    //     multi-physical-display targets, then remove this assumpation.
-    private void assumeDeviceHasOnlyOnePhysicalDisplay() {
-        DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
-        Display[] displays = displayManager.getDisplays();
-        int physicalDisplayCount = 0;
-        for (Display display : displays) {
-            if (display.getType() != Display.TYPE_VIRTUAL) {
-                physicalDisplayCount++;
-            }
-        }
-        assumeTrue(
-                "This test requires a device with only one physical display to function correctly",
-                physicalDisplayCount == 1);
     }
 
     @After

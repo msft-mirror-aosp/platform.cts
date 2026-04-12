@@ -25,4 +25,6 @@
         android:label="CTS-V-Host Usb Data Signal API Test"
         android:targetPackage="com.google.cts.interactive.usb.typec" />
     <uses-permission android:name="android.permission.MANAGE_USB"/>
+    <meta-data android:name="test_excluded_features"
+        android:value="android.hardware.type.automotive" />
 </manifest>
