@@ -57,6 +57,8 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
             SERVICE_TEST_PKG + ".SignatureQueryServiceInstrumentationTest";
     private static final String TEST_APK_RESOURCE_PREFIX = "/pkgsigverify/";
     private static final String INSTALL_ARG_FORCE_QUERYABLE = "--force-queryable";
+    private static final String INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK =
+            "--bypass-low-target-sdk-block";
 
     private static final String[] DSA_KEY_NAMES = {"1024", "2048", "3072"};
     private static final String[] EC_KEY_NAMES = {"p256", "p384", "p521"};
@@ -517,9 +519,9 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
     }
 
     public void testInstallEmpty() throws Exception {
-        assertInstallFailsWithError("empty-unsigned.apk", "Unknown failure");
-        assertInstallFailsWithError("v1-only-empty.apk", "Unknown failure");
-        assertInstallFailsWithError("v2-only-empty.apk", "Unknown failure");
+        assertInstallFailsWithError("empty-unsigned.apk", "INSTALL_PARSE_FAILED");
+        assertInstallFailsWithError("v1-only-empty.apk", "INSTALL_PARSE_FAILED");
+        assertInstallFailsWithError("v2-only-empty.apk", "INSTALL_PARSE_FAILED");
     }
 
     @AsbSecurityTest(cveBugId = 64211847)
@@ -527,7 +529,7 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
         // The APKs below are competely fine except they don't start with ZIP Local File Header
         // magic. Thus, these APKs will install just fine unless Package Manager requires that APKs
         // start with ZIP Local File Header magic.
-        String error = "Unknown failure";
+        String error = "INSTALL_PARSE_FAILED";
 
         // Obtained by modifying apksigner to output four unused 0x00 bytes at the start of the APK
         assertInstallFailsWithError("v1-only-starts-with-00000000-magic.apk", error);
@@ -1817,10 +1819,20 @@ public class PkgInstallSignatureVerificationTest extends DeviceTestCase implemen
         try {
             apkFile = getFileFromResource(apkFilenameInResources);
             if (ephemeral) {
-                return getDevice().installPackage(apkFile, true, "--ephemeral",
-                        INSTALL_ARG_FORCE_QUERYABLE);
+                return getDevice()
+                    .adbInstallPackage(
+                        apkFile,
+                        true,
+                        "--ephemeral",
+                        INSTALL_ARG_FORCE_QUERYABLE,
+                        INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
             } else {
-                return getDevice().installPackage(apkFile, true, INSTALL_ARG_FORCE_QUERYABLE);
+                return getDevice()
+                    .adbInstallPackage(
+                        apkFile,
+                        true,
+                        INSTALL_ARG_FORCE_QUERYABLE,
+                        INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
             }
         } finally {
             cleanUpFile(apkFile);
