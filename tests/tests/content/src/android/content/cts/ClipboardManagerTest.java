@@ -16,6 +16,9 @@
 
 package android.content.cts;
 
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -83,7 +86,11 @@ public class ClipboardManagerTest {
 
             // Clear any dialogs and launch an activity as focus is needed to access clipboard.
             launchHome();
-            mUiDevice.pressBack();
+            if (!hasAutomotiveSplitscreenMultitaskingFeature()) {
+                // In automotive splitscreen multitasking, pressing back is not needed and can
+                // interfere with the test setup instead.
+                mUiDevice.pressBack();
+            }
             launchActivity(MockActivity.class);
         }
     }
@@ -94,6 +101,11 @@ public class ClipboardManagerTest {
             mClipboardManager.clearPrimaryClip();
         }
         dropShellPermissionIdentity();
+    }
+
+    protected boolean hasAutomotiveSplitscreenMultitaskingFeature() {
+        return mContext.getPackageManager().hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING)
+                && mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
     }
 
     @Test
