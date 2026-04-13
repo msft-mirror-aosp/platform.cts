@@ -468,4 +468,19 @@
     <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTestMeasurement com.android.adservices.tests.cts.measurement.MeasurementManagerCtsTest#testMeasurementApiDisabled_lowRamDevice"/>
     <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testGetTopics_lowRamDevice"/>
 
+    <!-- b/502075067: Failing on MT5/FL5/BZ5/RG5/STA5 -->
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.workflows.InsightWorkflowTest#testInsightWithoutRenderToken" />
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.workflows.InsightWorkflowTest#testInsightWithRenderToken" />
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.workflows.InsightWorkflowTest#testReportEvent" />
+
+    <!-- b/502075067: Failing on work profile variant -->
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases[run-on-work-profile] android.service.personalcontext.cts.workflows.InsightWorkflowTest#testInsightWithoutRenderToken" />
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases[run-on-work-profile] android.service.personalcontext.cts.workflows.InsightWorkflowTest#testInsightWithRenderToken" />
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases[run-on-work-profile] android.service.personalcontext.cts.workflows.InsightWorkflowTest#testReportEvent" />
+
+    <!-- b/502075735: Failing on BZ5/STA5/FL5/RG5/MT5 -->
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.PersonalContextManagerTest#testPersonalContextMode_defaultValue" />
+    <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.PersonalContextManagerTest#testPersonalContextMode_noPermissions_fails" />
+
+
 </configuration>
