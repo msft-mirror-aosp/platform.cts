@@ -70,7 +70,7 @@ public class MockModemManager {
     private MockModemService mMockModemService;
 
     public static void enforceMockModemDeveloperSetting() throws Exception {
-        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
+        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, true);
         boolean isAllowedForBoot =
                 SystemProperties.getBoolean(BOOT_ALLOW_MOCK_MODEM_PROPERTY, false);
         // Check for developer settings for user build. Always allow for debug builds
