@@ -402,12 +402,8 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
         zoom_ratio,
         zoom_ratio_after_zoom,
     )
-  # Ensure that preview is stable by clicking the center of the screen.
-  center_x, center_y = (
-      dut.ui.info['displayWidth'] // 2,
-      dut.ui.info['displayHeight'] // 2
-  )
-  dut.ui.click(x=center_x, y=center_y)
+  # Ensure that preview is stable by clicking the center of JCA.
+  dut.ui(pkg=JETPACK_CAMERA_APP_PACKAGE_NAME).click()
   time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
   logging.debug('Set zoom ratio to %.2f', zoom_ratio)
   dut.take_screenshot(log_path, prefix=f'zoomed_to_{zoom_ratio}')
