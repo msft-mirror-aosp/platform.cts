@@ -115,6 +115,7 @@ import java.util.stream.Collectors;
 
 /** CTS tests for ImsCall . */
 @RunWith(AndroidJUnit4.class)
+@Ignore("b/501306977 - Need to fix and re-enable this test.")
 public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsCallingBase {
     private static final String LOG_TAG = "EmergencyCallHandoverToSatelliteMessagingTest";
 

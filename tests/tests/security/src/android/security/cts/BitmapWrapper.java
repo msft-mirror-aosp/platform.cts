@@ -63,18 +63,22 @@ public class BitmapWrapper implements Parcelable {
     }
 
     @Override
+    // LINT.IfChange(bitmap_parcel)
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         final int before = dest.dataPosition();
         mBitmap.writeToParcel(dest, flags);
         final int oldEnd = dest.dataPosition();
         if (!mReplaceFields.isEmpty()) {
             dest.setDataPosition(before
+                    + 8 /* mId */
                     + 4 /* immutable */
                     + 4 /* colortype */
                     + 4 /* alpha type */);
             // Skip sizeof colorspace
             int colorSpaceLen = dest.readInt();
-            dest.setDataPosition(dest.dataPosition() + colorSpaceLen);
+            if (colorSpaceLen > 0) {
+                dest.setDataPosition(dest.dataPosition() + ((colorSpaceLen + 3) & ~3));
+            }
             Assert.assertEquals(mBitmap.getWidth(), dest.readInt());
             Assert.assertEquals(mBitmap.getHeight(), dest.readInt());
             if (mReplaceFields.containsKey(Field.Height)) {
@@ -87,7 +91,6 @@ public class BitmapWrapper implements Parcelable {
                 dest.writeInt(mReplaceFields.get(Field.RowBytes));
             }
             Assert.assertEquals(mBitmap.getDensity(), dest.readInt());
-            final long bitmapId = dest.readLong();
             final long parcelId = dest.readLong();
             int type = dest.readInt();
             if (type == 0) { // in-place
@@ -112,16 +115,16 @@ public class BitmapWrapper implements Parcelable {
             }
         }
     }
+    // LINT.ThenChange(frameworks/base/graphics/java/android/graphics/Bitmap.java:bitmap_parcel, frameworks/base/libs/hwui/jni/Bitmap.cpp:bitmap_parcel)
 
     public static final Parcelable.Creator<BitmapWrapper> CREATOR =
             new Parcelable.Creator<BitmapWrapper>() {
-        public BitmapWrapper createFromParcel(Parcel in) {
-            return new BitmapWrapper(in);
-        }
+                public BitmapWrapper createFromParcel(Parcel in) {
+                    return new BitmapWrapper(in);
+                }
 
-        public BitmapWrapper[] newArray(int size) {
-            return new BitmapWrapper[size];
-        }
-    };
-
+                public BitmapWrapper[] newArray(int size) {
+                    return new BitmapWrapper[size];
+                }
+            };
 }

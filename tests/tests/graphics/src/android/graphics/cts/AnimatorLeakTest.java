@@ -22,13 +22,14 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
-import android.support.test.uiautomator.UiDevice;
 
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.OverrideAnimationScaleRule;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import junit.framework.Assert;
 
@@ -170,7 +171,9 @@ public class AnimatorLeakTest {
 
             // Send the activity to the background. This should cause the animators to be paused
             // after Animator.getBackgroundPauseDelay()
-            UiDevice.getInstance(getInstrumentation()).pressBack();
+            int displayId = new UserHelper(getInstrumentation().getContext()).getMainDisplayId();
+            SystemUtil.runShellCommand(
+                    getInstrumentation(), "input -d " + displayId + " keyevent KEYCODE_HOME");
 
             animatorPausedLatch.await(5, TimeUnit.SECONDS);
 
@@ -249,8 +252,9 @@ public class AnimatorLeakTest {
 
             // Send the activity to the background. This should cause the animators to be paused
             // after Animator.getBackgroundPauseDelay()
-            UiDevice uiDevice = UiDevice.getInstance(getInstrumentation());
-            uiDevice.pressHome();
+            int displayId = new UserHelper(getInstrumentation().getContext()).getMainDisplayId();
+            SystemUtil.runShellCommand(
+                    getInstrumentation(), "input -d " + displayId + " keyevent KEYCODE_HOME");
 
             animatorPausedLatch.await(2, TimeUnit.SECONDS);
 

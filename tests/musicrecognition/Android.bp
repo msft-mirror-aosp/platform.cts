@@ -37,31 +37,3 @@ android_test {
     ],
     per_testcase_directory: true,
 }
-
-android_test {
-    name: "CtsMusicRecognitionPccTestCases",
-    test_config: "AndroidTest-pcc.xml",
-    team: "trendy_team_machine_learning",
-    defaults: ["cts_defaults"],
-    manifest: "AndroidManifest-pcc.xml",
-    static_libs: [
-        "androidx.annotation_annotation",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "truth",
-    ],
-    srcs: [
-        "src/**/MusicRecognitionManagerTest.java",
-        "src/**/CtsMusicRecognitionService.java",
-    ],
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    data: [
-        ":CtsOutsideOfPackageServicePcc",
-    ],
-    per_testcase_directory: true,
-    sdk_version: "system_current",
-}

@@ -1750,9 +1750,11 @@ public class ViewTest {
         assertFalse(view.isEnabled());
     }
 
-
     @Test
     public void testSetEnabled_receiveEvent() throws Throwable {
+        assumeFalse(
+                "Accessibility framework does not yet support visible background users",
+                new UserHelper().isVisibleBackgroundUser());
         final View mockView = mActivity.findViewById(R.id.mock_view);
         mInstrumentation.getUiAutomation().waitForIdle(2000, 4000);
         mInstrumentation.getUiAutomation().executeAndWaitForEvent(
