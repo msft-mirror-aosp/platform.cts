@@ -40,13 +40,13 @@ import static junit.framework.Assert.fail;
 
 import static org.junit.Assume.assumeFalse;
 
-import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.BroadcastOptions;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Instrumentation;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
+import android.app.fgstesthelper.FgsTestHelper;
 import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundService;
 import android.app.stubs.LocalForegroundServiceLocation;
@@ -200,8 +200,7 @@ public class ActivityManagerFgsBgStartTest {
             });
         }
         // Make sure we are in Home screen
-        mInstrumentation.getUiAutomation().performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
     }
 
     static boolean toggleBgFgsTypeStartPermissionEnforcement(Boolean enforce) {
@@ -2175,8 +2174,7 @@ public class ActivityManagerFgsBgStartTest {
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_STOP_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            mInstrumentation.getUiAutomation().performGlobalAction(
-                    AccessibilityService.GLOBAL_ACTION_HOME);
+            FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
 
             // APP1 should have been cached state now.
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE,

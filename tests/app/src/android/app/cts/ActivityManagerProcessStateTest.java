@@ -39,7 +39,6 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
-import android.accessibilityservice.AccessibilityService;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
@@ -53,6 +52,7 @@ import android.app.cts.android.app.cts.tools.UidImportanceListener;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
 import android.app.cts.android.app.cts.tools.WatchUidRunner.WatchUidPredicate;
+import android.app.fgstesthelper.FgsTestHelper;
 import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundServiceLocation;
 import android.app.stubs.LocalForegroundServiceSticky;
@@ -222,8 +222,7 @@ public class ActivityManagerProcessStateTest {
         mAppCount = 0;
         drainOrderedBroadcastQueue();
         // Make sure we are in Home screen before starting the test
-        mInstrumentation.getUiAutomation().performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
         // Stop all the packages to avoid residual impact
         final ActivityManager am = mContext.getSystemService(ActivityManager.class);
         for (int i = 0; i < PACKAGE_NAMES.length; i++) {
