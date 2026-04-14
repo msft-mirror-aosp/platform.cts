@@ -482,5 +482,6 @@
     <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.PersonalContextManagerTest#testPersonalContextMode_defaultValue" />
     <option name="compatibility:exclude-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.PersonalContextManagerTest#testPersonalContextMode_noPermissions_fails" />
 
-
+    <!-- b/500861729 Add the instant version of CtsSensorTestCases test Failing on MT5/BZ5/FL5 -->
+    <option name="compatibility:exclude-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_100hz" />
 </configuration>
