@@ -215,4 +215,7 @@
     <!-- b/471855896 Remove Strongbox system properties tests from running on GSI -->
     <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.BuildTest#testStrongboxConstants" />
 
+    <!-- b/497601271: Exclude failing sensor test on GSI due to HW jitter -->
+    <option name="compatibility:exclude-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testAccelerometer_1hz" />
+
 </configuration>
