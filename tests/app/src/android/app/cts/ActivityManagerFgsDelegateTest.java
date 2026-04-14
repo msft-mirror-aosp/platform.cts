@@ -22,13 +22,13 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
-import android.accessibilityservice.AccessibilityService;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.NotificationManager;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
+import android.app.fgstesthelper.FgsTestHelper;
 import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundService;
 import android.app.stubs.ScreenOnActivity;
@@ -54,6 +54,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.media.flags.Flags;
 
 import org.jetbrains.annotations.NotNull;
@@ -95,6 +96,9 @@ public class ActivityManagerFgsDelegateTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private final UserHelper mUserHelper = new UserHelper();
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -103,9 +107,6 @@ public class ActivityManagerFgsDelegateTest {
         mTargetContext = mInstrumentation.getTargetContext();
         CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);
         cleanupResiduals();
-        // Press home key to ensure stopAppSwitches is called so the grace period of
-        // the background start will be ignored if there's any.
-        UiDevice.getInstance(mInstrumentation).pressHome();
 
         // Allow app1 to start FGS.
         allowBgFgsStart(PACKAGE_NAME_APP1, true);
@@ -128,9 +129,7 @@ public class ActivityManagerFgsDelegateTest {
             PermissionUtils.grantPermission(
                     pkgName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
         }
-        // Make sure we are in Home screen
-        mInstrumentation.getUiAutomation().performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
     }
 
     private void prepareProcess(WatchUidRunner uidWatcher) throws Exception {
