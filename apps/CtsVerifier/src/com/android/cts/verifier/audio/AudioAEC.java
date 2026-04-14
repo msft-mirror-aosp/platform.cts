@@ -20,6 +20,7 @@ import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -80,6 +81,7 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
     private SoundRecorderObject mSRecorder;
     private AcousticEchoCanceler mAec;
 
+    private boolean mIsWatch;
     private boolean mDeviceHasAEC;
     private int mResultCode = RESULT_CODE_OK;
     private double mMaxAec;
@@ -286,6 +288,8 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
         Resources resources = getResources();
         instructionTx.setText(resources.getString(R.string.audio_aec_instructions));
 
+        mIsWatch = getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+
         String msg = "";
         if (AcousticEchoCanceler.isAvailable()) {
             if (mDeviceHasAEC) {
@@ -297,6 +301,12 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
             msg = "AEC API indicates effect unavailable: testing that no echo cancellation" +
                     " is applied.";
         }
+
+        if (mIsWatch) {
+            msg += "\nThis test is optional for watches as watches are tuned for VOICE_CALL.";
+            getPassButton().setEnabled(true);
+        }
+
         mResultText.setText(msg);
 
         enableUILayout(mLinearLayout, true);
@@ -614,10 +624,13 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
             Log.v(TAG, "Test EndedOk. " + testId + " str:" + str);
             showView(mProgress, false);
             mResultText.setText("test completed. " + str);
+            if (mIsWatch) {
+                mResultText.append("\nThis test is optional for watches.");
+            }
             if (!isReportLogOkToPass()) {
                 mResultText.setText(getResources().getString(
                         R.string.audio_general_reportlogtest));
-            } else if (mResultCode == RESULT_CODE_OK) {
+            } else if (mResultCode == RESULT_CODE_OK || mIsWatch) {
                 getPassButton().setEnabled(true);
             }
         }
@@ -628,6 +641,10 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
             Log.v(TAG, "Test EndedError. " + testId + " str:"+str);
             showView(mProgress, false);
             mResultText.setText("test failed. " + str);
+            if (mIsWatch) {
+                mResultText.append("\nThis test is optional for watches.");
+                getPassButton().setEnabled(true);
+            }
         }
     };
 }
