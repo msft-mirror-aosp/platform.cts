@@ -107,15 +107,7 @@ public class MockModemTestBase {
             Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
             return false;
         }
-        try {
-            MockModemManager.enforceMockModemDeveloperSetting();
-        } catch (IllegalStateException ex) {
-            if (!DEBUG_BUILD) {
-                Log.d(TAG, "Skipping test on user build");
-                return false;
-            }
-            throw ex;
-        }
+        MockModemManager.enforceMockModemDeveloperSetting();
         sTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         sIsMultiSimDevice = isMultiSim(sTelephonyManager);
