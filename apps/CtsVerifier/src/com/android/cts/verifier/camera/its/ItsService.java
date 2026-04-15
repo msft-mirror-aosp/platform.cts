@@ -110,6 +110,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ReportLog.Metric;
 import com.android.cts.backportedfixes.BackportedFixVerifier;
+import com.android.cts.backportedfixes.resolver.Status;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation;
 import com.android.cts.verifier.camera.performance.CameraTestInstrumentation.MetricListener;
@@ -158,7 +159,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -1056,7 +1056,7 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                     case "doGetUnavailablePhysicalCameras" -> doGetUnavailablePhysicalCameras();
                     case "doReprocessCapture" -> doReprocessCapture(cmdObj);
-                    case "doStaticRecording" -> doStaticRecording(cmdObj);
+                    case "doStaticPreviewRecording" -> doStaticPreviewRecording(cmdObj);
                     case "doVibrate" -> doVibrate(cmdObj);
                     case "getAvailablePhysicalCameraProperties" ->
                             doGetAvailablePhysicalCameraProperties();
@@ -2092,12 +2092,7 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("camera1080pJpegCaptureMs", Double.toString(jpegCaptureMs));
     }
 
-    private static long getReaderUsage(int format, boolean has10bitOutput, int inputFormat,
-            boolean isVideoOnlyStream) {
-        if (isVideoOnlyStream) {
-            return HardwareBuffer.USAGE_VIDEO_ENCODE;
-        }
-
+    private static long getReaderUsage(int format, boolean has10bitOutput, int inputFormat) {
         // Private image format camera readers will default to ZSL usage unless
         // explicitly configured to use a common consumer such as display.
         // We don't support the ZSL use case for the 10-bit use case, or if the input format
@@ -2153,7 +2148,6 @@ public class ItsService extends Service implements SensorEventListener {
                 "Current imageReaderArgs: %s, mImageReaderArgs: %s", args, mImageReaderArgs));
         Size[] outputSizes = args.getOutputSizes();
         int[] outputFormats = args.getOutputFormats();
-        long[] outputUsages = args.getOutputUsages();
         Size inputSize = args.getInputSize();
         int inputFormat = args.getInputFormat();
         int maxInputBuffers = args.getMaxInputBuffers();
@@ -2166,24 +2160,25 @@ public class ItsService extends Service implements SensorEventListener {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
                         MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers,
-                        outputUsages[i]);
+                        getReaderUsage(outputFormats[i], has10bitOutput, inputFormat));
                 mInputImageReader = mOutputImageReaders[i];
             } else {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
-                        MAX_CONCURRENT_READER_BUFFERS, outputUsages[i]);
+                        MAX_CONCURRENT_READER_BUFFERS, getReaderUsage(outputFormats[i],
+                            has10bitOutput, inputFormat));
             }
         }
 
         if (inputSize != null && mInputImageReader == null) {
             mInputImageReader = ImageReader.newInstance(inputSize.getWidth(), inputSize.getHeight(),
                     inputFormat, maxInputBuffers,
-                    getReaderUsage(inputFormat, has10bitOutput, inputFormat,
-                            /*isVideoOnlyStream*/false));
+                    getReaderUsage(inputFormat, has10bitOutput, inputFormat));
         }
-        mImageReaderArgs = ImageReaderArgs.valueOf(outputSizes, outputFormats, outputUsages,
-                inputSize, inputFormat, maxInputBuffers, has10bitOutput);
+        mImageReaderArgs = ImageReaderArgs.valueOf(outputSizes, outputFormats, inputSize,
+                inputFormat, maxInputBuffers, has10bitOutput);
     }
+
     private void closeImageReaders() {
         Logt.i(TAG, "Closing image readers");
         if (mOutputImageReaders != null) {
@@ -2250,7 +2245,7 @@ public class ItsService extends Service implements SensorEventListener {
                             size.getWidth(), size.getHeight(), outputFormat,
                             MAX_CONCURRENT_READER_BUFFERS,
                             getReaderUsage(outputFormat, /*has10bitOutput=*/false,
-                                    /*inputFormat*/-1, /*isVideoOnlyStream*/false));
+                                    /*inputFormat*/-1));
                 }
             }
 
@@ -2584,7 +2579,6 @@ public class ItsService extends Service implements SensorEventListener {
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT;
         Size outputSizes[];
         int outputFormats[];
-        long outputUsages[];
         int numSurfaces = 0;
         mPhysicalStreamMap.clear();
         mStreamUseCaseMap.clear();
@@ -2602,20 +2596,16 @@ public class ItsService extends Service implements SensorEventListener {
 
                 outputSizes = new Size[numSurfaces];
                 outputFormats = new int[numSurfaces];
-                outputUsages = new long[numSurfaces];
-                boolean isVideoOnlyStream[] = new boolean[numSurfaces];
                 for (int i = 0; i < numSurfaces; i++) {
                     // Append optional background stream at the end
                     if (backgroundRequest && i == numSurfaces - 1) {
                         outputFormats[i] = ImageFormat.YUV_420_888;
                         outputSizes[i] = new Size(640, 480);
-                        isVideoOnlyStream[i] = false;
                         continue;
                     }
                     // Get the specified surface.
                     JSONObject surfaceObj = jsonOutputSpecs.getJSONObject(i);
                     String physicalCameraId = surfaceObj.optString("physicalCamera");
-                    isVideoOnlyStream[i] = surfaceObj.optBoolean("is_video_only", false);
                     CameraCharacteristics cameraCharacteristics =  mCameraCharacteristics;
                     mPhysicalStreamMap.put(i, physicalCameraId);
                     if (!physicalCameraId.isEmpty()) {
@@ -2738,10 +2728,6 @@ public class ItsService extends Service implements SensorEventListener {
                         mStreamUseCaseMap.put(i, surfaceObj.optLong("useCase"));
                     }
                 }
-                for (int i = 0; i < numSurfaces; i++) {
-                    outputUsages[i] = getReaderUsage(outputFormats[i], is10bitOutputPresent,
-                            inputFormat, isVideoOnlyStream[i]);
-                }
             } catch (org.json.JSONException e) {
                 throw new ItsException("JSON error", e);
             }
@@ -2754,21 +2740,16 @@ public class ItsService extends Service implements SensorEventListener {
 
             outputSizes = new Size[numSurfaces];
             outputFormats = new int[numSurfaces];
-            outputUsages = new long[numSurfaces];
             outputSizes[0] = maxYuvSize;
             outputFormats[0] = ImageFormat.YUV_420_888;
-            outputUsages[0] = getReaderUsage(outputFormats[0], is10bitOutputPresent,
-                    inputFormat, /*isVideoOnlyStream*/false);
             if (backgroundRequest) {
                 outputSizes[1] = new Size(640, 480);
                 outputFormats[1] = ImageFormat.YUV_420_888;
-                outputUsages[1] = getReaderUsage(outputFormats[1], is10bitOutputPresent,
-                        inputFormat, /*isVideoOnlyStream*/false);
             }
         }
 
-        prepareImageReaders(ImageReaderArgs.valueOf(outputSizes, outputFormats, outputUsages,
-                inputSize, inputFormat, maxInputBuffers,
+        prepareImageReaders(ImageReaderArgs.valueOf(outputSizes, outputFormats, inputSize,
+                inputFormat, maxInputBuffers,
                 is10bitOutputPresent), reuseSession);
 
         return is10bitOutputPresent;
@@ -3099,7 +3080,7 @@ public class ItsService extends Service implements SensorEventListener {
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.HLG10,
                     mockCallback, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
                     recordingResultListener, /*extraConfigs*/null, aeAntibandingMode,
-                    faceDetectMode, /*useDirectRecording=*/ false);
+                    faceDetectMode);
         } catch (CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -3178,7 +3159,7 @@ public class ItsService extends Service implements SensorEventListener {
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.STANDARD,
                     /*stateCallback=*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
                     recordingResultListener, /*extraConfigs*/null, aeAntibandingMode,
-                    faceDetectMode, /*useDirectRecording=*/ false);
+                    faceDetectMode);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -3214,21 +3195,17 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     /**
-     * Sets up a {@link VideoRecorder} instance for recording.
+     * Sets up a PreviewRecorder with a surface set up as a preview.
      *
-     * This method configures and returns either a {@link VideoRecorder} or a {@link PreviewRecorder}
-     * based on the `isVideoOnly` parameter.
-     *
-     * If `isVideoOnly` is true, a standard {@link VideoRecorder} is created, directly recording from
-     * a camera surface.
-     *
-     * If `isVideoOnly` is false, a {@link PreviewRecorder} is created. This involves setting up
-     * an {@link SurfaceTexture} surface as the preview target. A {@link MediaCodec} receives images
-     * from the SurfaceTexture and pipes them to a {@link MediaRecorder} surface for encoding into
-     * a video. This setup is used to ensure the HAL utilizes the preview pipeline.
+     * This method sets up 2 surfaces: an {@link ImageReader} surface and a
+     * {@link MediaRecorder} surface. The ImageReader surface is set up with
+     * {@link HardwareBuffer#USAGE_COMPOSER_OVERLAY} and set as the target of one or many capture
+     * requests created with {@link CameraDevice#TEMPLATE_PREVIEW}. This should force the HAL to
+     * use the Preview pipeline and output to the ImageReader. An {@link ImageWriter} pipes the
+     * images from ImageReader to the MediaRecorder surface which is encoded into a video.
      */
-    private VideoRecorder getVideoRecorder(JSONObject cmdObj, String outputFilePath,
-            Size videoSize, boolean hlg10Enabled, boolean isVideoOnly) throws ItsException, JSONException {
+    private PreviewRecorder getPreviewRecorder(JSONObject cmdObj, String outputFilePath,
+            Size videoSize, boolean hlg10Enabled) throws ItsException, JSONException {
         String cameraId = cmdObj.getString("cameraId");
         int stabilizationMode = cmdObj.getInt("stabilizeMode");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
@@ -3263,18 +3240,12 @@ public class ItsService extends Service implements SensorEventListener {
         if (aeTargetFpsMax == 0) {
             aeTargetFpsMax = 30;
         }
-
-        if (isVideoOnly) {
-            return new VideoRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
-                    outputFilePath, mCameraHandler, hlg10Enabled, this);
-        } else {
-            return new PreviewRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
-                    sensorOrientation, outputFilePath, mCameraHandler, hlg10Enabled,
-                    getEncoderTimestampOffset(), this);
-        }
+        return new PreviewRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
+                sensorOrientation, outputFilePath, mCameraHandler, hlg10Enabled,
+                getEncoderTimestampOffset(), this);
     }
 
-    private void doStaticRecording(JSONObject cmdObj) throws JSONException, ItsException {
+    private void doStaticPreviewRecording(JSONObject cmdObj) throws JSONException, ItsException {
         int recordingDuration = cmdObj.getInt("recordingDuration");
         RecordingResultListener recordingResultListener = new RecordingResultListener();
         mPreviewAction = new PreviewSleepAction(
@@ -3282,7 +3253,7 @@ public class ItsService extends Service implements SensorEventListener {
                 mCameraHandler,
                 recordingResultListener,
                 recordingDuration * 1000L);
-        doRecordingWithAction(cmdObj, mPreviewAction);
+        doPreviewRecordingWithAction(cmdObj, mPreviewAction);
     }
 
     private void doDynamicZoomPreviewRecording(JSONObject cmdObj)
@@ -3300,7 +3271,7 @@ public class ItsService extends Service implements SensorEventListener {
                 zoomEnd,
                 stepSize,
                 stepDuration);
-        doRecordingWithAction(cmdObj, mPreviewAction);
+        doPreviewRecordingWithAction(cmdObj, mPreviewAction);
     }
 
     private void doDynamicMeteringRegionPreviewRecording(JSONObject cmdObj)
@@ -3320,15 +3291,13 @@ public class ItsService extends Service implements SensorEventListener {
                 aeAwbRegionThree,
                 aeAwbRegionFour,
                 aeAwbRegionDuration);
-        doRecordingWithAction(cmdObj, mPreviewAction);
+        doPreviewRecordingWithAction(cmdObj, mPreviewAction);
     }
 
     /**
-     * Records from a surface set up as a preview or video, performing an action while recording.
-     *
-     * The video is a video-only surface if `is_video_only` is true for recordSurfaceObj.
+     * Records a video of a surface set up as a preview, performing an action while recording.
      */
-    private void doRecordingWithAction(
+    private void doPreviewRecordingWithAction(
             JSONObject cmdObj,
             IntraPreviewAction action)
             throws JSONException, ItsException {
@@ -3357,7 +3326,6 @@ public class ItsService extends Service implements SensorEventListener {
         if (!format.equals("priv")) {
             throw new ItsException("Record surface must be PRIV format!, but is " + format);
         }
-        boolean isVideoOnly = recordSurfaceObj.optBoolean("is_video_only", false);
         Size videoSize = new Size(
                 recordSurfaceObj.getInt("width"),
                 recordSurfaceObj.getInt("height"));
@@ -3382,15 +3350,15 @@ public class ItsService extends Service implements SensorEventListener {
                 zoomRatio, aeTargetFpsMin, aeTargetFpsMax);
         assert outputFilePath != null;
 
-        try (VideoRecorder recorder = getVideoRecorder(cmdObj, outputFilePath, videoSize,
-                hlg10Enabled, isVideoOnly)) {
+        try (PreviewRecorder pr = getPreviewRecorder(cmdObj, outputFilePath, videoSize,
+                hlg10Enabled)) {
             BlockingSessionCallback sessionListener = new BlockingSessionCallback();
             long dynamicRangeProfile = hlg10Enabled ? DynamicRangeProfiles.HLG10 :
                     DynamicRangeProfiles.STANDARD;
-            recorder.startRecording();
+            pr.startRecording();
             if (paddedFrames) {
                 Logt.v(TAG, "Record Green frames at the beginning of the video");
-                recorder.overrideCameraFrames(true);
+                pr.overrideCameraFrames(true);
 
                 // MediaRecorder APIs don't specify whether they're synchronous or asynchronous,
                 // and different vendors seem to have interpret this differently. This delay
@@ -3403,10 +3371,9 @@ public class ItsService extends Service implements SensorEventListener {
                 }
             }
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
-                    recorder.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
+                    pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, extraConfigs, aeAntibandingMode, faceDetectMode,
-                    isVideoOnly);
+                    recordingResultListener, extraConfigs, aeAntibandingMode, faceDetectMode);
             if (paddedFrames) {
                 Logt.v(TAG, "Wait " + PADDED_FRAMES_MS + " msec for Green frames for padding");
                 try {
@@ -3416,13 +3383,13 @@ public class ItsService extends Service implements SensorEventListener {
                 }
 
                 Logt.v(TAG, "Record Camera frames after green frames");
-                recorder.overrideCameraFrames(false);
+                pr.overrideCameraFrames(false);
             }
 
             action.execute();
 
             if (paddedFrames) {
-                recorder.overrideCameraFrames(true);
+                pr.overrideCameraFrames(true);
                 try {
                     Logt.v(TAG, "Record Green frames at the end of the video.");
                     Thread.sleep(PADDED_FRAMES_MS);
@@ -3441,34 +3408,23 @@ public class ItsService extends Service implements SensorEventListener {
             } catch (InterruptedException e) {
                 Logt.e(TAG, "Interrupted while waiting for recording to complete.", e);
             }
-            recorder.stopRecording();
+            pr.stopRecording();
             mSession.close();
 
             int frameNum = 1;
-            if (isVideoOnly) {
-                for (Long timestamp : recordingResultListener.getCaptureResultsMap().keySet()) {
+            for (Long timestamp : pr.getFrameTimeStamps()) {
+                if (recordingResultListener.getCaptureResultsMap().containsKey(timestamp)) {
                     RecordingResult result = recordingResultListener.getCaptureResultsMap().get(
                             timestamp);
                     recordingResults.add(result);
                     Logt.v(TAG, "Frame# " + frameNum + " timestamp: " + timestamp + " cr = "
                             + result.mMap.values());
-                    frameNum++;
+                    recordingResultListener.getCaptureResultsMap().remove(timestamp);
+                } else {
+                    throw new ItsException("Frame# " + frameNum
+                            + " No RecordingResult found for timestamp: " + timestamp);
                 }
-            } else {
-                for (Long timestamp : recorder.getFrameTimeStamps()) {
-                    if (recordingResultListener.getCaptureResultsMap().containsKey(timestamp)) {
-                        RecordingResult result = recordingResultListener.getCaptureResultsMap().get(
-                                timestamp);
-                        recordingResults.add(result);
-                        Logt.v(TAG, "Frame# " + frameNum + " timestamp: " + timestamp + " cr = "
-                                + result.mMap.values());
-                        recordingResultListener.getCaptureResultsMap().remove(timestamp);
-                    } else {
-                        throw new ItsException("Frame# " + frameNum
-                                + " No RecordingResult found for timestamp: " + timestamp);
-                    }
-                    frameNum++;
-                }
+                frameNum++;
             }
         } catch (CameraAccessException e) {
             throw new ItsException("Error configuring and creating capture request", e);
@@ -3519,7 +3475,7 @@ public class ItsService extends Service implements SensorEventListener {
 
         int aeTargetFpsMax = 30;
         boolean prevSend3AResults = mSend3AResults;
-        try (VideoRecorder recorder = new PreviewRecorder(cameraDeviceId, previewSize, aeTargetFpsMax,
+        try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, previewSize, aeTargetFpsMax,
                 sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false,
                 getEncoderTimestampOffset(), this)) {
             CaptureRequest.Builder reqBuilder = mCamera.createCaptureRequest(
@@ -3542,14 +3498,14 @@ public class ItsService extends Service implements SensorEventListener {
                         reqBuilder,
                         threeAReqBuilder,
                         frameNumToCapture,
-                        recorder,
+                        pr,
                         outputStream);
             } else {
                 capturePreviewFrameWithExtension(
                         reqBuilder,
                         threeAReqBuilder,
                         frameNumToCapture,
-                        recorder,
+                        pr,
                         outputStream,
                         extension);
             }
@@ -3570,14 +3526,14 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void capturePreviewFrame(CaptureRequest.Builder reqBuilder,
             CaptureRequest.Builder threeAReqBuilder, int frameNumToCapture,
-            VideoRecorder recorder, OutputStream outputStream)
+            PreviewRecorder pr, OutputStream outputStream)
             throws ItsException, CameraAccessException, InterruptedException {
         Log.d(TAG, "capturePreviewFrame [start]");
         CountDownLatch frameNumLatch = new CountDownLatch(frameNumToCapture + 1);
         PreviewFrameCaptureResultListener captureResultListener =
                 new PreviewFrameCaptureResultListener(frameNumLatch);
 
-        Surface surface = recorder.getCameraSurface();
+        Surface surface = pr.getCameraSurface();
         reqBuilder.addTarget(surface);
         reqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                 CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_IDLE);
@@ -3682,7 +3638,7 @@ public class ItsService extends Service implements SensorEventListener {
             captureResultListener.mCaptureResult,
             new ImageReader[] {});
         Log.d(TAG, "capturePreviewFrame [getting frame]");
-        recorder.getFrame(outputStream);
+        pr.getFrame(outputStream);
 
         // Stop repeating request
         Log.d(TAG, "capturePreviewFrame [stopping repeating request]");
@@ -3695,11 +3651,11 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void capturePreviewFrameWithExtension(CaptureRequest.Builder reqBuilder,
             CaptureRequest.Builder threeAReqBuilder, int frameNumToCapture,
-            VideoRecorder recorder, OutputStream outputStream, int extension)
+            PreviewRecorder pr, OutputStream outputStream, int extension)
             throws CameraAccessException, InterruptedException, ItsException {
         Log.d(TAG, "capturePreviewFrameWithExtension [start]");
 
-        Surface surface = recorder.getCameraSurface();
+        Surface surface = pr.getCameraSurface();
         reqBuilder.addTarget(surface);
         reqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                 CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_IDLE);
@@ -3779,7 +3735,7 @@ public class ItsService extends Service implements SensorEventListener {
             new ImageReader[] {});
 
         Log.d(TAG, "capturePreviewFrameWithExtension [getting frame]");
-        recorder.getFrame(outputStream);
+        pr.getFrame(outputStream);
 
         Log.d(TAG, "capturePreviewFrameWithExtension [stop repeating request]");
         mExtensionSession.stopRepeating();
@@ -3873,8 +3829,7 @@ public class ItsService extends Service implements SensorEventListener {
             double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
             CameraCaptureSession.CaptureCallback captureCallback,
             List<OutputConfiguration> extraConfigs,
-            int aeAntibandingMode, int faceDetectMode,
-            boolean useDirectRecording) throws CameraAccessException {
+            int aeAntibandingMode, int faceDetectMode) throws CameraAccessException {
         assert (recordSurface != null);
         // Create capture request builder
         mCaptureRequestBuilder = mCamera.createCaptureRequest(requestTemplate);
@@ -3937,8 +3892,7 @@ public class ItsService extends Service implements SensorEventListener {
         boolean supportStreamUseCase = IntStream.of(capabilities).anyMatch(x -> x ==
                 CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE);
         boolean useStreamUseCase = (supportStreamUseCase
-                && videoStabilizationMode == CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON
-                && !useDirectRecording);
+                && videoStabilizationMode == CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON);
         if (useStreamUseCase) {
             outConfig.setStreamUseCase(
                     CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_RECORD);
@@ -5295,7 +5249,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     class RecordingResultListener extends CaptureResultListener {
         private Map<Long, RecordingResult> mTimestampToCaptureResultsMap =
-                new ConcurrentSkipListMap<>();
+                new ConcurrentHashMap<>();
 
         /**
          * Time to wait for autofocus to converge.
