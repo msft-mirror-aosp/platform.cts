@@ -71,6 +71,7 @@ import android.os.DropBoxManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.InputConstants;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
@@ -194,7 +195,8 @@ public final class ActivityManagerAppExitInfoTest {
 
     private static final String KEY_TIMEOUT = "bcast_timeout";
 
-    private static final long INPUT_DISPATCH_ANR_TIMEOUT = 5000L * Build.HW_TIMEOUT_MULTIPLIER;
+    private static final long INPUT_DISPATCH_ANR_TIMEOUT =
+            InputConstants.DEFAULT_DISPATCHING_TIMEOUT_MILLIS;
 
     private Context mContext;
     private Instrumentation mInstrumentation;

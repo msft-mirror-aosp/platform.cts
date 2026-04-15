@@ -611,12 +611,14 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         String mediaType = format.getString(MediaFormat.KEY_MIME);
         int width = getWidth(format);
         int height = getHeight(format);
+        int rate = format.getInteger(MediaFormat.KEY_FRAME_RATE);
         for (APBTestInputData res : DECODABLE_BUNDLE_CACHE.values()) {
             MediaFormat resFormat = res.mFormats.getFirst();
             String resMediaType = resFormat.getString(MediaFormat.KEY_MIME);
             int resWidth = getWidth(resFormat);
             int resHeight = getHeight(resFormat);
-            if (mediaType.equals(resMediaType)) {
+            int resRate = resFormat.getInteger(MediaFormat.KEY_FRAME_RATE, 30);
+            if (mediaType.equals(resMediaType) && rate == resRate) {
                 // An 8k UHD can be 7680x4320 or 8192x4320. A 4k UHD can be 3840x2160 or
                 // 4096x2160. A Full HD can be 1920x1080 or 1920x1088 or 2048x1080. Pick the
                 // closest and use it.
