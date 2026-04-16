@@ -15,10 +15,9 @@ public class FileSystemPermissionTest extends DeviceTestCase {
     */
     private ITestDevice mDevice;
 
-    /**
-     * Used to build the find command for finding insecure file system components
-     */
-    private static final String INSECURE_DEVICE_ADB_COMMAND = "find %s -type %s -perm /o=rwx 2>/dev/null";
+    /** Used to build the find command for finding insecure file system components */
+    private static final String INSECURE_DEVICE_ADB_COMMAND =
+            "find %s -type %s -perm %s 2>/dev/null";
 
     @Override
     protected void setUp() throws Exception {
@@ -27,7 +26,21 @@ public class FileSystemPermissionTest extends DeviceTestCase {
     }
 
     public void testAllBlockDevicesAreSecure() throws Exception {
-        Set<String> insecure = getAllInsecureDevicesInDirAndSubdir("/dev", "b");
+        Set<String> insecure = getAllInsecureDevicesInDirAndSubdir("/dev", "b", "/o=rwx");
+        Set<String> criticalInsecure = getAllInsecureDevicesInDirAndSubdir("/dev", "b", "/o=wx");
+
+        // APEX-dm-devices (backing newly installed APEXes) are created with 0644 mode
+        // to allow extraction (e.g., adb pull) for CTS tests.
+        // We allow 'other-read' permission for these devices, but 'other-write' or
+        // 'other-execute' (criticalInsecure) is still strictly forbidden.
+        // Note that their access is further restricted by SEPolicy.
+        Set<ITestDevice.ApexInfo> activeApexes = mDevice.getActiveApexes();
+        for (ITestDevice.ApexInfo apex : activeApexes) {
+            if (!criticalInsecure.contains(apex.sourceDir)) {
+                insecure.remove(apex.sourceDir);
+            }
+        }
+
         assertTrue("Found insecure block devices: " + insecure.toString(),
                 insecure.isEmpty());
     }
@@ -35,22 +48,23 @@ public class FileSystemPermissionTest extends DeviceTestCase {
     /**
      * Searches for all world accessable files, note this may need sepolicy to search the desired
      * location and stat files.
+     *
      * @path The path to search, must be a directory.
      * @type The type of file to search for, must be a valid find command argument to the type
-     *       option.
+     *     option.
      * @returns The set of insecure fs objects found.
      */
-    private Set<String> getAllInsecureDevicesInDirAndSubdir(String path, String type) throws DeviceNotAvailableException {
-
-        String cmd = getInsecureDeviceAdbCommand(path, type);
+    private Set<String> getAllInsecureDevicesInDirAndSubdir(String path, String type, String perm)
+            throws DeviceNotAvailableException {
+        String cmd = getInsecureDeviceAdbCommand(path, type, perm);
         String output = mDevice.executeShellCommand(cmd);
         // Splitting an empty string results in an array of an empty string.
         String [] found = output.length() > 0 ? output.split("\\s") : new String[0];
         return new HashSet<String>(Arrays.asList(found));
     }
 
-    private static String getInsecureDeviceAdbCommand(String path, String type) {
-        return String.format(INSECURE_DEVICE_ADB_COMMAND, path, type);
+    private static String getInsecureDeviceAdbCommand(String path, String type, String perm) {
+        return String.format(INSECURE_DEVICE_ADB_COMMAND, path, type, perm);
     }
 
     private static String HW_RNG_DEVICE = "/dev/hw_random";
