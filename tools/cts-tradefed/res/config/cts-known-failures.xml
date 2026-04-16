@@ -493,6 +493,7 @@
 
     <!-- b/500861729 Add the instant version of CtsSensorTestCases test Failing on MT5/BZ5/FL5 -->
     <option name="compatibility:exclude-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_100hz" />
+    <option name="compatibility:exclude-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticField_100hz" />
 
     <!-- b/500750254: Failing BatterySaver tests on foldable/tablet devices -->
     <option name="compatibility:exclude-filter" value="CtsBatterySavingTestCases android.os.cts.batterysaving.BatterySaverBgServiceTest#testBgServiceThrottled" />
