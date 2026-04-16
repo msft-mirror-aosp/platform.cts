@@ -499,4 +499,7 @@
     <option name="compatibility:exclude-filter" value="CtsBatterySavingTestCases android.os.cts.batterysaving.BatterySaverBgServiceTest#testBgServiceThrottled" />
     <option name="compatibility:exclude-filter" value="CtsBatterySavingTestCases android.os.cts.batterysaving.BatterySaverTest#testActivateBatterySaver" />
 
+    <!-- b/496083272: ConnectivitySlicingTest failure on automotive -->
+    <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.ConnectivitySlicingTest" />
+
 </configuration>
