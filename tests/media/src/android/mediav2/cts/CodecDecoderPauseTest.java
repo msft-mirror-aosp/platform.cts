@@ -38,6 +38,7 @@ import android.mediav2.common.cts.OutputManager;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -111,12 +112,21 @@ public class CodecDecoderPauseTest extends CodecDecoderTestBase {
                 }));
             }
         }
-        if (IS_AT_LEAST_B) {
+
+        // iamf
+        if (IS_AT_LEAST_C) {
+            boolean isRequired = MediaUtils.isIamfRequired();
+            exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
+                    "audio/7_1_4_Opus_no_video.mp4",
+                    isRequired ? CODEC_ALL : CODEC_OPTIONAL});
+        } else if (IS_B) {
             if (iamfDefinitionsApi() && extractorMp4EnableIamf()) {
                 exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
-                    "audio/7_1_4_Opus_no_video.mp4", IS_AFTER_B ? CODEC_ALL : CODEC_OPTIONAL});
+                        "audio/7_1_4_Opus_no_video.mp4",
+                        CODEC_OPTIONAL});
             }
         }
+
         exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderPauseTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
