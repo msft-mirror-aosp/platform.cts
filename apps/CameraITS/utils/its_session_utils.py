@@ -1002,8 +1002,8 @@ class ItsSession(object):
           f'Invalid response for command: {cmd[_CMD_NAME_STR]}')
     return data[_OBJ_VALUE_STR]
 
-  def _execute_recording(self, cmd):
-    """Send preview or video recording command over socket and retrieve output object.
+  def _execute_preview_recording(self, cmd):
+    """Send preview recording command over socket and retrieve output object.
 
     Args:
       cmd: dict; Mapping from command key to corresponding value
@@ -1036,28 +1036,21 @@ class ItsSession(object):
           f'Invalid response from command{cmd[_CMD_NAME_STR]}')
     return data[_OBJ_VALUE_STR]
 
-  def do_recording_multiple_surfaces(
+  def do_preview_recording_multiple_surfaces(
       self, output_surfaces, video_stream_index, duration, stabilize_mode,
       ois=False, zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
       antibanding_mode=None, face_detect_mode=None):
-    """Issue a request for a multi-surface session and read back the recording object.
+    """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
-    output_surfaces. The duration is the time in seconds for which the video will
+    video_size. The duration is the time in seconds for which the preview will
     be recorded. The recorded object consists of a path on the device at
     which the recorded video is saved.
 
-    If the output_surfaces contains only one PRIVATE surface, it will be used for
-    both preview and recording, and the camera output goes through GPU before being
-    processed by encoder.
-
-    If the output_surfaces contains multiple PRIVATE surfaces, the PRIVATE stream at
-    `video_stream_index` will be used for encoder without going through GPU.
-
     Args:
       output_surfaces: list; The list of output surfaces used for creating
-                             the recording session. The recording surface is at
-                             `recordSurfaceIndex` within the list.
+                             preview recording session. The first surface
+                             is used for recording.
       video_stream_index: int; The index of the output surface used for recording
       duration: int; The time in seconds for which the video will be recorded.
       stabilize_mode: int; The video stabilization mode
@@ -1074,7 +1067,7 @@ class ItsSession(object):
     if 'physicalCamera' in output_surfaces[0]:
       cam_id = output_surfaces[0]['physicalCamera']
     cmd = {
-        _CMD_NAME_STR: 'doStaticRecording',
+        _CMD_NAME_STR: 'doStaticPreviewRecording',
         _CAMERA_ID_STR: cam_id,
         'outputSurfaces': output_surfaces,
         'recordSurfaceIndex': video_stream_index,
@@ -1094,7 +1087,7 @@ class ItsSession(object):
       cmd['aeAntibandingMode'] = antibanding_mode
     if face_detect_mode is not None:
       cmd['faceDetectMode'] = face_detect_mode
-    return self._execute_recording(cmd)
+    return self._execute_preview_recording(cmd)
 
   def do_preview_recording(
       self, video_size, duration, stabilize, ois=False, zoom_ratio=None,
@@ -1128,7 +1121,7 @@ class ItsSession(object):
       stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
     else:
       stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
-    return self.do_recording_multiple_surfaces(
+    return self.do_preview_recording_multiple_surfaces(
         output_surfaces, video_stream_index, duration, stabilization_mode,
         ois, zoom_ratio, ae_target_fps_min, ae_target_fps_max, antibanding_mode,
         face_detect_mode)
@@ -1191,7 +1184,7 @@ class ItsSession(object):
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
-    return self._execute_recording(cmd)
+    return self._execute_preview_recording(cmd)
 
   def do_preview_recording_with_dynamic_ae_awb_region(
       self, video_size, ae_awb_regions, ae_awb_region_duration, stabilize=False,
@@ -1239,7 +1232,7 @@ class ItsSession(object):
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
-    return self._execute_recording(cmd)
+    return self._execute_preview_recording(cmd)
 
   def get_supported_video_qualities(self, camera_id):
     """Get all supported video qualities for this camera device.

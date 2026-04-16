@@ -20,6 +20,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
+import android.media.MediaCodecList;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
 import android.media.MediaRecorder;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
@@ -31,10 +34,10 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.os.ConditionVariable;
 import android.os.Handler;
-import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -47,7 +50,7 @@ import java.util.List;
  * Class to record a preview like stream. It sets up a SurfaceTexture that the camera can write to,
  * and copies over the camera frames to a MediaRecorder or MediaCodec surface.
  */
-class PreviewRecorder extends VideoRecorder {
+class PreviewRecorder implements AutoCloseable {
     private static final String TAG = PreviewRecorder.class.getSimpleName();
 
     // Frame capture timeout duration in milliseconds.
@@ -103,7 +106,27 @@ class PreviewRecorder extends VideoRecorder {
             1,  1, // top right
     };
 
+
+    private boolean mRecordingStarted = false; // tracks if the MediaRecorder/MediaCodec instance
+                                               // was already used to record a video.
+
+    // Lock to protect reads/writes to the various Surfaces below.
+    private final Object mRecordLock = new Object();
+    // Tracks if the mMediaRecorder/mMediaCodec is currently recording. Protected by mRecordLock.
+    private volatile boolean mIsRecording = false;
     private boolean mIsPaintGreen = false;
+
+    private final Size mPreviewSize;
+    private final int mMaxFps;
+    private final Handler mHandler;
+
+    private Surface mRecordSurface; // MediaRecorder/MediaCodec source. EGL writes to this surface
+
+    private MediaRecorder mMediaRecorder;
+
+    private MediaCodec mMediaCodec;
+    private MediaMuxer mMediaMuxer;
+    private Object mMediaCodecCondition;
 
     private SurfaceTexture mCameraTexture; // Handles writing frames from camera as texture to
                                            // the GLSL program.
@@ -127,13 +150,29 @@ class PreviewRecorder extends VideoRecorder {
     // An offset applied to convert from camera timestamp to codec timestamp, due to potentially
     // different time bases (elapsedRealtime vs uptime).
     private long mEncoderTimestampOffset;
-    private List<Long> mFrameTimeStamps = new ArrayList<>();
-
-    PreviewRecorder(int cameraId, Size recordingSize, int maxFps, int sensorOrientation,
+    private List<Long> mFrameTimeStamps = new ArrayList();
+    /**
+     * Initializes MediaRecorder/MediaCodec and EGL context. The result of recorded video will
+     * be stored in {@code outputFile}.
+     */
+    PreviewRecorder(int cameraId, Size previewSize, int maxFps, int sensorOrientation,
             String outputFile, Handler handler, boolean hlg10Enabled, long encoderTimestampOffset,
             Context context) throws ItsException {
-        super(cameraId, recordingSize, maxFps, outputFile, handler, hlg10Enabled, context);
+        // Ensure that we can record the given size
+        int maxSupportedResolution = ItsUtils.RESOLUTION_TO_CAMCORDER_PROFILE
+                                        .stream()
+                                        .map(p -> p.first)
+                                        .max(Integer::compareTo)
+                                        .orElse(0);
+        int currentResolution = previewSize.getHeight() * previewSize.getWidth();
+        if (currentResolution > maxSupportedResolution) {
+            throw new ItsException("Requested preview size is greater than maximum "
+                    + "supported preview size.");
+        }
 
+        mHandler = handler;
+        mPreviewSize = previewSize;
+        mMaxFps = maxFps;
         // rotate the texture as needed by the sensor orientation
         mTexRotMatrix = getRotationMatrix(sensorOrientation);
         mEncoderTimestampOffset = encoderTimestampOffset;
@@ -156,13 +195,25 @@ class PreviewRecorder extends VideoRecorder {
         if (!cv.block(1000)) {
             throw new ItsException("Preview recorder did not initialize in 1000ms");
         }
+
     }
 
     private void initPreviewRecorder(int cameraId, String outputFile,
             boolean hlg10Enabled, Context context) throws ItsException {
+
+        // order of initialization is important
+        if (hlg10Enabled) {
+            Logt.i(TAG, "HLG10 Enabled, using MediaCodec");
+            setupMediaCodec(cameraId, outputFile, context);
+        } else {
+            Logt.i(TAG, "HLG10 Disabled, using MediaRecorder");
+            setupMediaRecorder(cameraId, outputFile, context);
+        }
+
         initEGL(hlg10Enabled); // requires recording surfaces to be set up
         compileShaders(); // requires EGL context to be set up
         setupCameraTexture(); // requires EGL context to be set up
+
 
         mCameraTexture.setOnFrameAvailableListener(surfaceTexture -> {
             // Synchronized on mRecordLock to ensure that all surface are valid while encoding
@@ -205,6 +256,61 @@ class PreviewRecorder extends VideoRecorder {
                 }
             }
         }, mHandler);
+    }
+
+    private void setupMediaRecorder(int cameraId, String outputFile, Context context)
+            throws ItsException {
+        mRecordSurface = MediaCodec.createPersistentInputSurface();
+
+        mMediaRecorder = new MediaRecorder(context);
+        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+
+        mMediaRecorder.setVideoSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        mMediaRecorder.setVideoEncodingBitRate(
+                ItsUtils.calculateBitrate(cameraId, mPreviewSize, mMaxFps));
+        mMediaRecorder.setInputSurface(mRecordSurface);
+        mMediaRecorder.setVideoFrameRate(mMaxFps);
+        mMediaRecorder.setOutputFile(outputFile);
+
+        try {
+            mMediaRecorder.prepare();
+        } catch (IOException e) {
+            throw new ItsException("Error preparing MediaRecorder", e);
+        }
+    }
+
+    private void setupMediaCodec(int cameraId, String outputFilePath, Context context)
+            throws ItsException {
+        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        int videoBitRate = ItsUtils.calculateBitrate(cameraId, mPreviewSize, mMaxFps);
+        MediaFormat format = ItsUtils.initializeHLG10Format(mPreviewSize, videoBitRate, mMaxFps);
+        String codecName = list.findEncoderForFormat(format);
+        assert (codecName != null);
+
+        try {
+            mMediaMuxer = new MediaMuxer(outputFilePath,
+                    MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+        } catch (IOException e) {
+            throw new ItsException("Error preparing the MediaMuxer.");
+        }
+
+        try {
+            mMediaCodec = MediaCodec.createByCodecName(codecName);
+        } catch (IOException e) {
+            throw new ItsException("Error preparing the MediaCodec.");
+        }
+
+        mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        mMediaCodecCondition = new Object();
+        mMediaCodec.setCallback(
+                new ItsUtils.MediaCodecListener(mMediaMuxer, mMediaCodecCondition), mHandler);
+
+        mRecordSurface = mMediaCodec.createInputSurface();
+        assert (mRecordSurface != null);
     }
 
     private void initEGL(boolean hlg10Enabled) throws ItsException {
@@ -276,7 +382,7 @@ class PreviewRecorder extends VideoRecorder {
 
     private void setupCameraTexture() throws ItsException {
         mCameraTexture = new SurfaceTexture(createTexture());
-        mCameraTexture.setDefaultBufferSize(mRecordingSize.getWidth(), mRecordingSize.getHeight());
+        mCameraTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
         mCameraSurface = new Surface(mCameraTexture);
     }
 
@@ -371,6 +477,8 @@ class PreviewRecorder extends VideoRecorder {
         }
     }
 
+
+
     /**
      * Copies a frame encoded as a texture by {@code mCameraTexture} to
      * {@code mRecordSurface} by running our simple shader program for one frame that draws
@@ -414,7 +522,7 @@ class PreviewRecorder extends VideoRecorder {
 
 
         // viewport size should match the frame dimensions to prevent stretching/cropping
-        GLES20.glViewport(0, 0, mRecordingSize.getWidth(), mRecordingSize.getHeight());
+        GLES20.glViewport(0, 0, mPreviewSize.getWidth(), mPreviewSize.getHeight());
         assertNoGLError("glViewport");
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first= */0, /* count= */4);
@@ -438,8 +546,7 @@ class PreviewRecorder extends VideoRecorder {
         };
     }
 
-    @Override
-    public Surface getCameraSurface() {
+    Surface getCameraSurface() {
         return mCameraSurface;
     }
 
@@ -452,8 +559,7 @@ class PreviewRecorder extends VideoRecorder {
      *
      * @param outputStream The stream to which the captured JPEG image bytes are written to
      */
-    @Override
-    public void getFrame(OutputStream outputStream) throws ItsException {
+    void getFrame(OutputStream outputStream) throws ItsException {
         if (mIsRecording) {
             throw new ItsException("Attempting to get frame while recording is active is an "
                     + "invalid combination.");
@@ -473,20 +579,20 @@ class PreviewRecorder extends VideoRecorder {
                     copyFrameToRecordSurface();
 
                     ByteBuffer frameBuffer = ByteBuffer.allocateDirect(
-                            mRecordingSize.getWidth() * mRecordingSize.getHeight() * 4);
+                            mPreviewSize.getWidth() * mPreviewSize.getHeight() * 4);
                     frameBuffer.order(ByteOrder.nativeOrder());
 
                     GLES20.glReadPixels(
                             0,
                             0,
-                            mRecordingSize.getWidth(),
-                            mRecordingSize.getHeight(),
+                            mPreviewSize.getWidth(),
+                            mPreviewSize.getHeight(),
                             GLES20.GL_RGBA,
                             GLES20.GL_UNSIGNED_BYTE,
                             frameBuffer);
                     Bitmap frame = Bitmap.createBitmap(
-                            mRecordingSize.getWidth(),
-                            mRecordingSize.getHeight(),
+                            mPreviewSize.getWidth(),
+                            mPreviewSize.getHeight(),
                             Bitmap.Config.ARGB_8888);
                     frame.copyPixelsFromBuffer(frameBuffer);
                     frame.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
@@ -506,15 +612,65 @@ class PreviewRecorder extends VideoRecorder {
     }
 
     /**
+     * Starts recording frames from mCameraSurface. This method should
+     * only be called once. Throws {@link ItsException} on subsequent calls.
+     */
+    void startRecording() throws ItsException {
+        if (mRecordingStarted) {
+            throw new ItsException("Attempting to record on a stale PreviewRecorder. "
+                    + "Create a new instance instead.");
+        }
+        mRecordingStarted = true;
+        Logt.i(TAG, "Starting Preview Recording.");
+        synchronized (mRecordLock) {
+            mIsRecording = true;
+            if (mMediaRecorder != null) {
+                mMediaRecorder.start();
+            } else {
+                mMediaCodec.start();
+            }
+        }
+    }
+
+    /**
      * Override camera frames with green frames, if recordGreenFrames
      * parameter is true. Record Green frames as buffer to workaround
      * MediaRecorder issue of missing frames at the end of recording.
      */
-    @Override
-    public void overrideCameraFrames(boolean recordGreenFrames) throws ItsException {
+    void overrideCameraFrames(boolean recordGreenFrames) throws ItsException {
         Logt.i(TAG, "Recording Camera frames. recordGreenFrames = " + recordGreenFrames);
         synchronized (mRecordLock) {
             mIsPaintGreen = recordGreenFrames;
+        }
+    }
+
+    /**
+     * Stops recording frames.
+     */
+    void stopRecording() throws ItsException {
+        Logt.i(TAG, "Stopping Preview Recording.");
+        synchronized (mRecordLock) {
+            stopRecordingLocked();
+        }
+    }
+
+    private void stopRecordingLocked() throws ItsException {
+        mIsRecording = false;
+        if (mMediaRecorder != null) {
+            mMediaRecorder.stop();
+        } else {
+            mMediaCodec.signalEndOfInputStream();
+
+            synchronized (mMediaCodecCondition) {
+                try {
+                    mMediaCodecCondition.wait(ItsUtils.SESSION_CLOSE_TIMEOUT_MS);
+                } catch (InterruptedException e) {
+                    throw new ItsException("Unexpected InterruptedException: ", e);
+                }
+            }
+
+            mMediaMuxer.stop();
+            mMediaCodec.stop();
         }
     }
 
@@ -523,11 +679,21 @@ class PreviewRecorder extends VideoRecorder {
         // synchronized to prevent reads and writes to surfaces while they are being released.
         synchronized (mRecordLock) {
             if (mIsRecording) {
+                Logt.e(TAG, "Preview recording was not stopped before closing.");
                 stopRecordingLocked();
             }
-
             mCameraSurface.release();
             mCameraTexture.release();
+            if (mMediaRecorder != null) {
+                mMediaRecorder.release();
+            }
+            if (mMediaCodec != null) {
+                mMediaCodec.release();
+            }
+            if (mMediaMuxer != null) {
+                mMediaMuxer.release();
+            }
+            mRecordSurface.release();
         }
 
         ConditionVariable cv = new ConditionVariable();
@@ -546,9 +712,6 @@ class PreviewRecorder extends VideoRecorder {
         // Wait for up to a second for egl to clean up.
         // Since this is clean up, do nothing if the handler takes longer than 1s.
         cv.block(/*timeoutMs=*/ 1000);
-
-        // Clean up by base class
-        super.close();
     }
 
     private void cleanupEgl() {
@@ -568,7 +731,9 @@ class PreviewRecorder extends VideoRecorder {
         EGL14.eglTerminate(mEGLDisplay);
     }
 
-    @Override
+    /**
+     * Returns Camera frame's timestamps only after recording completes.
+     */
     public List<Long> getFrameTimeStamps() throws IllegalStateException {
         synchronized (mRecordLock) {
             if (mIsRecording) {

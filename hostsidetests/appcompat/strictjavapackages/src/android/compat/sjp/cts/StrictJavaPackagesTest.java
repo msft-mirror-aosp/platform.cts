@@ -509,7 +509,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     private static final ImmutableSet<String> PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST =
             ImmutableSet.of(
                 // /apex/com.android.uwb/javalib/framework-ranging.jar
-                "Landroid/ranging/oob/TransportHandle",
+                "Landroid/ranging/oob/TransportHandle;",
 
                 // /system/framework/framework.jar
                 "Landroid/service/credentials/CredentialProviderService;",

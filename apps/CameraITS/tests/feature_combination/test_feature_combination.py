@@ -120,9 +120,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       config_entry.size.width = surface['width']
       config_entry.size.height = surface['height']
       config_entry.stream_usecase = feature_combination_info_pb2.USECASE_DEFAULT
-      config_entry.usage_flag = (
-          feature_combination_info_pb2.USAGE_FLAG_VIDEO_RECORD
-          if surface['is_video_only'] else feature_combination_info_pb2.USAGE_FLAG_NONE)
       config_entry.dynamic_range_profile = (
           feature_combination_info_pb2.PROFILE_HLG10 if surface['hlg10']
           else feature_combination_info_pb2.PROFILE_STANDARD)
@@ -420,14 +417,14 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               for index, configured_stream in enumerate(configured_streams):
                 hlg10_stream = (configured_stream['formatStr'] ==
                                 its_session_utils.PRIVATE_FORMAT and hlg10)
-                is_video_only = (index == video_stream_index) and (video_stream_index != 0)
+                is_video = index == video_stream_index
                 output_surfaces.append(
                     {'format': configured_stream['formatStr'],
                      'format_code': configured_stream['format'],
                      'width': configured_stream['width'],
                      'height': configured_stream['height'],
                      'hlg10': hlg10_stream,
-                     'is_video_only': is_video_only}
+                     'is_video': is_video}
                 )
 
               settings = {
