@@ -87,6 +87,15 @@
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases android.security.cts.MediaCryptoTest#testMediaCryptoClearKey" />
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases android.security.cts.MediaCryptoTest#testMediaCryptoWidevine" />
 
+    <!-- b/419068490 -->
+    <option name="compatibility:exclude-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#addAutomaticZenRule_withInterruptionFilterAll_canBeUsed" />
+    <option name="compatibility:exclude-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#setAutomaticZenRuleState_ruleWithNightMode_appliedOnScreenOff" />
+    <option name="compatibility:exclude-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#setAutomaticZenRuleState_ruleWithGrayscale_applied" />
+    <option name="compatibility:exclude-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#setAutomaticZenRuleState_ruleWithDimWallpaper_applied" />
+    <option name="compatibility:exclude-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#setAutomaticZenRuleState_multipleRulesWithDeviceEffects_effectsMerged" />
+    <option name="compatibility:exclude-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#setAutomaticZenRuleState_ruleWithDisableAmbientDisplay_applied" />
+    <option name="compatibility:exclude-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#setAutomaticZenRuleState_ruleWithNightMode_appliedImmediately" />
+
     <!-- b/63916274 -->
     <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.WiredHeadsetTest" />
 

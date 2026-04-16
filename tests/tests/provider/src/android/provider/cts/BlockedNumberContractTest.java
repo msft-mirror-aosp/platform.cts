@@ -27,12 +27,14 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PersistableBundle;
 import android.os.UserManager;
 import android.provider.BlockedNumberContract;
 import android.provider.BlockedNumberContract.BlockedNumbers;
 import android.provider.BlockedNumberContract.SystemContract;
 import android.provider.BlockedNumbersManager;
 import android.telecom.TelecomManager;
+import android.telephony.CarrierConfigManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -496,7 +498,8 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
     public void testBlockSuppression() throws Exception {
         if (!isVersionSupportedFor(Build.VERSION_CODES.BAKLAVA)
                 || !mIsSystemUser
-                || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()) {
+                || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()
+                || !isEnhancedBlockingSupported()) {
             Log.i(TAG, "skipping BlockedNumberContractTest");
             return;
         }
@@ -781,6 +784,22 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
 
     private static boolean isSystemUser(Context context) {
         return context.getSystemService(UserManager.class).isSystemUser();
+    }
+
+    /**
+     * Checks if the support_enhanced_call_blocking_bool carrier config is enabled. If it is not,
+     * then suppression will not work as intended and the corresponding test should be skipped
+     *
+     * @return {@code true} if the config is enabled, {@code false} otherwise.
+     */
+    private boolean isEnhancedBlockingSupported() {
+        CarrierConfigManager configManager = mContext.getSystemService(CarrierConfigManager.class);
+        PersistableBundle carrierConfig = configManager.getConfig();
+        if (carrierConfig == null) {
+            carrierConfig = configManager.getDefaultConfig();
+        }
+        return carrierConfig.getBoolean(
+                CarrierConfigManager.KEY_SUPPORT_ENHANCED_CALL_BLOCKING_BOOL, true);
     }
 
     /**
