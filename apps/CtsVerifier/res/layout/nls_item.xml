@@ -46,6 +46,16 @@
             android:text="@string/nls_enable_service" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/nls_car_instructions"
+        style="@style/InstructionsSmallFont"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dip"
+        android:layout_marginRight="20dip"
+        android:text="@string/nls_car_multitasking_instructions"
+        android:visibility="gone" />
+
     <Button
         android:id="@+id/nls_action_button"
         android:layout_width="wrap_content"
@@ -55,6 +65,17 @@
         android:onClick="actionPressed"
         android:layout_gravity="center_horizontal"
         android:text="@string/nls_start_settings" />
+
+    <Button
+        android:id="@+id/nls_helper_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dip"
+        android:layout_marginRight="20dip"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/helper_button"
+        android:visibility="gone"
+        android:enabled="false" />
 
     <LinearLayout
         android:id="@+id/feedback"

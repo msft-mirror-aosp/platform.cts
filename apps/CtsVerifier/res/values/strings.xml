@@ -2594,6 +2594,9 @@ When the buttons are enabled, pass this test if the information in the dialog wa
         under Apps > Gear Icon > Special Access > Notification Access and return here.</string>
     <string name="nls_block_app">Please block the linked application and return here.</string>
     <string name="nls_unblock_app">Please unblock the linked application and return here.</string>
+    <string name="helper_button">Helper Button</string>
+    <string name="nls_car_multitasking_instructions">On car multitasking systems, use the Helper Button to launch a helper activity before you modify permissions in Settings. You may need to manually dismiss the helper activity after you return.</string>
+    <string name="car_multitasking_helper_dismiss">Dismiss</string>
     <string name="nls_block_channel">Please block the linked notification channel and return here.</string>
     <string name="nls_block_group">Please block the linked notification channel group and return here.</string>
     <string name="nls_channel_settings_with_filter_instructions">In the following dialog, please take a note of which channel settings are visible. Then turn on vibration for the channel and press \"Done\".</string>
