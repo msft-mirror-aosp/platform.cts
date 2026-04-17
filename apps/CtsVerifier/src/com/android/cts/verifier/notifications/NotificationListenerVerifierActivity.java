@@ -60,6 +60,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.RemoteViews;
+import android.widget.TextView;
 
 import androidx.core.app.NotificationCompat;
 
@@ -686,6 +687,7 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             mView = createNlsSettingsItem(parent, R.string.nls_block_app);
             Button button = mView.findViewById(R.id.nls_action_button);
             button.setEnabled(false);
+            maybeAddHelperButton(mView);
             return mView;
         }
 
@@ -765,6 +767,7 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             mView = createNlsSettingsItem(parent, R.string.nls_unblock_app);
             Button button = mView.findViewById(R.id.nls_action_button);
             button.setEnabled(false);
+            maybeAddHelperButton(mView);
             return mView;
         }
 
@@ -822,6 +825,26 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             return new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     .putExtra(EXTRA_APP_PACKAGE, mContext.getPackageName());
+        }
+    }
+
+    private void maybeAddHelperButton(View mView) {
+        if (mContext.getPackageManager()
+                .hasSystemFeature("android.software.car.splitscreen_multitasking")) {
+            Button helperButton = mView.findViewById(R.id.nls_helper_button);
+            if (helperButton != null) {
+                helperButton.setVisibility(View.VISIBLE);
+                helperButton.setEnabled(true);
+                helperButton.setOnClickListener(
+                        v -> {
+                            mContext.startActivity(
+                                    new Intent(mContext, CarMultiTaskingHelperActivity.class));
+                        });
+            }
+            TextView instructions = mView.findViewById(R.id.nls_car_instructions);
+            if (instructions != null) {
+                instructions.setVisibility(View.VISIBLE);
+            }
         }
     }
 
