@@ -24,6 +24,8 @@ package android.signature.cts.tests.data;
  * any of these methods.
  */
 public final class FinalClass {
+    private FinalClass() {}
+
     public final void finalMethod() { }
     public void nonFinalMethod() { }
 }
