@@ -151,24 +151,46 @@ public final class PowerPolicyTestHelper {
                 mFrameCpms.getCurrentPolicyGroupId()).isEqualTo(expected);
     }
 
-    public void checkPowerPolicyGroups(PowerPolicyGroups expected) {
-        assertWithMessage(/* messageToPrepend = */ "Power policy groups").that(
-                mFrameCpms.getPowerPolicyGroups()).isEqualTo(expected);
+    private void checkPowerPolicyGroupsInSet(PowerPolicyGroups policyGroups,
+            boolean shouldBeDefined) {
+        assertWithMessage("Groups cannot be null").that(policyGroups).isNotNull();
+        Set<String> groupIds = policyGroups.getGroupIds();
+        for (String groupId : groupIds) {
+            PowerPolicyGroups.PowerPolicyGroupDef groupDef = policyGroups.getGroup(groupId);
+            assertWithMessage("Group definition cannot be null for group: " + groupId)
+                    .that(groupDef).isNotNull();
+
+            boolean isActuallyDefined = mFrameCpms.getPowerPolicyGroups().containsGroup(groupId,
+                    groupDef);
+
+            String messageAction = shouldBeDefined ? "is not defined but should be"
+                    : "should not be defined but it is";
+            assertWithMessage("Group '" + groupId + "' " + messageAction)
+                    .that(isActuallyDefined)
+                    .isEqualTo(shouldBeDefined);
+        }
     }
 
     public int getNumberOfRegisteredPolicies() {
         return mSystemCpms.getTotalRegisteredPolicies();
     }
 
+    /**
+     * Verifies that test groups are defined.
+     *
+     * @param policyGroups test groups expected to be present
+     */
     public void checkPowerPolicyGroupsDefined(PowerPolicyGroups policyGroups) {
-        assertWithMessage("Groups cannot be null").that(policyGroups).isNotNull();
-        Set<String> groupIds = policyGroups.getGroupIds();
-        for (String groupId : groupIds) {
-            PowerPolicyGroups.PowerPolicyGroupDef groupDef = policyGroups.getGroup(groupId);
-            assertWithMessage("Group definition cannot be null").that(groupDef).isNotNull();
-            assertWithMessage("Group is not defined").that(
-                    mFrameCpms.getPowerPolicyGroups().containsGroup(groupId, groupDef)).isTrue();
-        }
+        checkPowerPolicyGroupsInSet(policyGroups, true);
+    }
+
+    /**
+     * Verifies that test groups are not yet defined, allowing OEM predefined groups.
+     *
+     * @param policyGroups test groups expected to be absent
+     */
+    public void checkPowerPolicyGroupsNotDefined(PowerPolicyGroups policyGroups) {
+        checkPowerPolicyGroupsInSet(policyGroups, false);
     }
 
     public int getCurrentPowerState() {

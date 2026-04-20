@@ -503,17 +503,20 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
         testPowerPolicyAndComponentUserSetting();
 
         // add power policy group test here to utilize added test1 and test2 policies
+        // OEMs may predefine policy groups; capture initial state instead of assuming empty.
         teststep = "check default power policy group";
-        PowerPolicyGroups emptyGroups = new PowerPolicyGroups();
+        String initialPolicyGroupId = getCpmsFrameworkLayerStateInfo().getCurrentPolicyGroupId();
         testHelper = getTestHelper(testcase, stepNo++, teststep);
-        testHelper.checkCurrentPolicyGroupId(null, mUseProtoDump);
-        testHelper.checkPowerPolicyGroups(emptyGroups);
+        testHelper.checkCurrentPolicyGroupId(
+                initialPolicyGroupId.isEmpty() ? null : initialPolicyGroupId, mUseProtoDump);
+        // Verify test groups are not yet defined (OEM groups may coexist).
+        testHelper.checkPowerPolicyGroupsNotDefined(PowerPolicyGroups.TestSet.POLICY_GROUPS1);
 
         teststep = "define power policy group";
         definePowerPolicyGroup(PowerPolicyGroups.TestSet.POLICY_GROUP_DEF1.toShellCommandString());
         definePowerPolicyGroup(PowerPolicyGroups.TestSet.POLICY_GROUP_DEF2.toShellCommandString());
         testHelper = getTestHelper(testcase, stepNo++, teststep);
-        // check that device policy groups, include just added groups as well
+        // Verify test groups are now defined (OEM groups may coexist).
         testHelper.checkPowerPolicyGroupsDefined(PowerPolicyGroups.TestSet.POLICY_GROUPS1);
 
         teststep = "set power policy group";
