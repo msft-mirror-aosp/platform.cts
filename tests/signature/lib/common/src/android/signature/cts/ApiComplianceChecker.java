@@ -150,41 +150,39 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
     }
 
     /**
-     * Check if the class definition is from a previous API and was neither instantiable nor
-     * extensible through that API.
+     * Check if the class definition was neither instantiable nor extensible through that API.
      *
-     * <p>Such a class is more flexible in how it can be modified than other classes as there is
-     * no way to either create or extend the class.</p>
+     * <p>Such a class is more flexible in how it can be modified than other classes as there is no
+     * way to either create or extend the class.
      *
      * <p>A class that has no constructors in the API cannot be instantiated or extended. Such a
      * class has a lot more flexibility when it comes to making forwards compatible changes than
      * other classes. e.g. Normally, a non-final class cannot be made final as that would break any
      * code that extended the class but if there are no constructors in the API then it is
-     * impossible to extend it through the API so making it final is forwards compatible.</p>
+     * impossible to extend it through the API so making it final is forwards compatible.
      *
      * <p>Similarly, a concrete class cannot normally be made abstract as that would break any code
-     * that attempted to instantiate it but if there are no constructors in the API then it is
-     * impossible to instantiate it so making it abstract is forwards compatible.</p>
+     * that attempted to instantiate it. However, if there are no constructors in the API then it is
+     * impossible to instantiate it so making it abstract is forwards compatible.
      *
      * <p>Finally, a non-static class cannot normally be made static (or vice versa) as that would
-     * break any code that attemped to instantiate it but if there are no constructors in the API
-     * then it is impossible to instantiate so changing the static flag is forwards compatible.</p>
+     * break any code that attempted to instantiate it. However, if there are no constructors in the
+     * API then it is impossible to instantiate so changing the static flag is forwards compatible.
      *
      * <p>In a similar fashion the abstract and final (but not static) modifier can be added to a
-     * method on this type of class.</p>
+     * method on this type of class.
      *
      * <p>In this case forwards compatible is restricted to compile time and runtime behavior. It
      * does not cover testing. e.g. making a class that was previously non-final could break tests
-     * that relied on mocking that class. However, that is a non-standard use of the API and so we
+     * that relied on mocking that class. However, that is a non-standard use of the API, and so we
      * are not strictly required to maintain compatibility in that case. It should also only be a
-     * minor issue as most mocking libraries support mocking final classes now.</p>
+     * minor issue as most mocking libraries support mocking final classes now.
      *
      * @param classDescription a description of a class in an API.
      */
-    private static boolean classIsNotInstantiableOrExtensibleInPreviousApi(
+    private static boolean classIsNotInstantiableOrExtensible(
             JDiffClassDescription classDescription) {
-        return classDescription.getConstructors().isEmpty()
-                && classDescription.isPreviousApi();
+        return classDescription.getConstructors().isEmpty();
     }
 
     /**
@@ -215,8 +213,8 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
      * modifiers so that it does not cause a mismatch.
      *
      * <p>This must only be called when adding one of the supplied modifiers is forwards compatible,
-     * e.g. when called on a class or methods from a class that returns true for
-     * {@link #classIsNotInstantiableOrExtensibleInPreviousApi(JDiffClassDescription)}.</p>
+     * e.g. when called on a class or methods from a class that returns true for {@link
+     * #classIsNotInstantiableOrExtensible(JDiffClassDescription)}.
      *
      * @param previousModifiers The set of modifiers for the previous API.
      * @param currentModifiers The set of modifiers for the current implementation class.
@@ -279,7 +277,7 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
                 normalizePreviousModifiersIfModifierIsRemoved(
                         apiModifiers, reflectionModifiers, Modifier.FINAL, Modifier.ABSTRACT);
 
-        if (classIsNotInstantiableOrExtensibleInPreviousApi(classDescription)) {
+        if (classIsNotInstantiableOrExtensible(classDescription)) {
             // Adding the final, abstract or static flags to the runtime class is forwards
             // compatible as the class cannot be instantiated or extended. Clear the flags for
             // any such added modifier from the current implementation's modifiers so that it
@@ -638,7 +636,7 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
                 normalizePreviousModifiersIfModifierIsRemoved(
                         apiModifiers, reflectionModifiers, Modifier.FINAL, Modifier.ABSTRACT);
 
-        if (classIsNotInstantiableOrExtensibleInPreviousApi(classDescription)) {
+        if (classIsNotInstantiableOrExtensible(classDescription)) {
             // Adding the final, or abstract flags to the runtime method is forwards compatible
             // as the class cannot be instantiated or extended. Clear the flags for any such
             // added modifier from the current implementation's modifiers so that it does not
