@@ -594,4 +594,7 @@
     <option name="compatibility:exclude-filter" value="CtsSandboxedMeasurementManagerTests" />
     <option name="compatibility:exclude-filter" value="CtsSandboxedTopicsManagerTests" />
 
+    <!-- b/500992343 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases" />
+
 </configuration>
