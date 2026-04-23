@@ -298,7 +298,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                             "bbb_640x360_600kbps_24fps_vvc.mp4", null, -1.0f, 1846548890L,
                             CODEC_OPTIONAL},
                     {MediaFormat.MIMETYPE_VIDEO_VVC,
-                            "bbb_640x360_600kbps_24fps_vvc_10bit.mp4", null, -1.0f, 1897879671L,
+                            "bbb_640x360_600kbps_24fps_vvc_10bit.mp4", null, -1.0f, 3202511735L,
                             CODEC_OPTIONAL},
                 }));
             }

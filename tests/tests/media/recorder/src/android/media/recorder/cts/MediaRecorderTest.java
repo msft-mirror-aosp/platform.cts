@@ -2005,8 +2005,8 @@ public class MediaRecorderTest extends MediaTestBase {
     public void testAPVEncodingQuality() throws Exception {
         assumeTrue("no APV codecs", hasAPV());
 
-        final int width = 320;
-        final int height = 240;
+        final int width = 960;
+        final int height = 540;
         final int frameRate = 30;
         final int qualityLow = 10;
         final int qualityHigh = 90;
