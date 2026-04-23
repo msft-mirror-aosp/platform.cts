@@ -970,6 +970,9 @@ public final class ActivityManagerTest {
                     || !isAutomotive(mTargetContext)) {
                 // Make sure we got the first notification that the home screen is visible.
                 assertTrue(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS));
+            } else {
+                // Drain the initial state notification to prevent it from polluting the assertFalse below.
+                currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS);
             }
 
             // Launch a basic activity to obscure the home screen.
