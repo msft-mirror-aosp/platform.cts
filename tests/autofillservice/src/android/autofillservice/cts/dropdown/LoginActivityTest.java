@@ -3053,7 +3053,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.waitForIdleSync();
 
         // Tap password field
-        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mActivity.onPassword(View::requestFocus);
         mUiBot.waitForIdleSync();
 
         mUiBot.assertDatasetsContains("The Dude");
