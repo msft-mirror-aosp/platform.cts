@@ -20,6 +20,8 @@ package android.signature.cts.tests.data;
  * This mocks an internal private class
  */
 public class PrivateClass {
+    private PrivateClass() {}
+
     public void privateMethod() {
     }
 
