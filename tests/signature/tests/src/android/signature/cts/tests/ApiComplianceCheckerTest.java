@@ -420,10 +420,9 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     }
 
     @Test
-    public void testRemovingFinalFromAClass_PreviousApi() {
+    public void testRemovingFinalFromAClass_NotInstantiableOrExtensibleClass() {
         JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
         clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
-        clz.setPreviousApiFlag(true);
         checkSignatureCompliance(clz);
     }
 
@@ -451,35 +450,13 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      * http://b/181019981
      */
     @Test
-    public void testRemovingFinalFromAClassSwitchToAbstract_PreviousApi() {
+    public void testRemovingFinalFromAClassSwitchToAbstract_NotInstantiableOrExtensibleClass() {
         JDiffClassDescription clz = createClass(AbstractClass.class.getSimpleName());
         clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
-        clz.setPreviousApiFlag(true);
         checkSignatureCompliance(clz);
     }
 
-    /**
-     * Test that if the API class in a previous release is final but the runtime is abstract (and
-     * not final) and has constructors then it is an error.
-     * 
-     * http://b/181019981
-     */
-    @Test
-    public void testRemovingFinalFromAClassWithCtorSwitchToAbstract_PreviousApi() {
-        try (ExpectFailure observer = new ExpectFailure(FailureType.MISMATCH_CLASS)) {
-            String simpleName = AbstractClassWithCtor.class.getSimpleName();
-            JDiffClassDescription clz = createClass(simpleName);
-            clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
-            clz.setPreviousApiFlag(true);
-            clz.addConstructor(ctor(simpleName, Modifier.PUBLIC));
-            checkSignatureCompliance(clz, observer);
-        }
-    }
-
-    /**
-     * Test the case where the API declares the method is synchronized, but it
-     * actually is not.
-     */
+    /** Test the case where the API declares the method is synchronized, but it actually is not. */
     @Test
     public void testRemovingSync() {
         JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
@@ -541,12 +518,11 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      * 1839622</a>
      */
     @Test
-    public void testRemovingAbstractFromAClass_PreviousApi() {
+    public void testRemovingAbstractFromAClass_NotInstantiableOrExtensibleClass() {
         JDiffClassDescription clz = new JDiffClassDescription(
                 "android.signature.cts.tests.data", "NormalClass");
         clz.setType(JDiffClassDescription.JDiffType.CLASS);
         clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
-        clz.setPreviousApiFlag(true);
         checkSignatureCompliance(clz);
     }
 
@@ -561,6 +537,16 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
             clz.addConstructor(ctor(simpleName, Modifier.PUBLIC));
             checkSignatureCompliance(clz, observer);
         }
+    }
+
+    /**
+     * reflection lists class as abstract, api does not. <a href="http://b/1839622">Bug 1839622</a>
+     */
+    @Test
+    public void testAddingAbstractToAClass_NotInstantiableOrExtensibleClass() {
+        String simpleName = AbstractClassWithCtor.class.getSimpleName();
+        JDiffClassDescription clz = createClass(simpleName);
+        checkSignatureCompliance(clz);
     }
 
     /**
@@ -589,28 +575,9 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      * case in this test.
      */
     @Test
-    public void testAddingFinalToAClassNoCtor_PreviousApi() {
+    public void testAddingFinalToAClass_NotInstantiableOrExtensibleClass() {
         JDiffClassDescription clz = createClass("FinalClass");
-        clz.setPreviousApiFlag(true);
         checkSignatureCompliance(clz);
-    }
-
-    /**
-     * A previously released API lists the class as being final but the runtime class does not.
-     *
-     * <p>Adding a final modifier to a class is not backwards compatible when the class has some
-     * accessible constructors and so could be instantiated and/or extended, as is the case of this
-     * class.</p>
-     */
-    @Test
-    public void testAddingFinalToAClassWithCtor_PreviousApi() {
-        try (ExpectFailure observer = new ExpectFailure(FailureType.MISMATCH_CLASS)) {
-            String simpleName = "FinalClassWithCtor";
-            JDiffClassDescription clz = createClass(simpleName);
-            clz.setPreviousApiFlag(true);
-            clz.addConstructor(ctor(simpleName, Modifier.PUBLIC));
-            checkSignatureCompliance(clz, observer);
-        }
     }
 
     /**
@@ -639,28 +606,9 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      * case in this test.
      */
     @Test
-    public void testAddingStaticToInnerClassNoCtor_PreviousApi() {
+    public void testAddingStaticToInnerClass_NotInstantiableOrExtensibleClass() {
         JDiffClassDescription clz = createClass("AbstractClass.StaticNestedClass");
-        clz.setPreviousApiFlag(true);
         checkSignatureCompliance(clz);
-    }
-
-    /**
-     * A previously released API lists the class as being static but the runtime class does not.
-     *
-     * <p>Adding a static modifier to a class is not backwards compatible when the class has some
-     * accessible constructors and so could be instantiated and/or extended, as is the case of this
-     * class.</p>
-     */
-    @Test
-    public void testAddingStaticToInnerClassWithCtor_PreviousApi() {
-        try (ExpectFailure observer = new ExpectFailure(FailureType.MISMATCH_CLASS)) {
-            String simpleName = "AbstractClass.StaticNestedClassWithCtor";
-            JDiffClassDescription clz = createClass(simpleName);
-            clz.setPreviousApiFlag(true);
-            clz.addConstructor(ctor(simpleName, Modifier.PUBLIC));
-            checkSignatureCompliance(clz, observer);
-        }
     }
 
     /**
@@ -702,12 +650,11 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      * is the case in this test.</p>
      */
     @Test
-    public void testRemovingAbstractFromMethodOnClassNoCtor_PreviousApi() {
+    public void testRemovingAbstractFromMethod_NotInstantiableOrExtensibleClass() {
         JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
         JDiffClassDescription.JDiffMethod method = method("notSyncMethod",
                 Modifier.PUBLIC | Modifier.ABSTRACT, "void");
         clz.addMethod(method);
-        clz.setPreviousApiFlag(true);
         checkSignatureCompliance(clz);
     }
 
