@@ -57,6 +57,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.internal.util.ArrayUtils;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -211,6 +212,16 @@ public final class ActivityManagerForegroundServiceTypeTest {
     @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE"})
     @Test
     public void testForegroundServiceTypeConnectedDevicePermission() throws Exception {
+        final PackageManager pm = mTargetContext.getPackageManager();
+        // FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE covers multiple connection technologies
+        // (USB, Bluetooth, NFC, IR, etc.). However, the framework's internal validation of
+        // this FGS type calls UsbManager.getDeviceList(), which throws a NullPointerException
+        // on devices where UsbManager is not available (i.e. no USB host or accessory support).
+        // Skip the test if the device does not support USB host or accessory.
+        Assume.assumeTrue("Device does not support USB host or accessory feature, "
+                        + "which is required due to framework validation using UsbManager",
+                pm.hasSystemFeature(PackageManager.FEATURE_USB_HOST)
+                        || pm.hasSystemFeature(PackageManager.FEATURE_USB_ACCESSORY));
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
     }
 
