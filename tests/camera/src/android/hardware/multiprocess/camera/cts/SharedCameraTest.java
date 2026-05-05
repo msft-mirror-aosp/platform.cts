@@ -70,6 +70,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final int SETUP_TIMEOUT = 5000; // Remote camera setup timeout (ms).
     private static final int WAIT_TIME = 5000; // Time to wait for process to launch (ms).
+    private static final int MAX_PROCESS_START_ATTEMPTS = 3;
     private static final int EVICTION_TIMEOUT = 1000; // Remote camera eviction timeout (ms).
     private static final long PREVIEW_TIME_MS = 2000;
     private ErrorLoggingService.ErrorServiceConnection mErrorServiceConnection;
@@ -80,8 +81,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     private String mCameraId;
     private Messenger mRemoteMessenger;
     private Messenger mRemoteMessenger2;
-    private CameraResultReceiver mResultReceiver;
-    private CameraResultReceiver mResultReceiver2;
     private UiDevice mUiDevice;
     protected HashMap<String, StaticMetadata> mAllStaticInfo;
 
@@ -95,6 +94,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
 
     private class CameraResultReceiver extends ResultReceiver {
         boolean mIsFirstClient = false;
+        final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
 
         protected CameraResultReceiver(boolean isFirstClient) {
             super(null);
@@ -114,6 +114,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                                     resultData.getParcelable(TestConstants.EXTRA_REMOTE_MESSENGER);
                 }
             }
+            latch.countDown();
         }
     }
 
@@ -160,11 +161,9 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         mErrorServiceConnection = new ErrorLoggingService.ErrorServiceConnection(mContext);
         mErrorServiceConnection.start();
 
-        mResultReceiver = new CameraResultReceiver(/* isFirstClient */ true);
-
         mProcessPid =
                 startRemoteProcess(
-                        SharedCameraActivity.class, "SharedCameraActivityProcess", mResultReceiver);
+                        SharedCameraActivity.class, "SharedCameraActivityProcess", true);
 
         mAllStaticInfo = new HashMap<String, StaticMetadata>();
         List<String> hiddenPhysicalIds = new ArrayList<>();
@@ -195,13 +194,13 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     public void tearDown() throws Exception {
         if (mProcessPid2 != -1) {
             android.os.Process.killProcess(mProcessPid2);
+            waitForProcessToDie(mProcessPid2);
             mProcessPid2 = -1;
-            Thread.sleep(WAIT_TIME);
         }
         if (mProcessPid != -1) {
             android.os.Process.killProcess(mProcessPid);
+            waitForProcessToDie(mProcessPid);
             mProcessPid = -1;
-            Thread.sleep(WAIT_TIME);
         }
         if (mErrorServiceConnection != null) {
             mErrorServiceConnection.stop();
@@ -340,12 +339,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
         // initialize client 2 process
-        mResultReceiver2 = new CameraResultReceiver(/* isFirstClient */ false);
         mProcessPid2 =
                 startRemoteProcess(
                         SharedCameraActivitySecondaryClient.class,
                         "SharedCameraActivityProcess2",
-                        mResultReceiver2);
+                        false);
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
             if (!mAllStaticInfo.get(mCameraId).sharedSessionConfigurationPresent()) {
@@ -1060,29 +1058,44 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
      *
      * @param klass the class of the {@link android.app.Activity} to start.
      * @param processName the remote activity name.
-     * @param resultReceiver.
+     * @param isFirstClient whether this is the first client.
      * @throws InterruptedException
      */
     public int startRemoteProcess(
-            java.lang.Class<?> klass, String processName, ResultReceiver resultReceiver)
-            throws InterruptedException {
+            java.lang.Class<?> klass, String processName, boolean isFirstClient)
+            throws Exception {
         String cameraActivityName = mContext.getPackageName() + ":" + processName;
-        // Ensure no running activity process with same name
-        List<ActivityManager.RunningAppProcessInfo> list =
-                mActivityManager.getRunningAppProcesses();
-        int processPid = TestUtils.getPid(cameraActivityName, list);
-        if (processPid != -1) {
-            android.os.Process.killProcess(processPid);
-            SystemClock.sleep(WAIT_TIME);
+        int attempt = 0;
+        boolean success = false;
+        int processPid = -1;
+
+        while (attempt < MAX_PROCESS_START_ATTEMPTS && !success) {
+            attempt++;
+            // Ensure no running activity process with same name
+            List<ActivityManager.RunningAppProcessInfo> list =
+                    mActivityManager.getRunningAppProcesses();
+            processPid = TestUtils.getPid(cameraActivityName, list);
+            if (processPid != -1) {
+                android.os.Process.killProcess(processPid);
+                waitForProcessToDie(processPid);
+            }
+
+            CameraResultReceiver resultReceiver = new CameraResultReceiver(isFirstClient);
+
+            Intent activityIntent = new Intent(mContext, klass);
+            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            activityIntent.putExtra(TestConstants.EXTRA_RESULT_RECEIVER, resultReceiver);
+            mContext.startActivity(activityIntent);
+
+            success = resultReceiver.latch.await(WAIT_TIME, java.util.concurrent.TimeUnit.MILLISECONDS);
+            if (!success) {
+                Log.w(TAG, "Attempt " + attempt + " timed out waiting for remote process to start");
+            }
         }
-        Intent activityIntent = new Intent(mContext, klass);
-        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        activityIntent.putExtra(TestConstants.EXTRA_RESULT_RECEIVER, resultReceiver);
-        mContext.startActivity(activityIntent);
-        Thread.sleep(WAIT_TIME);
+        assertTrue("Timed out waiting for remote process to start after " + MAX_PROCESS_START_ATTEMPTS + " attempts", success);
 
         // Fail if activity isn't running
-        list = mActivityManager.getRunningAppProcesses();
+        List<ActivityManager.RunningAppProcessInfo> list = mActivityManager.getRunningAppProcesses();
         processPid = TestUtils.getPid(cameraActivityName, list);
         assertTrue(
                 "Activity "
@@ -1090,7 +1103,21 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                         + " not found in list of running app"
                         + " processes.",
                 -1 != processPid);
+
         return processPid;
+    }
+
+    private void waitForProcessToDie(int pid) throws Exception {
+        long startTime = SystemClock.elapsedRealtime();
+        while (SystemClock.elapsedRealtime() - startTime < WAIT_TIME) {
+            List<ActivityManager.RunningAppProcessInfo> list =
+                    mActivityManager.getRunningAppProcesses();
+            if (list != null && list.stream().noneMatch(info -> info.pid == pid)) {
+                return; // Process is gone
+            }
+            SystemClock.sleep(100); // Poll every 100ms
+        }
+        fail("Process " + pid + " did not die within timeout");
     }
 
     /**
