@@ -505,4 +505,9 @@
     <!-- b/507645286: The underneath service is deprecating and killswitch will be on -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.AppSearchDataMigrationHostTest#testAppSearchConsentMigration" />
 
+    <!-- b/508716829: Instant apps are getting uninstalled during the test -->
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant]" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases32[instant]" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodInstallTestCases[instant]" />
+
 </configuration>
