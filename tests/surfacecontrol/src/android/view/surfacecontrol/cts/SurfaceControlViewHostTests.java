@@ -62,6 +62,7 @@ import android.content.pm.ConfigurationInfo;
 import android.content.pm.FeatureInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -91,6 +92,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -147,6 +149,13 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             if (keyguardManager.isKeyguardLocked()) {
                 keyguardManager.requestDismissKeyguard(this, null);
             }
+            getWindow().getDecorView().setOnApplyWindowInsetsListener((v, insets) -> {
+                Insets systemBars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                v.setPadding(systemBars.left, systemBars.top,
+                        systemBars.right, systemBars.bottom);
+                return WindowInsets.CONSUMED;
+            });
         }
     }
 
