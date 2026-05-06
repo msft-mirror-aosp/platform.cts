@@ -6780,57 +6780,7 @@ You should be prompted to select credentials; choose the ones you just installed
         lectus erat ac nibh. Nullam id enim metus.
     </string>
 
-    <!-- Strings for Instant Apps -->
-    <string name="ia_instruction_heading_label">Instructions:</string>
-    <string name="ia_instruction_text_photo_label">READ BEFORE STARTING TEST</string>
-    <string name="ia_start_test_button_caption">Start Test</string>
-    <string name="ia_install_dialog_title">Install Instant App</string>
-    <string name="ia_install_dialog_text">
-    For this test you need to install CtsVerifierInstantApp.apk by running \n
-    adb install -r --instant /path/to/CtsVerifierInstantApp.apk \n\n
-    CtsVerifierInstantApp.apk can be found in android-cts-verifier.zip that you have downloaded.
-    </string>
-    <string name="ia_notification">Instant Apps Notification Test</string>
-    <string name="ia_notification_info">
-    This test verifies that Instant Apps notification is shown when an Instant App is at foreground.\n\n
-    - Read the message above the \"Start Test\" button for
-    step-by-step instructions.
-    </string>
-    <string name="ia_notification_instruction_label">\n
-    1. Click Start Test. \n\n
-    2. An alert dialog with install instruction will be shown if the sample Instant App has not been installed, otherwise, the sample Instant App will be opened automatically. \n\n
-    3. Drag down the notification bar when the sample Instant App is at foreground. \n\n
-    4. Check if Instant App is shown in notification area with information about Instant Apps not requiring installation and an action that provides more information about the Instant App (Please expand the notification if it is collapsed) \n\n
-    5. Click Pass button if all checks in step 4 passed, otherwise click Fail button.
-    </string>
-    <string name="ia_recents">Instant Apps Recents Test</string>
-    <string name="ia_recents_info">
-    This test verifies that Instant App can be accessed in Recent Apps screen.\n\n
-    - Read the message above the \"Start Test\" button for
-    step-by-step instructions.
-    </string>
-    <string name="ia_recents_instruction_label">\n
-    1. Click Start Test. \n\n
-    2. An alert dialog with install instruction will be shown if the sample Instant App has not been installed, otherwise, the sample Instant App will be opened automatically. \n\n
-    3. Tap Recents button, verify the sample Instant App is shown in Recent Apps screen. \n\n
-    4. Tap the sample Instant App in Recent Apps screen, verify the Instant App is opened in the foreground. \n\n
-    5. Click Pass button if checks in step 3 and 4 passed, otherwise click Fail button.
-    </string>
-    <string name="ia_app_info">View/Delete Instant Apps Test</string>
-    <string name="ia_app_info_info">
-    This test verifies that Instant App can be viewed and deleted in Settings.\n\n
-    - Read the message above the \"Start Test\" button for
-    step-by-step instructions.
-    </string>
-    <string name="ia_app_info_instruction_label">\n
-    1. Click Start Test. \n\n
-    2. An alert dialog with install instruction will be shown if the sample Instant App has not been installed, otherwise, the sample Instant App will be opened automatically. \n\n
-    3. Open Settings App. \n\n
-    4. Tap Apps &amp; Notifications. \n\n
-    5. Verify the sample Instant App can be found and it is shown as \"Instant App\". \n\n
-    6. Verify there is an action allowing user to clear/delete app. \n\n
-    7. Click Pass button if checks in step 5 and 6 passed, otherwise click Fail button.
-    </string>
+
 
     <string name="uap_test_no">No</string>
     <string name="uap_test_yes">Yes</string>
