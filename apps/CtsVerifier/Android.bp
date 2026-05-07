@@ -225,13 +225,6 @@ filegroup {
     ],
 }
 
-// Apps to be installed as Instant App using adb install --instant
-filegroup {
-    name: "pre_installed_instant_app",
-    device_first_srcs: [
-        ":CtsVerifierInstantApp",
-    ],
-}
 
 filegroup {
     name: "other_required_apps",
@@ -251,7 +244,6 @@ filegroup {
     name: "cts_apps_to_include",
     srcs: [
         ":pre_installed_apps",
-        ":pre_installed_instant_app",
         ":other_required_apps",
     ],
 }

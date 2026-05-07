@@ -5927,46 +5927,7 @@
             </intent-filter>
         </service>
 
-        <activity android:name=".instantapps.NotificationTestActivity"
-                android:exported="true"
-                 android:label="@string/ia_notification">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_instant_apps" />
-            <meta-data android:name="test_excluded_features" android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive:android.hardware.type.watch" />
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.15/C-1-6" />
-        </activity>
-        <activity android:name=".instantapps.RecentAppsTestActivity"
-                android:exported="true"
-                 android:label="@string/ia_recents">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_instant_apps" />
-            <meta-data android:name="test_excluded_features" android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive:android.hardware.type.watch" />
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.15/C-1-7" />
-        </activity>
-        <activity android:name=".instantapps.AppInfoTestActivity"
-                android:exported="true"
-                 android:label="@string/ia_app_info">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_instant_apps" />
-            <meta-data android:name="test_excluded_features"
-                android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive:android.hardware.type.watch" />
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.15/C-1-5" />
-        </activity>
+
 
         <activity android:name=".displaycutout.DisplayCutoutTestActivity"
             android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen"

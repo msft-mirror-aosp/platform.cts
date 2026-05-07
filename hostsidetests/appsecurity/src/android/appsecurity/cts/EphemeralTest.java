@@ -154,15 +154,6 @@ public class EphemeralTest extends BaseAppSecurityTest {
     }
 
     @Test
-    public void testNormalStartEphemeral() throws Exception {
-        if (mIsUnsupportedDevice) {
-            return;
-        }
-        Utils.runDeviceTestsAsCurrentUser(getDevice(), NORMAL_PKG, TEST_CLASS,
-                "testStartEphemeral");
-    }
-
-    @Test
     public void testEphemeralQuery() throws Exception {
         if (mIsUnsupportedDevice) {
             return;
@@ -269,15 +260,6 @@ public class EphemeralTest extends BaseAppSecurityTest {
         }
         Utils.runDeviceTestsAsCurrentUser(getDevice(), EPHEMERAL_1_PKG, TEST_CLASS,
                 "testStartExposed11");
-    }
-
-    @Test
-    public void testEphemeralStartEphemeral() throws Exception {
-        if (mIsUnsupportedDevice) {
-            return;
-        }
-        Utils.runDeviceTestsAsCurrentUser(getDevice(), EPHEMERAL_1_PKG, TEST_CLASS,
-                "testStartEphemeral");
     }
 
     @Test
