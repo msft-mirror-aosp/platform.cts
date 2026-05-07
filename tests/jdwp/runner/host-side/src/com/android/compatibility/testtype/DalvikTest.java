@@ -357,7 +357,7 @@ public class DalvikTest implements IAbiReceiver, IBuildReceiver, IDeviceTest, IR
             // push one file of exclude filters to the device
             tmpExcludeFile = getExcludeFile();
             if (!mDevice.pushFile(tmpExcludeFile, EXCLUDE_FILE)) {
-                Log.logAndDisplay(LogLevel.ERROR, TAG, "Couldn't push file: " + tmpExcludeFile);
+                throw new RuntimeException("Could not push exclude file: " + tmpExcludeFile);
             } else {
                 CLog.d("exclude-filter-file: %s", safeReadContentFromFile(tmpExcludeFile));
                 // If sucessfully pushed then add it as a filter.
@@ -639,7 +639,8 @@ public class DalvikTest implements IAbiReceiver, IBuildReceiver, IDeviceTest, IR
             }
             if (mStartTime != null) {
                 mListener.testRunFailed(
-                        FailureDescription.create("Dalvik test session did not properly terminate.").setFailureStatus(FailureStatus.TEST_FAILURE));
+                        FailureDescription.create("Dalvik test session did not properly terminate.")
+                                .setFailureStatus(FailureStatus.TEST_FAILURE));
                 mListener.testRunEnded(System.currentTimeMillis() - mStartTime, new HashMap<String, Metric>());
             }
         }
