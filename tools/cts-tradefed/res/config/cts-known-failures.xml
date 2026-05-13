@@ -597,4 +597,7 @@
     <!-- b/500992343 -->
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases" />
 
+    <!-- b/509794420 -->
+    <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases" />
+
 </configuration>
