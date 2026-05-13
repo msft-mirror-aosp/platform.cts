@@ -146,6 +146,14 @@ public final class ClusterHomeManagerTest {
 
         var oldDump = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
         int oldCount = Integer.valueOf(oldDump.get(DUMP_TPL_COUNT));
+        String oldMonitoringSurface = oldDump.get(DUMP_CLUSTER_SURFACE);
+
+        // There can be at most one activity that ClusterHomeService can monitor the visibility.
+        // Therefore, skip the test if visibility monitoring is already running.
+        // TODO(b/447679669) Explore ways to store the current state, run the test, and go back to
+        // the original state instead of skipping.
+        assumeTrue("Visibility monitoring is already running. Skip the test.",
+                oldMonitoringSurface != null && oldMonitoringSurface.equals("null"));
 
         mTestActivity = (TestActivity) mInstrumentation.startActivitySync(
                 Intent.makeMainActivity(mTestActivityName)
