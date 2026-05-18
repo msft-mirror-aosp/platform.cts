@@ -33,6 +33,7 @@
 
         <activity android:name="android.car.cts.builtin.activity.TaskInfoTestActivity"
                   android:label="@string/task_info_test_activity"
+                  android:theme="@style/ActivityTheme"
                   android:taskAffinity="" />
 
         <activity android:name="android.car.cts.builtin.activity.SingleUseActivity" />
