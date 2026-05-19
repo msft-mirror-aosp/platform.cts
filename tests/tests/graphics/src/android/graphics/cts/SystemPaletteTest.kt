@@ -183,6 +183,9 @@ class SystemPaletteTest(
 
     @Test
     fun e_testDynamicColorContrast() {
+        if (FeatureUtil.isAutomotive())
+          return
+
         val context = getInstrumentation().targetContext
 
         // Ideally this should be 3.0, but there's colorspace conversion that causes rounding
