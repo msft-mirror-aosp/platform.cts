@@ -2551,7 +2551,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .verify();
     }
 
-    @Test
+    @Test(timeout = 600000)
     @ApiTest(
             apis = {
                 "android.car.hardware.property.CarPropertyManager#getCarPropertyConfig",
