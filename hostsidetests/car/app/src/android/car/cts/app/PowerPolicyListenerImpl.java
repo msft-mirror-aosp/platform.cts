@@ -59,8 +59,10 @@ public final class PowerPolicyListenerImpl implements
 
     public static String getPolicyString(CarPowerPolicy policy) {
         String[] enables = Arrays.stream(policy.getEnabledComponents())
+                .filter(c -> c < PowerComponentUtil.MINIMUM_CUSTOM_COMPONENT_VALUE)
                 .mapToObj(PowerComponentUtil::componentToString).toArray(String[]::new);
         String[] disables = Arrays.stream(policy.getDisabledComponents())
+                .filter(c -> c < PowerComponentUtil.MINIMUM_CUSTOM_COMPONENT_VALUE)
                 .mapToObj(PowerComponentUtil::componentToString).toArray(String[]::new);
 
         StringBuilder policyStr = new StringBuilder();
