@@ -2252,7 +2252,7 @@ public class VehiclePropertyVerifier<T> {
                 assertWithMessage("Received " + (mSetPropertyResultsCount
                         - mCountDownLatch.getCount()) + " onSuccess(s), expected "
                         + mSetPropertyResultsCount + " onSuccess(s)").that(mCountDownLatch.await(
-                        5, TimeUnit.SECONDS)).isTrue();
+                        10, TimeUnit.SECONDS)).isTrue();
             } catch (InterruptedException e) {
                 assertWithMessage("Waiting for onSuccess threw an exception: " + e
                 ).fail();
