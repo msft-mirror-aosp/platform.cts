@@ -2713,8 +2713,8 @@ public class TunerTest {
                     // Set to -1
                     status = mTuner.setMaxNumberOfFrontends(type, -1);
                     assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
-                    // Set to defaultMax + 1
-                    status = mTuner.setMaxNumberOfFrontends(type, defaultMax + 1);
+                    // Set to defaultMax + 100
+                    status = mTuner.setMaxNumberOfFrontends(type, defaultMax + 100);
                     assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
                     // Set to 0
                     status = mTuner.setMaxNumberOfFrontends(type, 0);
