@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.media.audiofx.AudioEffect;
 import android.media.audiofx.BassBoost;
@@ -133,6 +134,8 @@ public class BassBoostTest extends PostProcTestBase {
             BassBoost.Settings settings = mBassBoost.getProperties();
             String str = settings.toString();
             settings = new BassBoost.Settings(str);
+
+            assumeTrue("Skip test: strength is not supported", mBassBoost.getStrengthSupported());
 
             short strength = settings.strength;
             if (mBassBoost.getStrengthSupported()) {
@@ -290,6 +293,9 @@ public class BassBoostTest extends PostProcTestBase {
             waitForLooperInitialization_l();
 
             getBassBoost(mSession);
+
+            assumeTrue("Skip test: strength is not supported", mBassBoost.getStrengthSupported());
+
             mChangedParameter = -1;
             mBassBoost.setStrength(TEST_STRENGTH);
             int looperWaitCount = MAX_LOOPER_WAIT_COUNT;
