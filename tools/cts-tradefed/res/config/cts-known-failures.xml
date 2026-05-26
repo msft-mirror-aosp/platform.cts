@@ -597,7 +597,9 @@
     <!-- b/500992343 -->
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases" />
 
-    <!-- b/509794420 -->
+    <!-- b/509794420: Exclude CtsPowerManagerPccTestCases as it is not present in older trains. -->
     <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases[instant]" />
+    <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases[run-on-work-profile]" />
 
 </configuration>
