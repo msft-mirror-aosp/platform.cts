@@ -499,9 +499,8 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
             "android.car.media.CarAudioManager#getGroupMinVolume",
             "android.car.media.CarAudioManager#getGroupVolume"})
     public void getGroupVolume_withZoneId() {
-        if (mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING)) {
-            readFirstZoneAndVolumeGroup();
-        }
+        assumeDynamicRoutingIsEnabled();
+        readFirstZoneAndVolumeGroup();
         int maxIndex = mCarAudioManager.getGroupMaxVolume(mZoneId, mVolumeGroupId);
         int minIndex = mCarAudioManager.getGroupMinVolume(mZoneId, mVolumeGroupId);
 
