@@ -602,4 +602,8 @@
     <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases[instant]" />
     <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases[run-on-work-profile]" />
 
+  <!-- b/514470265: The underneath service is deprecating and killswitch will be on -->
+  <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTestMeasurement com.android.adservices.tests.cts.measurement.MeasurementManagerCtsTest#testRegisterSourceMultiple_withNoServerSetupWithCallbackCustomReceiver_noErrors" />
+  <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTestMeasurement com.android.adservices.tests.cts.measurement.MeasurementManagerCtsTest#testRegisterSourceMultiple_withNoServerSetupWithCallbackOsReceiver_noErrors" />
+  <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.MeasurementCtsDebuggableTest#testValidTestCaseFixtures" />
 </configuration>
