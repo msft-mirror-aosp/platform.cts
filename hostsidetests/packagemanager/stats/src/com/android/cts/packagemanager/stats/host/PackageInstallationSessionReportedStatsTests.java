@@ -76,14 +76,18 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
         installPackageUsingIncremental(new String[]{TEST_INSTALL_APK_V2});
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
         List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
         for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
             if (data.getAtom().hasPackageInstallationSessionReported()) {
-                reports.add(data.getAtom().getPackageInstallationSessionReported());
+                AtomsProto.PackageInstallationSessionReported report =
+                        data.getAtom().getPackageInstallationSessionReported();
+                if (report.getUid() == expectedUid) {
+                    reports.add(report);
+                }
             }
         }
         assertThat(reports.size()).isEqualTo(2);
-        final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
         final int expectedUser = getDevice().getCurrentUser();
         final long expectedApksSizeBytes = getTestFileSize(TEST_INSTALL_APK);
         // TODO(b/249294752): check installer in the report
@@ -105,7 +109,11 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         List<AtomsProto.PackageUninstallationReported> uninstallReports = new ArrayList<>();
         for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
             if (data.getAtom().hasPackageUninstallationReported()) {
-                uninstallReports.add(data.getAtom().getPackageUninstallationReported());
+                AtomsProto.PackageUninstallationReported report =
+                        data.getAtom().getPackageUninstallationReported();
+                if (report.getUid() == expectedUid) {
+                    uninstallReports.add(report);
+                }
             }
         }
         assertThat(uninstallReports).isEmpty();
@@ -205,7 +213,11 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         List<AtomsProto.PackageUninstallationReported> reports = new ArrayList<>();
         for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
             if (data.getAtom().hasPackageUninstallationReported()) {
-                reports.add(data.getAtom().getPackageUninstallationReported());
+                AtomsProto.PackageUninstallationReported report =
+                        data.getAtom().getPackageUninstallationReported();
+                if (report.getUid() == expectedUid) {
+                    reports.add(report);
+                }
             }
         }
         assertThat(reports.size()).isEqualTo(1);
@@ -235,14 +247,18 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         assertThat(result).isNotNull();
 
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
         List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
         for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
             if (data.getAtom().hasPackageInstallationSessionReported()) {
-                reports.add(data.getAtom().getPackageInstallationSessionReported());
+                AtomsProto.PackageInstallationSessionReported report =
+                        data.getAtom().getPackageInstallationSessionReported();
+                if (report.getUid() == expectedUid || report.getUid() == -1) {
+                    reports.add(report);
+                }
             }
         }
         assertThat(reports.size()).isEqualTo(2);
-        final int expectedUid = getAppUid(TEST_INSTALL_PACKAGE);
         final int expectedUser = getDevice().getCurrentUser();
         checkReportResult(reports.get(0), expectedUid, Collections.singletonList(expectedUser),
                 Collections.emptyList(), 1 /* success */, 0 /* internalErrorCode */,
@@ -275,14 +291,18 @@ public class PackageInstallationSessionReportedStatsTests extends PackageManager
         assertThat(result).isNotNull();
 
         Thread.sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        final int expectedUid = getAppUid(TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE);
         List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
         for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
             if (data.getAtom().hasPackageInstallationSessionReported()) {
-                reports.add(data.getAtom().getPackageInstallationSessionReported());
+                AtomsProto.PackageInstallationSessionReported report =
+                        data.getAtom().getPackageInstallationSessionReported();
+                if (report.getUid() == expectedUid || report.getUid() == -1) {
+                    reports.add(report);
+                }
             }
         }
         assertThat(reports.size()).isEqualTo(2);
-        final int expectedUid = getAppUid(TEST_INSTALL_STATIC_SHARED_LIB_V1_PACKAGE);
         final int expectedUser = getDevice().getCurrentUser();
         checkReportResult(reports.get(0), expectedUid, Collections.singletonList(expectedUser),
                 Collections.emptyList(), 1 /* success */, 0 /* internalErrorCode */,
