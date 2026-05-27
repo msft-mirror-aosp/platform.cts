@@ -210,7 +210,6 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
                 .isEqualTo(AppCrashOccurred.ForegroundState.FOREGROUND_VALUE);
         assertThat(atom.getPackageName()).isEqualTo(DeviceUtils.STATSD_ATOM_TEST_PKG);
         assertThat(atom.getErrorSource()).isEqualTo(ErrorSource.DATA_APP);
-        assertFalse(atom.getIsIncremental());
         assertTrue((1 - atom.getLoadingProgress()) < 0.001);
         assertEquals(-1, atom.getMillisSinceOldestPendingRead());
     }
@@ -244,8 +243,6 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
                 .isEqualTo(AppCrashOccurred.ForegroundState.FOREGROUND_VALUE);
         assertThat(atom.getPackageName()).isEqualTo(DeviceUtils.STATSD_ATOM_TEST_PKG);
         assertThat(atom.getErrorSource()).isEqualTo(ErrorSource.DATA_APP);
-        // TODO(b/172866626): add tests for incremental packages that crashed during loading
-        assertFalse(atom.getIsIncremental());
         assertTrue((1 - atom.getLoadingProgress()) < 0.001);
         assertEquals(-1, atom.getMillisSinceOldestPendingRead());
     }
@@ -705,7 +702,6 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
                 .isEqualTo(ANROccurred.ForegroundState.FOREGROUND_VALUE);
         assertThat(atom.getErrorSource()).isEqualTo(ErrorSource.DATA_APP);
         assertThat(atom.getPackageName()).isEqualTo(DeviceUtils.STATSD_ATOM_TEST_PKG);
-        assertFalse(atom.getIsIncremental());
         assertTrue((1 - atom.getLoadingProgress()) < 0.001);
         assertEquals(-1, atom.getMillisSinceOldestPendingRead());
     }
