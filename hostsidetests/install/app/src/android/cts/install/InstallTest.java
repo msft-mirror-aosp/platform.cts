@@ -120,7 +120,8 @@ public final class InstallTest {
 
     @Test
     public void assert_preReboot_phase() throws Exception {
-        assertNoSessionCommitBroadcastSent();
+        int sessionId = mSessionRule.retrieveSessionId();
+        assertNoSessionCommitBroadcastSent(sessionId);
         assertThat(mSessionRule.retrieveSessionInfo()).isStagedSessionReady();
         mInstallRule.assertPackageVersion(mInstallType, VERSION_CODE_INVALID);
     }
@@ -129,7 +130,8 @@ public final class InstallTest {
     public void assert_postReboot_phase() throws Exception {
         assertThat(mSessionRule.retrieveSessionInfo()).isStagedSessionApplied();
         mInstallRule.assertPackageVersion(mInstallType, VERSION_CODE_TARGET);
-        assertNoSessionCommitBroadcastSent();
+        int sessionId = mSessionRule.retrieveSessionId();
+        assertNoSessionCommitBroadcastSent(sessionId);
     }
 
     @Test
@@ -157,7 +159,8 @@ public final class InstallTest {
         return install;
     }
 
-    private static void assertNoSessionCommitBroadcastSent() throws InterruptedException {
+    private static void assertNoSessionCommitBroadcastSent(int sessionId)
+            throws InterruptedException {
         BlockingQueue<PackageInstaller.SessionInfo> committedSessions = new LinkedBlockingQueue<>();
         BroadcastReceiver sessionCommittedReceiver = new BroadcastReceiver() {
             @Override
@@ -165,7 +168,9 @@ public final class InstallTest {
                 try {
                     PackageInstaller.SessionInfo info =
                             intent.getParcelableExtra(PackageInstaller.EXTRA_SESSION);
-                    committedSessions.put(info);
+                    if (info.getSessionId() == sessionId) {
+                        committedSessions.put(info);
+                    }
                 } catch (InterruptedException e) {
                     throw new AssertionError(e);
                 }
