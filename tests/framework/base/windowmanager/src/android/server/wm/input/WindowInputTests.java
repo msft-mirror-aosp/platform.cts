@@ -293,6 +293,7 @@ public class WindowInputTests {
             lp.height = 20;
             lp.gravity = Gravity.LEFT | Gravity.CENTER_VERTICAL;
             lp.flags &= ~FLAG_NOT_TOUCH_MODAL;
+            lp.setFitInsetsTypes(WindowInsets.Type.systemBars());
             view.setFilterTouchesWhenObscured(true);
             view.setOnClickListener((v) -> mClickCount++);
         });
@@ -302,6 +303,7 @@ public class WindowInputTests {
             lp.height = 20;
             lp.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
             lp.flags &= ~FLAG_NOT_TOUCH_MODAL;
+            lp.setFitInsetsTypes(WindowInsets.Type.systemBars());
         });
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
