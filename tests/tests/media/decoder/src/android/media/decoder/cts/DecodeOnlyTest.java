@@ -464,6 +464,11 @@ public class DecodeOnlyTest extends MediaTestBase {
 
         hasRenderedEos.await();
 
+        // Signal audio callback to stop processing new buffers
+        // and flush AudioTrack to discard pending data before stopping
+        // to avoid race condition between audio write and audioTrack.stop()
+        audioCallback.setShouldProcessBuffers(false);
+        audioTrack.flush();
         audioTrack.stop();
         audioTrack.release();
         videoCodec.stop();
