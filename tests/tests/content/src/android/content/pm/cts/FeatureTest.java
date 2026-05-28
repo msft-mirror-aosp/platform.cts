@@ -36,6 +36,10 @@ public class FeatureTest extends AndroidTestCase {
     private static final String TAG = "FeatureTest";
     private static final long TWO_GB = 1536000000; // 2 GB
 
+    // Defined XR device feature locally since the PackageManager constant
+    // may not be available on all test branches.
+    private static final String FEATURE_XR_API_SPATIAL = "android.software.xr.api.spatial";
+
     private PackageManager mPackageManager;
     private ActivityManager mActivityManager;
     private WindowManager mWindowManager;
@@ -101,7 +105,8 @@ public class FeatureTest extends AndroidTestCase {
         if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
                 || mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)) {
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
+                || mPackageManager.hasSystemFeature(FEATURE_XR_API_SPATIAL)) {
             return false;
         }
 
