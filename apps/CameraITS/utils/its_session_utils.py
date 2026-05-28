@@ -62,6 +62,10 @@ SUB_CAMERA_SEPARATOR = '.'
 TABLET_ALLOWLIST = (
     'dragon',  # Google Pixel C
     'hnhey-q',  # Honor Pad 8
+    'hnhey4-q',  # Honor Pad 20
+    'hnhey4-q1',  # Honor Pad 20
+    'hnrol-m',  # Honor Pad V9 China
+    'hnrol-m1',  # Honor Pad V9 Global
     'hwcmr09',  # Huawei MediaPad M5
     'x306f',  # Lenovo Tab M10 HD (Gen 2)
     'x606f',  # Lenovo Tab M10 Plus
@@ -82,8 +86,12 @@ TABLET_ALLOWLIST = (
     'yunluo',  # Xiaomi Redmi Pad
 )
 TABLET_DEFAULT_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
-TABLET_LEGACY_BRIGHTNESS = 96
-TABLET_LEGACY_NAME = 'dragon'
+TABLET_LOW_BRIGHTNESS = 96
+TABLET_LOW_BRIGHTNESS_DEVICES = (
+    'dragon',
+    'hnhey4-q',
+    'hnhey4-q1',
+)
 # List entries must be entered in lowercase
 TABLET_OS_VERSION = types.MappingProxyType({
     'nabu': ANDROID13_API_LEVEL,
@@ -152,7 +160,7 @@ def validate_tablet(tablet_name, brightness, device_id):
     if get_build_sdk_version(device_id) < TABLET_OS_VERSION[tablet_name]:
       raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
   name_to_brightness = {
-      TABLET_LEGACY_NAME: TABLET_LEGACY_BRIGHTNESS,
+      device: TABLET_LOW_BRIGHTNESS for device in TABLET_LOW_BRIGHTNESS_DEVICES
   }
   if tablet_name in name_to_brightness:
     if brightness != name_to_brightness[tablet_name]:

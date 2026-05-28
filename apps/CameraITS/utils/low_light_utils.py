@@ -51,6 +51,10 @@ _DILATE_NUM_ITERATIONS = 3
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
 TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
+    'hnhey4-q',  # Honor Pad 20
+    'hnhey4-q1',  # Honor Pad 20
+    'hnrol-m',  # Honor Pad V9 China
+    'hnrol-m1',  # Honor Pad V9 Global
     'hwcmr09',  # Huawei MediaPad M5
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
@@ -64,6 +68,10 @@ TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
 # Tablet brightness mapping strings for (rear, front) facing camera tests
 # List entries must be entered in lowercase
 TABLET_BRIGHTNESS = {
+    'hnhey4-q': ('6', '12'),  # Honor Pad 20
+    'hnhey4-q1': ('6', '12'),  # Honor Pad 20
+    'hnrol-m': ('6', '12'),  # Honor Pad V9 China
+    'hnrol-m1': ('6', '12'),  # Honor Pad V9 Global
     'hwcmr09': ('4', '8'),  # Huawei MediaPad M5
     'gta8wifi': ('6', '12'),  # Samsung Galaxy Tab A8
     'gta8': ('6', '12'),  # Samsung Galaxy Tab A8 LTE
