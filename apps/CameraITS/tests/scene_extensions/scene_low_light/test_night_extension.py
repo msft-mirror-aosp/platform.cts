@@ -174,7 +174,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
           low_light_utils.TABLET_LOW_LIGHT_SCENES_ALLOWLIST):
         raise AssertionError('Tablet not supported for low light scenes.')
 
-      if tablet_name == its_session_utils.TABLET_LEGACY_NAME:
+      if tablet_name.lower() in its_session_utils.TABLET_LOW_BRIGHTNESS_DEVICES:
         raise AssertionError(f'Incompatible tablet! Please use a tablet with '
                              'display brightness of at least '
                              f'{its_session_utils.TABLET_DEFAULT_BRIGHTNESS} '
