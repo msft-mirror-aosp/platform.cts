@@ -24,14 +24,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.InstantAppInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -149,6 +152,18 @@ public class MultiUserTest {
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, additionalUserId);
+
+        // On devices that only support a single running user, switching to another user
+        // will stop the current user. Since this test runs under the current user,
+        // it would be terminated mid-execution.
+        //
+        // Therefore, skip this test on devices running in headless system user mode
+        // that support at most two users (system + one additional), as user switching
+        // is not applicable in that configuration.
+        boolean supportsSafeUserSwitch =
+                !isHeadlessSystemUserMode() || getMaxRunningUsers() > 2;
+
+        assumeTrue(supportsSafeUserSwitch);
 
         additionalUser.switchTo();
 
@@ -447,5 +462,30 @@ public class MultiUserTest {
             }
             return instant;
         }, Manifest.permission.ACCESS_INSTANT_APPS);
+    }
+
+    /**
+     * Returns the number of users that are allowed to run at the same time.
+     *
+     * <p>Reads the value of config_multiuserMaxRunningUsers.</p>
+     */
+    private int getMaxRunningUsers() {
+        Resources res = mContext.getResources();
+        int id = res.getIdentifier(
+                "config_multiuserMaxRunningUsers",
+                "integer",
+                "android");
+        if (id == 0) {
+            Log.w(TAG, "config_multiuserMaxRunningUsers is missing, returning default value 1");
+            return 1;
+        }
+        return res.getInteger(id);
+    }
+
+    /**
+     * Returns whether the device is currently in headless system user mode.
+     */
+    private boolean isHeadlessSystemUserMode() {
+        return UserManager.isHeadlessSystemUserMode();
     }
 }
