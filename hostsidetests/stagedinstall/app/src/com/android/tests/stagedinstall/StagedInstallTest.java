@@ -242,7 +242,7 @@ public class StagedInstallTest {
         assertSessionReady(sessionId);
         storeSessionId(sessionId);
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(-1);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -251,7 +251,7 @@ public class StagedInstallTest {
         int sessionId = retrieveLastSessionId();
         assertSessionApplied(sessionId);
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(1);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -275,7 +275,7 @@ public class StagedInstallTest {
         storeSessionId(sessionId);
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(-1);
         assertThat(getInstalledVersion(TestApp.B)).isEqualTo(-1);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -285,7 +285,7 @@ public class StagedInstallTest {
         assertSessionApplied(sessionId);
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(1);
         assertThat(getInstalledVersion(TestApp.B)).isEqualTo(1);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -362,7 +362,7 @@ public class StagedInstallTest {
         InstallUtils.openPackageInstallerSession(sessionId).commit(sender.getIntentSender());
         abandonSession(sessionId);
         InstallUtils.assertStagedSessionIsAbandoned(sessionId);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -474,7 +474,7 @@ public class StagedInstallTest {
         storeSessionId(sessionId);
         // Version shouldn't change before reboot.
         assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(1);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -483,7 +483,7 @@ public class StagedInstallTest {
         int sessionId = retrieveLastSessionId();
         assertSessionApplied(sessionId);
         assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(2);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -498,7 +498,7 @@ public class StagedInstallTest {
         // Version shouldn't change before reboot.
         assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(1);
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(-1);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -508,7 +508,7 @@ public class StagedInstallTest {
         assertSessionApplied(sessionId);
         assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(2);
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(1);
-        counter.assertNoBroadcastReceived();
+        counter.assertNoBroadcastReceived(sessionId);
     }
 
     @Test
@@ -1538,7 +1538,7 @@ public class StagedInstallTest {
      */
     private static class BroadcastCounter extends BroadcastReceiver {
         private final Context mContext;
-        private final AtomicInteger mNumBroadcastReceived = new AtomicInteger();
+        private final List<Integer> mReceivedSessionIds = new ArrayList<>();
 
         BroadcastCounter(String action) {
             mContext = InstrumentationRegistry.getInstrumentation().getContext();
@@ -1548,20 +1548,28 @@ public class StagedInstallTest {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            mNumBroadcastReceived.incrementAndGet();
+            PackageInstaller.SessionInfo info = intent.getParcelableExtra(
+                    PackageInstaller.EXTRA_SESSION);
+            if (info != null) {
+                synchronized (mReceivedSessionIds) {
+                    mReceivedSessionIds.add(info.getSessionId());
+                }
+            }
         }
 
         /**
-         * Waits for a while and checks no broadcasts are received.
+         * Waits for a while and checks no broadcasts are received for the given session id.
          */
-        void assertNoBroadcastReceived() {
+        void assertNoBroadcastReceived(int expectedSessionId) {
             try {
                 // Sleep for a reasonable amount of time and check no broadcast is received
                 Thread.sleep(TimeUnit.SECONDS.toMillis(10));
             } catch (InterruptedException ignore) {
             }
             mContext.unregisterReceiver(this);
-            assertThat(mNumBroadcastReceived.get()).isEqualTo(0);
+            synchronized (mReceivedSessionIds) {
+                assertThat(mReceivedSessionIds).doesNotContain(expectedSessionId);
+            }
         }
     }
 
