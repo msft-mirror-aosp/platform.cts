@@ -484,6 +484,7 @@ public class DownloadManagerTestBase {
         final PackageManager pm = mContext.getPackageManager();
         assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
         assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
     }
 
     public static class DownloadCompleteReceiver extends BroadcastReceiver {
