@@ -120,7 +120,9 @@ public class PermissionPolicyTest {
                 "android.permission.IMPORT_XR_ANCHOR",
                 "android.permission.XR_TRACKING_IN_BACKGROUND",
                 "android.permission.EYE_CALIBRATION",
-                "android.permission.FACE_TRACKING_CALIBRATION"
+                "android.permission.FACE_TRACKING_CALIBRATION",
+                // Permission backported for enabling appfunction on TV.
+                "android.permission.EXECUTE_APP_FUNCTIONS_TRUSTED"
             );
 
     @Test
