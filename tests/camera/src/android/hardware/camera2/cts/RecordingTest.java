@@ -126,6 +126,8 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
     private static final int SLOWMO_SLOW_FACTOR = 4;
     private static final int MAX_NUM_FRAME_DROP_INTERVAL_ALLOWED = 4;
     private List<Size> mSupportedVideoSizes;
+    private List<Size> mAllSupportedVideoSizes;
+
     private Surface mRecordingSurface;
     private Surface mPersistentSurface;
     private MediaRecorder mMediaRecorder;
@@ -970,7 +972,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                     }
                     assertTrue("Video size " + videoSz.toString() + " for profile ID " + profileId +
                                     " must be one of the camera device supported video size!",
-                                    mSupportedVideoSizes.contains(videoSz));
+                                    mAllSupportedVideoSizes.contains(videoSz));
                     assertTrue("Frame rate range " + fpsRange + " (for profile ID " + profileId +
                             ") must be one of the camera device available FPS range!",
                             fpsRanges.contains(fpsRange));
@@ -1515,7 +1517,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
             }
             assertTrue("Video size " + videoSz.toString() + " for profile ID " + profileId +
                             " must be one of the camera device supported video size!",
-                            mSupportedVideoSizes.contains(videoSz));
+                            mAllSupportedVideoSizes.contains(videoSz));
             assertTrue("Frame rate range " + fpsRange + " (for profile ID " + profileId +
                     ") must be one of the camera device available FPS range!",
                     fpsRanges.contains(fpsRange));
@@ -1739,6 +1741,11 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
 
         mSupportedVideoSizes =
                 getSupportedVideoSizes(cameraId, mCameraManager, maxVideoSize);
+
+        // Get an unfiltered list of video sizes to handle OEM-custom profiles
+        mAllSupportedVideoSizes =
+            getSupportedVideoSizes(mCamera.getId(), mCameraManager, null);
+
     }
 
     /**
@@ -1839,7 +1846,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                 continue;
             }
 
-            if (!mSupportedVideoSizes.contains(videoSz)) {
+            if (!mAllSupportedVideoSizes.contains(videoSz)) {
                 mCollector.addMessage("Video size " + videoSz.toString() + " for profile ID " +
                         profileId + " must be one of the camera device supported video size!");
                 continue;
