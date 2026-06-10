@@ -86,7 +86,7 @@ public final class FeatureUtil {
      * Checks whether the device supports third party accessibility service
      */
     public static boolean isThirdPartyAccessibilityServiceSupported(Context context) {
-        return !isWatchOrAutomotive(context);
+        return !isWatchOrAutomotive(context) && !isXrHeadset(context);
     }
 
     /**
