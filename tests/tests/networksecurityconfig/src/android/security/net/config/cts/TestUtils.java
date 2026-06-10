@@ -23,6 +23,7 @@ import junit.framework.Assert;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -120,9 +121,16 @@ public final class TestUtils extends Assert {
 
     private static void assertUrlConnectionSucceeds(String host, int port, boolean https)
             throws Exception {
-        URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.getInputStream();
+        try {
+            URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.getInputStream();
+        } catch (FileNotFoundException expected) {
+            // The server returned a 404 and HttpURLConnection translated this
+            // into a FileNotFoundException. This can happen if we hit a
+            // transient error. For the purpose of this test, we were able to
+            // establish a successful TLS connection, so this is not an issue.
+        }
     }
 
     private static void assertHttpClientSucceeds(String host, int port, boolean https)
