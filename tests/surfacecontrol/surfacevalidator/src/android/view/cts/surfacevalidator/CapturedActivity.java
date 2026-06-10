@@ -17,7 +17,7 @@ package android.view.cts.surfacevalidator;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInWindowSpace;
-import static android.view.WindowInsets.Type.statusBars;
+import static android.view.WindowInsets.Type.systemBars;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 
 import static org.junit.Assert.assertEquals;
@@ -95,6 +95,8 @@ public class CapturedActivity extends Activity {
 
     private FrameLayout mParentLayout;
 
+    private Insets mSystemBarInsets = Insets.NONE;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -168,16 +170,16 @@ public class CapturedActivity extends Activity {
                 Log.d(TAG, "Setting up test case");
 
                 // See b/216583939. On some devices, hiding system bars is disabled. In those cases,
-                // adjust the area that is rendering the test content to be outside the status bar
-                // margins to ensure capturing and comparing frames skips the status bar area.
-                Insets statusBarInsets = getWindow()
+                // adjust the area that is rendering the test content to be outside the system bar
+                // margins to ensure capturing and comparing frames skips the system bar area.
+                mSystemBarInsets = getWindow()
                         .getDecorView()
                         .getRootWindowInsets()
-                        .getInsets(statusBars());
+                        .getInsets(systemBars());
                 FrameLayout.LayoutParams layoutParams =
                         (FrameLayout.LayoutParams) mParentLayout.getLayoutParams();
-                layoutParams.setMargins(statusBarInsets.left, statusBarInsets.top,
-                        statusBarInsets.right, statusBarInsets.bottom);
+                layoutParams.setMargins(mSystemBarInsets.left, mSystemBarInsets.top,
+                        mSystemBarInsets.right, mSystemBarInsets.bottom);
                 mParentLayout.setLayoutParams(layoutParams);
 
                 animationTestCase.start(getApplicationContext(), mParentLayout);
@@ -229,6 +231,18 @@ public class CapturedActivity extends Activity {
 
                 Log.d(TAG, "Size is " + mTestAreaSize + ", bounds are "
                         + (boundsToCheck == null ? "full screen" : boundsToCheck.toShortString()));
+
+                // When system bars are visible and no bounds are specified, create a rectangle
+                // excluding system bar areas from the VirtualDisplay. This limits pixel inspection
+                // to only the region where test content is actually rendered, excluding overlaid bars.
+                if (boundsToCheck == null && !mSystemBarInsets.equals(Insets.NONE)) {
+                    boundsToCheck = new Rect(
+                        mSystemBarInsets.left,
+                        mSystemBarInsets.top,
+                        mTestAreaSize.x - mSystemBarInsets.right,
+                        mTestAreaSize.y - mSystemBarInsets.bottom);
+                    Log.d(TAG, "boundsToCheck: " + boundsToCheck.toShortString());
+                }
 
                 mSurfacePixelValidator = new SurfacePixelValidator2(mTestAreaSize,
                         boundsToCheck, animationTestCase.getChecker(), numFramesRequired);
