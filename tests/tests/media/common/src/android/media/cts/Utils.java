@@ -162,14 +162,36 @@ public class Utils {
 
         try {
             final int activeConfigSizeBeforeStart = am.getActivePlaybackConfigurations().size();
+            final int expectedSize = activeConfigSizeBeforeStart + 1;
             final Handler handler = new Handler(handlerThread.getLooper());
 
             am.registerAudioPlaybackCallback(callback, handler);
             mediaPlayer = MediaPlayer.create(context, R.raw.sine1khzs40dblong);
             mediaPlayer.start();
-            if (!callback.mCountDownLatch.await(TEST_TIMING_TOLERANCE_MS, TimeUnit.MILLISECONDS)
-                    || callback.mActiveConfigSize != activeConfigSizeBeforeStart + 1) {
-                Assert.fail("Failed to create an active AudioPlaybackConfiguration");
+
+            // Split our total timeout into smaller polling windows (e.g., 3 attempts of 400ms)
+            final int maxAttempts = 3;
+            final long sliceTimeoutMs = TEST_TIMING_TOLERANCE_MS / maxAttempts;
+            boolean success = false;
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++) {
+                // Wait for *a* configuration change event to happen
+                if (callback.waitForEvent(sliceTimeoutMs)) {
+                    // Check if this event brought us to our expected size
+                    if (callback.getActiveConfigSize() == expectedSize) {
+                        success = true;
+                        break; // Found it! Exit loop early.
+                    } else {
+                        Log.w(TAG, "Callback fired but config size was " + callback.getActiveConfigSize()
+                                + " instead of " + expectedSize + ". Resetting latch to try again.");
+                        callback.resetLatch(); // Reset to listen for the NEXT event
+                    }
+                }
+            }
+            if (!success) {
+                Assert.fail("Failed to create an active AudioPlaybackConfiguration"
+                        + " activeConfigSizeBeforeStart=" + activeConfigSizeBeforeStart
+                        + ", callback.mActiveConfigSize=" + callback.getActiveConfigSize());
             }
         } catch (InterruptedException e) {
             Assert.fail("Failed to create an active AudioPlaybackConfiguration");
@@ -185,15 +207,33 @@ public class Utils {
     }
 
     private static class TestAudioPlaybackCallback extends AudioManager.AudioPlaybackCallback {
-        private final CountDownLatch mCountDownLatch = new CountDownLatch(1);
+        private final Object mLock = new Object(); // Ensures atomic reads/writes
+        private CountDownLatch mCountDownLatch = new CountDownLatch(1);
         private int mActiveConfigSize;
 
         @Override
         public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
-            // For non-framework apps, only anonymized active AudioPlaybackCallbacks will be
-            // notified.
-            mActiveConfigSize = configs.size();
+            synchronized (mLock) {
+                mActiveConfigSize = configs.size();
+            }
             mCountDownLatch.countDown();
+        }
+
+        // Helper to safely read the size from the test thread
+        public int getActiveConfigSize() {
+            synchronized (mLock) {
+                return mActiveConfigSize;
+            }
+        }
+
+        // Helper to wait for an event
+        public boolean waitForEvent(long timeoutMs) throws InterruptedException {
+            return mCountDownLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
+        }
+
+        // Helper to clear the latch for the next configuration update
+        public void resetLatch() {
+            mCountDownLatch = new CountDownLatch(1);
         }
     }
 }
