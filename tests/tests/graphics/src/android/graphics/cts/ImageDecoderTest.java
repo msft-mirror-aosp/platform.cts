@@ -2852,7 +2852,7 @@ public class ImageDecoderTest {
         ImageDecoder.decodeDrawable(src);
     }
 
-    private static boolean has10BitHEVCDecoder() {
+    public static boolean has10BitHEVCDecoder() {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, "video/hevc");
         format.setInteger(
