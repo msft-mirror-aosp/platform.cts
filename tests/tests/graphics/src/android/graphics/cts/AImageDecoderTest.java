@@ -16,6 +16,7 @@
 
 package android.graphics.cts;
 
+import static android.graphics.cts.ImageDecoderTest.has10BitHEVCDecoder;
 import static android.system.OsConstants.SEEK_SET;
 
 import static org.junit.Assert.assertEquals;
@@ -339,9 +340,7 @@ public class AImageDecoderTest {
     @RequiresDevice
     @Parameters(method = "getBitMapFormatsUnpremul")
     public void testDecode10BitHeif(int bitmapFormat, boolean unpremul) throws IOException {
-        if (!MediaUtils.hasHardwareCodec(MediaFormat.MIMETYPE_VIDEO_HEVC, false)) {
-            return;
-        }
+        assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
         final int resId = R.raw.heifimage_10bit;
         Bitmap bm = null;
         switch (bitmapFormat) {
