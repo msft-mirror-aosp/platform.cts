@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -76,6 +77,9 @@ public class GpuWorkDumpsysTest extends BaseHostJUnit4Test {
   @CddTest(requirement = "6.1/C-6-1")
   @Test
   public void testOutputFormat() throws Exception {
+    assumeTrue("Test does not apply for automotive devices",
+                !FeatureUtil.isAutomotive(getDevice()));
+
     CommandResult commandResult =
         getDevice()
             .executeShellV2Command(String.format("cat %s", GPU_WORK_PERIOD_TRACEPOINT_FORMAT_PATH));
