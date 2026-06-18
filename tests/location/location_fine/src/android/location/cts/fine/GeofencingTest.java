@@ -30,6 +30,7 @@ import android.content.Intent;
 import android.location.Criteria;
 import android.location.LocationManager;
 import android.location.cts.common.ProximityPendingIntentCapture;
+import android.os.SystemClock;
 import android.os.UserManager;
 import android.util.Log;
 
@@ -118,17 +119,58 @@ public class GeofencingTest {
         mManager.setTestProviderEnabled(FUSED_PROVIDER, true);
         mManager.setTestProviderLocation(FUSED_PROVIDER,
                 createLocation(FUSED_PROVIDER, 30, 30, 10));
+        SystemClock.sleep(200);
 
         try (ProximityPendingIntentCapture capture = new ProximityPendingIntentCapture(mContext)) {
             mManager.addProximityAlert(0, 0, 1000, -1, capture.getPendingIntent());
 
-            mManager.setTestProviderLocation(FUSED_PROVIDER,
-                    createLocation(FUSED_PROVIDER, 0, 0, 10));
-            assertThat(capture.getNextProximityChange(TIMEOUT_MS)).isEqualTo(Boolean.TRUE);
+            Thread insideLocationInjectorThread =
+                    new Thread(
+                            () -> {
+                                while (!Thread.currentThread().isInterrupted()) {
+                                    try {
+                                        mManager.setTestProviderLocation(
+                                                FUSED_PROVIDER,
+                                                createLocation(FUSED_PROVIDER, 0, 0, 10));
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "Error injecting inside location", e);
+                                    }
+                                    SystemClock.sleep(500);
+                                }
+                            });
 
-            mManager.setTestProviderLocation(FUSED_PROVIDER,
-                    createLocation(FUSED_PROVIDER, 30, 30, 10));
-            assertThat(capture.getNextProximityChange(TIMEOUT_MS)).isEqualTo(Boolean.FALSE);
+            insideLocationInjectorThread.start();
+
+            try {
+                assertThat(capture.getNextProximityChange(TIMEOUT_MS)).isEqualTo(true);
+            } finally {
+                insideLocationInjectorThread.interrupt();
+                insideLocationInjectorThread.join(1000);
+            }
+
+            Thread outsideLocationInjectorThread =
+                    new Thread(
+                            () -> {
+                                while (!Thread.currentThread().isInterrupted()) {
+                                    try {
+                                        mManager.setTestProviderLocation(
+                                                FUSED_PROVIDER,
+                                                createLocation(FUSED_PROVIDER, 30, 30, 10));
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "Error injecting outside location", e);
+                                    }
+                                    SystemClock.sleep(500);
+                                }
+                            });
+
+            outsideLocationInjectorThread.start();
+
+            try {
+                assertThat(capture.getNextProximityChange(TIMEOUT_MS)).isEqualTo(false);
+            } finally {
+                outsideLocationInjectorThread.interrupt();
+                outsideLocationInjectorThread.join(1000);
+            }
         }
 
         try {
