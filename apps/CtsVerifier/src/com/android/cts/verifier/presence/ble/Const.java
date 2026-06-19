@@ -22,6 +22,6 @@ import java.util.UUID;
 
 public class Const {
     private static final String TAG = BleScanner.class.getName();
-    public static final String UUID_STRING = "CDB7950D-73F1-4D4D-8E47-C090502DBD63";
+    public static final String UUID_STRING = "0000CD63-0000-1000-8000-00805F9B34FB";
     public static final ParcelUuid PARCEL_UUID = new ParcelUuid(UUID.fromString(UUID_STRING));
 }

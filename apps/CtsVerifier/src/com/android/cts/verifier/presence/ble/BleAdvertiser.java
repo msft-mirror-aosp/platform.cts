@@ -37,7 +37,7 @@ public class BleAdvertiser {
     private static final String TAG = BleAdvertiser.class.getName();
 
     private static final int AVAILABLE_BYTES = 31;
-    private static final int PARCEL_UUID_BYTES = 16;
+    private static final int PARCEL_UUID_BYTES = 2;
     private static final int OVERHEAD_BYTES = 2;
 
     private final BluetoothLeAdvertiser advertiser =
