@@ -72,6 +72,7 @@ public class AppATests {
 
     private static final long BIND_SERVICE_TIMEOUT_MS = 5000;
     private static final int MAX_VOLD_QUERY_RETRIES = 20;
+    private static final int SWIPE_STEP_COUNT = 20;
 
     private Context mContext;
     private UiDevice mDevice;
@@ -222,9 +223,24 @@ public class AppATests {
 
     @Test
     public void testUnlockDevice() throws Exception {
+
+        final int width = mDevice.getDisplayWidth();
+        final int height = mDevice.getDisplayHeight();
+
         mDevice.wakeUp();
         mDevice.waitForIdle();
         mDevice.pressMenu();
+        mDevice.waitForIdle();
+
+        // HSUM lock screen is taking time to accept input
+        // Pressing enter button twice to make sure it is ready to accept input
+        // before typing the pin
+        mDevice.executeShellCommand(testUnlockDeviceCommand_enter);
+        mDevice.waitForIdle();
+        mDevice.executeShellCommand(testUnlockDeviceCommand_enter);
+        mDevice.waitForIdle();
+        mDevice.swipe(width / 2, (int)(height * 0.8), width / 2, (int)(height * 0.2),
+                SWIPE_STEP_COUNT);
         mDevice.waitForIdle();
         mDevice.executeShellCommand(testUnlockDeviceCommand_1);
         mDevice.waitForIdle();
