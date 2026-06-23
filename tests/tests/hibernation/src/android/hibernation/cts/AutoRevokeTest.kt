@@ -678,13 +678,12 @@ class AutoRevokeTest {
 
         waitForIdle()
         scrollToLabel("Permissions")
-
-        click("Permissions")
+        click("Permissions", 30_000)
     }
 
-    private fun click(label: String) {
+    private fun click(label: String, timeoutMs: Long = 20_000) {
         try {
-            waitFindObject(byTextIgnoreCase(label)).click()
+            waitFindObject(byTextIgnoreCase(label), timeoutMs).click()
         } catch (e: UiObjectNotFoundException) {
             // waitFindObject sometimes fails to find UI that is present in the view hierarchy
             // Increasing sleep to 2000 in waitForIdle() might be passed but no guarantee that the
@@ -738,8 +737,8 @@ class AutoRevokeTest {
         return res.get()
     }
 
-    private fun waitFindObject(selector: BySelector): UiObject2 {
-        return waitFindObject(instrumentation.uiAutomation, selector)
+    private fun waitFindObject(selector: BySelector, timeoutMs: Long = 20_000): UiObject2 {
+        return waitFindObject(instrumentation.uiAutomation, selector, timeoutMs)
     }
 }
 

@@ -424,9 +424,13 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
     return view!!
 }
 
-fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 {
+fun waitFindObject(
+    uiAutomation: UiAutomation,
+    selector: BySelector,
+    timeoutMs: Long = 20_000
+): UiObject2 {
     try {
-        return UiAutomatorUtils2.waitFindObject(selector)
+        return UiAutomatorUtils2.waitFindObject(selector, timeoutMs)
     } catch (e: RuntimeException) {
         val ui = uiAutomation.rootInActiveWindow
 
