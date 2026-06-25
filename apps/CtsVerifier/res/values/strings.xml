@@ -3823,7 +3823,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="enterprise_privacy_quick_settings_negative_info">
         Please do the following:\n
         1) Open and fully expand Quick Settings.\n
-        2) Verify that at the bottom of Quick Settings, you are not told the device is managed.\n
+        2) Verify that in Quick Settings (e.g. at the bottom), you are not told the device is managed.\n
         3) Close Quick Settings.\n
         \n
         If this device does not have quick settings, please skip this test and mark it passing
@@ -3835,7 +3835,7 @@ You should be prompted to select credentials; choose the ones you just installed
         2) Navigate to \"Security\" &gt; \"Screen lock\" and select the first screen lock type that is not \"None\".\n
         3) Use the Back button to return to this page.\n
         4) Lock the device.\n
-        5) Verify that on the lock screen, you are not told the device is managed.\n
+        5) Confirm that the lock screen or toast message doesn\'t state that the device is managed.\n
         6) Unlock the device.\n
         7) Repeat steps (1) through (6) for each screen lock type other than \"None\".
     </string>
@@ -4861,11 +4861,11 @@ You should be prompted to select credentials; choose the ones you just installed
         Please do the following:\n
         1) Press the Clear Org button.\n
         2) Open and fully expand Quick Settings.\n
-        3) Verify that at the bottom of Quick Settings, you are told the device is managed.\n
+        3) Verify that in Quick Settings (e.g. at the bottom), you are told the device is managed.\n
         4) Close Quick Settings.\n
         5) Press the Set Org button.\n
         6) Open and fully expand Quick Settings.\n
-        7) Verify that at the bottom of Quick Settings, you are told the device is managed by \"Foo, Inc.\".\n
+        7) Verify that in Quick Settings (e.g. at the bottom), you are told the device is managed by \"Foo, Inc.\".\n
         8) Tap on the information.\n
         9) Verify that a dialog informing you about device monitoring opens.\n
         10) Tap the \"View Policies\" button.\n
@@ -4881,11 +4881,11 @@ You should be prompted to select credentials; choose the ones you just installed
         3) Use the Back button to return to this page.\n
         4) Press the Clear Org button.\n
         5) Lock the device.\n
-        6) Verify that on the lock screen, you are told the device is managed.\n
+        6) Confirm that the lock screen or the toast message states that the device is managed.\n
         7) Unlock the device.\n
         8) Press the Set Org button.\n
         9) Lock the device.\n
-        10) Verify that on the lock screen, you are told the device is managed by \"Foo, Inc.\".\n
+        10) Confirm that either the lock screen or the toast message states that \"Foo, Inc.\" manages the device.\n
         11) Unlock the device.\n
         12) Repeat steps (1) through (11) for each screen lock type other than \"None\".
     </string>
@@ -4912,7 +4912,7 @@ You should be prompted to select credentials; choose the ones you just installed
         2) Check that you are told that your device is managed.\n
         3) Close Quick Settings.\n
         4) Enable network logging by tapping on the left button below.\n
-        5) Open Quick Settings again. Check that an icon appeared next to the text about device management.\n
+        5) Open Quick Settings again. Confirm there is an icon next to the text about device management.\n
         6) Verify that a notification including the same icon popped up, informing you that network logging has been enabled.\n
         7) Tap the notification.\n
         8) Verify that a dialog about device monitoring opens, and informs you about: the name of the app that manages this device, details about the device owner\'s capabilities, and information that the admin has activated network logging and can see all network traffic.\n
