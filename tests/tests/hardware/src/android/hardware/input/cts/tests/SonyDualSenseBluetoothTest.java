@@ -27,6 +27,7 @@ import androidx.test.filters.MediumTest;
 
 import com.android.cts.kernelinfo.KernelInfo;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,6 +70,7 @@ public class SonyDualSenseBluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @Ignore("b/243570601")
     public void testAllMotions() {
         if (KernelInfo.hasConfig("CONFIG_HID_PLAYSTATION")) {
             testInputEvents(R.raw.sony_dualsense_bluetooth_motioneventtests);
