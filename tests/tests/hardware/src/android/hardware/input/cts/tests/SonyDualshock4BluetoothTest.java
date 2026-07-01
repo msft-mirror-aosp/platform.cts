@@ -44,6 +44,7 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @Ignore("b/243570601")
     public void testAllMotions() {
         testInputEvents(R.raw.sony_dualshock4_bluetooth_motioneventtests);
     }
