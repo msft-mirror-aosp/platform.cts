@@ -86,6 +86,15 @@ public final class PolicyTransparencyTestActivity extends PassFailButtons.Activi
                 UserManager.DISALLOW_NETWORK_RESET,
                 UserManager.DISALLOW_CONFIG_TETHERING);
 
+    /**
+     * List of policy tests that might not have an option for user to change on Settings.
+     */
+    private static final List<String> OPTIONAL_POLICY_TEST_ITEMS = Arrays
+            .asList(
+                TEST_CHECK_MAXIMUM_TIME_TO_LOCK,
+                TEST_CHECK_LOCK_SCREEN_INFO,
+                TEST_CHECK_KEYGURAD_UNREDACTED_NOTIFICATION);
+
     static {
         POLICY_TEST_ITEMS.put(TEST_CHECK_AUTO_TIME_REQUIRED, new PolicyTestItem(
                 R.string.auto_time_required_set_step,
@@ -165,6 +174,8 @@ public final class PolicyTransparencyTestActivity extends PassFailButtons.Activi
             widgetId = R.id.switch_widget;
             if (OPTIONAL_USER_RESTRICTION_ACTIONS.contains(userRestriction)) {
                 note = getString(R.string.optional_policy_transparency_test_note);
+            } else if (UserManager.DISALLOW_CONFIG_SCREEN_TIMEOUT.equals(userRestriction)) {
+                note = getString(R.string.optional_policy_transparency_settings_note);
             }
         } else {
             final PolicyTestItem testItem = POLICY_TEST_ITEMS.get(mTest);
@@ -172,6 +183,9 @@ public final class PolicyTransparencyTestActivity extends PassFailButtons.Activi
             userAction = getString(testItem.userAction);
             widgetLabel = getString(testItem.widgetLabel);
             widgetId = testItem.widgetId;
+            if (OPTIONAL_POLICY_TEST_ITEMS.contains(mTest)) {
+                note = getString(R.string.optional_policy_transparency_settings_note);
+            }
         }
         ((TextView) findViewById(R.id.widget_label)).setText(widgetLabel);
         ((TextView) findViewById(R.id.test_instructions)).setText(

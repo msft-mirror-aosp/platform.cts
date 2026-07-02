@@ -4478,6 +4478,7 @@ You should be prompted to select credentials; choose the ones you just installed
         4. Verify that the support dialog displays the short support message set earlier.\n
     </string>
     <string name="optional_policy_transparency_test_note">\n\t<b>NOTE</b>: if the device doesn\'t support this action please skip this test and mark it as passing.</string>
+    <string name="optional_policy_transparency_settings_note">\n\t<b>NOTE</b>: If the option or setting does not exist in the Settings app, please mark the test as passing.</string>
     <string name="user_restriction_set_step">
         Set \'%s\' user restriction by turning on the switch below.
     </string>
@@ -4929,16 +4930,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="device_owner_customize_lockscreen_message">Customize Lock Screen Message</string>
     <string name="device_owner_customize_lockscreen_message_info">Please do the following:\n
         1) Press the \"Go\" button to go to Settings\n
-        2) Find the \"Screen lock\" option and set it to \"Swipe\"\n
+        2) Find the \"Screen lock\" option and set it to any option other than \"None\" (e.g. \"SWIPE\")\n
         3) Use the Back button to return to this page\n
         4) In the field below, write a lock screen message.\n
         5) Press the \"Set lock screen message\" button\n
-        6) Press Power button once to lock the screen.\n
-        7) Press Power button again to reveal the lock screen.\n
-        8) Verify that the message from step 1) appears on the lock screen.\n
+        6) Use the appropriate device affordance to lock the screen.\n
+        7) Reveal the lock screen.\n
+        8) Verify that the message appears on the lock screen.\n
         9) Unlock the screen and return to this page.\n
         10) Press the \"Go\" button to go to Settings\n
-        11) Find the \"Lock screen message\" option\n
+        11) Find the \"Lock screen message\" option. (If your device does not support this option, complete step 15 to clean up and mark this test as passing).\n
         12) Verify that you cannot modify the setting.\n
         13) Use the Back button to return to this page.\n
         14) Press the \"Go\" button to go to Settings\n
