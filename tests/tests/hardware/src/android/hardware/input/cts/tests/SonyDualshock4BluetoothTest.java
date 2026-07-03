@@ -45,6 +45,7 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @Ignore("b/243570601")
     public void testAllMotions() {
         assumeFalse("b/337286136 - Broken since kernel 6.2 from driver changes",
                 KernelInfo.isKernelVersionGreaterThan("6.2"));

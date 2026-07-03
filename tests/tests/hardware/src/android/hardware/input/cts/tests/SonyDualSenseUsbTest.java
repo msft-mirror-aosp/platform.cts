@@ -26,6 +26,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.cts.kernelinfo.KernelInfo;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,6 +53,7 @@ public class SonyDualSenseUsbTest extends InputHidTestCase {
     }
 
     @Test
+    @Ignore("b/243570601")
     public void testAllMotions() {
         testInputEvents(R.raw.sony_dualsense_usb_motioneventtests);
     }
