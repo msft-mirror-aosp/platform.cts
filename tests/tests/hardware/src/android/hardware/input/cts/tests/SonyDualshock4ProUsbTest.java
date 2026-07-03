@@ -19,7 +19,6 @@ package android.hardware.input.cts.tests;
 import static org.junit.Assume.assumeTrue;
 
 import android.hardware.cts.R;
-import android.os.Build;
 import android.os.VintfRuntimeInfo;
 import android.text.TextUtils;
 import android.util.Pair;
@@ -27,12 +26,12 @@ import android.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class SonyDualshock4ProUsbTest extends InputHidTestCase {
@@ -83,6 +82,7 @@ public class SonyDualshock4ProUsbTest extends InputHidTestCase {
     }
 
     @Test
+    @Ignore("b/243570601")
     public void testAllMotions() {
         assumeTrue(isDualshock4DriverSupportedByKernel());
         testInputEvents(R.raw.sony_dualshock4_usb_motioneventtests);
