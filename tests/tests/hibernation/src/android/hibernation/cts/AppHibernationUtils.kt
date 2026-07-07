@@ -75,7 +75,7 @@ const val CLEAR_ALL_BUTTON_ID = "dismiss_text"
 const val MANAGE_BUTTON_AUTOMOTIVE = "manage_button"
 // Time to find a notification. Unlikely, but in cases with a lot of notifications, it may take
 // time to find the notification we're looking for
-const val NOTIF_FIND_TIMEOUT = 20000L
+const val NOTIF_FIND_TIMEOUT = 40000L
 const val VIEW_WAIT_TIMEOUT = 3000L
 const val JOB_RUN_TIMEOUT = 60000L
 const val JOB_RUN_WAIT_TIME = 3000L
