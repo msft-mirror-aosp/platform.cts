@@ -1596,7 +1596,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             performNotificationProviderAction("send-7");
 
             assertEquals(background7Uri, getNotificationBackgroundImageUri(7));
-            assertTrue(mNotificationHelper.isNotificationGone(8, SEARCH_TYPE.LISTENER));
+            assertTrue(mNotificationHelper.isNotificationGone(NOTIFICATIONPROVIDER, null, 8, SEARCH_TYPE.LISTENER));
             assertAccessible(background7Uri);
             assertInaccessible(background8Uri);
 
@@ -1611,7 +1611,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             // Cancel #7
             performNotificationProviderAction("cancel-7");
 
-            assertTrue(mNotificationHelper.isNotificationGone(7, SEARCH_TYPE.LISTENER));
+            assertTrue(mNotificationHelper.isNotificationGone(NOTIFICATIONPROVIDER, null, 7, SEARCH_TYPE.LISTENER));
             assertEquals(background8Uri, getNotificationBackgroundImageUri(8));
             assertInaccessible(background7Uri);
             assertAccessible(background8Uri);
@@ -1619,8 +1619,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             // Cancel #8
             performNotificationProviderAction("cancel-8");
 
-            assertTrue(mNotificationHelper.isNotificationGone(7, SEARCH_TYPE.LISTENER));
-            assertTrue(mNotificationHelper.isNotificationGone(8, SEARCH_TYPE.LISTENER));
+            assertTrue(mNotificationHelper.isNotificationGone(NOTIFICATIONPROVIDER, null, 7, SEARCH_TYPE.LISTENER));
+            assertTrue(mNotificationHelper.isNotificationGone(NOTIFICATIONPROVIDER, null, 8, SEARCH_TYPE.LISTENER));
             assertInaccessible(background7Uri);
             assertInaccessible(background8Uri);
 
@@ -1865,12 +1865,16 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @NonNull
     private Uri getNotificationBackgroundImageUri(int notificationId) {
-        StatusBarNotification sbn = mNotificationHelper.findPostedNotification(null, notificationId,
-                SEARCH_TYPE.LISTENER);
-        assertNotNull(sbn);
+        StatusBarNotification sbn = mNotificationHelper.findPostedNotification(NOTIFICATIONPROVIDER,
+            null, notificationId, SEARCH_TYPE.LISTENER);
+        assertNotNull("Expected posted notification not found: package=" + NOTIFICATIONPROVIDER
+            + " id=" + notificationId + " tag=null searchType=" + SEARCH_TYPE.LISTENER,
+            sbn);
         String imageUriString = sbn.getNotification().extras
                 .getString(Notification.EXTRA_BACKGROUND_IMAGE_URI);
-        assertNotNull(imageUriString);
+        assertNotNull("Missing Notification.EXTRA_BACKGROUND_IMAGE_URI: package="
+            + sbn.getPackageName() + " id=" + sbn.getId() + " tag=" + sbn.getTag()
+            + " key=" + sbn.getKey(), imageUriString);
         return Uri.parse(imageUriString);
     }
 
