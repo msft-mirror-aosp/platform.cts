@@ -84,10 +84,15 @@ public class NotificationHelper {
 
     public StatusBarNotification findPostedNotification(String tag, int id,
             SEARCH_TYPE searchType) {
+        return findPostedNotification(null, tag, id, searchType);
+    }
+
+    public StatusBarNotification findPostedNotification(String packageName, String tag, int id,
+            SEARCH_TYPE searchType) {
         // notification posting is asynchronous so it may take a few hundred ms to appear.
         // we will check for it for up to MAX_WAIT_TIME ms before giving up.
         for (long totalWait = 0; totalWait < MAX_WAIT_TIME; totalWait += SHORT_WAIT_TIME) {
-            StatusBarNotification n = findNotificationNoWait(tag, id, searchType);
+            StatusBarNotification n = findNotificationNoWait(packageName, tag, id, searchType);
             if (n != null) {
                 return n;
             }
@@ -97,7 +102,7 @@ public class NotificationHelper {
                 // pass
             }
         }
-        return findNotificationNoWait(null, id, searchType);
+        return findNotificationNoWait(packageName, null, id, searchType);
     }
 
     /**
@@ -105,6 +110,10 @@ public class NotificationHelper {
      * delays in posting
      */
     public boolean isNotificationGone(int id, SEARCH_TYPE searchType) {
+        return isNotificationGone(null, null, id, searchType);
+    }
+
+    public boolean isNotificationGone(String packageName, String tag, int id, SEARCH_TYPE searchType) {
         // notification is a bit asynchronous so it may take a few ms to appear in
         // getActiveNotifications()
         // we will check for it for up to MAX_WAIT_TIME ms before giving up.
@@ -113,8 +122,15 @@ public class NotificationHelper {
             // Need reset flag.
             found = false;
             for (StatusBarNotification sbn : getActiveNotifications(searchType)) {
-                Log.d(TAG, "Found " + sbn.getKey());
+                Log.d(TAG, "Found notification: package=" + sbn.getPackageName() + " id="
+                        + sbn.getId() + " tag=" + sbn.getTag() + " key=" + sbn.getKey());
                 if (sbn.getId() == id) {
+                    if (packageName != null && !Objects.equal(sbn.getPackageName(), packageName)) {
+                        continue;
+                    } else if (tag != null && !tag.equals(sbn.getTag())) {
+                        continue;
+                    }
+
                     found = true;
                     break;
                 }
@@ -148,8 +164,16 @@ public class NotificationHelper {
 
     private StatusBarNotification findNotificationNoWait(String tag, int id,
             SEARCH_TYPE searchType) {
+        return findNotificationNoWait(null, tag, id, searchType);
+    }
+
+    private StatusBarNotification findNotificationNoWait(String packageName, String tag, int id,
+            SEARCH_TYPE searchType) {
         for (StatusBarNotification sbn : getActiveNotifications(searchType)) {
             if (sbn.getId() == id && Objects.equal(sbn.getTag(), tag)) {
+                if (packageName != null && !Objects.equal(sbn.getPackageName(), packageName)) {
+                    continue;
+                }
                 return sbn;
             }
         }
