@@ -27,6 +27,7 @@ import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.Display;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 
@@ -447,6 +448,8 @@ public final class CtsTouchUtils {
      * @param downTime The time of the event, usually from {@link SystemClock#uptimeMillis()}
      * @param xOnScreen The x screen coordinate to press on
      * @param yOnScreen The y screen coordinate to press on
+     * @param displayId The display id to inject the event on. When using INVALID_DISPLAY,
+     *                  it will use the display owned by the user.
      * @param waitForAnimations wait for animations to complete before sending an event
      * @param eventInjectionListener The listener to call back immediately after the down was
      *                               sent.
@@ -457,12 +460,17 @@ public final class CtsTouchUtils {
      *
      * @return <code>downTime</code>
      */
-    private long injectDownEvent(Instrumentation instrumentation, long downTime, int xOnScreen,
-            int yOnScreen, boolean waitForAnimations,
+    public long injectDownEvent(Instrumentation instrumentation, long downTime, int xOnScreen,
+            int yOnScreen, int displayId, boolean waitForAnimations,
             @Nullable EventInjectionListener eventInjectionListener, boolean useGlobalInjection) {
+
         MotionEvent eventDown = MotionEvent.obtain(
                 downTime, downTime, MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 1);
-        injectDisplayIdIfNeeded(eventDown);
+        if (displayId != Display.INVALID_DISPLAY) {
+            eventDown.setDisplayId(displayId);
+        } else {
+            injectDisplayIdIfNeeded(eventDown);
+        }
         eventDown.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         injectPointerEvent(instrumentation, eventDown, waitForAnimations, useGlobalInjection);
 
@@ -471,6 +479,14 @@ public final class CtsTouchUtils {
         }
         eventDown.recycle();
         return downTime;
+    }
+
+    private long injectDownEvent(Instrumentation instrumentation, long downTime, int xOnScreen,
+            int yOnScreen, boolean waitForAnimations,
+            @Nullable EventInjectionListener eventInjectionListener, boolean useGlobalInjection) {
+        return injectDownEvent(instrumentation, downTime, xOnScreen, yOnScreen,
+                Display.INVALID_DISPLAY, waitForAnimations, eventInjectionListener,
+                useGlobalInjection);
     }
 
     private void injectMoveEventForTap(Instrumentation instrumentation, long downTime,
@@ -600,6 +616,8 @@ public final class CtsTouchUtils {
      *                            up event or <code>false</code> to use <code>downTime</code>.
      * @param xOnScreen The x screen coordinate to press on
      * @param yOnScreen The y screen coordinate to press on
+     * @param displayId The display id to inject the event on. When using INVALID_DISPLAY,
+     *                  it will use the display owned by the user.
      * @param waitForAnimations wait for animations to complete before sending an event
      * @param eventInjectionListener The listener to call back immediately after the up was
      *                               sent.
@@ -609,13 +627,17 @@ public final class CtsTouchUtils {
      * Always use targeted injection unless you know what you are doing.
      */
     public void injectUpEvent(Instrumentation instrumentation, long downTime,
-            boolean useCurrentEventTime, int xOnScreen, int yOnScreen,
+            boolean useCurrentEventTime, int xOnScreen, int yOnScreen, int displayId,
             boolean waitForAnimations, EventInjectionListener eventInjectionListener,
             boolean useGlobalInjection) {
         long eventTime = useCurrentEventTime ? SystemClock.uptimeMillis() : downTime;
         MotionEvent eventUp = MotionEvent.obtain(
                 downTime, eventTime, MotionEvent.ACTION_UP, xOnScreen, yOnScreen, 1);
-        injectDisplayIdIfNeeded(eventUp);
+        if (displayId != Display.INVALID_DISPLAY) {
+            eventUp.setDisplayId(displayId);
+        } else {
+            injectDisplayIdIfNeeded(eventUp);
+        }
         eventUp.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         injectPointerEvent(instrumentation, eventUp, waitForAnimations, useGlobalInjection);
 
@@ -623,6 +645,15 @@ public final class CtsTouchUtils {
             eventInjectionListener.onUpInjected(xOnScreen, yOnScreen);
         }
         eventUp.recycle();
+    }
+
+    public void injectUpEvent(Instrumentation instrumentation, long downTime,
+            boolean useCurrentEventTime, int xOnScreen, int yOnScreen,
+            boolean waitForAnimations, EventInjectionListener eventInjectionListener,
+            boolean useGlobalInjection) {
+        injectUpEvent(instrumentation, downTime, useCurrentEventTime, xOnScreen, yOnScreen,
+                Display.INVALID_DISPLAY, waitForAnimations, eventInjectionListener,
+                useGlobalInjection);
     }
 
     private void injectPointerEvent(Instrumentation instrumentation, MotionEvent event,
