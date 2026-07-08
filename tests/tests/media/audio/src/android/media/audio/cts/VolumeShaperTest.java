@@ -1631,14 +1631,34 @@ public class VolumeShaperTest {
 
         Log.d(TAG, testName + " starting now (volume should increase)");
         player.start();
+        Log.d(TAG, testName + " volume after player start advances if play is called.");
+
         Thread.sleep(WARMUP_TIME_MS);
 
-        Log.d(TAG, testName + " volume after player start advances if play is called.");
         // CORNER CASE:
         // Now volume should have advanced since play is called.
         Thread.sleep(WARMUP_TIME_MS);
-        assertTrue(testName + " volume should be greater than 0.f",
-                volumeShaper.getVolume() > 0.f);
+        final float volumeAfterWarmup = volumeShaper.getVolume();
+        if (volumeAfterWarmup == 0) {
+            final String message = testName + " volume after " + (WARMUP_TIME_MS * 2)
+                    + " ms should be greater than 0";
+            Log.w(TAG, message + " possible failure, continuing to check volume change");
+            // wait more time to determine if this was actually a timing issue.
+            Thread.sleep(WARMUP_TIME_MS);
+            final float volumeAfterLongWarmup = volumeShaper.getVolume();
+            final String postCheck = "volume after " + (WARMUP_TIME_MS * 3)
+                    + " ms is " + volumeAfterLongWarmup;
+            // log immediately.
+            Log.d(TAG, testName + " " + postCheck);
+            if (!AudioHelper.isRelaxedTimingDevice() || volumeAfterLongWarmup == 0) {
+                fail(message + " (" + postCheck + ")");
+            } else {
+                Log.i(TAG, testName + " recovered for relaxed timing device: " + postCheck);
+            }
+        } else {
+            Log.d(TAG, testName + " success, volume after " + (WARMUP_TIME_MS * 2)
+                    + " ms is " + volumeAfterWarmup);
+        }
     } // runStartSyncTest
 
     private static Context getContext() {
