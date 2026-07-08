@@ -15,6 +15,8 @@
  */
 package android.view.surfacecontrol.cts;
 
+import static android.server.wm.CtsWindowInfoUtils.getWindowBounds;
+import static android.server.wm.CtsWindowInfoUtils.getDisplayId;
 import static android.server.wm.CtsWindowInfoUtils.tapOnWindow;
 import static android.server.wm.CtsWindowInfoUtils.tapOnWindowCenter;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowFocus;
@@ -32,6 +34,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -65,6 +68,7 @@ import android.server.wm.FutureConnection;
 import android.server.wm.scvh.Components;
 import android.server.wm.scvh.ICrossProcessSurfaceControlViewHostTestService;
 import android.util.ArrayMap;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SurfaceControl;
@@ -97,6 +101,7 @@ import org.junit.rules.TestName;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -582,10 +587,13 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
 
+        // get display id of the embedded view
+        int displayId = getDisplayId(() -> mEmbeddedView.getWindowToken());
+        assertNotEquals("Failed to get display id", Display.INVALID_DISPLAY, displayId);
         // Tap where the embedded window is placed to ensure focus is given via touch
         assertTrue("Failed to tap on embedded",
                 tapOnWindowCenter(mInstrumentation, () -> mEmbeddedView.getWindowToken(),
-                        /* useGlobalInjection= */ true));
+                        displayId, /* useGlobalInjection= */ true));
         assertWindowFocused(mEmbeddedView, true);
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
@@ -593,7 +601,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Tap where the host window is placed to ensure focus is given back to host when touched
         assertTrue("Failed to tap on host",
                 tapOnWindowCenter(mInstrumentation, () -> mViewParent.getWindowToken(),
-                        /* useGlobalInjection= */ true));
+                        displayId, /* useGlobalInjection= */ true));
         assertWindowFocused(mEmbeddedView, false);
         // assert host does not have focus
         assertWindowFocused(mViewParent, true);
@@ -620,9 +628,13 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         waitUntilViewDrawn(embeddedViewChild);
 
+        // get display id of the embedded view
+        int displayId = getDisplayId(() -> mEmbeddedView.getWindowToken());
+        assertNotEquals("Failed to get display id", Display.INVALID_DISPLAY, displayId);
+
         assertTrue("Failed to tap on embedded child",
                 tapOnWindowCenter(mInstrumentation, () -> embeddedViewChild.getWindowToken(),
-                        /* useGlobalInjection= */ true));
+                        displayId, /* useGlobalInjection= */ true));
         // When tapping on the child embedded window, it should gain focus.
         assertWindowFocused(embeddedViewChild, true);
         // assert parent embedded window does not have focus.
@@ -633,7 +645,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         Point offset = new Point(DEFAULT_SURFACE_VIEW_WIDTH - 1, DEFAULT_SURFACE_VIEW_HEIGHT - 1);
         assertTrue("Failed to tap on embedded parent",
                 tapOnWindow(mInstrumentation, () -> mEmbeddedView.getWindowToken(),
-                        offset, /* useGlobalInjection= */ true));
+                        offset, displayId, /* useGlobalInjection= */ true));
         // When tapping on the parent embedded window, it should gain focus.
         assertWindowFocused(mEmbeddedView, true);
         // assert child embedded window does not have focus.
@@ -650,15 +662,21 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mSvCreatedLatch.await(5, TimeUnit.SECONDS);
 
+        Supplier<IBinder> windowTokenSupplier = () -> {
+            try {
+                return mTestService.getWindowToken();
+            } catch (RemoteException e) {
+                return null;
+            }
+        };
+
+        // get display id of the service
+        int displayId = getDisplayId(windowTokenSupplier);
+        assertNotEquals("Failed to get display id", Display.INVALID_DISPLAY, displayId);
         // Tap where the embedded window is placed to ensure focus is given via touch
         assertTrue("Failed to tap on embedded",
-                tapOnWindowCenter(mInstrumentation, () -> {
-                    try {
-                        return mTestService.getWindowToken();
-                    } catch (RemoteException e) {
-                        return null;
-                    }
-                }, /* useGlobalInjection= */ true));
+                tapOnWindowCenter(mInstrumentation, windowTokenSupplier,
+                        displayId, /* useGlobalInjection= */ true));
         assertTrue(mTestService.waitForFocus(true));
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
@@ -666,7 +684,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Tap where the host window is placed to ensure focus is given back to host when touched
         assertTrue("Failed to tap on host",
                 tapOnWindowCenter(mInstrumentation, () -> mViewParent.getWindowToken(),
-				/* useGlobalInjection= */ true));
+                        displayId, /* useGlobalInjection= */ true));
         assertTrue(mTestService.waitForFocus(false));
         // assert host does not have focus
         assertWindowFocused(mViewParent, true);
@@ -1347,26 +1365,32 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 return false;
             }
 
-            Rect parentBounds = null;
-            Rect popupBounds = null;
+            ArrayMap<Integer, Rect> parentBoundsMap = new ArrayMap<>();
+            ArrayMap<Integer, Rect> popupBoundsMap = new ArrayMap<>();
+
             for (WindowInfo windowInfo : windowInfos) {
                 if (!windowInfo.isVisible) {
                     continue;
                 }
                 if (windowInfo.windowToken == parentWindowToken) {
-                    parentBounds = windowInfo.bounds;
+                    parentBoundsMap.put(windowInfo.displayId, windowInfo.bounds);
                 } else if (windowInfo.windowToken == popupWindowToken) {
-                    popupBounds = windowInfo.bounds;
+                    popupBoundsMap.put(windowInfo.displayId, windowInfo.bounds);
                 }
             }
 
-            if (parentBounds == null) {
-                return false;
+            for (int displayId : parentBoundsMap.keySet()) {
+                Rect parentBounds = parentBoundsMap.get(displayId);
+                Rect popupBounds = popupBoundsMap.get(displayId);
+                if (parentBounds != null && popupBounds != null) {
+                    var expectedBounds = new Rect(parentBounds.left + 50, parentBounds.top + 50,
+                            parentBounds.left + 100, parentBounds.top + 100);
+                    if (expectedBounds.equals(popupBounds)) {
+                        return true;
+                    }
+                }
             }
-
-            var expectedBounds = new Rect(parentBounds.left + 50, parentBounds.top + 50,
-                    parentBounds.left + 100, parentBounds.top + 100);
-            return expectedBounds.equals(popupBounds);
+            return false;
         };
         assertTrue(waitForWindowInfos(hasExpectedFrame, 5, TimeUnit.SECONDS));
     }
@@ -1384,6 +1408,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         FrameLayout popupView = new FrameLayout(mActivity);
         popupView.addView(popupContent);
+
+        // get display id of the embedded view
+        int displayId = getDisplayId(() -> mEmbeddedView.getWindowToken());
+        assertNotEquals("Failed to get display id", Display.INVALID_DISPLAY, displayId);
 
         WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
         layoutParams.setTitle("FloatingWindow");
@@ -1404,7 +1432,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // window token. The supplier is called each time the predicate is
         // tested, eventually returning the window token.
         assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken));
+                popupView::getWindowToken, displayId));
     }
 
     @Test
@@ -1417,6 +1445,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         View popupView = new FrameLayout(mActivity);
         popupView.setBackgroundColor(Color.BLUE);
+
+        // get display id of the embedded view
+        int displayId = getDisplayId(() -> mEmbeddedView.getWindowToken());
+        assertNotEquals("Failed to get display id", Display.INVALID_DISPLAY, displayId);
 
         WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
         layoutParams.setTitle("FloatingWindow");
@@ -1432,7 +1464,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         Predicate<WindowInfo> hasExpectedDimensions =
                 windowInfo -> windowInfo.bounds.width() == 50 && windowInfo.bounds.height() == 50;
         assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken));
+                popupView::getWindowToken, displayId));
     }
 
     class TouchTransferringView extends View {
@@ -1509,19 +1541,29 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             }
         };
 
+        // get display id of the embedded view
+        int displayId = getDisplayId(() -> mEmbeddedView.getWindowToken());
+        assertNotEquals("Failed to get display id", Display.INVALID_DISPLAY, displayId);
+        // If the display ID is the default display, we can use the default injection APIs.
+        // Otherwise, we need to use global injection APIs.
+        boolean useGlobalInjection = displayId != Display.DEFAULT_DISPLAY;
+
         // Prepare to inject an event offset one pixel from the top of the SurfaceViews location
         // on-screen.
         final int[] viewOnScreenXY = new int[2];
-        mSurfaceView.getLocationOnScreen(viewOnScreenXY);
+        // Get the bounds of the embedded view on the display.
+        Rect bounds = getWindowBounds(() -> mEmbeddedView.getWindowToken(), displayId);
+        assertNotNull("Failed to get window bounds for global injection", bounds);
+        viewOnScreenXY[0] = bounds.left;
+        viewOnScreenXY[1] = bounds.top;
         // offset the inject towards the bottom-right to avoid the top-left rounded corner
         final int injectedX = viewOnScreenXY[0] + DEFAULT_SURFACE_VIEW_WIDTH - 1;
         final int injectedY = viewOnScreenXY[1] + DEFAULT_SURFACE_VIEW_HEIGHT - 1;
         long downTime = SystemClock.uptimeMillis();
 
         // We inject a down event
-        mCtsTouchUtils.injectDownEvent(mInstrumentation, downTime, injectedX, injectedY, null,
-                /* useGlobalInjection= */ false);
-
+        mCtsTouchUtils.injectDownEvent(mInstrumentation, downTime, injectedX, injectedY,
+                displayId, true, null, useGlobalInjection);
 
         // And this down event should arrive on the embedded view, which should transfer the touch
         // focus
@@ -1530,7 +1572,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         downTime = SystemClock.uptimeMillis();
         // Now we inject an up event
-        mCtsTouchUtils.injectUpEvent(mInstrumentation, downTime, false, injectedX, injectedY, null);
+        mCtsTouchUtils.injectUpEvent(mInstrumentation, downTime, false, injectedX, injectedY,
+                displayId, true, null, useGlobalInjection);
         // This should arrive on the host now, since we have transferred the touch focus
         synchronized (this) {
             if (!mHostGotEvent) {
