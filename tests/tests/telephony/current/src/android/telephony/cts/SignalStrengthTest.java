@@ -129,19 +129,22 @@ public class SignalStrengthTest {
                 new HashSet<Class<? extends CellSignalStrength>>();
 
         Class<? extends CellSignalStrength> dataType = null;
-        if (mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
+        try {
             dataType = getSignalStrengthTypeForNetworkType(mTm.getDataNetworkType());
+            if (dataType != null) types.add(dataType);
+        } catch (UnsupportedOperationException uoe) {
+            // ignored
         }
-        if (dataType != null) types.add(dataType);
 
         Class<? extends CellSignalStrength> voiceType = null;
-        if (mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+        try {
             voiceType = getSignalStrengthTypeForNetworkType(mTm.getVoiceNetworkType());
-        }
-
-        // Check if camped for Voice-Only
-        if (dataType == null && voiceType != null) {
-            types.add(voiceType);
+            // Check if camped for Voice-Only
+            if (dataType == null && voiceType != null) {
+                types.add(voiceType);
+            }
+        } catch (UnsupportedOperationException uoe) {
+            // ignored
         }
 
         // Check for SRLTE
