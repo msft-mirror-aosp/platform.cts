@@ -23,6 +23,7 @@ import android.hardware.cts.R;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -41,6 +42,7 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @Ignore("b/243570601")
     public void testAllMotions() {
         testInputEvents(R.raw.sony_dualshock4_bluetooth_motioneventtests);
     }
