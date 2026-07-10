@@ -4865,7 +4865,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="device_owner_customize_lockscreen_message">Customize Lock Screen Message</string>
     <string name="device_owner_customize_lockscreen_message_info">Please do the following:\n
         1) Press the \"Go\" button to go to Settings\n
-        2) Find the \"Screen lock\" option and set it to \"Swipe\"\n
+        2) Find the \"Screen lock\" option and set it to any option other than \"None\" (e.g. \"SWIPE\"). If your device already defaults to an option other than \"None\", you can skip this step.\n
         3) Use the Back button to return to this page\n
         4) In the field below, write a lock screen message.\n
         5) Press the \"Set lock screen message\" button\n
@@ -4878,7 +4878,7 @@ You should be prompted to select credentials; choose the ones you just installed
         12) Verify that you cannot modify the setting.\n
         13) Use the Back button to return to this page.\n
         14) Press the \"Go\" button to go to Settings\n
-        15) Find the \"Screen lock\" option and set it to \"None\"\n
+        15) Find the \"Screen lock\" option and set it to \"None\" (or the least secure screen lock option available on your device, e.g. \"SWIPE\")\n
         16) Use the Back button to return to this page
     </string>
     <string name="device_owner_set_lockscreen_message_button">Set lock screen message</string>
