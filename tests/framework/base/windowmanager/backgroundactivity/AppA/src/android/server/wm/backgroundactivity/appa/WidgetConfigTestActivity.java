@@ -39,7 +39,9 @@ public class WidgetConfigTestActivity extends Activity {
         Intent widgetIntent = getIntent().getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
         mResultReceiver = getIntent().getParcelableExtra(EVENT_NOTIFIER_EXTRA,
                 ResultReceiver.class);
-        startActivityForResult(widgetIntent, REQUEST_BIND_APPWIDGET);
+        if (bundle == null) {
+            startActivityForResult(widgetIntent, REQUEST_BIND_APPWIDGET);
+        }
     }
 
     @Override
