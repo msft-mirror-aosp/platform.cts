@@ -4943,7 +4943,7 @@ You should be prompted to select credentials; choose the ones you just installed
         12) Verify that you cannot modify the setting.\n
         13) Use the Back button to return to this page.\n
         14) Press the \"Go\" button to go to Settings\n
-        15) Find the \"Screen lock\" option and set it to \"None\"\n
+        15) Find the \"Screen lock\" option and revert changes made in step 2.\n
         16) Use the Back button to return to this page
     </string>
     <string name="device_owner_set_lockscreen_message_button">Set lock screen message</string>
