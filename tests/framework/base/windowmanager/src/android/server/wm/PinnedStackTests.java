@@ -1168,6 +1168,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
                 mWmState.getTaskDisplayArea(RESUME_WHILE_PAUSING_ACTIVITY)
                         == mWmState.getTaskDisplayArea(PIP_ACTIVITY)
         );
+        // Skip the test if the form factor overrides the fullscreen request
+        // (e.g., forcing freeform), as it will fail to occlude PiPActivity.
+        assumeTrue(mWmState.getFocusedRootTaskWindowingMode() == WINDOWING_MODE_FULLSCREEN);
         assertPinnedStackExists();
     }
 
@@ -1545,6 +1548,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Launch a new activity and ensure that there is a pinned stack.
         launchActivity(RESUME_WHILE_PAUSING_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
+        // Skip the test if the form factor overrides the fullscreen request
+        // (e.g., forcing freeform), as it will fail to occlude PiPActivity.
+        assumeTrue(mWmState.getFocusedRootTaskWindowingMode() == WINDOWING_MODE_FULLSCREEN);
         waitForEnterPip(PIP_ACTIVITY);
         assertPinnedStackExists();
         waitAndAssertActivityState(PIP_ACTIVITY, STATE_PAUSED, "activity must be paused");
@@ -1566,6 +1572,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
                 mWmState.getTaskDisplayArea(PIP_ACTIVITY)
                         == mWmState.getTaskDisplayArea(TEST_ACTIVITY)
         );
+        // Skip the test if the form factor overrides the fullscreen request
+        // (e.g., forcing freeform), as it will fail to occlude PiPActivity.
+        assumeTrue(mWmState.getFocusedRootTaskWindowingMode() == WINDOWING_MODE_FULLSCREEN);
         waitForEnterPip(PIP_ACTIVITY);
         assertPinnedStackExists();
         waitAndAssertActivityState(PIP_ACTIVITY, STATE_PAUSED, "activity must be paused");
