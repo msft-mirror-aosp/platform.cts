@@ -391,8 +391,9 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
             mWmState.computeState(
                     new WaitForValidActivityState(VIRTUAL_DISPLAY_ACTIVITY));
             mWmState.assertVisibility(VIRTUAL_DISPLAY_ACTIVITY, true /* visible */);
-            mWmState.assertFocusedActivity("Focus must be on virtual display host activity",
-                    VIRTUAL_DISPLAY_ACTIVITY);
+            mWmState.assertFocusedActivityOnDisplay(
+                    "Focus must be on virtual display host activity",
+                    VIRTUAL_DISPLAY_ACTIVITY, DEFAULT_DISPLAY);
             final List<DisplayContent> originalDS = getDisplaysStates();
 
             // Create virtual display with custom density dpi.
