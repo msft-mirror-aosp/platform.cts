@@ -104,7 +104,11 @@ public class DeviceOwnerNegativeTestActivity extends PassFailButtons.TestListAct
             adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_KEYGUARD_NEGATIVE,
                     R.string.enterprise_privacy_keyguard_negative,
                     R.string.enterprise_privacy_keyguard_negative_info,
-                    new ButtonInfo(R.string.go_button_text, new Intent(Settings.ACTION_SETTINGS))));
+                    new ButtonInfo[]{
+                            new ButtonInfo(R.string.go_button_text,
+                                    new Intent(Settings.ACTION_SETTINGS)),
+                            new ButtonInfo(R.string.lock_button_text,
+                                    ByodHelperActivity.createLockIntent())}));
         }
         adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_ADD_ACCOUNT_NEGATIVE,
                 R.string.enterprise_privacy_add_account_negative,

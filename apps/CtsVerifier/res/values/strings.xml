@@ -25,6 +25,7 @@
     <string name="fail_button_text">Fail</string>
     <string name="next_button_text">Next</string>
     <string name="go_button_text">Go</string>
+    <string name="lock_button_text">Lock</string>
     <string name="present_button_text">Device Present</string>
     <string name="gone_button_text">Device Gone</string>
     <string name="tests_completed_successfully">All tests completed successfully.</string>
