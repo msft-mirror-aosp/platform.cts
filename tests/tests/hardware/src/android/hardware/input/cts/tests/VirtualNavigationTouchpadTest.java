@@ -26,6 +26,7 @@ import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SmallTest;
@@ -202,7 +203,26 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
     }
 
     private void sendFlingEvents(float startX, float startY, float diffX, float diffY) {
-        sendContinuousEvents(startX, startY, diffX, diffY, 7 /* eventTimeGapMs */);
+        float finalDiffX = diffX;
+        float finalDiffY = diffY;
+        if (mTestActivity != null) {
+            float minDistance = ViewConfiguration.get(mTestActivity).getScaledTouchSlop() + 1;
+            float distance = (float) Math.hypot(diffX, diffY);
+            if (Float.isFinite(distance) && distance > 0f && distance < minDistance) {
+                float ratio = minDistance / distance;
+                finalDiffX *= ratio;
+                finalDiffY *= ratio;
+            }
+        }
+
+        float endX = startX + finalDiffX;
+        float endY = startY + finalDiffY;
+        if (endX < 0f || endX > TOUCHPAD_WIDTH || endY < 0f || endY > TOUCHPAD_HEIGHT) {
+            throw new IllegalArgumentException(
+                    "Scaled fling events exceed the virtual touchpad bounds.");
+        }
+
+        sendContinuousEvents(startX, startY, finalDiffX, finalDiffY, 7 /* eventTimeGapMs */);
     }
 
     private void sendContinuousEvents(float startX, float startY, float diffX, float diffY,
