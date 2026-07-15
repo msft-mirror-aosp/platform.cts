@@ -1516,22 +1516,31 @@ public class MediaUtils {
      *  non-production devices (such as GSI and cuttlefish). We call these devices 'frankenDevices'.
      *  We may also limit test duration on these devices.
      */
-    public static boolean onFrankenDevice() throws IOException {
-        String systemBrand = PropertyUtil.getProperty("ro.product.system.brand");
-        String systemModel = PropertyUtil.getProperty("ro.product.system.model");
-        String systemProduct = PropertyUtil.getProperty("ro.product.system.name");
+    public static boolean onFrankenDevice() {
+        String systemBrand = SystemProperties.get("ro.product.system.brand");
+        String systemModel = SystemProperties.get("ro.product.system.model");
+        String systemProduct = SystemProperties.get("ro.product.system.name");
 
         // not all devices may have system_ext partition, but if they do use that
         {
-            String systemExtProduct = PropertyUtil.getProperty("ro.product.system_ext.name");
-            if (systemExtProduct != null) {
+            String systemExtProduct = SystemProperties.get("ro.product.system_ext.name");
+            if (!systemExtProduct.isEmpty()) {
                 systemProduct = systemExtProduct;
             }
-            String systemExtModel = PropertyUtil.getProperty("ro.product.system_ext.model");
-            if (systemExtModel != null) {
+            String systemExtModel = SystemProperties.get("ro.product.system_ext.model");
+            if (!systemExtModel.isEmpty()) {
                 systemModel = systemExtModel;
             }
         }
+
+        Log.i(
+                TAG,
+                "systemBrand = "
+                        + systemBrand
+                        + " systemModel = "
+                        + systemModel
+                        + " systemProduct = "
+                        + systemProduct);
 
         if (("Android".equals(systemBrand) || "generic".equals(systemBrand) ||
                 "mainline".equals(systemBrand)) &&
