@@ -100,7 +100,8 @@ public class AudioRecordTest {
         }
     };
     private static final int RECORD_DURATION_MS = 500;
-    private static final int TEST_TIMING_TOLERANCE_MS = 70;
+    private static final int TEST_TIMING_TOLERANCE_MS =
+            (AudioHelper.isRelaxedTimingDevice() ? 4 : 1) * 70;
 
     @Before
     public void setUp() throws Exception {
