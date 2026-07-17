@@ -1147,6 +1147,12 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
             }
         )
         waitForIdle()
+
+        // Clear the low target SDK warning message if it's expected
+        if (getTargetSdk() <= MAX_SDK_FOR_SDK_WARNING) {
+            clearTargetSdkWarning(timeoutMillis = QUICK_CHECK_TIMEOUT_MILLIS)
+        }
+
         clickNotificationPermissionRequestAllowButtonIfAvailable()
         val result = future.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
         assertEquals(Activity.RESULT_OK, result.resultCode)
