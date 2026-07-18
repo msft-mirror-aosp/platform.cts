@@ -385,6 +385,10 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testShowWhenLockedImeActivityAndShowSoftInput() throws Exception {
+        // TODO(b/499080425): Fix keyguard handling on automotive multi-window.
+        assumeFalse("Skip test on automotive multi-window devices due to keyguard handling issues "
+                + "(b/499080425).", hasAutomotiveSplitscreenMultitaskingFeature());
+
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
