@@ -103,6 +103,7 @@ public class UiAutomatorUtils2 {
         boolean isAtEnd = false;
         boolean wasScrolledUpAlready = false;
         boolean scrolledPastCollapsibleToolbar = false;
+        int scrollableIndex = 0;
 
         final int minViewHeightPx = convertDpToPx(MIN_VIEW_HEIGHT_DP);
 
@@ -123,7 +124,8 @@ public class UiAutomatorUtils2 {
 
             if (view == null || viewHeight < minViewHeightPx) {
                 final double deadZone = getSwipeDeadZonePct();
-                UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
+                UiScrollable scrollable = new UiScrollable(
+                        new UiSelector().scrollable(true).instance(scrollableIndex));
                 scrollable.setSwipeDeadZonePercentage(deadZone);
                 if (scrollable.exists()) {
                     if (!scrolledPastCollapsibleToolbar) {
@@ -133,7 +135,12 @@ public class UiAutomatorUtils2 {
                     }
                     if (isAtEnd) {
                         if (wasScrolledUpAlready) {
-                            return null;
+                            scrollableIndex++;
+                            isAtEnd = false;
+                            wasScrolledUpAlready = false;
+                            scrolledPastCollapsibleToolbar = false;
+                            viewHeight = -1;
+                            continue;
                         }
                         scrollable.scrollToBeginning(Integer.MAX_VALUE);
                         isAtEnd = false;
@@ -176,6 +183,10 @@ public class UiAutomatorUtils2 {
                         }
                     }
                 } else {
+                    if (scrollableIndex > 0) {
+                        // Exhausted all scrollable views
+                        return null;
+                    }
                     // There might be a collapsing toolbar, but no scrollable view. Try to collapse
                     scrollPastCollapsibleToolbar(null, deadZone);
                 }
