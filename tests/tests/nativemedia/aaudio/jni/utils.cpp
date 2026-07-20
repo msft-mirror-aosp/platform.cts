@@ -24,6 +24,7 @@
 
 #include <android/log.h>
 #include <gtest/gtest.h>
+#include <nativetesthelper_jni/utils.h>
 
 #include "test_aaudio.h"
 #include "utils.h"
@@ -262,3 +263,44 @@ bool AAudioExtensions::loadLibrary() {
     return mFunctionsLoaded;
 }
 
+namespace {
+
+JNIEnv* getJNIEnv() {
+    JavaVM* vm = GetJavaVM();
+    EXPECT_NE(nullptr, vm);
+    JNIEnv* env = nullptr;
+    jint attach = vm->AttachCurrentThread(&env, nullptr);
+    EXPECT_EQ(JNI_OK, attach);
+    EXPECT_NE(nullptr, env);
+    return env;
+}
+
+#define CALL_JAVA_STATIC_METHOD(_jtype, _jname)                                        \
+    _jtype callJavaStatic##_jname##Function(                                           \
+            JNIEnv* env, const char* className,                                        \
+            const char* funcName, const char* signature, ...) {                        \
+        _jtype result;                                                                 \
+        if (env == nullptr) {                                                          \
+            env = getJNIEnv();                                                         \
+        }                                                                              \
+        jclass cl = env->FindClass(className);                                         \
+        EXPECT_NE(nullptr, cl);                                                        \
+        jmethodID mid = env->GetStaticMethodID(cl, funcName, signature);               \
+        EXPECT_NE(nullptr, mid);                                                       \
+        va_list args;                                                                  \
+        va_start(args, signature);                                                     \
+        result = env->CallStatic##_jname##Method(cl, mid, args);                       \
+        va_end(args);                                                                  \
+        return result;                                                                 \
+    }                                                                                  \
+
+CALL_JAVA_STATIC_METHOD(jint, Int)
+
+} // namespace
+
+int getOutChannelCountMax() {
+    static int outChannelCountMax =
+            (int)callJavaStaticIntFunction(nullptr, "android/nativemedia/aaudio/AAudioTests",
+                                           "getOutChannelCountMax", "()I");
+    return outChannelCountMax;
+}
