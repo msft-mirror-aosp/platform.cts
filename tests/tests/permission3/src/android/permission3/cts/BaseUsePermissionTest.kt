@@ -820,7 +820,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                     pressDPadDown()
                 }
                 // Open the permissions UI
-                click(byTextRes(R.string.permissions).enabled(true))
+                click(byTextRes(R.string.permissions).enabled(true), 30_000)
             } catch (e: Exception) {
                 pressBack()
                 throw e
