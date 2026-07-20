@@ -32,6 +32,7 @@ static constexpr const char* FEATURE_PLAYBACK = "android.hardware.audio.output";
 static constexpr const char* FEATURE_RECORDING = "android.hardware.microphone";
 static constexpr const char* FEATURE_LOW_LATENCY = "android.hardware.audio.low_latency";
 bool deviceSupportsFeature(const char* feature);
+int getOutChannelCountMax();
 
 class StreamBuilderHelper {
   public:
