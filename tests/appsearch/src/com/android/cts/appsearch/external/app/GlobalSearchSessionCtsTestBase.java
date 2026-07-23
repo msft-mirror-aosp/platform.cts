@@ -310,7 +310,8 @@ public abstract class GlobalSearchSessionCtsTestBase {
         PutDocumentsRequest.Builder putDocumentsRequestBuilder = new PutDocumentsRequest.Builder();
 
         // Index 31 documents
-        for (int i = 0; i < 31; i++) {
+        int numDocuments = 31;
+        for (int i = 0; i < numDocuments; i++) {
             AppSearchEmail inEmail =
                     new AppSearchEmail.Builder("namespace", "id" + i)
                             .setFrom("from@example.com")
@@ -349,7 +350,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
         // check all document presents
         assertAddedBetweenSnapshots(beforeBodyDocuments, documents, emailList);
 
-        int totalDocuments = beforeBodyDocuments.size() + documents.size();
+        int totalDocuments = beforeBodyDocuments.size() + numDocuments;
 
         // +1 for final empty page
         int expectedPages = (int) Math.ceil(totalDocuments * 1.0 / pageSize) + 1;
