@@ -286,7 +286,9 @@ public class EnterprisePrivacyTestListActivity extends PassFailButtons.TestListA
                                             CommandReceiverActivity.COMMAND_SET_ORGANIZATION_NAME)
                                             .putExtra(
                                                     CommandReceiverActivity.EXTRA_ORGANIZATION_NAME,
-                                                    "Foo, Inc."))}));
+                                                    "Foo, Inc.")),
+                            new ButtonInfo(R.string.lock_button_text,
+                                    ByodHelperActivity.createLockIntent())}));
         }
         adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_ADD_ACCOUNT,
                 R.string.enterprise_privacy_add_account,
