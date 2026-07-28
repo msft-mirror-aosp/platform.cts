@@ -29,7 +29,11 @@ public final class PowerPolicyDef {
             {"enabledComponents", "Enabled components"};
     public static final String[] DISABLED_HEADERS =
             {"disabledComponents", "Disabled components"};
+    private static final String[] ALL_CUSTOM_HEADERS =
+            {"enabledCustomComponents", "Enabled custom components", "disabledCustomComponents",
+                    "Disabled custom components"};
     public static final int STRING_BUILDER_BUF_SIZE = 1024;
+    public static final int MINIMUM_CUSTOM_COMPONENT_VALUE = 1000;
 
     private final String mPolicyId;
     private final PowerComponent[] mEnables;
@@ -70,6 +74,11 @@ public final class PowerPolicyDef {
         return str.toString();
     }
 
+    /**
+     * CTS test is comparing policies retrieve from dumpsys with hard coded policies
+     * expected power policies, ignoring potential custom power components.
+     * Hence, the parser shall ignore potential custom power components.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -86,6 +95,19 @@ public final class PowerPolicyDef {
         result = 31 * result + Arrays.hashCode(mEnables);
         result = 31 * result + Arrays.hashCode(mDisables);
         return result;
+    }
+
+    private static int findFirstHeaderIndex(String source, String[] headers) {
+        int firstIndex = -1;
+        for (String hdr : headers) {
+            int idx = source.indexOf(hdr);
+            if (idx >= 0) {
+                if (firstIndex == -1 || idx < firstIndex) {
+                    firstIndex = idx;
+                }
+            }
+        }
+        return firstIndex;
     }
 
     public static PowerPolicyDef parse(String policyDefStr, boolean hasPolicyId, int offset)
@@ -124,10 +146,16 @@ public final class PowerPolicyDef {
         }
         PowerComponent[] enabledComps = PowerComponent.asComponentArray(enables);
 
-        String[] disables = null;
+        // Before trying to split the string for disable components, checks
+        // if custom enabled/disabled components were found in the dumpsys
         tmpStr = tokens.nextToken().trim();
-        CLog.d("disables: " + tmpStr);
+        int disablesTruncateIndex = findFirstHeaderIndex(tmpStr, ALL_CUSTOM_HEADERS);
+        if (disablesTruncateIndex != -1) {
+            tmpStr = tmpStr.substring(0, disablesTruncateIndex).trim();
+        }
+        String[] disables = null;
         if (!tmpStr.isEmpty()) {
+            CLog.d("disables: " + tmpStr);
             disables = tmpStr.split(",\\s*");
         }
         PowerComponent[] disabledComps = PowerComponent.asComponentArray(disables);
@@ -214,6 +242,24 @@ public final class PowerPolicyDef {
                 return new PowerComponent[0];
             }
             return asComponentArray(nameList.toArray(new String[0]));
+        }
+
+        public static int[] asCustomComponentArray(String[] idLiterals) {
+            if (idLiterals == null) {
+                return new int[0];
+            }
+            return Arrays.stream(idLiterals)
+                    .filter(idLiteral -> idLiteral != null && idLiteral.matches("\\d+"))
+                    .mapToInt(Integer::parseInt)
+                    .filter(id -> id >= MINIMUM_CUSTOM_COMPONENT_VALUE)
+                    .toArray();
+        }
+
+        public static int[] asCustomComponentArray(List<String> idLiteralList) {
+            if (idLiteralList == null) {
+                return new int[0];
+            }
+            return asCustomComponentArray(idLiteralList.toArray(new String[0]));
         }
 
         private static void normalizeComponentName(String[] comps) {
