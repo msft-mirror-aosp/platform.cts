@@ -239,9 +239,12 @@ public class AppATests {
         mDevice.waitForIdle();
         mDevice.executeShellCommand(testUnlockDeviceCommand_enter);
         mDevice.waitForIdle();
-        mDevice.swipe(width / 2, (int)(height * 0.8), width / 2, (int)(height * 0.2),
+
+        // Swipe-to-refresh and focus on the PIN entry screen before entering the PIN
+        mDevice.swipe(width / 2, (int)(height * 0.2), width / 2, (int)(height * 0.8),
                 SWIPE_STEP_COUNT);
         mDevice.waitForIdle();
+
         mDevice.executeShellCommand(testUnlockDeviceCommand_1);
         mDevice.waitForIdle();
         mDevice.executeShellCommand(testUnlockDeviceCommand_2);

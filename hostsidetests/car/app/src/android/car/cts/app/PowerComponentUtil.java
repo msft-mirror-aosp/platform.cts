@@ -41,6 +41,7 @@ public final class PowerComponentUtil {
     private static final String POWER_COMPONENT_CPU = "CPU";
 
     public static final int INVALID_POWER_COMPONENT = -1;
+    public static final int MINIMUM_CUSTOM_COMPONENT_VALUE = 1000;
 
     private PowerComponentUtil() throws Exception {
         throw new Exception("utility class is not instantiable");
