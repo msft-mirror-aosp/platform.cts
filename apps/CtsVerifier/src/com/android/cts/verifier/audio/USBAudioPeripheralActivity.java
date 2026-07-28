@@ -21,6 +21,7 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
@@ -33,6 +34,9 @@ import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.peripheralprofile.PeripheralProfile;
 import com.android.cts.verifier.audio.peripheralprofile.ProfileManager;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activity {
     private static final String TAG = "USBAudioPeripheralActivity";
@@ -183,24 +187,101 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
         }
     }
 
+    /**
+     * Helper method to extract ALSA card number from AudioDeviceInfo address.
+     * USB audio devices usually have address formatted as "card=X;device=Y"
+     */
+    private String getUsbCardNumber(AudioDeviceInfo devInfo) {
+        if (devInfo == null) {
+            return null;
+        }
+        String address = devInfo.getAddress();
+        if (TextUtils.isEmpty(address)) {
+            return null;
+        }
+        int cardIndex = address.indexOf("card=");
+        if (cardIndex != -1) {
+            int endIndex = address.indexOf(";", cardIndex);
+            if (endIndex == -1) {
+                endIndex = address.length();
+            }
+            return address.substring(cardIndex + 5, endIndex); // Extract "X"
+        }
+        return null;
+    }
+
+    /**
+     * Helper container to hold a paired output and input on the same ALSA card.
+     */
+    private static class UsbAudioDevicePair {
+        AudioDeviceInfo output;
+        AudioDeviceInfo input;
+        boolean isCompletePair() {
+            return output != null && input != null;
+        }
+    }
+
     private void scanPeripheralList(AudioDeviceInfo[] devices) {
         // Can't just use the first record because then we will only get
         // Source OR sink, not both even on devices that are both.
         mOutputDevInfo = null;
         mInputDevInfo = null;
 
-        // Any valid peripherals
-        for(AudioDeviceInfo devInfo : devices) {
-            if (devInfo.getType() == AudioDeviceInfo.TYPE_USB_DEVICE ||
-                devInfo.getType() == AudioDeviceInfo.TYPE_USB_HEADSET) {
-                if (devInfo.isSink()) {
-                    mOutputDevInfo = devInfo;
-                }
-                if (devInfo.isSource()) {
-                    mInputDevInfo = devInfo;
-                }
+        // Map from ALSA card number (or address as fallback) to its input/output pair.
+        // LinkedHashMap preserves the insertion order from the devices array.
+        Map<String, UsbAudioDevicePair> devicePairs = new LinkedHashMap<>();
+        AudioDeviceInfo fallbackOutput = null;
+        AudioDeviceInfo fallbackInput = null;
+
+        // 1. Single pass to group USB devices by ALSA card number and record fallbacks.
+        for (AudioDeviceInfo devInfo : devices) {
+            if (devInfo.getType() != AudioDeviceInfo.TYPE_USB_DEVICE &&
+                devInfo.getType() != AudioDeviceInfo.TYPE_USB_HEADSET) {
+                continue;
+            }
+            if (devInfo.isSink() && fallbackOutput == null) {
+                fallbackOutput = devInfo;
+            }
+            if (devInfo.isSource() && fallbackInput == null) {
+                fallbackInput = devInfo;
+            }
+            String cardId = getUsbCardNumber(devInfo);
+            if (cardId == null) {
+                Log.w(TAG, "USB device with address " + devInfo.getAddress()
+                        + " does not have a parsable card number. Using full address for grouping.");
+                cardId = devInfo.getAddress();
+            }
+            if (TextUtils.isEmpty(cardId)) {
+                continue;
+            }
+            UsbAudioDevicePair pair = devicePairs.get(cardId);
+            if (pair == null) {
+                pair = new UsbAudioDevicePair();
+                devicePairs.put(cardId, pair);
+            }
+            if (devInfo.isSink() && pair.output == null) {
+                pair.output = devInfo;
+            }
+            if (devInfo.isSource() && pair.input == null) {
+                pair.input = devInfo;
             }
         }
+
+        // 2. Look for a complete pair (both output and input on the same physical ALSA card).
+        for (UsbAudioDevicePair pair : devicePairs.values()) {
+            if (pair.isCompletePair()) {
+                mOutputDevInfo = pair.output;
+                mInputDevInfo = pair.input;
+                break;
+            }
+        }
+
+        // 3. Fallback to the first available sink and source if no complete pair exists.
+        if (mOutputDevInfo == null || mInputDevInfo == null) {
+            mOutputDevInfo = fallbackOutput;
+            mInputDevInfo = fallbackInput;
+        }
+
         mIsPeripheralAttached = mOutputDevInfo != null || mInputDevInfo != null;
         if (DEBUG) {
             Log.d(TAG, "mIsPeripheralAttached: " + mIsPeripheralAttached);
