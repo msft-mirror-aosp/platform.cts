@@ -60,6 +60,8 @@ public final class CpmsFrameworkLayerStateInfo {
 
     private final List<String> mEnables;
     private final List<String> mDisables;
+    private final List<String> mCustomEnables;
+    private final List<String> mCustomDisables;
     private final List<String> mControlledEnables;
     private final List<String> mControlledDisables;
     private final String[] mChangedComponents;
@@ -76,12 +78,15 @@ public final class CpmsFrameworkLayerStateInfo {
 
     private CpmsFrameworkLayerStateInfo(String currentPolicyId, String pendingPolicyId,
             String currentPolicyGroupId, int numberPolicyListeners, String[] changedComponents,
-            List<String> enables, List<String> disables, PowerPolicyGroups policyGroups,
+            List<String> enables, List<String> disables,
+            List<String> customEnables, List<String> customDisables, PowerPolicyGroups policyGroups,
             List<String> controlledEnables, List<String> controlledDisables,
             boolean silentModeSupported, boolean monitoringHw, boolean silentModeByHw,
             boolean forcedSilentMode, int currentState) {
         mEnables = enables;
         mDisables = disables;
+        mCustomEnables = customEnables;
+        mCustomDisables = customDisables;
         mControlledEnables = controlledEnables;
         mControlledDisables = controlledDisables;
         mChangedComponents = changedComponents;
@@ -125,6 +130,14 @@ public final class CpmsFrameworkLayerStateInfo {
         return PowerPolicyDef.PowerComponent.asComponentArray(mDisables);
     }
 
+    public int[] getCurrentEnabledCustomComponents() {
+        return PowerPolicyDef.PowerComponent.asCustomComponentArray(mCustomEnables);
+    }
+
+    public int[] getCurrentDisabledCustomComponents() {
+        return PowerPolicyDef.PowerComponent.asCustomComponentArray(mCustomDisables);
+    }
+
     public String getCurrentPolicyGroupId() {
         return mCurrentPolicyGroupId;
     }
@@ -157,6 +170,8 @@ public final class CpmsFrameworkLayerStateInfo {
         sb.append(mSilentModeByHw).append(',').append(mForcedSilentMode).append(' ');
         sb.append("enables=").append(String.join(",", mEnables)).append(' ');
         sb.append("disables=").append(String.join(",", mDisables)).append(' ');
+        sb.append("customEnables=").append(String.join(",", mCustomEnables)).append(' ');
+        sb.append("customDisables=").append(String.join(",", mCustomDisables)).append(' ');
         sb.append("controlledEnables=").append(String.join(",", mControlledEnables))
                 .append(' ');
         sb.append("controlledDisables=").append(String.join(",", mControlledDisables))
@@ -208,6 +223,8 @@ public final class CpmsFrameworkLayerStateInfo {
         String currentPolicyGroupId = null;
         List<String> enables = null;
         List<String> disables = null;
+        List<String> customEnables = null;
+        List<String> customDisables = null;
         List<String> controlledEnables = null;
         List<String> controlledDisables = null;
         String[] changedComponents = null;
@@ -246,8 +263,12 @@ public final class CpmsFrameworkLayerStateInfo {
                             COMPONENT_CONTROLLED_HDR, true);
                     enables = parser.getEnables();
                     disables = parser.getDisables();
+                    customEnables = parser.getCustomEnables();
+                    customDisables = parser.getCustomDisables();
                     Collections.sort(enables);
                     Collections.sort(disables);
+                    Collections.sort(customEnables);
+                    Collections.sort(customDisables);
                     break;
                 case COMPONENT_CONTROLLED_HDR:
                     parser.parseComponentStates(COMPONENT_CONTROLLED_HDR,
@@ -290,7 +311,8 @@ public final class CpmsFrameworkLayerStateInfo {
 
         return new CpmsFrameworkLayerStateInfo(currentPolicyId, pendingPolicyId,
                 currentPolicyGroupId, numberPolicyListeners, changedComponents, enables,
-                disables, policyGroups, controlledEnables, controlledDisables, silentModeSupported,
+                disables, customEnables, customDisables, policyGroups, controlledEnables,
+                controlledDisables, silentModeSupported,
                 monitoringHw, silentModeByHw, forcedSilentMode, currentState);
     }
 
@@ -312,6 +334,8 @@ public final class CpmsFrameworkLayerStateInfo {
         private final String[] mLines;
         private List<String> mEnables;
         private List<String> mDisables;
+        private List<String> mCustomEnables;
+        private List<String> mCustomDisables;
         private int mIdx = 0;
 
         private StateInfoParser(String[] lines) {
@@ -324,6 +348,14 @@ public final class CpmsFrameworkLayerStateInfo {
 
         private List<String> getDisables() {
             return mDisables;
+        }
+
+        private List<String> getCustomEnables() {
+            return mCustomEnables;
+        }
+
+        private List<String> getCustomDisables() {
+            return mCustomDisables;
         }
 
         private int getIntData(String header) {
@@ -378,6 +410,8 @@ public final class CpmsFrameworkLayerStateInfo {
         private void parseComponentStates(String startHdr, String endHdr, boolean hasStateInfo) {
             mEnables = new ArrayList<>();
             mDisables = new ArrayList<>();
+            mCustomEnables = new ArrayList<>();
+            mCustomDisables = new ArrayList<>();
             while (mIdx < (mLines.length - 1) && !mLines[++mIdx].contains(endHdr)) {
                 String stateStr = mLines[mIdx].trim();
                 String[] vals = stateStr.split(":\\s");
@@ -390,8 +424,10 @@ public final class CpmsFrameworkLayerStateInfo {
                 for (int i = 0; i < vals.length; i++) {
                     vals[i] = vals[i].trim();
                 }
-
-                if (!COMPONENT_SET.contains(vals[0])) {
+                boolean isSystemPowerComponent = COMPONENT_SET.contains(vals[0]);
+                boolean isCustomPowerComponent = !isSystemPowerComponent
+                        && customPowerComponentIsValid(vals[0]);
+                if (!isSystemPowerComponent && !isCustomPowerComponent) {
                     String errMsg = String.format("invalid component at %d with %s in: %s",
                             mIdx, vals[0], stateStr);
                     CLog.e(errMsg);
@@ -400,9 +436,17 @@ public final class CpmsFrameworkLayerStateInfo {
 
                 if (hasStateInfo) {
                     if (vals[1].startsWith("on")) {
-                        mEnables.add(vals[0]);
+                        if (isSystemPowerComponent) {
+                            mEnables.add(vals[0]);
+                        } else {
+                            mCustomEnables.add(vals[0]);
+                        }
                     } else if (vals[1].startsWith("off")) {
-                        mDisables.add(vals[0]);
+                        if (isSystemPowerComponent) {
+                            mDisables.add(vals[0]);
+                        } else {
+                            mCustomDisables.add(vals[0]);
+                        }
                     } else {
                         String errMsg =
                                 String.format("wrong state value at %d with (%s, %s) in: %s",
@@ -411,7 +455,11 @@ public final class CpmsFrameworkLayerStateInfo {
                         throw new IllegalArgumentException(errMsg);
                     }
                 } else {
-                    mDisables.add(vals[0]);
+                    if (isSystemPowerComponent) {
+                        mDisables.add(vals[0]);
+                    } else {
+                        mCustomDisables.add(vals[0]);
+                    }
                 }
             }
             mIdx--;
@@ -462,6 +510,16 @@ public final class CpmsFrameworkLayerStateInfo {
         }
     }
 
+    private static boolean customPowerComponentIsValid(String component) {
+        if (component.matches("\\d+")) {
+            int componentId = Integer.parseInt(component);
+            if (componentId >= PowerPolicyDef.MINIMUM_CUSTOM_COMPONENT_VALUE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean powerComponentIsValid(String component) {
         if (!COMPONENT_SET.contains(component)) {
             CLog.e("invalid component " + component);
@@ -478,13 +536,21 @@ public final class CpmsFrameworkLayerStateInfo {
         PowerComponentHandlerProto componentHandlerProto = proto.getPowerComponentHandler();
         List<String> enables = new ArrayList<>();
         List<String> disables = new ArrayList<>();
+        List<String> customEnables = new ArrayList<>();
+        List<String> customDisables = new ArrayList<>();
 
         int numComponents = componentHandlerProto.getPowerComponentStateMappingsCount();
         for (int i = 0; i < numComponents; i++) {
             PowerComponentToState componentStateMapping =
                     componentHandlerProto.getPowerComponentStateMappings(i);
             String powerComponent = componentStateMapping.getPowerComponent();
-            if (powerComponentIsValid(powerComponent)) {
+            if (customPowerComponentIsValid(powerComponent)) {
+                if (componentStateMapping.getState()) {
+                    customEnables.add(powerComponent);
+                } else {
+                    customDisables.add(powerComponent);
+                }
+            } else if (powerComponentIsValid(powerComponent)) {
                 if (componentStateMapping.getState()) {
                     enables.add(powerComponent);
                 } else {
@@ -494,12 +560,18 @@ public final class CpmsFrameworkLayerStateInfo {
         }
         Collections.sort(enables);
         Collections.sort(disables);
+        Collections.sort(customEnables);
+        Collections.sort(customDisables);
         List<String> controlledDisables = new ArrayList<>();
 
         int numComponentsOffByPolicy = componentHandlerProto.getComponentsOffByPolicyCount();
         for (int i = 0; i < numComponentsOffByPolicy; i++) {
             String powerComponent = componentHandlerProto.getComponentsOffByPolicy(i);
-            controlledDisables.add(powerComponent);
+            if (customPowerComponentIsValid(powerComponent)) {
+                // Do not add to match text parser
+            } else if (powerComponentIsValid(powerComponent)) {
+                controlledDisables.add(powerComponent);
+            }
         }
 
         Collections.sort(controlledDisables);
@@ -517,7 +589,8 @@ public final class CpmsFrameworkLayerStateInfo {
 
         return new CpmsFrameworkLayerStateInfo(currentPolicyId, pendingPolicyId,
                 currentPolicyGroupId, numberPolicyListeners, changedComponents, enables,
-                disables, policyGroups, /* controlledEnables= */ new ArrayList<>(),
+                disables, customEnables, customDisables, policyGroups,
+                /* controlledEnables= */ new ArrayList<>(),
                 controlledDisables, silentModeSupported, monitoringHw, silentModeByHw,
                 forcedSilentMode, currentState);
     }
