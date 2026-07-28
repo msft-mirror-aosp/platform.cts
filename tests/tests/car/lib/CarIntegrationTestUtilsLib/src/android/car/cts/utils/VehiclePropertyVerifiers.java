@@ -52,10 +52,11 @@ public class VehiclePropertyVerifiers {
      */
     public static VehiclePropertyVerifier<Integer> getLocationCharacterizationVerifier(
             CarPropertyManager carPropertyManager) {
-        return getLocationCharacterizationVerifier(
-            carPropertyManager,
-            VehiclePropertyIds.LOCATION_CHARACTERIZATION,
-            ACCESS_FINE_LOCATION);
+        return getLocationCharacterizationVerifierBuilder(
+                        carPropertyManager,
+                        VehiclePropertyIds.LOCATION_CHARACTERIZATION,
+                        ACCESS_FINE_LOCATION)
+                .build();
     }
 
     /**
