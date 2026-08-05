@@ -18,6 +18,7 @@ package com.android.cts.verifier.features;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.SystemProperties;
 import android.os.UserManager;
 
 /**
@@ -245,5 +246,13 @@ public final class FeatureUtil {
     public static boolean isSecureLockScreen(Context context) {
         PackageManager pm = context.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN);
+    }
+
+    public static final String FRAME_PUCK_PROTOCOL_PROP = "xr.device.config.frame_puck_protocol";
+
+    /** Checks whether the device is an XR headset using the Frame-Puck protocol. */
+    public static boolean isXrFramePuck(Context context) {
+        return isXrHeadset(context)
+                && SystemProperties.getBoolean(FRAME_PUCK_PROTOCOL_PROP, false);
     }
 }

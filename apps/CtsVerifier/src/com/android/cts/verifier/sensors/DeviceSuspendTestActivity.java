@@ -27,6 +27,7 @@ import android.util.Log;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.features.FeatureUtil;
 import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
 
 import java.util.List;
@@ -45,6 +46,10 @@ public class DeviceSuspendTestActivity
         private static String TAG = "DeviceSuspendSensorTest";
         private SensorManager mSensorManager;
         private KeyguardManager mKeyguardManager;
+
+        private boolean isXrFramePuck() {
+            return FeatureUtil.isXrFramePuck(this);
+        }
 
         @Override
         protected void activitySetUp() throws InterruptedException {
@@ -218,13 +223,15 @@ public class DeviceSuspendTestActivity
         public void verifyDeviceCanSuspend() throws Throwable {
             // Make sure clocks are different (i.e. kernel has suspended at least once)
             // so that we can determine if sensors are using correct clocksource timestamp
-            final int MAX_SLEEP_ATTEMPTS = 10;
+            final int MAX_SLEEP_ATTEMPTS = isXrFramePuck() ? 100 : 10;
             final int SLEEP_DURATION_MS = 2000;
             int sleep_attempts = 0;
             boolean device_needs_sleep = true;
             boolean wakelock_was_held = false;
 
-            final long ALARM_WAKE_UP_DELAY_MS = TimeUnit.SECONDS.toMillis(20);
+            final long ALARM_WAKE_UP_DELAY_MS = isXrFramePuck()
+                    ? TimeUnit.MINUTES.toMillis(3) + TimeUnit.SECONDS.toMillis(20)
+                    : TimeUnit.SECONDS.toMillis(20);
             mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                                     SystemClock.elapsedRealtime() + ALARM_WAKE_UP_DELAY_MS,
                                     mPendingIntent);
@@ -306,6 +313,9 @@ public class DeviceSuspendTestActivity
         public String runAPWakeUpWhenReportLatencyExpires(Sensor sensor) throws Throwable {
 
             verifyBatchingSupport(sensor);
+            if (isXrFramePuck()) {
+                SystemClock.sleep(2000); // Drain HAL socket ACK queue from prior FIFOFull tests on Frame-Puck devices
+            }
 
             int fifoMaxEventCount = sensor.getFifoMaxEventCount();
             int samplingPeriodUs = sensor.getMaxDelay();
@@ -329,9 +339,10 @@ public class DeviceSuspendTestActivity
             TestSensorOperation op = TestSensorOperation.createOperation(environment,
                                                                           mDeviceSuspendLock,
                                                                           false);
-            final long ALARM_WAKE_UP_DELAY_MS =
-                    TimeUnit.MICROSECONDS.toMillis(MAX_REPORT_LATENCY_US) +
-                    TimeUnit.SECONDS.toMillis(10);
+            final long ALARM_WAKE_UP_DELAY_MS = isXrFramePuck()
+                    ? TimeUnit.MINUTES.toMillis(3) + TimeUnit.SECONDS.toMillis(25)
+                    : TimeUnit.MICROSECONDS.toMillis(MAX_REPORT_LATENCY_US) +
+                      TimeUnit.SECONDS.toMillis(10);
 
             op.addVerification(BatchArrivalVerification.getDefault(environment));
             mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
@@ -464,7 +475,9 @@ public class DeviceSuspendTestActivity
                     maxReportLatencyUs,
                     true /*isDeviceSuspendTest*/);
 
-            final long ALARM_WAKE_UP_DELAY_MS = 20000;
+            final long ALARM_WAKE_UP_DELAY_MS = isXrFramePuck()
+                    ? TimeUnit.MINUTES.toMillis(3) + TimeUnit.SECONDS.toMillis(20)
+                    : 20000;
             TestSensorOperation op = TestSensorOperation.createOperation(environment,
                                                                          mDeviceSuspendLock,
                                                                          true);
