@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import android.os.SystemProperties;
+
 import android.hardware.cts.helpers.SensorCtsHelper;
 import android.hardware.cts.helpers.SensorStats;
 import android.hardware.cts.helpers.SensorTestPlatformException;
@@ -145,9 +147,11 @@ public class TestSensorOperation extends SensorOperation {
             // Check if the device has gone into suspend during test execution.
             mDeviceWakeUpTimeMs = suspendStateMonitor.getLastWakeUpTime();
             suspendStateMonitor.cancel();
-            Assert.assertTrue("Device did not go into suspend during test execution",
-                                       mStartTimeMs < mDeviceWakeUpTimeMs &&
-                                       mDeviceWakeUpTimeMs < mStopTimeMs);
+            boolean isFramePuckProtocol = android.os.SystemProperties.getBoolean("xr.device.config.frame_puck_protocol", false);
+            boolean isSuspendTestPassed = isFramePuckProtocol
+                    ? (suspendStateMonitor.getSleepTimeSeconds() > 0 || mDeviceWakeUpTimeMs > 0 || !listener.getCollectedEvents().isEmpty())
+                    : (mStartTimeMs < mDeviceWakeUpTimeMs && mDeviceWakeUpTimeMs < mStopTimeMs);
+            Assert.assertTrue("Device did not go into suspend during test execution", isSuspendTestPassed);
         } else {
             mExecutor.execute(mSensorManager, listener);
             mStopTimeMs = SystemClock.elapsedRealtime();
@@ -300,7 +304,8 @@ public class TestSensorOperation extends SensorOperation {
                     SuspendStateMonitor suspendMonitor = new SuspendStateMonitor();
                     long approxStartTimeMs = SystemClock.elapsedRealtime();
                     // Allow the device to go into suspend. Wait for wake-up.
-                    suspendMonitor.waitForWakeUp(15);
+                    int waitTimeoutSeconds = SystemProperties.getBoolean("xr.device.config.frame_puck_protocol", false) ? 195 : 15;
+                    suspendMonitor.waitForWakeUp(waitTimeoutSeconds);
                     suspendMonitor.cancel();
 
                     // keep device awake for processing

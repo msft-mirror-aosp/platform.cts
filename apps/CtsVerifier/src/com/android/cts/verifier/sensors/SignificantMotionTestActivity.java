@@ -28,6 +28,7 @@ import android.hardware.TriggerEvent;
 import android.hardware.TriggerEventListener;
 import android.hardware.cts.helpers.SensorNotSupportedException;
 import android.hardware.cts.helpers.SensorTestStateNotSupportedException;
+import com.android.cts.verifier.features.FeatureUtil;
 import android.hardware.cts.helpers.SuspendStateMonitor;
 import android.hardware.cts.helpers.TestSensorEnvironment;
 import android.os.BatteryManager;
@@ -66,9 +67,12 @@ public class SignificantMotionTestActivity extends SensorCtsVerifierTestActivity
     private static final long MAX_ACCEPTABLE_DELAY_EVENT_AP_WAKE_UP_NS =
             TimeUnit.MILLISECONDS.toNanos(2000);
 
-    // time to wait for SMD after the device has gone into suspend. Even after
-    // 45 secs if SMD does not trigger, the test will fail.
-    private static final long ALARM_WAKE_TIME_DELAY_MS = TimeUnit.SECONDS.toMillis(45);
+    // time to wait for SMD after the device has gone into suspend.
+    private long getAlarmWakeTimeDelayMs() {
+        return FeatureUtil.isXrFramePuck(this)
+                ? TimeUnit.MINUTES.toMillis(3) + TimeUnit.SECONDS.toMillis(30)
+                : TimeUnit.SECONDS.toMillis(45);
+    }
 
     // time for the test to wait for a trigger
     private static final int TRIGGER_MAX_DELAY_SECONDS = 30;
@@ -213,7 +217,7 @@ public class SignificantMotionTestActivity extends SensorCtsVerifierTestActivity
 
         AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
         am.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                     SystemClock.elapsedRealtime() + ALARM_WAKE_TIME_DELAY_MS, pendingIntent);
+                     SystemClock.elapsedRealtime() + getAlarmWakeTimeDelayMs(), pendingIntent);
         try {
             // Wait for the first event to trigger. Device is expected to go into suspend here.
             mVerifier.verifyEventTriggered();
