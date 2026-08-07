@@ -115,7 +115,7 @@ public class LocaleManagerOverrideLocaleConfigTest extends ActivityManagerTestBa
     public void testSetOverrideLocaleConfig_overrideByTestApp_getCorrectLocaleConfig()
             throws Exception {
         // Verify where a LocaleConfig of the test app can be read successfully
-        final LocaleConfig localeConfig = new LocaleConfig(sTestAppContext);
+        final LocaleConfig localeConfig = getLocaleConfigWithPermission(sTestAppContext);
 
         assertEquals(RESOURCE_LOCALES.stream().sorted().collect(Collectors.toList()),
                 new ArrayList<String>(Arrays.asList(
@@ -130,8 +130,15 @@ public class LocaleManagerOverrideLocaleConfigTest extends ActivityManagerTestBa
         // Verify the override LocaleConfig is read correctly
         PollingCheck.check("Make sure that the override LocaleConfig is read correctly",
                 TIMEOUT,
-                () -> OVERRIDE_LOCALES.equals(
-                        new LocaleConfig(sTestAppContext).getSupportedLocales()));
+                () -> {
+                    try {
+                        return OVERRIDE_LOCALES.equals(
+                                getLocaleConfigWithPermission(sTestAppContext)
+                                        .getSupportedLocales());
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
     }
 
     @Test
@@ -146,8 +153,15 @@ public class LocaleManagerOverrideLocaleConfigTest extends ActivityManagerTestBa
         // Verify the override LocaleConfig is read correctly
         PollingCheck.check("Make sure that the override LocaleConfig is read correctly",
                 TIMEOUT,
-                () -> OVERRIDE_LOCALES.equals(
-                        new LocaleConfig(sTestAppContext).getSupportedLocales()));
+                () -> {
+                    try {
+                        return OVERRIDE_LOCALES.equals(
+                                getLocaleConfigWithPermission(sTestAppContext)
+                                        .getSupportedLocales());
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
 
         // Re-start the test app by starting an activity and check if the override LocaleConfig
         // correctly received by the test app and listen to the broadcast for result from the test
@@ -257,10 +271,18 @@ public class LocaleManagerOverrideLocaleConfigTest extends ActivityManagerTestBa
         launchActivity(TEST_APP_MAIN_ACTIVITY, extraString(EXTRA_SET_LOCALECONFIG, "reset"));
 
         PollingCheck.check("Make sure there is no oveerride LocaleConfig", TIMEOUT,
-                () -> RESOURCE_LOCALES.stream().sorted().collect(Collectors.toList()).equals(
-                        new ArrayList<String>(Arrays.asList(new LocaleConfig(
-                                sTestAppContext).getSupportedLocales().toLanguageTags().split(
-                                ","))).stream().sorted().collect(Collectors.toList())));
+                () -> {
+                    try {
+                        return RESOURCE_LOCALES.stream().sorted().collect(Collectors.toList())
+                                .equals(new ArrayList<String>(Arrays.asList(
+                                        getLocaleConfigWithPermission(sTestAppContext)
+                                                .getSupportedLocales().toLanguageTags().split(
+                                                ","))).stream().sorted().collect(
+                                                Collectors.toList()));
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
     }
 
     /**
@@ -290,5 +312,11 @@ public class LocaleManagerOverrideLocaleConfigTest extends ActivityManagerTestBa
             String expectedPackageName, LocaleList expectedLocales) {
         assertEquals(expectedPackageName, receiver.getPackageName());
         assertEquals(expectedLocales, receiver.getLocales());
+    }
+
+    private LocaleConfig getLocaleConfigWithPermission(Context context) throws Exception {
+        return callWithShellPermissionIdentity(
+                () -> new LocaleConfig(context),
+                Manifest.permission.READ_APP_SPECIFIC_LOCALES);
     }
 }
