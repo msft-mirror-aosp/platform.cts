@@ -18,8 +18,8 @@ package android.server.wm;
 
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.server.wm.BarTestUtils.assumeHasBars;
-import static android.server.wm.InputMethodVisibilityVerifier.expectImeInvisible;
-import static android.server.wm.InputMethodVisibilityVerifier.expectImeVisible;
+import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
+import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
@@ -661,7 +661,7 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
         notExpectEvent(stream, editorMatcher("onStartInput",
                 imeTestActivitySession.getActivity().mEditText.getPrivateImeOptions()),
                 NOT_EXPECT_TIMEOUT);
-        InputMethodVisibilityVerifier.expectImeInvisible(NOT_EXPECT_TIMEOUT);
+        expectImeInvisible(NOT_EXPECT_TIMEOUT);
     }
 
     @Test
