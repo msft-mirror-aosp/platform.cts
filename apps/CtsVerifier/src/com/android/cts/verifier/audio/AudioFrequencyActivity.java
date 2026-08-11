@@ -34,6 +34,11 @@ import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Audio Frequency Test base activity
  */
@@ -46,6 +51,10 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
 
     protected AudioDeviceInfo mOutputDevInfo;
     protected AudioDeviceInfo mInputDevInfo;
+
+    // Store AudioDeviceInfo objects for the different types of devices.
+    protected Map<Integer, List<AudioDeviceInfo>> mSourceDeviceInfos = new HashMap<>();
+    protected Map<Integer, List<AudioDeviceInfo>> mSinkDeviceInfos = new HashMap<>();
 
     public int mMaxLevel = 0;
 
@@ -62,6 +71,7 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
 
         mAudioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
         mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
     }
 
     //
@@ -178,25 +188,49 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
         }
     }
 
+    protected AudioDeviceInfo getBuiltInMic() {
+        List<AudioDeviceInfo> mics = mSourceDeviceInfos.get(AudioDeviceInfo.TYPE_BUILTIN_MIC);
+        if (mics == null || mics.isEmpty()) {
+            return null;
+        }
+        AudioDeviceInfo selectedMic = null;
+        for (AudioDeviceInfo mic : mics) {
+            if (selectedMic == null || mic.getAddress().equals("bottom")) {
+                selectedMic = mic;
+            }
+        }
+        return selectedMic;
+    }
+
+    protected AudioDeviceInfo getUsbMic() {
+        List<AudioDeviceInfo> usbDevices = mSourceDeviceInfos.get(AudioDeviceInfo.TYPE_USB_DEVICE);
+        if (usbDevices == null || usbDevices.isEmpty()) {
+            return null;
+        }
+        return usbDevices.get(0);
+    }
+
+
     private void scanPeripheralList(AudioDeviceInfo[] devices) {
-        // Can't just use the first record because then we will only get
-        // Source OR sink, not both even on devices that are both.
-        mOutputDevInfo = null;
-        mInputDevInfo = null;
+        mSourceDeviceInfos.clear();
+        mSinkDeviceInfos.clear();
 
         // Any valid peripherals
         for(AudioDeviceInfo devInfo : devices) {
-            if (devInfo.getType() == AudioDeviceInfo.TYPE_USB_DEVICE ||
-                    devInfo.getType() == AudioDeviceInfo.TYPE_USB_HEADSET) {
-                if (devInfo.isSink()) {
-                    mOutputDevInfo = devInfo;
+            int type = devInfo.getType();
+            if (devInfo.isSource()) {
+                if (!mSourceDeviceInfos.containsKey(type)) {
+                    mSourceDeviceInfos.put(type, new ArrayList<>());
                 }
-                if (devInfo.isSource()) {
-                    mInputDevInfo = devInfo;
+                mSourceDeviceInfos.get(type).add(devInfo);
+            }
+            if (devInfo.isSink()) {
+                if (!mSinkDeviceInfos.containsKey(type)) {
+                    mSinkDeviceInfos.put(type, new ArrayList<>());
                 }
+                mSinkDeviceInfos.get(type).add(devInfo);
             }
         }
-
     }
 
     private class ConnectListener extends AudioDeviceCallback {

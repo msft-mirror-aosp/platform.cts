@@ -19,6 +19,7 @@ package com.android.cts.verifier.audio;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -665,21 +666,15 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
                     mTestThread = new Thread(new TestRunnable(TEST_TONE) {
                         public void run() {
                             super.run();
-                            if (!mUsbMicConnected) {
-                                sendMessage(mTestId, TEST_MESSAGE,
-                                        "Testing Built in Microphone: Tone");
-                                mRMSTone = 0;
-                                mRMSMaxTone = 0;
-                                mFreqAverageTone.reset();
-                                mFreqAverageTone.setCaptureType(VectorAverage.CAPTURE_TYPE_MAX);
-                                record(TEST_DURATION_TONE);
-                                sendMessage(mTestId, TEST_ENDED, "Testing Completed");
-                                mTestsDone[mTestId] = true;
-                            } else {
-                                sendMessage(mTestId, TEST_ENDED_ERROR,
-                                        "Please Unplug USB Microphone");
-                                mTestsDone[mTestId] = false;
-                            }
+                            sendMessage(mTestId, TEST_MESSAGE,
+                                    "Testing Built in Microphone: Tone");
+                            mRMSTone = 0;
+                            mRMSMaxTone = 0;
+                            mFreqAverageTone.reset();
+                            mFreqAverageTone.setCaptureType(VectorAverage.CAPTURE_TYPE_MAX);
+                            record(TEST_DURATION_TONE, getBuiltInMic());
+                            sendMessage(mTestId, TEST_ENDED, "Testing Completed");
+                            mTestsDone[mTestId] = true;
                         }
                     });
                 break;
@@ -687,19 +682,13 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
                     mTestThread = new Thread(new TestRunnable(TEST_NOISE) {
                         public void run() {
                             super.run();
-                            if (!mUsbMicConnected) {
-                                sendMessage(mTestId, TEST_MESSAGE,
-                                        "Testing Built in Microphone: Noise");
-                                mFreqAverageNoise.reset();
-                                mFreqAverageNoise.setCaptureType(VectorAverage.CAPTURE_TYPE_MAX);
-                                record(TEST_DURATION_NOISE);
-                                sendMessage(mTestId, TEST_ENDED, "Testing Completed");
-                                mTestsDone[mTestId] = true;
-                            } else {
-                                sendMessage(mTestId, TEST_ENDED_ERROR,
-                                        "Please Unplug USB Microphone");
-                                mTestsDone[mTestId] = false;
-                            }
+                            sendMessage(mTestId, TEST_MESSAGE,
+                                    "Testing Built in Microphone: Noise");
+                            mFreqAverageNoise.reset();
+                            mFreqAverageNoise.setCaptureType(VectorAverage.CAPTURE_TYPE_MAX);
+                            record(TEST_DURATION_NOISE, getBuiltInMic());
+                            sendMessage(mTestId, TEST_ENDED, "Testing Completed");
+                            mTestsDone[mTestId] = true;
                         }
                     });
                 break;
@@ -714,7 +703,7 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
                                 mFreqAverageUsbBackground.reset();
                                 mFreqAverageUsbBackground.setCaptureType(
                                         VectorAverage.CAPTURE_TYPE_AVERAGE);
-                                record(TEST_DURATION_USB_BACKGROUND);
+                                record(TEST_DURATION_USB_BACKGROUND, getUsbMic());
                                 sendMessage(mTestId, TEST_ENDED, "Testing Completed");
                                 mTestsDone[mTestId] = true;
                             } else {
@@ -733,7 +722,7 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
                                 sendMessage(mTestId, TEST_MESSAGE, "Testing USB Microphone: Noise");
                                 mFreqAverageUsbNoise.reset();
                                 mFreqAverageUsbNoise.setCaptureType(VectorAverage.CAPTURE_TYPE_MAX);
-                                record(TEST_DURATION_USB_NOISE);
+                                record(TEST_DURATION_USB_NOISE, getUsbMic());
                                 sendMessage(mTestId, TEST_ENDED, "Testing Completed");
                                 mTestsDone[mTestId] = true;
                             } else {
@@ -763,8 +752,20 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
             mUsbMicConnected =
                     UsbMicrophoneTester.getIsMicrophoneConnected(mContext);
         };
-        public void record(int durationMs) {
-            startRecording();
+        public void record(int durationMs, AudioDeviceInfo mic) {
+            if (mic == null) {
+                Log.d(TAG, "Test id " + mTestId  +" no microphone found");
+            } else {
+                Log.d(
+                        TAG,
+                        "Test id "
+                                + mTestId
+                                + " using microphone "
+                                + mic.getType()
+                                + " with address "
+                                + mic.getAddress());
+            }
+            startRecording(mic);
             try {
                 Thread.sleep(durationMs);
             } catch (InterruptedException e) {
@@ -965,14 +966,30 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
                 ResultUnit.NONE);
     }
 
-    private void startRecording() {
+    private void startRecording(AudioDeviceInfo mic) {
         synchronized (mRecordingLock) {
             mIsRecording = true;
         }
 
         boolean successful = initRecord();
         if (successful) {
+            // Set the preferred device for the recorder.
+            mRecorder.setPreferredDevice(mic);
+
+            // Start recording.
             startRecordingForReal();
+
+            // Check that the recorder routed to the expected device.
+            AudioDeviceInfo selectedDevice = mRecorder.getRoutedDevice();
+            if (mic != null && selectedDevice.getId() != mic.getId()) {
+                Log.e(
+                        TAG,
+                        "Recorder routed to unexpected device: "
+                                + selectedDevice
+                                + " expected: "
+                                + mic);
+                stopRecording();
+            }
         } else {
             Log.v(TAG, "Recorder initialization error.");
             synchronized (mRecordingLock) {
