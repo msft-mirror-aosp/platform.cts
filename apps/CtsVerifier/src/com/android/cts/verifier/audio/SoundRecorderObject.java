@@ -66,23 +66,14 @@ public class SoundRecorderObject implements Runnable,
             }
             // Start recording.
             startRecordingForReal();
-            // Check that the recorder routed to the expected device.
-            AudioDeviceInfo selectedDevice = mRecorder.getRoutedDevice();
-            if (preferredDevice != null && selectedDevice.getId() != preferredDevice.getId()) {
-                Log.e(
-                        TAG,
-                        "Recorder routed to unexpected device: "
-                                + selectedDevice
-                                + " expected: "
-                                + preferredDevice);
-                stopRecording();
-                return false;
-            }
             return true;
         } else {
             Log.v(TAG, "Recorder initialization error.");
             return false;
         }
+    }
+    public AudioDeviceInfo getRoutedDevice() {
+        return mRecorder != null ? mRecorder.getRoutedDevice() : null;
     }
 
     private void startRecordingForReal() {

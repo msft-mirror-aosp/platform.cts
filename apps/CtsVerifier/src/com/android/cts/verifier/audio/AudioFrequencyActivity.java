@@ -18,6 +18,7 @@ package com.android.cts.verifier.audio;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
@@ -33,6 +34,7 @@ import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -203,18 +205,48 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
     }
 
     protected AudioDeviceInfo getUsbMic() {
+        return getUsbMic(null);
+    }
+
+    protected AudioDeviceInfo getUsbMic(AudioDeviceInfo excludedDevice) {
         List<AudioDeviceInfo> usbDevices = mSourceDeviceInfos.get(AudioDeviceInfo.TYPE_USB_DEVICE);
         if (usbDevices == null || usbDevices.isEmpty()) {
             return null;
         }
-        return usbDevices.get(0);
+        for (AudioDeviceInfo device : usbDevices) {
+            if (excludedDevice == null || device.getId() != excludedDevice.getId()) {
+                return device;
+            }
+        }
+        return null;
     }
 
+    protected void showNoBuiltInMicDialog(DialogInterface.OnClickListener confirmListener) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.audio_frequency_test_no_builtin_mic_title)
+                .setMessage(
+                        R.string.audio_frequency_test_no_builtin_mic_msg)
+                .setPositiveButton(
+                        R.string.audio_frequency_test_confirm_btn,
+                        confirmListener)
+                .setNegativeButton(
+                        R.string.audio_frequency_test_cancel_btn, null)
+                .show();
+    }
+
+    protected void showNoPrimaryMicDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.audio_frequency_test_no_primary_mic_title)
+                .setMessage(R.string.audio_frequency_test_no_primary_mic_msg)
+                .setPositiveButton(R.string.audio_frequency_test_ok_btn, null)
+                .show();
+    }
 
     private void scanPeripheralList(AudioDeviceInfo[] devices) {
         mSourceDeviceInfos.clear();
         mSinkDeviceInfos.clear();
 
+        Log.d(TAG, "scanPeripheralList() num: " + devices.length);
         // Any valid peripherals
         for(AudioDeviceInfo devInfo : devices) {
             int type = devInfo.getType();
@@ -230,8 +262,13 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
                 }
                 mSinkDeviceInfos.get(type).add(devInfo);
             }
+            Log.d(TAG, "scanPeripheralList() devInfo: " + AudioDeviceUtils.formatDeviceName(devInfo)
+                    + " isSource: " + devInfo.isSource()
+                    + " isSink: " + devInfo.isSink());
         }
     }
+
+    protected AudioDeviceInfo mLatestRoutedDevice;
 
     private class ConnectListener extends AudioDeviceCallback {
         /*package*/ ConnectListener() {}
@@ -252,6 +289,13 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
 
             scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
         }
+    }
+
+    protected String getEndMessage() {
+        return "Routed device: "
+                + (mLatestRoutedDevice != null
+                        ? AudioDeviceUtils.formatDeviceName(mLatestRoutedDevice)
+                        : "null");
     }
 
 //    abstract public void updateConnectStatus();
