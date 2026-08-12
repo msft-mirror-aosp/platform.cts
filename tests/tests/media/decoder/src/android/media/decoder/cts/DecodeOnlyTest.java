@@ -201,7 +201,9 @@ public class DecodeOnlyTest extends MediaTestBase {
 
     @Test
     @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_DECODE_ONLY"})
-    public void nativeTestNonTunneledTrickPlayHevc() {
+    public void nativeTestNonTunneledTrickPlayHevc() throws Exception {
+        Assume.assumeTrue("codec is not supported on this device" + MEDIA_DIR_STRING + HEVC_VIDEO,
+                MediaUtils.hasCodecsForResource(MEDIA_DIR_STRING + HEVC_VIDEO));
         boolean[] boolStates = {true, false};
         for (boolean isAsync : boolStates) {
             assertTrue(nativeTestNonTunneledTrickPlay(MEDIA_DIR_STRING + HEVC_VIDEO,
