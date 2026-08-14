@@ -5823,6 +5823,22 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="audio_coldstart_notouchsounds_message">Tap &amp; click sounds are DISABLED.</string>
 
+    <!-- Audio Frequency Tests -->
+    <string name="audio_frequency_test_confirm_btn">Confirm</string>
+    <string name="audio_frequency_test_ok_btn">OK</string>
+    <string name="audio_frequency_test_cancel_btn">Cancel</string>
+    <string name="audio_frequency_test_no_builtin_mic_title">
+        No Built-in Microphone
+    </string>
+    <string name="audio_frequency_test_no_builtin_mic_msg">
+        Detected that device doesn\'t have a built-in microphone. Please press confirm button after
+        unplugging all external microphones.
+    </string>
+    <string name="audio_frequency_test_no_primary_mic_title">No Assigned Primary Microphone</string>
+    <string name="audio_frequency_test_no_primary_mic_msg">
+        Primary microphone is not assigned. Please run \'TEST NOISE\' first to assign the primary microphone.
+    </string>
+
     <!-- Audio Frequency Line Test -->
     <string name="audio_frequency_line_test">Audio Frequency Line Test</string>
     <string name="audio_frequency_line_info">
