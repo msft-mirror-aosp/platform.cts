@@ -18,6 +18,7 @@ package com.android.cts.verifier.audio;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
@@ -33,6 +34,12 @@ import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Audio Frequency Test base activity
@@ -46,6 +53,10 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
 
     protected AudioDeviceInfo mOutputDevInfo;
     protected AudioDeviceInfo mInputDevInfo;
+
+    // Store AudioDeviceInfo objects for the different types of devices.
+    protected Map<Integer, List<AudioDeviceInfo>> mSourceDeviceInfos = new HashMap<>();
+    protected Map<Integer, List<AudioDeviceInfo>> mSinkDeviceInfos = new HashMap<>();
 
     public int mMaxLevel = 0;
 
@@ -62,6 +73,7 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
 
         mAudioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
         mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
     }
 
     //
@@ -178,26 +190,85 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
         }
     }
 
-    private void scanPeripheralList(AudioDeviceInfo[] devices) {
-        // Can't just use the first record because then we will only get
-        // Source OR sink, not both even on devices that are both.
-        mOutputDevInfo = null;
-        mInputDevInfo = null;
-
-        // Any valid peripherals
-        for(AudioDeviceInfo devInfo : devices) {
-            if (devInfo.getType() == AudioDeviceInfo.TYPE_USB_DEVICE ||
-                    devInfo.getType() == AudioDeviceInfo.TYPE_USB_HEADSET) {
-                if (devInfo.isSink()) {
-                    mOutputDevInfo = devInfo;
-                }
-                if (devInfo.isSource()) {
-                    mInputDevInfo = devInfo;
-                }
+    protected AudioDeviceInfo getBuiltInMic() {
+        List<AudioDeviceInfo> mics = mSourceDeviceInfos.get(AudioDeviceInfo.TYPE_BUILTIN_MIC);
+        if (mics == null || mics.isEmpty()) {
+            return null;
+        }
+        AudioDeviceInfo selectedMic = null;
+        for (AudioDeviceInfo mic : mics) {
+            if (selectedMic == null || mic.getAddress().equals("bottom")) {
+                selectedMic = mic;
             }
         }
-
+        return selectedMic;
     }
+
+    protected AudioDeviceInfo getUsbMic() {
+        return getUsbMic(null);
+    }
+
+    protected AudioDeviceInfo getUsbMic(AudioDeviceInfo excludedDevice) {
+        List<AudioDeviceInfo> usbDevices = mSourceDeviceInfos.get(AudioDeviceInfo.TYPE_USB_DEVICE);
+        if (usbDevices == null || usbDevices.isEmpty()) {
+            return null;
+        }
+        for (AudioDeviceInfo device : usbDevices) {
+            if (excludedDevice == null || device.getId() != excludedDevice.getId()) {
+                return device;
+            }
+        }
+        return null;
+    }
+
+    protected void showNoBuiltInMicDialog(DialogInterface.OnClickListener confirmListener) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.audio_frequency_test_no_builtin_mic_title)
+                .setMessage(
+                        R.string.audio_frequency_test_no_builtin_mic_msg)
+                .setPositiveButton(
+                        R.string.audio_frequency_test_confirm_btn,
+                        confirmListener)
+                .setNegativeButton(
+                        R.string.audio_frequency_test_cancel_btn, null)
+                .show();
+    }
+
+    protected void showNoPrimaryMicDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.audio_frequency_test_no_primary_mic_title)
+                .setMessage(R.string.audio_frequency_test_no_primary_mic_msg)
+                .setPositiveButton(R.string.audio_frequency_test_ok_btn, null)
+                .show();
+    }
+
+    private void scanPeripheralList(AudioDeviceInfo[] devices) {
+        mSourceDeviceInfos.clear();
+        mSinkDeviceInfos.clear();
+
+        Log.d(TAG, "scanPeripheralList() num: " + devices.length);
+        // Any valid peripherals
+        for(AudioDeviceInfo devInfo : devices) {
+            int type = devInfo.getType();
+            if (devInfo.isSource()) {
+                if (!mSourceDeviceInfos.containsKey(type)) {
+                    mSourceDeviceInfos.put(type, new ArrayList<>());
+                }
+                mSourceDeviceInfos.get(type).add(devInfo);
+            }
+            if (devInfo.isSink()) {
+                if (!mSinkDeviceInfos.containsKey(type)) {
+                    mSinkDeviceInfos.put(type, new ArrayList<>());
+                }
+                mSinkDeviceInfos.get(type).add(devInfo);
+            }
+            Log.d(TAG, "scanPeripheralList() devInfo: " + AudioDeviceUtils.formatDeviceName(devInfo)
+                    + " isSource: " + devInfo.isSource()
+                    + " isSink: " + devInfo.isSink());
+        }
+    }
+
+    protected AudioDeviceInfo mLatestRoutedDevice;
 
     private class ConnectListener extends AudioDeviceCallback {
         /*package*/ ConnectListener() {}
@@ -218,6 +289,13 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
 
             scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
         }
+    }
+
+    protected String getEndMessage() {
+        return "Routed device: "
+                + (mLatestRoutedDevice != null
+                        ? AudioDeviceUtils.formatDeviceName(mLatestRoutedDevice)
+                        : "null");
     }
 
 //    abstract public void updateConnectStatus();
