@@ -16,6 +16,7 @@
 
 package com.android.cts.verifier.audio;
 
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.os.SystemClock;
@@ -53,13 +54,26 @@ public class SoundRecorderObject implements Runnable,
         return -1;
     }
 
-    public void startRecording() {
+    public boolean startRecording() {
+        return startRecording(null);
+    }
+
+    public boolean startRecording(AudioDeviceInfo preferredDevice) {
         boolean successful = initRecord();
         if (successful) {
+            if (preferredDevice != null) {
+                mRecorder.setPreferredDevice(preferredDevice);
+            }
+            // Start recording.
             startRecordingForReal();
+            return true;
         } else {
             Log.v(TAG, "Recorder initialization error.");
+            return false;
         }
+    }
+    public AudioDeviceInfo getRoutedDevice() {
+        return mRecorder != null ? mRecorder.getRoutedDevice() : null;
     }
 
     private void startRecordingForReal() {
