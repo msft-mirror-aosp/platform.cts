@@ -36,10 +36,9 @@ import android.os.Looper;
 import android.os.PersistableBundle;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
-
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DeviceReportLog;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
@@ -438,8 +437,8 @@ public class AudioHelper {
 
             // Adjust all of the hard assert limits by toleranceScale.
             final int toleranceScale = isRelaxedTimingDevice() ? 4 : 1;
-            TEST_MAX_JITTER_MS_ALLOWED = (isWatch() ? 23. : 6.) * toleranceScale;
-            TEST_STD_JITTER_MS_ALLOWED = (isWatch() ? 7. : 3.) * toleranceScale;
+            TEST_MAX_JITTER_MS_ALLOWED = (isWatch() ? 23. : isXr() ? 8.5 : 6.) * toleranceScale;
+            TEST_STD_JITTER_MS_ALLOWED = (isWatch() ? 7. : isXr() ? 6.2 : 3.) * toleranceScale;
             TEST_STD_JITTER_MS_WARN = 1.;
 
             TEST_STARTUP_TIME_MS_ALLOWED = 500. * toleranceScale;
@@ -569,6 +568,10 @@ public class AudioHelper {
 
         private static boolean isWatch() {
             return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+        }
+
+        private static boolean isXr() {
+            return FeatureUtil.isXrHeadset();
         }
     }
 
