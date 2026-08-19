@@ -234,6 +234,11 @@
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.UserAuthTest" />
     <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.MultiDocumentPresentationTest#multipleDocuments" />
 
+    <!-- b/540679386: Exclude failing biometric tests on small screen devices from CTS-on-GSI -->
+    <option name="compatibility:exclude-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricActivityTests#testBiometricOrCredential_credentialButtonInvoked_biometricNotEnrolled" />
+    <option name="compatibility:exclude-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricSimpleTests#testWhenCredentialEnrolled" />
+    <option name="compatibility:exclude-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricSimpleTests#testSimpleCredentialAuth" />
+
     <!-- b/454631245 -->
     <option name="compatibility:exclude-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricPromptContentViewTest#testMoreOptionsButton_clickButton" />
 
