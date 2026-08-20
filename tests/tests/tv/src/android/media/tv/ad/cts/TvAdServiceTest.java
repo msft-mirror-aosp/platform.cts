@@ -35,6 +35,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.media.tv.AdResponse;
 import android.media.tv.CommandRequest;
+import android.media.tv.flags.Flags;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.media.tv.TvTrackInfo;
@@ -45,6 +46,7 @@ import android.media.tv.ad.TvAdView;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ConditionVariable;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.tv.cts.R;
@@ -73,6 +75,7 @@ import java.util.concurrent.Executor;
  * Test {@link android.media.tv.ad.TvAdService}
  */
 @RunWith(AndroidJUnit4.class)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_AD_SERVICE_FW)
 public class TvAdServiceTest {
     private static final long TIME_OUT_MS = 20000L;
 
