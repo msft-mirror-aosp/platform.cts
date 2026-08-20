@@ -37,6 +37,7 @@ import android.media.tv.CommandRequest;
 import android.media.tv.CommandResponse;
 import android.media.tv.DsmccRequest;
 import android.media.tv.DsmccResponse;
+import android.media.tv.flags.Flags;
 import android.media.tv.PesRequest;
 import android.media.tv.PesResponse;
 import android.media.tv.SectionRequest;
@@ -72,6 +73,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.os.SharedMemory;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.tv.cts.R;
 import android.view.InputEvent;
 import android.view.KeyEvent;
@@ -122,6 +126,10 @@ public class TvInteractiveAppServiceTest {
     private StubTvInputService2.StubSessionImpl2 mInputSession;
     private StubTvInputService2.StubRecordingSessionImpl mRecordingSession;
     private TvRecordingClient mTvRecordingClient;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public RequiredFeatureRule featureRule = new RequiredFeatureRule(
@@ -871,6 +879,7 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TIAF_V_APIS)
     public void testRequestSSLSigning() throws Throwable {
         assertNotNull(mSession);
         mCallback.resetValues();
@@ -891,6 +900,7 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TIAF_V_APIS)
     public void testRequestCertificate() throws Throwable {
         assertNotNull(mSession);
         String testHost = "gooooooogle.com";
