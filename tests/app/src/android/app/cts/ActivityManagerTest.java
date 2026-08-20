@@ -908,7 +908,7 @@ public final class ActivityManagerTest {
         assertEquals(RESULT_PASS, appEndReceiver.waitForActivity());
         appEndReceiver.close();
 
-        if (isTestHomeActivityFocused()) {
+        if (isHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -1075,7 +1075,7 @@ public final class ActivityManagerTest {
         assertEquals(RESULT_PASS, appEndReceiver.waitForActivity());
         appEndReceiver.close();
 
-        if (isTestHomeActivityFocused()) {
+        if (isHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -2667,18 +2667,6 @@ public final class ActivityManagerTest {
                     + componentName.flattenToString());
         }
 
-        private ComponentName getDefaultHomeComponent() {
-            final Intent intent = new Intent(ACTION_MAIN);
-            intent.addCategory(CATEGORY_HOME);
-            intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
-            final ResolveInfo resolveInfo = mInstrumentation.getContext()
-                    .getPackageManager().resolveActivity(intent, MATCH_DEFAULT_ONLY);
-            if (resolveInfo == null) {
-                throw new AssertionError("Home activity not found");
-            }
-            return new ComponentName(resolveInfo.activityInfo.packageName,
-                    resolveInfo.activityInfo.name);
-        }
     }
 
     private boolean isAtvDevice() {
@@ -2713,12 +2701,33 @@ public final class ActivityManagerTest {
                 UserManager.isHeadlessSystemUserMode());
     }
 
-    private boolean isTestHomeActivityFocused() {
+    /**
+     * @return the component that currently holds the home role.
+     * @throws AssertionError if the home intent does not resolve.
+     */
+    private ComponentName getDefaultHomeComponent() {
+        final Intent intent = new Intent(ACTION_MAIN);
+        intent.addCategory(CATEGORY_HOME);
+        intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+        final ResolveInfo resolveInfo = mTargetContext.getPackageManager()
+                .resolveActivity(intent, MATCH_DEFAULT_ONLY);
+        if (resolveInfo == null) {
+            throw new AssertionError("Home activity not found");
+        }
+        return new ComponentName(resolveInfo.activityInfo.packageName,
+                resolveInfo.activityInfo.name);
+    }
+
+    /**
+     * @return {@code true} if the device has actually returned to its home screen. Resolves the
+     * component that currently holds the home role instead of assuming it is the CTS stub home,
+     * because some devices do not allow the home role to be replaced.
+     */
+    private boolean isHomeActivityFocused() {
         if (noHomeScreen()) {
             return false;
         }
-        ComponentName homeActivity =
-                new ComponentName(STUB_PACKAGE_NAME, TestHomeActivity.class.getName());
+        final ComponentName homeActivity = getDefaultHomeComponent();
         mWmState.waitForValidState(homeActivity);
         return mWmState.waitForFocusedActivity(homeActivity);
     }
