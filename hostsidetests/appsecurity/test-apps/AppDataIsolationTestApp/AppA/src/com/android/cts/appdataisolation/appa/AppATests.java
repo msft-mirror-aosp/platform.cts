@@ -223,10 +223,6 @@ public class AppATests {
 
     @Test
     public void testUnlockDevice() throws Exception {
-
-        final int width = mDevice.getDisplayWidth();
-        final int height = mDevice.getDisplayHeight();
-
         mDevice.wakeUp();
         mDevice.waitForIdle();
         mDevice.pressMenu();
@@ -240,9 +236,7 @@ public class AppATests {
         mDevice.executeShellCommand(testUnlockDeviceCommand_enter);
         mDevice.waitForIdle();
 
-        // Swipe-to-refresh and focus on the PIN entry screen before entering the PIN
-        mDevice.swipe(width / 2, (int)(height * 0.2), width / 2, (int)(height * 0.8),
-                SWIPE_STEP_COUNT);
+        mDevice.executeShellCommand("wm dismiss-keyguard");
         mDevice.waitForIdle();
 
         mDevice.executeShellCommand(testUnlockDeviceCommand_1);
