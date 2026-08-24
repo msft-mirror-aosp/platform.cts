@@ -16,8 +16,10 @@
 
 package com.android.cts.verifier.vibrations;
 
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
@@ -31,6 +33,7 @@ import android.widget.TextView;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.features.FeatureUtil;
 
 import java.util.Locale;
 
@@ -47,6 +50,7 @@ public class HasVibratorVerifierActivity extends PassFailButtons.Activity {
     private static final int COUNT_DOWN_INTERVAL = 1_000;
 
     private boolean mHasVibrator = false;
+    private int mTargetUsage = VibrationAttributes.USAGE_UNKNOWN;
     private int mCounter = TEST_DURATION / COUNT_DOWN_INTERVAL;
     private Vibrator mVibrator;
     private Animation mShakeAnimation;
@@ -83,6 +87,7 @@ public class HasVibratorVerifierActivity extends PassFailButtons.Activity {
         }
         mVibrator = vibratorManager.getDefaultVibrator();
         mHasVibrator = mVibrator.hasVibrator();
+        resolveTargetUsage();
 
         hasVibratorApiResultTextView.setText(
                 mHasVibrator ? R.string.yes_string : R.string.no_string);
@@ -98,9 +103,66 @@ public class HasVibratorVerifierActivity extends PassFailButtons.Activity {
         noButton.setOnClickListener(v -> onNoButtonClicked());
     }
 
+    /**
+     * Resolves the target {@link VibrationAttributes} usage to use for testing.
+     */
+    private void resolveTargetUsage() {
+        if (!mHasVibrator) {
+            mTargetUsage = VibrationAttributes.USAGE_UNKNOWN;
+            return;
+        }
+
+        // 1. Prefer default USAGE_UNKNOWN if it has active intensity.
+        if (isUsageIntensityActive(VibrationAttributes.USAGE_UNKNOWN)) {
+            mTargetUsage = VibrationAttributes.USAGE_UNKNOWN;
+            return;
+        }
+
+        // 2. On XR devices where general touch haptics are OFF by default, fallback to
+        // USAGE_HARDWARE_FEEDBACK so physical actuator is exercised without being blocked.
+        if (FeatureUtil.isXrHeadset(this)) {
+            mTargetUsage = VibrationAttributes.USAGE_HARDWARE_FEEDBACK;
+            return;
+        }
+
+        // 3. Fall back to default USAGE_UNKNOWN for non-XR devices.
+        mTargetUsage = VibrationAttributes.USAGE_UNKNOWN;
+    }
+
+    private boolean isUsageIntensityActive(int usage) {
+        try {
+            return mVibrator.getDefaultVibrationIntensity(usage)
+                    > Vibrator.VIBRATION_INTENSITY_OFF;
+        } catch (Exception | LinkageError e) {
+            // Fall back to querying framework resources if method is unavailable or fails.
+        }
+
+        try {
+            Resources res = Resources.getSystem();
+            int resId;
+            if (usage == VibrationAttributes.USAGE_MEDIA) {
+                resId = res.getIdentifier(
+                        "config_defaultMediaVibrationIntensity", "integer", "android");
+            } else {
+                resId = res.getIdentifier(
+                        "config_defaultHapticFeedbackIntensity", "integer", "android");
+            }
+            if (resId > 0 && res.getInteger(resId) > Vibrator.VIBRATION_INTENSITY_OFF) {
+                return true;
+            }
+        } catch (Exception e) {
+            // Resource not found or inaccessible; treat intensity as inactive.
+        }
+        return false;
+    }
+
     private void startVibrating() {
-        mVibrator.vibrate(
-                VibrationEffect.createOneShot(TEST_DURATION, VibrationEffect.MAX_AMPLITUDE));
+        VibrationEffect effect = VibrationEffect.createOneShot(
+                TEST_DURATION, VibrationEffect.MAX_AMPLITUDE);
+        VibrationAttributes attrs = new VibrationAttributes.Builder()
+                .setUsage(mTargetUsage)
+                .build();
+        mVibrator.vibrate(effect, attrs);
     }
 
     private void startTestCountdown() {
