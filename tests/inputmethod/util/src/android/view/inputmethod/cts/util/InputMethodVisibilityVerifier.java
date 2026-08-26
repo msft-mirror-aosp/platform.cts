@@ -16,8 +16,8 @@
 
 package android.view.inputmethod.cts.util;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.app.Instrumentation;
 import android.app.UiAutomation;
@@ -47,19 +47,15 @@ public final class InputMethodVisibilityVerifier {
     private InputMethodVisibilityVerifier() {
     }
 
-    @NonNull
-    private static boolean containsWatermark(@NonNull UiAutomation uiAutomation) {
-        final Bitmap screenshot = uiAutomation.takeScreenshot();
-        assertNotNull(screenshot);
+    private static boolean containsWatermark(@NonNull Bitmap screenshot) {
         return Watermark.detect(screenshot);
     }
 
-    @NonNull
-    private static boolean notContainsWatermark(@NonNull UiAutomation uiAutomation) {
-        return !containsWatermark(uiAutomation);
+    private static boolean notContainsWatermark(@NonNull Bitmap screenshot) {
+        return !containsWatermark(screenshot);
     }
 
-    private static boolean waitUntil(long timeout, @NonNull Predicate<UiAutomation> condition) {
+    public static boolean waitUntil(long timeout, @NonNull Predicate<Bitmap> condition) {
         final long startTime = SystemClock.elapsedRealtime();
         SystemClock.sleep(SCREENSHOT_DELAY);
 
@@ -76,16 +72,27 @@ public final class InputMethodVisibilityVerifier {
         }
 
         final UiAutomation uiAutomation = instrumentation.getUiAutomation();
-        if (condition.test(uiAutomation)) {
-            return true;
-        }
-        while ((SystemClock.elapsedRealtime() - startTime) < timeout) {
-            SystemClock.sleep(SCREENSHOT_TIME_SLICE);
-            if (condition.test(uiAutomation)) {
+
+        Bitmap screenshot = null;
+        boolean retrievedScreenshot = false;
+
+        do {
+            screenshot = uiAutomation.takeScreenshot();
+            retrievedScreenshot = retrievedScreenshot || screenshot != null;
+
+            if (screenshot != null && condition.test(screenshot)) {
                 return true;
             }
+            SystemClock.sleep(SCREENSHOT_TIME_SLICE);
+        } while ((SystemClock.elapsedRealtime() - startTime) < timeout);
+
+        screenshot = uiAutomation.takeScreenshot();
+
+        if (!retrievedScreenshot && screenshot == null) {
+            fail("Failed to retrieve any screenshot.");
         }
-        return condition.test(uiAutomation);
+
+        return screenshot != null && condition.test(screenshot);
     }
 
     /**
