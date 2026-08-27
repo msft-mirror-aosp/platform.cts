@@ -20,7 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 
+import android.Manifest;
 import android.app.LocaleConfig;
 import android.app.LocaleManager;
 import android.content.Context;
@@ -88,7 +90,9 @@ public class LocaleConfigTest extends ActivityManagerTestBase {
     @Test
     public void testGetLocaleList() throws Exception {
         Context appContext = mContext.createPackageContext(TEST_PACKAGE, 0);
-        LocaleConfig localeConfig = new LocaleConfig(appContext);
+        LocaleConfig localeConfig = callWithShellPermissionIdentity(
+                () -> new LocaleConfig(appContext),
+                Manifest.permission.READ_APP_SPECIFIC_LOCALES);
 
         assertEquals(RESOURCE_LOCALES.stream().sorted().collect(Collectors.toList()),
                 new ArrayList<String>(Arrays.asList(
@@ -106,7 +110,9 @@ public class LocaleConfigTest extends ActivityManagerTestBase {
     @RequiresFlagsEnabled(android.content.res.Flags.FLAG_DEFAULT_LOCALE)
     public void testGetDefaultLocale() throws Exception {
         Context appContext = mContext.createPackageContext(TEST_PACKAGE, 0);
-        LocaleConfig localeConfig = new LocaleConfig(appContext);
+        LocaleConfig localeConfig = callWithShellPermissionIdentity(
+                () -> new LocaleConfig(appContext),
+                Manifest.permission.READ_APP_SPECIFIC_LOCALES);
 
         assertEquals("en-US", localeConfig.getDefaultLocale().toLanguageTag());
     }
@@ -120,7 +126,9 @@ public class LocaleConfigTest extends ActivityManagerTestBase {
         install(APK_WITHOUT_LOCALECONFIG);
         mInstalled = true;
         Context appContext = mContext.createPackageContext(TEST_PACKAGE_WITHOUT_LOCALECONFIG, 0);
-        LocaleConfig localeConfig = new LocaleConfig(appContext);
+        LocaleConfig localeConfig = callWithShellPermissionIdentity(
+                () -> new LocaleConfig(appContext),
+                Manifest.permission.READ_APP_SPECIFIC_LOCALES);
         LocaleList localeList = localeConfig.getSupportedLocales();
 
         assertNull(localeList);
@@ -140,7 +148,9 @@ public class LocaleConfigTest extends ActivityManagerTestBase {
         mOverrided = true;
         // Verify whether an override LocaleConfig can be read successfully
         Context appContext = mContext.createPackageContext(TEST_PACKAGE, 0);
-        LocaleConfig override = new LocaleConfig(appContext);
+        LocaleConfig override = callWithShellPermissionIdentity(
+                () -> new LocaleConfig(appContext),
+                Manifest.permission.READ_APP_SPECIFIC_LOCALES);
 
         assertEquals(0, override.describeContents());
         assertEquals(OVERRIDE_LOCALES, override.getSupportedLocales());
