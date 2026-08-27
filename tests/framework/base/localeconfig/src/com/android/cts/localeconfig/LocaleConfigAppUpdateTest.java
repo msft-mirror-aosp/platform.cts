@@ -124,7 +124,9 @@ public class LocaleConfigAppUpdateTest extends ActivityManagerTestBase {
 
         install(APK_WITHOUT_LOCALECONFIG);
         Context appContext = mContext.createPackageContext(TEST_PACKAGE, 0);
-        LocaleConfig localeConfig = new LocaleConfig(appContext);
+        LocaleConfig localeConfig = callWithShellPermissionIdentity(
+                () -> new LocaleConfig(appContext),
+                Manifest.permission.READ_APP_SPECIFIC_LOCALES);
         LocaleList localeList = localeConfig.getSupportedLocales();
 
         assertNull(localeList);
@@ -172,7 +174,9 @@ public class LocaleConfigAppUpdateTest extends ActivityManagerTestBase {
                 EMPTY_LOCALES);
 
         Context appContext = mContext.createPackageContext(TEST_PACKAGE, 0);
-        LocaleConfig localeConfig = new LocaleConfig(appContext);
+        LocaleConfig localeConfig = callWithShellPermissionIdentity(
+                () -> new LocaleConfig(appContext),
+                Manifest.permission.READ_APP_SPECIFIC_LOCALES);
         LocaleList localeList = localeConfig.getSupportedLocales();
 
         assertNull(localeList);
