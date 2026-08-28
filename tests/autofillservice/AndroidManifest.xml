@@ -76,8 +76,10 @@
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
-                <data android:scheme="autofillcts"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
+                <data android:scheme="http"/>
+                <data android:host="cts.autofill.com"/>
             </intent-filter>
         </activity>
         <activity android:name=".activities.SecondActivity"
