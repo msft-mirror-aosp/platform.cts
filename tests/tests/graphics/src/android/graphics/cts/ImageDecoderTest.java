@@ -2867,7 +2867,7 @@ public class ImageDecoderTest {
         return true;
     }
 
-    private static boolean hasHEVCDecoderSupportsYUVP010() {
+    public static boolean hasHEVCDecoderSupportsYUVP010() {
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
             if (mediaCodecInfo.isEncoder()) {
