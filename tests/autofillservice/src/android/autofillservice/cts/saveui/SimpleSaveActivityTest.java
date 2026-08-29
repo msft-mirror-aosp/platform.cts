@@ -33,6 +33,8 @@ import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_GENERIC;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PASSWORD;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_USERNAME;
 
+import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -66,6 +68,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.service.autofill.BatchUpdates;
 import android.service.autofill.CustomDescription;
@@ -1747,10 +1750,10 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     /**
      * Tests scenarios when user taps a span in the custom description, then the new activity
-     * finishes:
-     * the Save UI should have been restored.
+     * finishes: the Save UI should have been restored.
      */
     @Presubmit
+    @AsbSecurityTest(cveBugId = 465446148)
     @Test
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnCustomDescription_thenTapBack() throws Exception {
@@ -1761,10 +1764,10 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     /**
      * Tests scenarios when user taps a span in the succinct description, then the new activity
-     * finishes:
-     * the Save UI should have been restored.
+     * finishes: the Save UI should have been restored.
      */
     @Presubmit
+    @AsbSecurityTest(cveBugId = 465446148)
     @Test
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnSuccinctDescription_thenTapBack() throws Exception {
@@ -1773,11 +1776,11 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     }
 
     /**
-     * Tests scenarios when user taps a span in the custom description, then the new activity
-     * starts an another activity then it finishes:
-     * the Save UI should have been restored.
+     * Tests scenarios when user taps a span in the custom description, then the new activity starts
+     * an another activity then it finishes: the Save UI should have been restored.
      */
     @Presubmit
+    @AsbSecurityTest(cveBugId = 465446148)
     @Test
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnCustomDescription_forwardAnotherActivityThenTapBack()
@@ -1789,10 +1792,10 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     /**
      * Tests scenarios when user taps a span in the succinct description, then the new activity
-     * starts an another activity then it finishes:
-     * the Save UI should have been restored.
+     * starts an another activity then it finishes: the Save UI should have been restored.
      */
     @Presubmit
+    @AsbSecurityTest(cveBugId = 465446148)
     @Test
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnSuccinctDescription_forwardAnotherActivityThenTapBack()
@@ -1802,11 +1805,11 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     }
 
     /**
-     * Tests scenarios when user taps a span in the custom description, then the new activity
-     * stops but does not finish:
-     * the Save UI should have been restored.
+     * Tests scenarios when user taps a span in the custom description, then the new activity stops
+     * but does not finish: the Save UI should have been restored.
      */
     @Presubmit
+    @AsbSecurityTest(cveBugId = 465446148)
     @Test
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnCustomDescription_tapBackWithoutFinish() throws Exception {
@@ -1816,10 +1819,10 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
 
     /**
      * Tests scenarios when user taps a span in the succinct description, then the new activity
-     * stops but does not finish:
-     * the Save UI should have been restored.
+     * stops but does not finish: the Save UI should have been restored.
      */
     @Presubmit
+    @AsbSecurityTest(cveBugId = 465446148)
     @Test
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnSuccinctDescription_tapBackWithoutFinish() throws Exception {
@@ -1866,11 +1869,19 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
         // Waits for the commit be processed
         mUiBot.waitForIdle();
 
+        // Ensure link is opened directly by pre-selecting it via User Selection command.
+        // (Matches canonical pattern used in other CTS tests like SplitAppTest under
+        // cts/hostsidetests/appsecurity/test-apps/SplitApp).
+        runShellCommand(
+                "pm set-app-links-user-selection --package %s --user cur true cts.autofill.com",
+                mPackageName);
+
         mUiBot.assertSaveShowing(SAVE_DATA_TYPE_GENERIC);
 
         // Tapping URLSpan.
         final URLSpan span = mUiBot.findFirstUrlSpanWithText("Here is URLSpan");
         mActivity.syncRunOnUiThread(() -> span.onClick(/* unused= */ null));
+
         // Waits for the save UI hided
         mUiBot.waitForIdle();
 
@@ -1915,7 +1926,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     }
 
     private CharSequence newDescriptionWithUrlSpan(String action) {
-        final String url = "autofillcts:" + action;
+        final String url = "http://cts.autofill.com/" + action;
         final SpannableString ss = new SpannableString("Here is URLSpan");
         ss.setSpan(new URLSpan(url),
                 /* start= */ 8,  /* end= */ 15, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
