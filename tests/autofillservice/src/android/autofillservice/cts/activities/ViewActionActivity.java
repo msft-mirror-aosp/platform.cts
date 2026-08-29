@@ -56,7 +56,13 @@ public class ViewActionActivity extends AbstractAutoFillActivity {
         setContentView(R.layout.welcome_activity);
 
         final Uri data = getIntent().getData();
-        ActivityCustomAction type = ActivityCustomAction.valueOf(data.getSchemeSpecificPart());
+        // Robustly extract path segment and fallback to scheme specific part for backward
+        // compatibility.
+        String part = data.getLastPathSegment();
+        if (part == null) {
+            part = data.getSchemeSpecificPart();
+        }
+        ActivityCustomAction type = ActivityCustomAction.valueOf(part);
 
         switch (type) {
             case FAST_FORWARD_ANOTHER_ACTIVITY:
