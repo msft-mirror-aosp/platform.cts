@@ -53,6 +53,7 @@ import com.google.common.collect.Range;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -73,6 +74,10 @@ import java.util.concurrent.Executors;
 @RunWith(Parameterized.class)
 public class VibratorTest {
     private static final String SYSTEM_VIBRATOR_LABEL = "SystemVibrator";
+
+    @ClassRule
+    public static final XrVibrationSettingsRule sXrVibrationSettingsRule =
+            new XrVibrationSettingsRule();
 
     @Rule
     public ActivityScenarioRule<SimpleTestActivity> mActivityRule =
