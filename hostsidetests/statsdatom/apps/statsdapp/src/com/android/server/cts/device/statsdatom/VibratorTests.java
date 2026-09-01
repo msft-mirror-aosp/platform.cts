@@ -16,6 +16,9 @@
 
 package com.android.server.cts.device.statsdatom;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 
@@ -33,34 +36,59 @@ import org.junit.Test;
  */
 @NonApiTest(exemptionReasons = {}, justification = "METRIC")
 public class VibratorTests {
+    private static final String FEATURE_XR_API_SPATIAL = "android.software.xr.api.spatial";
     private Vibrator mVibrator;
+    private VibrationAttributes mXrVibrationAttributes;
+    private boolean mIsXrFormFactor;
 
     @Before
     public void setUp() {
-        mVibrator = InstrumentationRegistry.getContext().getSystemService(Vibrator.class);
+        Context context = InstrumentationRegistry.getContext();
+        mVibrator = context.getSystemService(Vibrator.class);
+        mIsXrFormFactor = isXrHeadset(context);
+        if (mIsXrFormFactor) {
+            mXrVibrationAttributes =
+                    new VibrationAttributes.Builder()
+                            .setUsage(VibrationAttributes.USAGE_HARDWARE_FEEDBACK)
+                            .build();
+        }
+    }
+
+    private static boolean isXrHeadset(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(FEATURE_XR_API_SPATIAL);
+    }
+
+    private void vibrate(VibrationEffect effect) {
+        if (mIsXrFormFactor) {
+            mVibrator.vibrate(effect, mXrVibrationAttributes);
+        } else {
+            mVibrator.vibrate(effect);
+        }
     }
 
     @Test
     public void testOneShotVibration() throws Exception {
-        mVibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+        vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
         // Sleep so that the app does not get killed while it's vibrating.
         Thread.sleep(1000);
     }
-
     @Test
     public void testPredefinedClickVibration() throws Exception {
-        mVibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK));
+        vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK));
         // Sleep so that the app does not get killed while it's vibrating.
         Thread.sleep(500);
     }
 
     @Test
     public void testComposedTickThenClickVibration() throws Exception {
-        mVibrator.vibrate(
+        vibrate(
                 VibrationEffect.startComposition()
                         .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK)
-                        .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK,
-                                /* scale= */ 0.5f, /* delay= */ 50)
+                        .addPrimitive(
+                                VibrationEffect.Composition.PRIMITIVE_CLICK,
+                                /* scale= */ 0.5f,
+                                /* delay= */ 50)
                         .compose());
 
         // Sleep so that the app does not get killed while it's vibrating.
@@ -69,7 +97,7 @@ public class VibratorTests {
 
     @Test
     public void testRepeatedWaveformVibration() throws Exception {
-        mVibrator.vibrate(VibrationEffect.createWaveform(new long[] { 50, 50 }, /* repeat= */ 0));
+        vibrate(VibrationEffect.createWaveform(new long[] {50, 50}, /* repeat= */ 0));
         // Let the vibration play for a while.
         Thread.sleep(500);
         mVibrator.cancel();
