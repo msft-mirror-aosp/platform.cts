@@ -47,6 +47,7 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -67,7 +68,11 @@ public class VibratorManagerTest {
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                     android.Manifest.permission.ACCESS_VIBRATOR_STATE);
-    
+
+    @ClassRule
+    public static final XrVibrationSettingsRule sXrVibrationSettingsRule =
+            new XrVibrationSettingsRule();
+
     @Rule
     public final MockitoRule mMockitoRule = MockitoJUnit.rule();
 
