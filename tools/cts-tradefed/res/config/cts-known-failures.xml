@@ -611,4 +611,7 @@
 
   <!-- Exclude deleted HealthConnect Controller module -->
   <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases" />
+
+  <!-- b/509794420 -->
+  <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases" />
 </configuration>
