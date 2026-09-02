@@ -54,6 +54,9 @@ public class ListeningPortsTest extends AndroidTestCase {
     private static final String LOOPBACK_PARAM = "loopback";
 
     private static final int CONN_TIMEOUT_IN_MS = 5000;
+    // The dns_tether UID used for AAR.
+    // Defined in system/core/libcutils/include/private/android_filesystem_config.h
+    private static final int AID_DNS_TETHER_UID = 1052;
 
     /** Ports that are allowed to be listening. */
     private static final List<String> EXCEPTION_PATTERNS = new ArrayList<String>(6);
@@ -129,6 +132,14 @@ public class ListeningPortsTest extends AndroidTestCase {
         return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
     }
 
+    private boolean isAutomotive() {
+        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    private boolean isAarDns(int port, int uid) {
+        return port == 53 && uid == AID_DNS_TETHER_UID;
+    }
+
     /**
      * Remotely accessible ports (loopback==false) are often used by
      * attackers to gain unauthorized access to computers systems without
@@ -148,6 +159,7 @@ public class ListeningPortsTest extends AndroidTestCase {
         final boolean loopback = Boolean.valueOf(testArgs.getString(LOOPBACK_PARAM));
 
         final boolean tv = isTv();
+        final boolean automotive = isAutomotive();
 
         String errors = "";
         List<ParsedProcEntry> entries = ParsedProcEntry.parse(procFileContents);
@@ -160,6 +172,7 @@ public class ListeningPortsTest extends AndroidTestCase {
                     && !(isException(addrPort) || isException(addrUid) || isException(addrPortUid))
                     && !(isUserDebugException(addrPort))
                     && !(tv && isOemUid(entry.uid) && isOemException(addrPort))
+                    && !(automotive && isAarDns(entry.port, entry.uid))
                     && (!entry.localAddress.isLoopbackAddress() ^ loopback)) {
                 if (isTcp && !isTcpConnectable(entry.localAddress, entry.port)) {
                     continue;
