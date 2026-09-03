@@ -133,6 +133,17 @@ public final class GnssDeviceInfo extends DeviceInfo {
      */
     private void collectAccumulatedDeltaRangeMeasurements(DeviceInfoStore store,
             LocationManager locationManager) throws InterruptedException, IOException {
+
+        // Fast-fail if GPS provider is not enabled or hardware does not support measurements.
+        // This prevents the collector from hanging for 5 seconds on test benches or virtual devices without GPS support.
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                    && locationManager.getGnssCapabilities() != null
+                    && !locationManager.getGnssCapabilities().hasMeasurements())) {
+            store.addResult("has_valid_accumulated_delta_range", false);
+            return;
+        }
+
         final int gnssMeasurementsEventsToCollect = 10;
         TestGnssMeasurementListener mMeasurementListener = new TestGnssMeasurementListener(
                 gnssMeasurementsEventsToCollect);
@@ -154,7 +165,7 @@ public final class GnssDeviceInfo extends DeviceInfo {
     }
 
     private class TestGnssMeasurementListener extends GnssMeasurementsEvent.Callback {
-        public static final int MEAS_TIMEOUT_IN_SEC = 5;
+        static final int MEAS_TIMEOUT_IN_SEC = 1;
         private final List<GnssMeasurementsEvent> mMeasurementsEvents;
         private final CountDownLatch mCountDownLatch;
         private static final long STANDARD_WAIT_TIME_MS = 50;
@@ -185,7 +196,7 @@ public final class GnssDeviceInfo extends DeviceInfo {
          *
          * @return the current list of GPS Measurements Events
          */
-        public List<GnssMeasurementsEvent> getEvents() {
+        List<GnssMeasurementsEvent> getEvents() {
             synchronized (mMeasurementsEvents) {
                 List<GnssMeasurementsEvent> clone = new ArrayList<>();
                 clone.addAll(mMeasurementsEvents);
@@ -193,13 +204,17 @@ public final class GnssDeviceInfo extends DeviceInfo {
             }
         }
 
-        public boolean waitFor() throws InterruptedException {
+        boolean waitFor() throws InterruptedException {
             long waitTimeRounds = (TimeUnit.SECONDS.toMillis(MEAS_TIMEOUT_IN_SEC))
                     / (STANDARD_WAIT_TIME_MS + STANDARD_SLEEP_TIME_MS);
             for (int i = 0; i < waitTimeRounds; ++i) {
                 Thread.sleep(STANDARD_SLEEP_TIME_MS);
                 if (mCountDownLatch.await(STANDARD_WAIT_TIME_MS, TimeUnit.MILLISECONDS)) {
                     return true;
+                }
+                // If after 500ms zero events have arrived on an indoor bench, exit early
+                if (i >= 5 && mMeasurementsEvents.isEmpty()) {
+                    return false;
                 }
             }
             return false;
