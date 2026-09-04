@@ -516,7 +516,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         if (!mIsFoldableDevice) {
             try {
                 ItsUtils.ItsCameraIdList cameraIdList =
-                        ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+                        ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
                 mToBeTestedCameraIds = cameraIdList.mCameraIdCombos;
                 mPrimaryRearCameraId = cameraIdList.mPrimaryRearCameraId;
                 mPrimaryFrontCameraId = cameraIdList.mPrimaryFrontCameraId;
@@ -558,7 +558,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         List<String> availableCameraIdList = new ArrayList<String>();
         try {
             ItsUtils.ItsCameraIdList cameraIdList =
-                    ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+                    ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
             toBeTestedCameraIds = cameraIdList.mCameraIdCombos;
             mPrimaryRearCameraId = cameraIdList.mPrimaryRearCameraId;
             mPrimaryFrontCameraId = cameraIdList.mPrimaryFrontCameraId;
