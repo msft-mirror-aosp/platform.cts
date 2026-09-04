@@ -566,7 +566,7 @@ public class ItsService extends Service implements SensorEventListener {
             if (mMemoryQuota == -1) {
                 // Initialize memory quota on this device
                 if (mItsCameraIdList == null) {
-                    mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+                    mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
                 }
                 if (mItsCameraIdList.mCameraIds.size() == 0) {
                     throw new ItsException("No camera devices");
@@ -1366,7 +1366,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doGetCameraIds() throws ItsException {
         if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
         }
         if (mItsCameraIdList.mCameraIdCombos.size() == 0) {
             throw new ItsException("No camera devices");
@@ -1486,7 +1486,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doGetMaxCamcorderProfileSize(String cameraId) throws ItsException {
         if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
         }
         if (mItsCameraIdList.mCameraIds.size() == 0) {
             throw new ItsException("No camera devices");
@@ -1546,7 +1546,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doCheckPrimaryCamera(String cameraId) throws ItsException {
         if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
         }
         if (mItsCameraIdList.mCameraIds.size() == 0) {
             throw new ItsException("No camera devices");
@@ -1597,7 +1597,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doCheckHLG10Support(String cameraId, int profileId) throws ItsException {
         if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
         }
         if (mItsCameraIdList.mCameraIds.size() == 0) {
             throw new ItsException("No camera devices");
@@ -1634,7 +1634,7 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doCheckP3Support(String cameraId) throws ItsException {
         if (mItsCameraIdList == null) {
-            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager);
+            mItsCameraIdList = ItsUtils.getItsCompatibleCameraIds(mCameraManager, this);
         }
         if (mItsCameraIdList.mCameraIds.size() == 0) {
             throw new ItsException("No camera devices");
