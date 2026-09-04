@@ -16,6 +16,7 @@
 
 package com.android.cts.verifier.camera.its;
 
+import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
@@ -35,6 +36,8 @@ import android.util.Size;
 
 import com.android.ex.camera2.blocking.BlockingCameraManager;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
+
+import com.android.cts.verifier.features.FeatureUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -324,7 +327,8 @@ public class ItsUtils {
         public String mPrimaryFrontCameraId;
     }
 
-    public static ItsCameraIdList getItsCompatibleCameraIds(CameraManager manager)
+    public static ItsCameraIdList getItsCompatibleCameraIds(CameraManager manager,
+            Context context)
             throws ItsException {
         if (manager == null) {
             throw new IllegalArgumentException("CameraManager is null");
@@ -335,6 +339,7 @@ public class ItsUtils {
         outList.mCameraIdCombos = new ArrayList<String>();
         try {
             String[] cameraIds = manager.getCameraIdList();
+            final boolean isXrHeadset = (context != null) && FeatureUtil.isXrHeadset(context);
             for (String id : cameraIds) {
                 CameraCharacteristics characteristics = manager.getCameraCharacteristics(id);
                 int[] actualCapabilities = characteristics.get(
@@ -376,6 +381,12 @@ public class ItsUtils {
                     // Skip LEGACY and EXTERNAL devices
                     continue;
                 }
+
+                // Skip devices that are front-facing cameras in XR headsets.
+                if (isXrFrontFacingCamera(isXrHeadset, characteristics, id)) {
+                    continue;
+                }
+
                 outList.mCameraIds.add(id);
                 outList.mCameraIdCombos.add(id);
 
@@ -410,6 +421,11 @@ public class ItsUtils {
                     if (!physicalHaveBC) {
                         continue;
                     }
+                    // Skip physical cameras that are front-facing cameras in XR headsets.
+                    if (isXrFrontFacingCamera(isXrHeadset, physicalChar, physicalId)) {
+                        continue;
+                    }
+
                     // To reduce duplicate tests, only additionally test hidden physical cameras
                     // with different focal length compared to the default focal length of the
                     // logical camera.
@@ -456,5 +472,19 @@ public class ItsUtils {
             }
         }
         return defaultFocalLength;
+    }
+
+    private static boolean isXrFrontFacingCamera(
+            boolean isXrHeadset,
+            CameraCharacteristics characteristics,
+            String cameraId) {
+        Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+        if (isXrHeadset && facing != null && facing == CameraMetadata.LENS_FACING_FRONT) {
+            Logt.i(TAG, "Camera " + cameraId
+                    + " is a front-facing camera on an XR headset; "
+                    + " exempt it from Camera ITS.");
+            return true;
+        }
+        return false;
     }
 }
