@@ -17,6 +17,7 @@
 package android.graphics.cts;
 
 import static android.graphics.cts.ImageDecoderTest.has10BitHEVCDecoder;
+import static android.graphics.cts.ImageDecoderTest.hasHEVCDecoderSupportsYUVP010;
 import static android.system.OsConstants.SEEK_SET;
 
 import static org.junit.Assert.assertEquals;
@@ -340,7 +341,11 @@ public class AImageDecoderTest {
     @RequiresDevice
     @Parameters(method = "getBitMapFormatsUnpremul")
     public void testDecode10BitHeif(int bitmapFormat, boolean unpremul) throws IOException {
+        assumeTrue("HEIF is not supported on this device, skip this test.",
+                ImageDecoder.isMimeTypeSupported("image/heif"));
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
+        assumeTrue("No HEVC decoder that supports YUVP010, skip the test.",
+                hasHEVCDecoderSupportsYUVP010());
         final int resId = R.raw.heifimage_10bit;
         Bitmap bm = null;
         switch (bitmapFormat) {
