@@ -120,7 +120,9 @@ import static android.view.Surface.ROTATION_90;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
 import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
+
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -128,6 +130,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+
 import static java.lang.Integer.toHexString;
 
 import android.accessibilityservice.AccessibilityService;
@@ -186,7 +189,6 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.android.compatibility.common.util.AppOpsUtils;
-import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -1239,6 +1241,15 @@ public abstract class ActivityManagerTestBase {
 
     protected boolean isCar() {
         return hasDeviceFeature(FEATURE_AUTOMOTIVE);
+    }
+
+    protected boolean isXr() {
+        return hasDeviceFeature(
+                        /* PackageManager.FEATURE_XR_API_SPATIAL */
+                        "android.software.xr.api.spatial")
+                || hasDeviceFeature(
+                        /* PackageManager.FEATURE_XR_API_OPENXR */
+                        "android.software.xr.api.openxr");
     }
 
     protected boolean isLeanBack() {

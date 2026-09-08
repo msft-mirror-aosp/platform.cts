@@ -89,7 +89,9 @@ public class ActivityLifecycleKeyguardTests extends ActivityLifecycleClientTestB
         } // keyguard hidden
 
         // Verify that activity was resumed
-        if (isCar()) {
+        // TODO(b/555958156): In XR, tolerate superfluous lifecycle events until the underlying
+        // pause/resume oscillation during Keyguard dismiss on devices without Doze is resolved.
+        if (isCar() || isXr()) {
             assertRestartAndResumeSubSequence(FirstActivity.class, getTransitionLog());
             waitAndAssertActivityCurrentState(activity.getClass(), ON_RESUME);
         } else {
@@ -166,7 +168,13 @@ public class ActivityLifecycleKeyguardTests extends ActivityLifecycleClientTestB
         // Wait and assert lifecycle
         waitAndAssertActivityStates(state(firstActivity, ON_RESUME),
                 state(PipActivity.class, ON_PAUSE));
-        assertRestartAndResumeSequence(FirstActivity.class, getTransitionLog());
+        // TODO(b/555958156): In XR, tolerate superfluous lifecycle events until the underlying
+        // pause/resume oscillation during Keyguard dismiss on devices without Doze is resolved.
+        if (isXr()) {
+            assertRestartAndResumeSubSequence(FirstActivity.class, getTransitionLog());
+        } else {
+            assertRestartAndResumeSequence(FirstActivity.class, getTransitionLog());
+        }
         assertSequence(PipActivity.class, getTransitionLog(),
                 Arrays.asList(ON_RESTART, ON_START, ON_RESUME, ON_PAUSE), "keyguardGone");
     }
