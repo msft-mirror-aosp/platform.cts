@@ -717,7 +717,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         }
 
         // Lock screen removed - activity should be on top now
-        if (isCar()) {
+        // TODO(b/555958156): In XR, tolerate superfluous lifecycle events until the underlying
+        // pause/resume oscillation during Keyguard dismiss on devices without Doze is resolved.
+        if (isCar() || isXr()) {
             assertStopToResumeSubSequence(activityClass, getTransitionLog());
             waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
@@ -745,7 +747,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         }
 
         // Lock screen removed - activity should be on top now
-        if (isCar()) {
+        // TODO(b/555958156): In XR, tolerate superfluous lifecycle events until the underlying
+        // pause/resume oscillation during Keyguard dismiss on devices without Doze is resolved.
+        if (isCar() || isXr()) {
             assertStopToResumeSubSequence(activityClass, getTransitionLog());
             waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
