@@ -12,6 +12,7 @@ import android.app.role.RoleManager.ROLE_SMS
 import android.app.role.RoleManager.ROLE_SYSTEM_SUPERVISION
 import android.app.role.RoleManager.ROLE_SYSTEM_WELLBEING
 import android.companion.AssociationRequest
+import android.companion.cts.common.CompanionActivity
 import android.companion.cts.common.DEVICE_PROFILE_TO_PERMISSION
 import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationPending
@@ -49,10 +50,17 @@ class DeviceProfilesTest : CoreTestBase() {
         assumeFalse(FeatureUtil.isWatch())
     }
 
+    @CallSuper
+    override fun tearDown() {
+        CompanionActivity.finish()
+        super.tearDown()
+    }
+
     /** Test that all supported device profiles require a permission. */
     @Test
     fun test_supportedProfiles() {
         val callback = RecordingCallback()
+        CompanionActivity.launchAndWait(context)
         DEVICE_PROFILE_TO_PERMISSION.forEach { (profile, permission) ->
             callback.clearRecordedInvocations()
             val request = buildRequest(deviceProfile = profile)
@@ -99,6 +107,7 @@ class DeviceProfilesTest : CoreTestBase() {
         val callback = RecordingCallback()
         val request = buildRequest(deviceProfile = null)
 
+        CompanionActivity.launchAndWait(context)
         callback.assertInvokedByActions {
             // Should not require a permission.
             cdm.associate(request, SIMPLE_EXECUTOR, callback)
