@@ -16,11 +16,13 @@
 
 package android.companion.cts.core
 
+import android.annotation.CallSuper
 import android.companion.AssociationRequest
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
 import android.companion.Flags
 import android.companion.cts.common.ASSOCIATION_TAG
 import android.companion.cts.common.ASSOCIATION_TAG_INVALID
+import android.companion.cts.common.CompanionActivity
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationPending
@@ -48,6 +50,12 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AssociateTest : CoreTestBase() {
 
+    @CallSuper
+    override fun tearDown() {
+        CompanionActivity.finish()
+        super.tearDown()
+    }
+
     @Test
     fun test_associate() {
         assumeFalse(FeatureUtil.isWatch())
@@ -56,6 +64,7 @@ class AssociateTest : CoreTestBase() {
                 .build()
         val callback = RecordingCallback()
 
+        CompanionActivity.launchAndWait(context)
         callback.assertInvokedByActions {
             cdm.associate(request, SIMPLE_EXECUTOR, callback)
         }

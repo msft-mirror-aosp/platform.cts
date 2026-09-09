@@ -324,6 +324,7 @@ open class UiAutomationTestBase(
                 .build()
         callback.clearRecordedInvocations()
 
+        CompanionActivity.launchAndWait(context)
         callback.assertInvokedByActions {
             // If the REQUEST_COMPANION_SELF_MANAGED and/or the profile permission is required:
             // run with these permissions as the Shell;
@@ -349,8 +350,6 @@ open class UiAutomationTestBase(
         val pendingConfirmation = associationInvocation.intentSender
         callback.clearRecordedInvocations()
 
-        // Launch CompanionActivity, and then launch confirmation UI from it.
-        CompanionActivity.launchAndWait(context)
         CompanionActivity.startIntentSender(pendingConfirmation)
 
         confirmationUi.waitUntilVisible()
