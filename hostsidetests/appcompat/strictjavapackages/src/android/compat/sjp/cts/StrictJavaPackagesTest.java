@@ -548,6 +548,18 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             .build();
 
     /**
+     * Exempt APEX packages for SDV (Software Defined Vehicle) comms APEX (b/553829234).
+     *
+     * <p>Vendor APEXes contain unbundled vendor apps labeled vendor_app_file, which adbd
+     * on user builds cannot read/pull from the device.
+     */
+    private static final ImmutableSet<String> EXEMPT_APK_IN_APEX_PACKAGES =
+            ImmutableSet.of(
+                    "com.google.sdv.comms",
+                    "com.google.sdv.comms_samples"
+            );
+
+    /**
      * Fetch all jar files in BCP, SSCP and shared libs and extract all the classes.
      *
      * <p>This method cannot be static, as there are no static equivalents for {@link #getDevice()}
@@ -856,6 +868,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 HashMultimap.create();
         Arrays.stream(collectApkInApexPaths())
                 .filter(apk -> apk != null && !apk.isEmpty())
+                .filter(apk -> !isExemptApkInApex(apk))
                 .parallel()
                 .forEach(apk -> {
                     File apkFile = null;
@@ -1092,6 +1105,10 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             return Optional.empty();
         }
         return Optional.of(m.group("apexName"));
+    }
+
+    private boolean isExemptApkInApex(String apk) {
+        return apexForJar(apk).map(EXEMPT_APK_IN_APEX_PACKAGES::contains).orElse(false);
     }
 
     private static boolean doesFileExist(String path, ITestDevice device) {
