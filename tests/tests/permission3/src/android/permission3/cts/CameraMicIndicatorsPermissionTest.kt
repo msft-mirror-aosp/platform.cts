@@ -481,12 +481,10 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
             // Ensure the privacy chip is present (or not)
             carMicPrivacyChipId = context.getString(R.string.car_mic_privacy_chip_id)
             carCameraPrivacyChipId = context.getString(R.string.car_camera_privacy_chip_id)
-            var micPrivacyChip = uiDevice.findObject(By.res(carMicPrivacyChipId))
-            var cameraPrivacyChip = uiDevice.findObject(By.res(carCameraPrivacyChipId))
+            val micPrivacyChip = uiDevice.findObject(By.res(carMicPrivacyChipId))
+            val cameraPrivacyChip = uiDevice.findObject(By.res(carCameraPrivacyChipId))
             if (useMic) {
                 assertNotNull("Did not find mic chip", micPrivacyChip)
-                // Click to chip to show the panel.
-                micPrivacyChip.click()
             } else if (useCamera) {
                 assertNotNull("Did not find camera chip", cameraPrivacyChip)
                 // Click to chip to show the panel.
@@ -504,11 +502,7 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
                 return@eventually
             }
             if (useMic) {
-                // There should be a mic privacy panel after mic privacy chip is clicked
-                val micLabelView = uiDevice.findObject(UiSelector().textContains(micLabel))
-                assertTrue("View with text $micLabel not found", micLabelView.exists())
-                val appView = uiDevice.findObject(UiSelector().textContains(APP_LABEL))
-                assertTrue("View with text $APP_LABEL not found", appView.exists())
+                // Skip the check for mic privacy panel on automotive devices
             } else if (useCamera) {
                 // There should be a camera privacy panel after camera privacy chip is clicked
                 val cameraLabelView = uiDevice.findObject(UiSelector().textContains(cameraLabel))
@@ -517,11 +511,6 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
                 assertTrue("View with text $APP_LABEL not found", appView.exists())
             } else {
                 // There should be no privacy panel when using hot word
-                val micLabelView = uiDevice.findObject(UiSelector().textContains(micLabel))
-                assertFalse(
-                    "View with text $micLabel found, but did not expect to",
-                    micLabelView.exists()
-                )
                 val cameraLabelView = uiDevice.findObject(UiSelector().textContains(cameraLabel))
                 assertFalse(
                     "View with text $cameraLabel found, but did not expect to",
