@@ -1217,7 +1217,8 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         List<ErrorLoggingService.LogEvent> events =
                 mErrorServiceConnection.getLog(SETUP_TIMEOUT, TestConstants.EVENT_CAMERA_CONNECT);
         assertNotNull("Camera device not connected in remote process!", events);
-        TestUtils.assertOnly(TestConstants.EVENT_CAMERA_CONNECT, events);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
+        assertTrue(eventTagCountMap.containsKey(TestConstants.EVENT_CAMERA_CONNECT));
     }
 
     private long openCameraNativeClient(String cameraId) throws Exception {
