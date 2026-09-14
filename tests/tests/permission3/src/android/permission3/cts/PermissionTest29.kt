@@ -155,7 +155,7 @@ class PermissionTest29 : BaseUsePermissionTest() {
             assertAppHasPermission(android.Manifest.permission.ACCESS_FINE_LOCATION, true)
             assertAppHasPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION, false)
 
-            clickPermissionRequestNoUpgradeAndDontAskAgainButton()
+            clickPermissionRequestNoUpgradeButton()
         }
     }
 
