@@ -765,6 +765,18 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         }
     }
 
+    protected fun clickPermissionRequestNoUpgradeButton() {
+        if (isAutomotive || isWatch) {
+            click(By.text(getPermissionControllerString(NO_UPGRADE_AND_DONT_ASK_AGAIN_BUTTON_TEXT)))
+        } else {
+            if (waitFindObjectOrNull(By.res(NO_UPGRADE_BUTTON), 2_000L) != null) {
+                click(By.res(NO_UPGRADE_BUTTON))
+            } else {
+                click(By.res(NO_UPGRADE_AND_DONT_ASK_AGAIN_BUTTON))
+            }
+        }
+    }
+
     protected fun clickPermissionRationaleContentInAppPermission() {
         waitForIdle()
         click(By.res(APP_PERMISSION_RATIONALE_CONTENT_VIEW))
