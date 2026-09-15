@@ -475,29 +475,36 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
 
     @Test
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
-    @ApiTest(apis = {"android.car.media.CarAudioManager#getGroupMaxVolume",
-            "android.car.media.CarAudioManager#getGroupMinVolume",
-            "android.car.media.CarAudioManager#getGroupVolume"})
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#getGroupMaxVolume",
+                "android.car.media.CarAudioManager#getGroupMinVolume",
+                "android.car.media.CarAudioManager#getGroupVolume"
+            })
     public void getGroupVolume() {
-        if (mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING)) {
-            assumePrimaryZone();
-        }
+        assumeDynamicRoutingIsEnabled();
+        assumePrimaryZone();
         int maxIndex = mCarAudioManager.getGroupMaxVolume(mVolumeGroupId);
         int minIndex = mCarAudioManager.getGroupMinVolume(mVolumeGroupId);
 
         int currentIndex = mCarAudioManager.getGroupVolume(mVolumeGroupId);
 
         assertWithMessage("Current maximum volume for primary zone")
-                .that(currentIndex).isAtMost(maxIndex);
+                .that(currentIndex)
+                .isAtMost(maxIndex);
         assertWithMessage("Current minimum volume for primary zone")
-                .that(currentIndex).isAtLeast(minIndex);
+                .that(currentIndex)
+                .isAtLeast(minIndex);
     }
 
     @Test
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
-    @ApiTest(apis = {"android.car.media.CarAudioManager#getGroupMaxVolume",
-            "android.car.media.CarAudioManager#getGroupMinVolume",
-            "android.car.media.CarAudioManager#getGroupVolume"})
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#getGroupMaxVolume",
+                "android.car.media.CarAudioManager#getGroupMinVolume",
+                "android.car.media.CarAudioManager#getGroupVolume"
+            })
     public void getGroupVolume_withZoneId() {
         assumeDynamicRoutingIsEnabled();
         readFirstZoneAndVolumeGroup();
@@ -510,6 +517,56 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
                 mVolumeGroupId).that(currentIndex).isAtMost(maxIndex);
         assertWithMessage("Current minimum volume for zone %s volume group %s", mZoneId,
                 mVolumeGroupId).that(currentIndex).isAtLeast(minIndex);
+    }
+
+    @Test
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#getGroupMaxVolume",
+                "android.car.media.CarAudioManager#getGroupMinVolume",
+                "android.car.media.CarAudioManager#getGroupVolume"
+            })
+    public void getGroupVolume_withoutDynamicRouting() {
+        assumeDynamicRoutingIsDisabled();
+        for (int groupId = 0; groupId < LEGACY_GROUP_VOLUME_COUNT; groupId++) {
+            int maxIndex = mCarAudioManager.getGroupMaxVolume(groupId);
+            int minIndex = mCarAudioManager.getGroupMinVolume(groupId);
+
+            int currentIndex = mCarAudioManager.getGroupVolume(groupId);
+
+            assertWithMessage("Current maximum volume for legacy group %s", groupId)
+                    .that(currentIndex)
+                    .isAtMost(maxIndex);
+            assertWithMessage("Current minimum volume for legacy group %s", groupId)
+                    .that(currentIndex)
+                    .isAtLeast(minIndex);
+        }
+    }
+
+    @Test
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#getGroupMaxVolume",
+                "android.car.media.CarAudioManager#getGroupMinVolume",
+                "android.car.media.CarAudioManager#getGroupVolume"
+            })
+    public void getGroupVolume_withZoneIdWithoutDynamicRouting() {
+        assumeDynamicRoutingIsDisabled();
+        for (int groupId = 0; groupId < LEGACY_GROUP_VOLUME_COUNT; groupId++) {
+            int maxIndex = mCarAudioManager.getGroupMaxVolume(LEGACY_ZONE_ID, groupId);
+            int minIndex = mCarAudioManager.getGroupMinVolume(LEGACY_ZONE_ID, groupId);
+
+            int currentIndex = mCarAudioManager.getGroupVolume(LEGACY_ZONE_ID, groupId);
+
+            assertWithMessage("Current volume for legacy zone %s group %s", LEGACY_ZONE_ID, groupId)
+                    .that(currentIndex)
+                    .isAtMost(maxIndex);
+            assertWithMessage("Current volume for legacy zone %s group %s", LEGACY_ZONE_ID, groupId)
+                    .that(currentIndex)
+                    .isAtLeast(minIndex);
+        }
     }
 
     @Test
