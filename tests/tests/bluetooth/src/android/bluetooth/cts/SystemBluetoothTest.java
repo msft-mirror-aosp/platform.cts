@@ -69,7 +69,16 @@ public class SystemBluetoothTest {
     private static final String TAG = SystemBluetoothTest.class.getSimpleName();
 
     private static final Duration OOB_TIMEOUT = Duration.ofSeconds(1);
-    private static final long DEFAULT_DISCOVERY_TIMEOUT_MS = 12800;
+    /**
+     * Per Bluetooth SIG Core Spec v5.4 Vol4, Part E, 7.1.1-Inquiry Command,
+     * the maximum inquiry scan duration is 61.44 seconds.
+     *
+     * We use this max spec-compliant value instead of relying on the internal
+     * AdapterProperties.java DEFAULT_DISCOVERY_TIMEOUT_MS, which is private.
+     * This improves CTS test stability and future-proofing, providing CTS
+     * room for internal changes without breaking the test.
+     */
+    private static final long MAX_DISCOVERY_TIMEOUT_MS = 61_440; // 61.44sec
     private static final int DISCOVERY_START_TIMEOUT = 500;
 
     private static final Context sContext =
@@ -162,7 +171,7 @@ public class SystemBluetoothTest {
             long discoveryEndTime = sAdapter.getDiscoveryEndMillis();
             long currentTime = System.currentTimeMillis();
             assertThat(discoveryEndTime > currentTime).isTrue();
-            assertThat(discoveryEndTime - currentTime < DEFAULT_DISCOVERY_TIMEOUT_MS).isTrue();
+            assertThat(discoveryEndTime - currentTime < MAX_DISCOVERY_TIMEOUT_MS).isTrue();
 
             sContext.unregisterReceiver(mockReceiver);
         } finally {
