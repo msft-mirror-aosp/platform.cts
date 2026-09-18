@@ -57,6 +57,9 @@ public class ListeningPortsTest extends AndroidTestCase {
     // The dns_tether UID used for AAR.
     // Defined in system/core/libcutils/include/private/android_filesystem_config.h
     private static final int AID_DNS_TETHER_UID = 1052;
+    // The network_stack UID used for DHCP server in Tethering/NetworkStack.
+    // Defined in system/core/libcutils/include/private/android_filesystem_config.h
+    private static final int AID_NETWORK_STACK_UID = 1073;
 
     /** Ports that are allowed to be listening. */
     private static final List<String> EXCEPTION_PATTERNS = new ArrayList<String>(6);
@@ -136,6 +139,10 @@ public class ListeningPortsTest extends AndroidTestCase {
         return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
+    private boolean isAarDhcp(int port, int uid) {
+        return port == 67 && uid == AID_NETWORK_STACK_UID;
+    }
+
     private boolean isAarDns(int port, int uid) {
         return port == 53 && uid == AID_DNS_TETHER_UID;
     }
@@ -172,7 +179,7 @@ public class ListeningPortsTest extends AndroidTestCase {
                     && !(isException(addrPort) || isException(addrUid) || isException(addrPortUid))
                     && !(isUserDebugException(addrPort))
                     && !(tv && isOemUid(entry.uid) && isOemException(addrPort))
-                    && !(automotive && isAarDns(entry.port, entry.uid))
+                    && !(automotive && (isAarDns(entry.port, entry.uid) || isAarDhcp(entry.port, entry.uid)))
                     && (!entry.localAddress.isLoopbackAddress() ^ loopback)) {
                 if (isTcp && !isTcpConnectable(entry.localAddress, entry.port)) {
                     continue;
