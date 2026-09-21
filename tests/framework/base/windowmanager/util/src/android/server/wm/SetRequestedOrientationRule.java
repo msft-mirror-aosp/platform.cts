@@ -39,8 +39,7 @@ import org.junit.runners.model.Statement;
  */
 public class SetRequestedOrientationRule implements TestRule {
     @Override
-    public Statement apply(Statement base,
-            Description description) {
+    public Statement apply(Statement base, Description description) {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
@@ -48,8 +47,9 @@ public class SetRequestedOrientationRule implements TestRule {
                         new DisableFixedToUserRotationRule();
                 mDisableFixedToUserRotationRule.before();
                 try {
+                    boolean shouldIgnore = PackageUtil.isAutomotive();
                     try (IgnoreOrientationRequestSession session =
-                                 new IgnoreOrientationRequestSession(false /* don' ignore */)) {
+                            new IgnoreOrientationRequestSession(shouldIgnore)) {
                         base.evaluate();
                     }
                 } finally {
