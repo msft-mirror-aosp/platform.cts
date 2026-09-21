@@ -29,7 +29,8 @@ public class DisplayUtils {
         final PackageManager pm = activity.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE)
                 && pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT)
-                && !isCloseToSquareDisplay(activity);
+                && !isCloseToSquareDisplay(activity)
+                && !pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     /** Checks whether the display dimension is close to square. */
