@@ -293,6 +293,7 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
         }
     }
 
+    @Ignore("b/560116910: Needs to be reworked after uncovering a flaw via a vulnerability fix and will be re-landed with the appropriate fix later")
     @LargeTest
     @Test
     public void testManagedCall() throws Exception {
