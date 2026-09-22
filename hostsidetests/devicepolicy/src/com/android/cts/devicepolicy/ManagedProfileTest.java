@@ -31,6 +31,7 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.RunInterruptedException;
 import com.android.tradefed.util.RunUtil;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -241,6 +242,7 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
         }
     }
 
+    @Ignore("b/560116910: Needs to be reworked after uncovering a flaw via a vulnerability fix and will be re-landed with the appropriate fix later")
     @LargeTest
     @Test
     public void testManagedCall() throws Exception {
