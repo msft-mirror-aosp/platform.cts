@@ -369,7 +369,12 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             }
             assertCameraDeviceSharingSupportedJavaClient(mCameraId, /*sharingSupported*/ true);
             try {
+                // Opening a shared camera waits for the client's SurfaceView when the shared
+                // session configuration declares one, so each client must be in the foreground
+                // when it opens the camera. Launching client 2 moved client 1 to the background.
+                forceCtsActivityToTop();
                 openSharedCameraJavaClient(mCameraId, /* isPrimaryClient */ true);
+                forceCtsSecondaryActivityToTop();
                 // starting new client with same priority replaces the old client as the primary
                 openSharedCameraJavaClient(
                         mCameraId, /* isPrimaryClient */
