@@ -19,11 +19,15 @@ package android.voiceinteraction.cts;
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertThrows;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -41,8 +45,10 @@ import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 
 import org.junit.Test;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -165,15 +171,14 @@ public class VoiceInteractionSessionVisibleActivityTest extends AbstractVoiceInt
             Intent visibleResult = getResultOnPerformActivityChange(
                     Utils.ACTIVITY_NEW, /* expectedVisibleResult= */ true);
             assertThat(visibleResult).isNotNull();
-            assertThat(visibleResult.getIntExtra(Utils.VOICE_INTERACTION_KEY_TASKID,
+            assertWithMessage("Incorrect task id").that(visibleResult.getIntExtra(Utils.VOICE_INTERACTION_KEY_TASKID,
                     INVALID_TASK_ID)).isEqualTo(mActivityControl.mTaskId);
-
             // After crashing an activity, the VisibleActivityCallback.onInVisible should be
             // called with this crashing activity.
             Intent invisibleResult = getResultOnPerformActivityChange(
                     Utils.ACTIVITY_CRASH, /* expectedVisibleResult= */ false);
             assertThat(invisibleResult).isNotNull();
-            assertThat(invisibleResult.getIntExtra(Utils.VOICE_INTERACTION_KEY_TASKID,
+            assertWithMessage("Incorrect task id").that(invisibleResult.getIntExtra(Utils.VOICE_INTERACTION_KEY_TASKID,
                     INVALID_TASK_ID)).isEqualTo(mActivityControl.mTaskId);
         } finally {
             mSessionControl.unregisterVisibleActivityCallback();
@@ -183,48 +188,111 @@ public class VoiceInteractionSessionVisibleActivityTest extends AbstractVoiceInt
 
     private Intent getResultOnPerformActivityChange(int activityChange,
             boolean expectedVisibleResult) throws Exception {
-        // Sleep one second to reduce the impact of changing activity state.
-        Thread.sleep(1000);
+        // On multi-window shells (e.g. Automotive) opening or crashing an activity can
+        // cause several unrelated tasks to also transition to visible/invisible. Register
+        // a receiver that queues *every* matching broadcast and later awaits the one
+        // whose taskId matches the activity we are actually driving.
+        final String action = expectedVisibleResult
+                ? Utils.VISIBLE_ACTIVITY_CALLBACK_ONVISIBLE_INTENT
+                : Utils.VISIBLE_ACTIVITY_CALLBACK_ONINVISIBLE_INTENT;
+        final TaskIdBroadcastReceiver receiver = new TaskIdBroadcastReceiver(mContext, action);
+        receiver.register();
+        try {
+            Log.v(TAG, "performActivityChange : " + activityChange);
+            switch (activityChange) {
+                case Utils.ACTIVITY_NEW:
+                    // Start a new activity
+                    mActivityControl.startActivity();
+                    break;
+                case Utils.ACTIVITY_FINISH:
+                    // Finish an activity
+                    mActivityControl.finishActivity();
+                    break;
+                case Utils.ACTIVITY_CRASH:
+                    // Crash an activity
+                    mActivityControl.crashActivity();
+                    break;
+            }
 
-        final BlockingBroadcastReceiver onVisibleReceiver = new BlockingBroadcastReceiver(
-                mContext, Utils.VISIBLE_ACTIVITY_CALLBACK_ONVISIBLE_INTENT);
-        onVisibleReceiver.register();
+            // mActivityControl.mTaskId is guaranteed to be populated here:
+            //   - ACTIVITY_NEW: startActivity() blocks until the testapp's RemoteCallback
+            //     delivers the task id.
+            //   - ACTIVITY_FINISH / ACTIVITY_CRASH: a preceding ACTIVITY_NEW already set it.
+            final int expectedTaskId = mActivityControl.mTaskId;
+            final long timeoutMs = Utils.getAdjustedOperationTimeoutMs();
+            final Intent result = receiver.awaitForTaskId(expectedTaskId, timeoutMs);
+            Log.v(TAG, (expectedVisibleResult ? "onVisibleIntent : " : "onInvisibleIntent : ")
+                    + result + " (expectedTaskId=" + expectedTaskId + ")");
+            return result;
+        } finally {
+            receiver.unregisterQuietly();
+        }
+    }
 
-        final BlockingBroadcastReceiver onInvisibleReceiver = new BlockingBroadcastReceiver(
-                mContext, Utils.VISIBLE_ACTIVITY_CALLBACK_ONINVISIBLE_INTENT);
-        onInvisibleReceiver.register();
+    /**
+     * Broadcast receiver that queues every intent whose action matches, and lets a caller
+     * synchronously await one whose {@link Utils#VOICE_INTERACTION_KEY_TASKID} extra equals
+     * an expected task id. Intents for other tasks are discarded so shell relayouts on
+     * multi-window devices don't confuse callers.
+     */
+    private static final class TaskIdBroadcastReceiver extends BroadcastReceiver {
+        private final Context mContext;
+        private final String mAction;
+        private final BlockingQueue<Intent> mQueue = new LinkedBlockingQueue<>();
 
-        Log.v(TAG, "performActivityChange : " + activityChange);
-        switch (activityChange) {
-            case Utils.ACTIVITY_NEW:
-                // Start a new activity
-                mActivityControl.startActivity();
-                break;
-            case Utils.ACTIVITY_FINISH:
-                // Finish an activity
-                mActivityControl.finishActivity();
-                break;
-            case Utils.ACTIVITY_CRASH:
-                // Crash an activity
-                mActivityControl.crashActivity();
-                break;
+        TaskIdBroadcastReceiver(Context context, String action) {
+            mContext = context;
+            mAction = action;
         }
 
-        final long timeoutMs = Utils.getAdjustedOperationTimeoutMs();
-        final Intent onVisibleIntent = onVisibleReceiver.awaitForBroadcast(
-                timeoutMs);
-        Log.v(TAG, "onVisibleIntent : " + onVisibleIntent);
-        onVisibleReceiver.unregisterQuietly();
-
-        final Intent onInvisibleIntent = onInvisibleReceiver.awaitForBroadcast(
-                timeoutMs);
-        Log.v(TAG, "onInvisibleIntent : " + onVisibleIntent);
-        onInvisibleReceiver.unregisterQuietly();
-
-        if (expectedVisibleResult) {
-            return onVisibleIntent;
+        void register() {
+            mContext.registerReceiver(this, new IntentFilter(mAction),
+                    Context.RECEIVER_EXPORTED);
         }
-        return onInvisibleIntent;
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.v(TAG, "TaskIdBroadcastReceiver queued " + mAction + " taskId="
+                    + intent.getIntExtra(Utils.VOICE_INTERACTION_KEY_TASKID, INVALID_TASK_ID));
+            mQueue.add(intent);
+        }
+
+        /**
+         * Waits up to {@code timeoutMs} (total) for a queued intent whose taskId equals
+         * {@code expectedTaskId}. Intents for other tasks are logged and skipped.
+         * Returns {@code null} if the deadline is reached before a matching intent arrives.
+         */
+        @Nullable
+        Intent awaitForTaskId(int expectedTaskId, long timeoutMs) throws InterruptedException {
+            final long deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+            while (true) {
+                final long remainingNs = deadlineNs - System.nanoTime();
+                if (remainingNs <= 0) {
+                    Log.w(TAG, "Timed out waiting for " + mAction + " for taskId="
+                            + expectedTaskId);
+                    return null;
+                }
+                final Intent intent = mQueue.poll(remainingNs, TimeUnit.NANOSECONDS);
+                if (intent == null) {
+                    return null;
+                }
+                final int taskId = intent.getIntExtra(
+                        Utils.VOICE_INTERACTION_KEY_TASKID, INVALID_TASK_ID);
+                if (taskId == expectedTaskId) {
+                    return intent;
+                }
+                Log.v(TAG, "Ignoring " + mAction + " for unrelated taskId=" + taskId
+                        + " (waiting for " + expectedTaskId + ")");
+            }
+        }
+
+        void unregisterQuietly() {
+            try {
+                mContext.unregisterReceiver(this);
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to unregister TaskIdBroadcastReceiver", e);
+            }
+        }
     }
 
     private void registerVisibleActivityCallback() throws Exception {
