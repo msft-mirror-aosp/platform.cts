@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * PackageDeviceInfo collector.
@@ -127,8 +128,11 @@ public class PackageDeviceInfo extends DeviceInfo {
     protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
         final PackageManager pm = getContext().getPackageManager();
 
-        final List<PackageInfo> allPackages =
-                pm.getInstalledPackages(PackageManager.GET_PERMISSIONS);
+        int packageFlags = PackageManager.GET_PERMISSIONS | PackageManager.GET_SIGNATURES;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageFlags |= PackageManager.GET_SIGNING_CERTIFICATES;
+        }
+        final List<PackageInfo> allPackages = pm.getInstalledPackages(packageFlags);
         final Set<String> defaultNotificationListeners =
                 getColonSeparatedPackageList(CONFIG_NOTIFICATION_ACCESS);
 
@@ -144,6 +148,30 @@ public class PackageDeviceInfo extends DeviceInfo {
         for (PermissionInfo permission : platformInfo.permissions) {
           platformPermissions.add(permission.name);
         }
+
+        // Pre-calculate digests in parallel to optimize I/O (zero Binder IPCs in loop)
+        final ConcurrentHashMap<String, String> fileHashes = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<String, String> signatureHashes = new ConcurrentHashMap<>();
+
+        allPackages.parallelStream().forEach(pkg -> {
+            try {
+                String sha256_file = PackageUtil.computePackageFileDigest(pkg);
+                if (sha256_file != null) {
+                    fileHashes.put(pkg.packageName, sha256_file);
+                }
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Failed to compute file digest for " + pkg.packageName, e);
+            }
+            try {
+                String sha256_cert = PackageUtil.computePackageSignatureDigest(pkg);
+                if (sha256_cert != null) {
+                    signatureHashes.put(pkg.packageName, sha256_cert);
+                }
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Failed to compute signature digest for " + pkg.packageName, e);
+            }
+        });
+
 
         store.startArray(PACKAGE);
         for (PackageInfo pkg : allPackages) {
@@ -169,11 +197,8 @@ public class PackageDeviceInfo extends DeviceInfo {
             }
             store.addResult(DEFAULT_ACCESSIBILITY_SERVICE, isDefaultAccessibilityComponent);
 
-            String sha256_cert = PackageUtil.computePackageSignatureDigest(pkg.packageName);
-            store.addResult(SHA256_CERT, sha256_cert);
-
-            String sha256_file = PackageUtil.computePackageFileDigest(pkg);
-            store.addResult(SHA256_FILE, sha256_file);
+            store.addResult(SHA256_CERT, signatureHashes.getOrDefault(pkg.packageName, ""));
+            store.addResult(SHA256_FILE, fileHashes.getOrDefault(pkg.packageName, ""));
 
             collectRoles(store, packageRolesData, pkg);
 
