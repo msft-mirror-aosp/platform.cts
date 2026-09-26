@@ -20,6 +20,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.Signature;
 import android.os.Build;
 import android.util.Log;
 
@@ -42,7 +43,7 @@ public class PackageUtil {
     private static final int SYSTEM_APP_MASK =
             ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-    private static final int READ_BLOCK_SIZE = 1024;
+    private static final int READ_BLOCK_SIZE = 65536;
 
     /** Returns true if a package with the given name exists on the device */
     public static boolean exists(String packageName) {
@@ -122,17 +123,29 @@ public class PackageUtil {
         }
     }
 
+
     /**
-     * Compute the signature SHA digest for a package.
-     * @param package the name of the package for which the signature SHA digest is requested
+     * Compute the signature SHA digest for a package from its in-memory PackageInfo without Binder IPC.
+     * @param packageInfo the PackageInfo of the package
      * @return the signature SHA digest
      */
-    public static String computePackageSignatureDigest(String packageName)
-            throws NoSuchAlgorithmException, PackageManager.NameNotFoundException {
-        PackageInfo packageInfo = getPackageManager()
-                .getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
+    public static String computePackageSignatureDigest(PackageInfo packageInfo)
+            throws NoSuchAlgorithmException {
+        if (packageInfo == null) {
+            return null;
+        }
+        Signature[] signatures = null;
+        if (packageInfo.signingInfo != null) {
+            signatures = packageInfo.signingInfo.getApkContentsSigners();
+        }
+        if ((signatures == null || signatures.length == 0) && packageInfo.signatures != null) {
+            signatures = packageInfo.signatures;
+        }
+        if (signatures == null || signatures.length == 0) {
+            return null;
+        }
         MessageDigest messageDigest = MessageDigest.getInstance("SHA256");
-        messageDigest.update(packageInfo.signatures[0].toByteArray());
+        messageDigest.update(signatures[0].toByteArray());
 
         final byte[] digest = messageDigest.digest();
         final int digestLength = digest.length;
@@ -150,6 +163,18 @@ public class PackageUtil {
         return new String(chars);
     }
 
+    /**
+     * Compute the signature SHA digest for a package.
+     * @param packageName the name of the package for which the signature SHA digest is requested
+     * @return the signature SHA digest
+     */
+    public static String computePackageSignatureDigest(String packageName)
+            throws NoSuchAlgorithmException, PackageManager.NameNotFoundException {
+        PackageInfo packageInfo = getPackageManager()
+                .getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
+        return computePackageSignatureDigest(packageInfo);
+    }
+
     private static PackageManager getPackageManager() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
     }
@@ -157,15 +182,20 @@ public class PackageUtil {
 
     /**
      * Compute the file SHA digest for a package.
-     * @param packageInfo the info of the package for which the file SHA digest is requested
+     * @param pkgInfo the info of the package for which the file SHA digest is requested
      * @return the file SHA digest
      */
     public static String computePackageFileDigest(PackageInfo pkgInfo) {
-        ApplicationInfo applicationInfo;
-        try {
-            applicationInfo = getPackageManager().getApplicationInfo(pkgInfo.packageName, 0);
-        } catch (NameNotFoundException e) {
-            Log.e(TAG, "Exception: " + e);
+        ApplicationInfo applicationInfo = pkgInfo.applicationInfo;
+        if (applicationInfo == null || applicationInfo.publicSourceDir == null) {
+            try {
+                applicationInfo = getPackageManager().getApplicationInfo(pkgInfo.packageName, 0);
+            } catch (NameNotFoundException e) {
+                Log.e(TAG, "Exception: " + e);
+                return null;
+            }
+        }
+        if (applicationInfo == null || applicationInfo.publicSourceDir == null) {
             return null;
         }
         File apkFile = new File(applicationInfo.publicSourceDir);
