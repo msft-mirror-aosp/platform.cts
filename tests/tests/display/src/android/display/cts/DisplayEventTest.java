@@ -45,6 +45,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -383,21 +384,34 @@ public class DisplayEventTest {
      * Bring the test activity into cached mode by launching another 2 apps
      */
     private void makeTestActivityCached() {
-        // Launch another activity to bring the test activity into background
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClass(mContext, SimpleActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        if (FeatureUtil.isXrHeadset()) {
+            // The Android XR way to bring the test activity into cached mode
+            // is to launch a Home intent. That is because on Android XR newer
+            // tasks do not automatically occlude older ones.
 
-        // Launch another activity to bring the test activity into cached mode
-        Intent intent2 = new Intent(Intent.ACTION_MAIN);
-        intent2.setClass(mContext, SimpleActivity2.class);
-        intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    mInstrumentation.startActivitySync(intent);
-                    mInstrumentation.startActivitySync(intent2);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+            // Launch Home to bring the test activity into cached mode
+            Intent home = new Intent(Intent.ACTION_MAIN);
+            home.addCategory(Intent.CATEGORY_HOME);
+            home.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(home);
+        } else {
+            // Launch another activity to bring the test activity into background
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setClass(mContext, SimpleActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+
+            // Launch another activity to bring the test activity into cached mode
+            Intent intent2 = new Intent(Intent.ACTION_MAIN);
+            intent2.setClass(mContext, SimpleActivity2.class);
+            intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mInstrumentation.startActivitySync(intent);
+                        mInstrumentation.startActivitySync(intent2);
+                    },
+                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+        }
+
         waitLatch(mLatchActivityCached);
     }
 
