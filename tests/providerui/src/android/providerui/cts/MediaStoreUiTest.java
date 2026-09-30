@@ -16,6 +16,10 @@
 
 package android.providerui.cts;
 
+import static android.content.pm.PackageManager.FEATURE_WATCH;
+import static android.content.pm.PackageManager.FEATURE_LEANBACK;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+
 import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -23,10 +27,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
-import android.app.UiAutomation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -43,6 +47,7 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.provider.cts.ProviderTestUtils;
 import android.provider.cts.media.MediaProviderTestUtils;
 import android.providerui.cts.GetResultActivity.Result;
 import android.system.Os;
@@ -68,15 +73,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -111,12 +113,14 @@ public class MediaStoreUiTest {
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = InstrumentationRegistry.getTargetContext();
+        assumeTrue("Not required for Watch, Car and Television", supportsHardware());
         mDevice = UiDevice.getInstance(mInstrumentation);
         final PackageManager pm = mContext.getPackageManager();
         final Intent intent2 = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent2.addCategory(Intent.CATEGORY_OPENABLE);
         intent2.setType("*/*");
         final ResolveInfo ri = pm.resolveActivity(intent2, 0);
+        assertNotNull("No activity found for " + intent2, ri);
         mDocumentsUiPackageId = ri.activityInfo.packageName;
 
         final Intent intent = new Intent(mContext, GetResultActivity.class);
@@ -147,8 +151,6 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri() throws Exception {
-        if (!supportsHardware()) return;
-
         prepareFile();
         clearDocumentsUi();
 
@@ -176,8 +178,6 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri_throwsWithoutPermission() throws Exception {
-        if (!supportsHardware()) return;
-
         prepareFile();
         clearDocumentsUi();
 
@@ -191,8 +191,6 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri_symmetry_externalStorageProvider() throws Exception {
-        if (!supportsHardware()) return;
-
         prepareFile();
         clearDocumentsUi();
 
@@ -214,8 +212,6 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetMediaUriAccess_mediaDocumentsProvider() throws Exception {
-        if (!supportsHardware()) return;
-
         prepareFile("TEST");
         clearDocumentsUi();
         final Intent intent = new Intent();
@@ -236,8 +232,6 @@ public class MediaStoreUiTest {
 
     @Test
     public void testOpenFile_onMediaDocumentsProvider_success() throws Exception {
-        if (!supportsHardware()) return;
-
         final String rawText = "TEST";
         // Stage a text file which contains raw text "TEST"
         prepareFile(rawText);
@@ -279,8 +273,6 @@ public class MediaStoreUiTest {
 
     @Test
     public void testOpenFile_onMediaDocumentsProvider_failsWithoutAccess() throws Exception {
-        if (!supportsHardware()) return;
-
         String rawText = "TEST";
         // Read and write grants will be provided to the file associated with this pair.
         // Stages a text file which contains raw text "TEST"
@@ -405,9 +397,9 @@ public class MediaStoreUiTest {
 
     private boolean supportsHardware() {
         final PackageManager pm = mContext.getPackageManager();
-        return !pm.hasSystemFeature("android.hardware.type.television")
-                && !pm.hasSystemFeature("android.hardware.type.watch")
-                && !pm.hasSystemFeature("android.hardware.type.automotive");
+        return !pm.hasSystemFeature(FEATURE_LEANBACK)
+                && !pm.hasSystemFeature(FEATURE_WATCH)
+                && !pm.hasSystemFeature(FEATURE_AUTOMOTIVE);
     }
 
     public File getVolumePath(String volumeName) {
@@ -420,7 +412,7 @@ public class MediaStoreUiTest {
                 Environment.DIRECTORY_DOCUMENTS);
         final File file = new File(dir, "cts" + System.nanoTime() + ".txt");
 
-        mFile = stageFile(R.raw.text, file);
+        mFile = MediaProviderTestUtils.stageFile(R.raw.text, file);
         mMediaStoreUri = MediaStore.scanFile(mContext.getContentResolver(), mFile);
 
         Log.v(TAG, "Staged " + mFile + " as " + mMediaStoreUri);
@@ -523,49 +515,8 @@ public class MediaStoreUiTest {
         return ri.activityInfo.packageName;
     }
 
-    // TODO: replace with ProviderTestUtils
     static String executeShellCommand(String command) throws IOException {
-        return executeShellCommand(command,
-                InstrumentationRegistry.getInstrumentation().getUiAutomation());
-    }
-
-    // TODO: replace with ProviderTestUtils
-    static String executeShellCommand(String command, UiAutomation uiAutomation)
-            throws IOException {
-        Log.v(TAG, "$ " + command);
-        ParcelFileDescriptor pfd = uiAutomation.executeShellCommand(command.toString());
-        BufferedReader br = null;
-        try (InputStream in = new FileInputStream(pfd.getFileDescriptor());) {
-            br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            String str = null;
-            StringBuilder out = new StringBuilder();
-            while ((str = br.readLine()) != null) {
-                Log.v(TAG, "> " + str);
-                out.append(str);
-            }
-            return out.toString();
-        } finally {
-            if (br != null) {
-                br.close();
-            }
-        }
-    }
-
-    // TODO: replace with ProviderTestUtils
-    static File stageFile(int resId, File file) throws IOException {
-        // The caller may be trying to stage into a location only available to
-        // the shell user, so we need to perform the entire copy as the shell
-        final Context context = InstrumentationRegistry.getTargetContext();
-        final File dir = file.getParentFile();
-        dir.mkdirs();
-        if (!dir.exists()) {
-            throw new FileNotFoundException("Failed to create parent for " + file);
-        }
-        try (InputStream source = context.getResources().openRawResource(resId);
-             OutputStream target = new FileOutputStream(file)) {
-            FileUtils.copy(source, target);
-        }
-        return file;
+        return ProviderTestUtils.executeShellCommand(command);
     }
 
     static File stageFileWithRawText(String rawText, File file) throws IOException {
