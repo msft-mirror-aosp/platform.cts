@@ -128,11 +128,9 @@ public class PackageDeviceInfo extends DeviceInfo {
     protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
         final PackageManager pm = getContext().getPackageManager();
 
-        int packageFlags = PackageManager.GET_PERMISSIONS | PackageManager.GET_SIGNATURES;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            packageFlags |= PackageManager.GET_SIGNING_CERTIFICATES;
-        }
-        final List<PackageInfo> allPackages = pm.getInstalledPackages(packageFlags);
+        final List<PackageInfo> allPackages =
+                pm.getInstalledPackages(
+                        PackageManager.GET_PERMISSIONS | PackageManager.GET_SIGNATURES);
         final Set<String> defaultNotificationListeners =
                 getColonSeparatedPackageList(CONFIG_NOTIFICATION_ACCESS);
 
