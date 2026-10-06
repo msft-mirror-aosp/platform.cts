@@ -22,6 +22,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Process;
+import android.os.SystemProperties;
 import android.util.Log;
 
 import org.json.JSONObject;
@@ -283,5 +284,13 @@ public class Utils {
         return context.getPackageManager().hasSystemFeature("android.software.xr.immersive")
             || context.getPackageManager().hasSystemFeature("android.software.xr.api.spatial")
             || context.getPackageManager().hasSystemFeature("android.software.xr.api.openxr");
+    }
+
+    public static final String FRAME_PUCK_PROTOCOL_PROP = "xr.device.config.frame_puck_protocol";
+
+    /** Checks whether the device is an XR headset using the Frame-Puck protocol. */
+    public static boolean isXrFramePuck(Context context) {
+        return isXr(context)
+            && SystemProperties.getBoolean(FRAME_PUCK_PROTOCOL_PROP, false);
     }
 }

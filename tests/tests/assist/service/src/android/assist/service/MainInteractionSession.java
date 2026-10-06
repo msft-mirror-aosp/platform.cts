@@ -293,7 +293,8 @@ public class MainInteractionSession extends VoiceInteractionSession {
         int pixelCount = displayAreaScreenshot.getWidth() * displayAreaScreenshot.getHeight();
         double colorRatio = (double) expectedColor / pixelCount;
         Log.i(TAG, "the ratio is " + colorRatio);
-        return colorRatio >= 0.6;
+        double threshold = Utils.isXrFramePuck(mContext) ? 0.5 : 0.6;
+        return colorRatio >= threshold;
     }
 
     private void maybeBroadcastResults() {
