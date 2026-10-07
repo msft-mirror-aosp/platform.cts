@@ -75,7 +75,7 @@ public final class AddApkToApexTest extends BaseHostJUnit4Test {
                 + appActivityPath
         );
         String result = getDevice().executeShellCommand(
-                "dumpsys activity activities | grep -E ' ResumedActivity.*"
+                "dumpsys activity activities | grep -E ' ActivityRecord.*"
                 + appActivityPath
                 + "'"
             );
@@ -85,6 +85,7 @@ public final class AddApkToApexTest extends BaseHostJUnit4Test {
     private void updateApexAndReboot(String apk) throws Exception  {
         getDevice().installPackage(mHostUtils.getTestFile(apk), true);
         getDevice().reboot();
+        getDevice().waitForBootComplete(getDevice().getOptions().getAvailableTimeout());
     }
 
     private static long getShimApexVersionCode(ITestDevice device) throws Exception  {
