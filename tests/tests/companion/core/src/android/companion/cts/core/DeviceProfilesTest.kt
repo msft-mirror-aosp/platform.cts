@@ -52,7 +52,8 @@ class DeviceProfilesTest : CoreTestBase() {
 
     @CallSuper
     override fun tearDown() {
-        CompanionActivity.finish()
+        CompanionActivity.safeFinish()
+        CompanionActivity.waitUntilGone()
         super.tearDown()
     }
 
