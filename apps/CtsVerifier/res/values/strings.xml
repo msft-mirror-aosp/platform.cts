@@ -4022,7 +4022,8 @@ You should be prompted to select credentials; choose the ones you just installed
             test as \'pass\'.\n
             Otherwise:\n
             Press the button below to enable global actions (a.k.a. power button menu). Long-press
-            the power button and verify a menu containing power-off and restart buttons is shown.
+            the power button and verify the global actions menu (e.g., a menu containing
+            power-off and restart buttons) is shown.
             This menu can\'t contain any UI that allows the user to change system settings (such as
             airplane mode switch) or access the Settings app.\n\n
             The rest of the UI restrictions should still apply:\n
