@@ -43,6 +43,7 @@ import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
@@ -80,6 +81,8 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     SessionCallback mSessionCallback;
     Handler mCameraHandler;
     HandlerThread mCameraHandlerThread;
+    Handler mImageReaderHandler;
+    HandlerThread mImageReaderHandlerThread;
     String mCameraId;
     Messenger mMessenger;
     CameraDevice mCameraDevice;
@@ -89,7 +92,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     Surface mPreviewSurface;
     int mCaptureSequenceId;
     SimpleCaptureCallback mCaptureListener;
-    SimpleImageReaderListener mImageListener;
+    volatile FreezableImageReaderListener mImageListener;
     Object mSharedSessionConfig;
     ImageReader mReader;
     Surface mReaderSurface;
@@ -99,34 +102,44 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     int mImageReaderFormat;
     Size mSurfaceViewSize;
     boolean mIsPrimary = true;
+    volatile boolean mFreezeClient = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "onCreate called: uid " + Process.myUid() + ".");
         super.onCreate(savedInstanceState);
 
-        mMessenger = new Messenger(new IncomingHandler());
+        mCameraManager = getSystemService(CameraManager.class);
+        mErrorServiceConnection = new ErrorLoggingService.ErrorServiceConnection(this);
+        mErrorServiceConnection.start();
+        if (mCameraManager == null) {
+            mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR, TAG
+                    + " could not connect camera service");
+        }
+
+        mCameraHandlerThread = new HandlerThread("CameraHandlerThread");
+        mCameraHandlerThread.start();
+        mCameraHandler = new Handler(mCameraHandlerThread.getLooper());
+        mImageReaderHandlerThread = new HandlerThread("ImageReaderHandlerThread");
+        mImageReaderHandlerThread.start();
+        mImageReaderHandler = new Handler(mImageReaderHandlerThread.getLooper());
+        mMessenger = new Messenger(new IncomingHandler(mCameraHandlerThread.getLooper()));
         ResultReceiver resultReceiver = getIntent().getParcelableExtra(
                 TestConstants.EXTRA_RESULT_RECEIVER);
         Bundle resultData = new Bundle();
         resultData.putParcelable(TestConstants.EXTRA_REMOTE_MESSENGER, mMessenger);
         resultReceiver.send(RESULT_OK, resultData);
-        mCameraHandlerThread = new HandlerThread("CameraHandlerThread");
-        mCameraHandlerThread.start();
-        mCameraHandler = new Handler(mCameraHandlerThread.getLooper());
-        mErrorServiceConnection = new ErrorLoggingService.ErrorServiceConnection(this);
-        mErrorServiceConnection.start();
     }
 
     @Override
     protected void onResume() {
         Log.i(TAG, "onResume called.");
         super.onResume();
-        mCameraManager = getSystemService(CameraManager.class);
-        if (mCameraManager == null) {
-            mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR, TAG
-                    + " could not connect camera service");
-            return;
+        if (mErrorServiceConnection != null) {
+            mErrorServiceConnection.logAsync(
+                    TestConstants.EVENT_ACTIVITY_RESUMED,
+                    "Activity resumed");
         }
     }
 
@@ -140,6 +153,9 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
             mSession = null;
         }
         mCameraHandlerThread.quitSafely();
+        if (mImageReaderHandlerThread != null) {
+            mImageReaderHandlerThread.quitSafely();
+        }
 
         if (mErrorServiceConnection != null) {
             mErrorServiceConnection.stop();
@@ -330,10 +346,14 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     }
 
     class IncomingHandler extends Handler {
+        IncomingHandler(Looper looper) {
+            super(looper);
+        }
 
         private void createImageReader(Size sz, int format) {
-            mImageListener = new SimpleImageReaderListener(/*asyncMode*/true, NUM_MAX_IMAGES);
-            mReader = makeImageReader(sz, format, NUM_MAX_IMAGES, mImageListener, mCameraHandler);
+            mImageListener = new FreezableImageReaderListener(/*asyncMode*/true, NUM_MAX_IMAGES);
+            mImageListener.setFreeze(mFreezeClient);
+            mReader = makeImageReader(sz, format, NUM_MAX_IMAGES, mImageListener, mImageReaderHandler);
             mReaderSurface = mReader.getSurface();
         }
 
@@ -341,6 +361,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
             CameraTestUtils.closeImageReader(mReader);
             if (mImageListener != null) {
                 mImageListener.drain();
+                mImageListener.clearFrozenImages();
                 mImageListener = null;
             }
             mReader = null;
@@ -430,7 +451,20 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                             }
                             checkValidSurfaceIsPresent();
                             if (mIsSurfaceViewPresent) {
-                                updatePreviewSurface(mSurfaceViewSize);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        updatePreviewSurface(mSurfaceViewSize);
+                                    }
+                                });
+                                if (!waitForSurfaceSizeChanged(3000, mSurfaceViewSize.getWidth(), mSurfaceViewSize.getHeight())) {
+                                    mErrorServiceConnection.logAsync(
+                                            TestConstants.EVENT_CAMERA_ERROR,
+                                            TAG + " Wait for surface size change timed out!");
+                                    Log.e(TAG, "Wait for surface size change timed out!");
+                                    return;
+                                }
+                                mPreviewSurface = getSurfaceView().getHolder().getSurface();
                             }
                             if (mIsImageReaderPresent) {
                                 createImageReader(mImageReaderSize, mImageReaderFormat);
@@ -457,7 +491,12 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         mCameraDevice.close();
                         mCameraDevice = null;
                         mStateCallback = null;
+                    } else {
+                        mErrorServiceConnection.logAsync(
+                                TestConstants.EVENT_CAMERA_CLOSED, mCameraId != null ? mCameraId : "0");
                     }
+                    mCaptureRequestBuilder = null;
+                    mPreviewSurface = null;
                     break;
 
                 case TestConstants.OP_CREATE_SHARED_SESSION:
@@ -998,19 +1037,38 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                             }
                         }
                         if (mIsPrimary) {
-                            mCaptureSequenceId =
-                                    mSession.setRepeatingRequest(
-                                            mCaptureRequestBuilder.build(),
-                                            mCaptureListener,
-                                            mCameraHandler);
+                            try {
+                                Method setSingleRepeatingRequestMethod = mSession.getClass().getMethod(
+                                        "setSingleRepeatingRequest",
+                                        CaptureRequest.class,
+                                        Executor.class,
+                                        CameraCaptureSession.CaptureCallback.class);
+                                mCaptureSequenceId = (Integer) setSingleRepeatingRequestMethod.invoke(
+                                        mSession,
+                                        mCaptureRequestBuilder.build(),
+                                        executor,
+                                        mCaptureListener);
+                            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                                mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
+                                        TAG + " exception during setSingleRepeatingRequest: " + e);
+                                Log.e(TAG, "exception during setSingleRepeatingRequest: " + e);
+                            }
                         } else {
                             try {
-                                Method startStreamingMethod = mSession.getClass().getMethod("startStreaming", List.class, Executor.class, CameraCaptureSession.CaptureCallback.class);
-                                mCaptureSequenceId = (Integer) startStreamingMethod.invoke(mSession, surfaces, executor, mCaptureListener);
+                                Method startStreamingMethod = mSession.getClass().getMethod(
+                                        "startStreaming",
+                                        List.class,
+                                        Executor.class,
+                                        CameraCaptureSession.CaptureCallback.class);
+                                mCaptureSequenceId = (Integer) startStreamingMethod.invoke(
+                                        mSession,
+                                        surfaces,
+                                        executor,
+                                        mCaptureListener);
                             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                                    mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
-                                            TAG + " exception during startStreaming: " + e);
-                                    Log.e(TAG, "exception during startStreaming: " + e);
+                                mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
+                                        TAG + " exception during startStreaming: " + e);
+                                Log.e(TAG, "exception during startStreaming: " + e);
                             }
                         }
                         mCaptureListener.getCaptureResult(CAPTURE_RESULT_TIMEOUT_MS);
@@ -1064,9 +1122,88 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                     }
                     break;
 
+                case TestConstants.OP_CHECK_FRAMES_RECEIVED:
+                    if (mCameraDevice == null || mSession == null) {
+                        mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
+                                TAG + " No active camera device or session is present");
+                        Log.e(TAG, "No active camera device or session is present");
+                        return;
+                    }
+                    try {
+                        mCaptureListener.getCaptureResult(CAPTURE_RESULT_TIMEOUT_MS);
+                        if (mIsImageReaderPresent) {
+                            mImageListener.getImage(CAPTURE_RESULT_TIMEOUT_MS).close();
+                        }
+                        mErrorServiceConnection.logAsync(
+                                TestConstants.EVENT_CAMERA_FRAMES_RECEIVED_OK,
+                                "Frames received successfully");
+                    } catch (Exception e) {
+                        mErrorServiceConnection.logAsync(
+                                TestConstants.EVENT_CAMERA_ERROR,
+                                TAG + " Failed to receive frames: " + e);
+                        Log.e(TAG, "Failed to receive frames: " + e);
+                    }
+                    break;
+
+                case TestConstants.OP_SET_FREEZE_CLIENT:
+                    mFreezeClient = msg.getData().getBoolean("freeze", false);
+                    if (mImageListener != null) {
+                        mImageListener.setFreeze(mFreezeClient);
+                    }
+                    break;
+
                 default:
                     super.handleMessage(msg);
             }
+        }
+    }
+
+    private static class FreezableImageReaderListener extends SimpleImageReaderListener {
+        private boolean mFreeze = false;
+        private final List<android.media.Image> mFrozenImages = new ArrayList<>();
+
+        public FreezableImageReaderListener(boolean asyncMode, int maxImages) {
+            super(asyncMode, maxImages);
+        }
+
+        public synchronized void setFreeze(boolean freeze) {
+            mFreeze = freeze;
+            if (!mFreeze) {
+                clearFrozenImagesLocked();
+            }
+        }
+
+        public synchronized boolean isFrozen() {
+            return mFreeze;
+        }
+
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            synchronized (this) {
+                if (mFreeze) {
+                    try {
+                        android.media.Image img = reader.acquireNextImage();
+                        if (img != null) {
+                            mFrozenImages.add(img);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Exception acquiring image in freeze mode: " + e);
+                    }
+                    return;
+                }
+            }
+            super.onImageAvailable(reader);
+        }
+
+        public synchronized void clearFrozenImages() {
+            clearFrozenImagesLocked();
+        }
+
+        private void clearFrozenImagesLocked() {
+            for (android.media.Image img : mFrozenImages) {
+                img.close();
+            }
+            mFrozenImages.clear();
         }
     }
 }

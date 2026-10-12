@@ -47,8 +47,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.internal.camera.flags.Flags;
-
 import org.junit.Assume;
+import com.android.compatibility.common.util.PollingCheck;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,6 +61,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import android.util.ArraySet;
 import java.util.concurrent.TimeoutException;
 
 /** Tests for shared camera access where multiple clients can access a camera. */
@@ -221,6 +224,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
+            drainEvents();
             long nativeSharedTest =
                     openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/true);
             openCameraJavaClient(mCameraId);
@@ -472,9 +476,9 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             SystemClock.sleep(WAIT_TIME);
             assertClientAccessPriorityChangedNative(nativeSharedTest, /*isPrimaryClient*/ true);
             assertClientAccessPriorityChangedJava(/*isPrimaryClient*/ false);
-            forceCtsActivityToTop();
+            List<ErrorLoggingService.LogEvent> resumeEvents = forceCtsActivityToTop();
             assertClientAccessPriorityChangedNative(nativeSharedTest, /*isPrimaryClient*/ false);
-            assertClientAccessPriorityChangedJava(/*isPrimaryClient*/ true);
+            assertClientAccessPriorityChangedJava(resumeEvents, /*isPrimaryClient*/ true);
             closeCameraJavaClient();
             assertClientAccessPriorityChangedNative(nativeSharedTest, /*isPrimaryClient*/ true);
             closeNativeClient(nativeSharedTest);
@@ -700,6 +704,208 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         return -1;
     }
 
+    @Test
+    public void testSecondaryClientCallbacksDuringPrimaryStreaming() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            mCameraId = cameraIdsUnderTest[i];
+            if (!isCameraSharingEnabled(mCameraId)) {
+                continue;
+            }
+            Object sharedSessionConfig =
+                    mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
+            assertNotNull("Shared session configuration is null", sharedSessionConfig);
+            int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
+            int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
+            if (imageReaderIdx == -1) {
+                Log.i(TAG, "Camera " + mCameraId + " does not support ImageReader in shared config, skipping");
+                continue;
+            }
+
+            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+            if (surfaceViewIdx != -1) {
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
+            }
+            sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
+
+            int imgWidth = 0;
+            int imgHeight = 0;
+            int imgFormat = 0;
+            try {
+                Method getOutputStreamsInformation = sharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+                List<?> sharedConfigs = (List<?>) getOutputStreamsInformation.invoke(sharedSessionConfig);
+                Object imgReaderConfig = sharedConfigs.get(imageReaderIdx);
+
+                Method getSize = imgReaderConfig.getClass().getMethod("getSize");
+                Size size = (Size) getSize.invoke(imgReaderConfig);
+                imgWidth = size.getWidth();
+                imgHeight = size.getHeight();
+
+                Method getFormat = imgReaderConfig.getClass().getMethod("getFormat");
+                imgFormat = (int) getFormat.invoke(imgReaderConfig);
+            } catch (Exception e) {
+                fail("Failed to get image reader configuration via reflection: " + e);
+            }
+
+            long nativeSharedTest = 0;
+            try {
+                // Open Client 2 (native primary)
+                nativeSharedTest = openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/true);
+                createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
+                startSharedStreamingNative(nativeSharedTest);
+
+                // Open Client 1 (java primary) to preempt Client 2
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+
+                // Verify Client 2 (now secondary) receives the demotion callback
+                assertClientAccessPriorityChangedNative(nativeSharedTest, false /*isPrimaryClient*/);
+
+                createSharedSessionJavaClient(sharedStreamArray);
+
+                // Start preview on Client 1
+                startPreviewJavaClient(sharedStreamArray);
+
+                // Reset frame counter for Client 2 after Client 1 started preview
+                assertTrue("Failed to reset frame counter", testResetFrameCounterNative(nativeSharedTest));
+
+                // Verify Client 2 continues to receive frames
+                assertTrue("Native secondary client failed to receive callbacks after primary client started preview",
+                        testWaitForFrameNative(nativeSharedTest, 3 /*timeoutSec*/));
+
+                stopPreviewJavaClient();
+                stopSharedStreamingNative(nativeSharedTest);
+                closeSessionNative(nativeSharedTest);
+            } finally {
+                try {
+                    closeCameraJavaClient();
+                } finally {
+                    if (nativeSharedTest != 0) {
+                        closeNativeClient(nativeSharedTest);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPrimaryClientIsolatedFromFrozenSecondaryClient() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        mProcessPid2 =
+                startRemoteProcess(
+                        SharedCameraActivitySecondaryClient.class,
+                        "SharedCameraActivityProcess2",
+                        false);
+        boolean secondaryClientDemoted = false;
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            mCameraId = cameraIdsUnderTest[i];
+            if (!mAllStaticInfo.get(mCameraId).sharedSessionConfigurationPresent()) {
+                continue;
+            }
+            if (secondaryClientDemoted) {
+                forceCtsSecondaryActivityToTop();
+                secondaryClientDemoted = false;
+            }
+            // Ensure Client 2 is unfrozen at the start of each iteration
+            try {
+                Bundle bundle = new Bundle();
+                bundle.putBoolean("freeze", false);
+                Message msg = Message.obtain(null, TestConstants.OP_SET_FREEZE_CLIENT);
+                msg.setData(bundle);
+                mRemoteMessenger2.send(msg);
+            } catch (RemoteException e) {
+                // ignore
+            }
+            Object sharedSessionConfig =
+                    mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
+            assertNotNull("Shared session configuration is null", sharedSessionConfig);
+            int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
+            int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
+            if (imageReaderIdx == -1) {
+                Log.i(TAG, "Camera " + mCameraId + " does not support ImageReader in shared config, skipping");
+                continue;
+            }
+
+            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+            if (surfaceViewIdx != -1) {
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
+            }
+            sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
+            try {
+                // Client 2 (java secondary) starts first as primary and streams
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true,
+                        /*expectFail*/ false, mRemoteMessenger2);
+                createSharedSessionJavaClient(sharedStreamArray, mRemoteMessenger2);
+                startPreviewJavaClient(sharedStreamArray, mRemoteMessenger2);
+
+                // Client 1 (java primary) opens, demotes Client 2, and streams
+                List<ErrorLoggingService.LogEvent> resumeEvents = forceCtsActivityToTop();
+                List<ErrorLoggingService.LogEvent> openEvents =
+                        openSharedCameraJavaClientEventuallyPrimary(mCameraId);
+
+                // Combine events to check for demotion (13)
+                List<ErrorLoggingService.LogEvent> combinedEvents = new ArrayList<>();
+                combinedEvents.addAll(resumeEvents);
+                combinedEvents.addAll(openEvents);
+
+                Map<Integer, Integer> eventMap = TestUtils.getEventTagCountMap(combinedEvents);
+                if (!eventMap.containsKey(TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_SECONDARY)) {
+                    try {
+                        // Both Client 1 and Client 2 log to the same shared ErrorLoggingService.
+                        // Since getLog() calls in forceCtsActivityToTop() and openSharedCameraJavaClientEventuallyPrimary()
+                        // clear the global service log, they might have already consumed Client 2's demotion event (13)
+                        // if it occurred during those phases. If not already retrieved, we wait for it here.
+                        mErrorServiceConnection.getLog(SETUP_TIMEOUT,
+                                TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_SECONDARY);
+                    } catch (TimeoutException e) {
+                        fail("Timed out waiting for Client 2 to be demoted to secondary");
+                    }
+                }
+                secondaryClientDemoted = true;
+                createSharedSessionJavaClient(sharedStreamArray);
+                startPreviewJavaClient(sharedStreamArray);
+
+                // Freeze Client 2 (it stops closing received images)
+                Bundle bundle = new Bundle();
+                bundle.putBoolean("freeze", true);
+                Message msg = Message.obtain(null, TestConstants.OP_SET_FREEZE_CLIENT);
+                msg.setData(bundle);
+                mRemoteMessenger2.send(msg);
+
+                drainEvents();
+
+                // Verify Client 1 continues to receive frames normally
+                for (int j = 0; j < 5; j++) {
+                    Message checkMsg = Message.obtain(null, TestConstants.OP_CHECK_FRAMES_RECEIVED);
+                    mRemoteMessenger.send(checkMsg);
+                    List<ErrorLoggingService.LogEvent> events =
+                            mErrorServiceConnection.getLog(SETUP_TIMEOUT,
+                                    TestConstants.EVENT_CAMERA_FRAMES_RECEIVED_OK);
+                    assertNotNull("Primary client timed out receiving frames while secondary is frozen!",
+                            events);
+                    TestUtils.assertOnly(TestConstants.EVENT_CAMERA_FRAMES_RECEIVED_OK, events);
+                }
+
+                stopPreviewJavaClient();
+                stopPreviewJavaClient(mRemoteMessenger2);
+            } finally {
+                try {
+                    try {
+                        Bundle bundle = new Bundle();
+                        bundle.putBoolean("freeze", false);
+                        Message msg = Message.obtain(null, TestConstants.OP_SET_FREEZE_CLIENT);
+                        msg.setData(bundle);
+                        mRemoteMessenger2.send(msg);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to unfreeze Client 2 in finally: " + e);
+                    }
+                    closeCameraJavaClient();
+                } finally {
+                    closeCameraJavaClient(mRemoteMessenger2);
+                }
+            }
+        }
+    }
+
     private int getImageReaderStreamIdx(Object sharedSessionConfig) {
         if (sharedSessionConfig == null) return -1;
         try {
@@ -781,6 +987,62 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 "Did not receive any events from the camera device in remote process!", events);
         Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
         assertTrue(eventTagCountMap.containsKey(expectedEvent));
+    }
+
+    private List<ErrorLoggingService.LogEvent> openSharedCameraJavaClientEventuallyPrimary(
+            String cameraId) throws Exception {
+        Message msg = Message.obtain(null, TestConstants.OP_OPEN_CAMERA_SHARED);
+        msg.getData().putString(TestConstants.EXTRA_CAMERA_ID, cameraId);
+        boolean remoteExceptionHit = false;
+        try {
+            mRemoteMessenger.send(msg);
+        } catch (RemoteException e) {
+            remoteExceptionHit = true;
+        }
+        assertFalse(
+                "Error in sending open camera command to SharedCameraActivity",
+                remoteExceptionHit);
+
+        List<ErrorLoggingService.LogEvent> allEvents = new ArrayList<>();
+        long startTime = SystemClock.elapsedRealtime();
+        boolean opened = false;
+        boolean isPrimary = false;
+
+        while (SystemClock.elapsedRealtime() - startTime < SETUP_TIMEOUT) {
+            long remainingTime = SETUP_TIMEOUT - (SystemClock.elapsedRealtime() - startTime);
+            if (remainingTime <= 0) {
+                break;
+            }
+            try {
+                List<ErrorLoggingService.LogEvent> events =
+                        mErrorServiceConnection.getLog(remainingTime);
+                if (events != null) {
+                    allEvents.addAll(events);
+                    Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
+                    if (eventTagCountMap.containsKey(TestConstants.EVENT_CAMERA_CONNECT_SHARED_PRIMARY)) {
+                        opened = true;
+                        isPrimary = true;
+                        break;
+                    }
+                    if (eventTagCountMap.containsKey(TestConstants.EVENT_CAMERA_CONNECT_SHARED_SECONDARY)) {
+                        opened = true;
+                        isPrimary = false;
+                    }
+                    if (opened && !isPrimary && eventTagCountMap.containsKey(
+                            TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_PRIMARY)) {
+                        isPrimary = true;
+                        break;
+                    }
+                }
+            } catch (TimeoutException e) {
+                break;
+            }
+        }
+
+        assertTrue("Camera did not open eventually", opened);
+        assertTrue("Camera did not become primary eventually", isPrimary);
+
+        return allEvents;
     }
 
     private void startPreviewJavaClient(ArrayList<Integer> sharedStreamArray) throws Exception {
@@ -992,10 +1254,21 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     private void assertClientAccessPriorityChangedJava(boolean isPrimaryClient) throws Exception {
-        int expectedEvent;
-        expectedEvent = isPrimaryClient
+        assertClientAccessPriorityChangedJava(null, isPrimaryClient);
+    }
+
+    private void assertClientAccessPriorityChangedJava(
+            List<ErrorLoggingService.LogEvent> clearedEvents, boolean isPrimaryClient)
+            throws Exception {
+        int expectedEvent = isPrimaryClient
                 ? TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_PRIMARY :
                 TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_SECONDARY;
+        if (clearedEvents != null) {
+            Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(clearedEvents);
+            if (eventTagCountMap.containsKey(expectedEvent)) {
+                return; // Already received and cleared
+            }
+        }
         List<ErrorLoggingService.LogEvent> events =
                 mErrorServiceConnection.getLog(SETUP_TIMEOUT, expectedEvent);
         assertNotNull(
@@ -1006,9 +1279,13 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
 
     private void assertClientAccessPriorityChangedNative(
             long nativeSharedTest, boolean isPrimaryClient) throws Exception {
-        assertTrue(
-                "testClientAccessPriorityChangedNative fail, see log for details",
-                testClientAccessPriorityChangedNative(nativeSharedTest, isPrimaryClient));
+        PollingCheck.waitFor(SETUP_TIMEOUT, () -> {
+            try {
+                return testClientAccessPriorityChangedNative(nativeSharedTest, isPrimaryClient);
+            } catch (Throwable t) {
+                return false;
+            }
+        });
     }
 
     private void closeNativeClient(long nativeSharedTest) throws Exception {
@@ -1121,14 +1398,44 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     /**
-     * Ensure the CTS activity becomes foreground again instead of launcher.
+     * Flush and clear all accumulated events in the ErrorLoggingService.
+     * This prevents stale events from previous operations from interfering with
+     * subsequent synchronization.
      */
-    private void forceCtsActivityToTop() throws InterruptedException {
+    private void drainEvents() {
+        try {
+            mErrorServiceConnection.getLog(10); // small timeout to drain
+        } catch (TimeoutException e) {
+            // expected if no events
+        }
+    }
+
+    private List<ErrorLoggingService.LogEvent> forceCtsActivityToTop() throws InterruptedException {
+        drainEvents();
         Intent bringToTopIntent = new Intent(mContext, SharedCameraActivity.class);
         bringToTopIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         mContext.startActivity(bringToTopIntent);
-        Thread.sleep(WAIT_TIME);
+        try {
+            return mErrorServiceConnection.getLog(SETUP_TIMEOUT, TestConstants.EVENT_ACTIVITY_RESUMED);
+        } catch (TimeoutException e) {
+            fail("Timed out waiting for SharedCameraActivity to resume");
+            return null;
+        }
+    }
+
+    private List<ErrorLoggingService.LogEvent> forceCtsSecondaryActivityToTop() throws InterruptedException {
+        drainEvents();
+        Intent bringToTopIntent = new Intent(mContext, SharedCameraActivitySecondaryClient.class);
+        bringToTopIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        mContext.startActivity(bringToTopIntent);
+        try {
+            return mErrorServiceConnection.getLog(SETUP_TIMEOUT, TestConstants.EVENT_ACTIVITY_RESUMED);
+        } catch (TimeoutException e) {
+            fail("Timed out waiting for SharedCameraActivitySecondaryClient to resume");
+            return null;
+        }
     }
 
     private static native boolean testIsCameraDeviceSharingSupportedNative(String cameraId,
@@ -1150,4 +1457,6 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             long sharedTestContext);
     private static native boolean testClientAccessPriorityChangedNative(long sharedTestContext,
             boolean primaryClient);
+    private static native boolean testResetFrameCounterNative(long sharedTestContext);
+    private static native boolean testWaitForFrameNative(long sharedTestContext, int timeoutSec);
 }
