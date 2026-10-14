@@ -23,6 +23,7 @@ import android.hdmicec.cts.CecMessage;
 import android.hdmicec.cts.CecOperand;
 import android.hdmicec.cts.HdmiCecConstants;
 import android.hdmicec.cts.LogicalAddress;
+import android.hdmicec.cts.LogHelper;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
@@ -39,9 +40,15 @@ import java.util.concurrent.TimeUnit;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class HdmiCecActiveTrackingTest extends BaseHdmiCecCtsTest {
     // Delay to allow the DUT to poll all the non-local logical addresses (seconds)
-    private static final int POLLING_WAIT_TIME = 5;
+    private static final int POLLING_WAIT_TIME = 10;
     // Delay to wait for the HotplugDetectionAction to start (milliseconds)
     private static final int HOTPLUG_WAIT_TIME = 60000;
+    // Delay to wait for the DeviceDiscoveryAction to end (seconds)
+    private static final int DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS = 40;
+    // Tag for the DeviceDiscoveryAction
+    private static String DEVICE_DISCOVERY_ACTION_TAG = "DeviceDiscoveryAction";
+    // Log for the DeviceDiscoveryAction ending
+    private static String DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG = "Wrap up Device Discovery";
 
     public HdmiCecActiveTrackingTest() {
         super(HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
@@ -70,6 +77,16 @@ public final class HdmiCecActiveTrackingTest extends BaseHdmiCecCtsTest {
      */
     @Test
     public void cect_RemoveDeviceFromNetwork() throws Exception {
+        // Send the device to sleep and wake it up to restart
+        // DeviceDiscoveryAction and HotplugDetectionAction.
+        sendDeviceToSleepAndValidate();
+        wakeUpDevice();
+
+        // Wait for DeviceDiscoveryAction to end before starting the test.
+        LogHelper.waitForLog(getDevice(), DEVICE_DISCOVERY_ACTION_TAG,
+            DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS,
+            DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+
         // Wait for the device discovery action to pass.
         TimeUnit.SECONDS.sleep(POLLING_WAIT_TIME);
         // Add an external playback device to the network.
