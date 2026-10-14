@@ -25,6 +25,9 @@ import android.os.UserManager;
  * TODO(b/189282625): replace device feature with a more specific feature.
  */
 public final class FeatureUtil {
+    // It duplicates the feature defined in
+    // cts/common/device-side/util-axt/src/com/android/compatibility/common/util/FeatureUtil.java.
+    public static final String XR_API_FEATURE = "android.software.xr.api.spatial";
 
     private FeatureUtil() {
         throw new AssertionError();
@@ -230,5 +233,11 @@ public final class FeatureUtil {
     public static boolean supportCameraFeature(Context context) {
         PackageManager pm = context.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY);
+    }
+
+    /** Checks whether the device is XR headset. */
+    public static boolean isXrHeadset(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(XR_API_FEATURE);
     }
 }
