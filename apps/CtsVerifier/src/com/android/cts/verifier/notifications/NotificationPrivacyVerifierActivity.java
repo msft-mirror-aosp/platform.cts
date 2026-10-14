@@ -107,6 +107,13 @@ public class NotificationPrivacyVerifierActivity extends InteractiveVerifierActi
     protected List<InteractiveTestCase> createTestItems() {
         List<InteractiveTestCase> tests = new ArrayList<>();
 
+        // Skip all tests on XR headset because it does not support notifications over lock for
+        // AndroidXR.
+        // The activity will show "No tests available for this device".
+        if (FeatureUtil.isXrHeadset(this)) {
+            return tests;
+        }
+
         // FIRST: enable lock screen
         tests.add(new SetScreenLockEnabledStep());
 
