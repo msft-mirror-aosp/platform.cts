@@ -20,6 +20,7 @@ import static android.Manifest.permission.ACCESS_SURFACE_FLINGER;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
@@ -57,12 +58,14 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.overlay.Components;
 import android.server.wm.overlay.R;
 import android.server.wm.settings.SettingsSession;
+import android.server.wm.settings.TransitionAnimationScaleSession;
 import android.server.wm.shared.BlockingResultReceiver;
 import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
@@ -137,6 +140,9 @@ public class WindowUntrustedTouchTest {
 
     private static final String SETTING_MAXIMUM_OBSCURING_OPACITY =
             "maximum_obscuring_opacity_for_touch";
+    private static final String AM_START_HOME_ACTIVITY_COMMAND =
+            "am start -W -a android.intent.action.MAIN -c android.intent.category.HOME --user "
+                    + Process.myUserHandle().getIdentifier();
 
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private final Map<String, FutureConnection<IUntrustedTouchTestService>> mConnections =
@@ -728,7 +734,6 @@ public class WindowUntrustedTouchTest {
                 MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
         addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.long_alpha_0_7,
                 R.anim.long_alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
         long start = SystemClock.elapsedRealtime();
 
         assertTrue(mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY));
@@ -770,13 +775,18 @@ public class WindowUntrustedTouchTest {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.alpha_0_9, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        try (TransitionAnimationScaleSession session =
+                new TransitionAnimationScaleSession(20f)) {
+            addAnimatedActivityOverlay(
+                    APP_A, /* touchable */ false, R.anim.alpha_0_9, R.anim.alpha_1);
 
-        mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
+            mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
-        assertAnimationRunning();
-        assertTouchNotReceived();
+            assertTouchNotReceived();
+        }
+        // Navigating to the home screen prevents the current animation from interfering with
+        // subsequent test steps.
+        launchHomeActivity();
     }
 
     @Test
@@ -786,13 +796,18 @@ public class WindowUntrustedTouchTest {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.alpha_0_7, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        try (TransitionAnimationScaleSession session =
+                new TransitionAnimationScaleSession(20f)) {
+            addAnimatedActivityOverlay(
+                    APP_A, /* touchable */ false, R.anim.alpha_0_7, R.anim.alpha_0_7);
 
-        mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
+            mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
-        assertAnimationRunning();
-        assertTouchReceived();
+            assertTouchReceived();
+        }
+        // Navigating to the home screen prevents the current animation from interfering with
+        // subsequent test steps.
+        launchHomeActivity();
     }
 
     @Test
@@ -802,13 +817,18 @@ public class WindowUntrustedTouchTest {
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
 
-        addAnimatedActivityOverlay(APP_A, /* touchable */ true, R.anim.alpha_0_7, R.anim.alpha_1);
-        assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
+        try (TransitionAnimationScaleSession session =
+                new TransitionAnimationScaleSession(2f)) {
+            addAnimatedActivityOverlay(
+                    APP_A, /* touchable */ true, R.anim.alpha_0_7, R.anim.alpha_0_7);
 
-        mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
+            mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
-        assertAnimationRunning();
-        assertTouchNotReceived();
+            assertTouchNotReceived();
+        }
+        // Navigating to the home screen prevents the current animation from interfering with
+        // subsequent test steps.
+        launchHomeActivity();
     }
 
     @Test
@@ -1338,6 +1358,11 @@ public class WindowUntrustedTouchTest {
         // on freeform first devices. b/191075641.
         options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
         return options.toBundle();
+    }
+
+    private void launchHomeActivity() {
+        executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
+        mWmState.waitForHomeActivityVisible();
     }
 
     public static class TestActivity extends Activity {

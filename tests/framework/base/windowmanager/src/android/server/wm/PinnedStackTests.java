@@ -120,7 +120,6 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.database.ContentObserver;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
@@ -133,7 +132,7 @@ import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.CommandSession.SizeInfo;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WindowManagerState.Task;
-import android.server.wm.settings.SettingsSession;
+import android.server.wm.settings.TransitionAnimationScaleSession;
 import android.util.Log;
 import android.util.Size;
 
@@ -148,7 +147,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -279,10 +277,8 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     @Test
     public void testEnterPipToOtherOrientation() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
-        final TransitionAnimationScaleSession transitionAnimationScaleSession =
-                mObjectTracker.manage(new TransitionAnimationScaleSession());
         // Skip unimportant animations.
-        transitionAnimationScaleSession.set(0f);
+        mObjectTracker.manage(new TransitionAnimationScaleSession(0f));
         // Launch a portrait only app on the fullscreen stack
         launchActivity(PORTRAIT_ORIENTATION_ACTIVITY);
         mInstrumentation.getUiAutomation().syncInputTransactions();
@@ -1217,42 +1213,11 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertValidPictureInPictureCallbackOrder(PIP_ACTIVITY, windowingMode);
     }
 
-    /** Helper class to save, set, and restore transition_animation_scale preferences. */
-    private static class TransitionAnimationScaleSession extends SettingsSession<Float> {
-        TransitionAnimationScaleSession() {
-            super(Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
-                    Settings.Global::getFloat,
-                    Settings.Global::putFloat);
-        }
-
-        @Override
-        public void close() {
-            // Wait for the restored setting to apply before we continue on with the next test
-            final CountDownLatch waitLock = new CountDownLatch(1);
-            final Context context = getInstrumentation().getTargetContext();
-            context.getContentResolver().registerContentObserver(mUri, false,
-                    new ContentObserver(new Handler(Looper.getMainLooper())) {
-                        @Override
-                        public void onChange(boolean selfChange) {
-                            waitLock.countDown();
-                        }
-                    });
-            super.close();
-            try {
-                if (!waitLock.await(2, TimeUnit.SECONDS)) {
-                    Log.i(TAG, "TransitionAnimationScaleSession value not restored");
-                }
-            } catch (InterruptedException impossible) {}
-        }
-    }
-
     @Ignore("b/149946388")
     @Test
     public void testEnterPipInterruptedCallbacks() {
-        final TransitionAnimationScaleSession transitionAnimationScaleSession =
-                mObjectTracker.manage(new TransitionAnimationScaleSession());
         // Slow down the transition animations for this test
-        transitionAnimationScaleSession.set(20f);
+        mObjectTracker.manage(new TransitionAnimationScaleSession(20f));
 
         // Launch a PiP activity
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP, "true"));
