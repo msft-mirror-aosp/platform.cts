@@ -43,6 +43,7 @@ public class TestConstants {
     public static final int EVENT_CAMERA_PREVIEW_COMPLETED = 20;
     public static final int EVENT_CAMERA_UNSUPPORTED_ACTIVITY_STARTED = 21;
     public static final int EVENT_CAMERA_UNSUPPORTED_ACTIVITY_FAILED = 22;
+    public static final int EVENT_CAMERA_FRAMES_RECEIVED_OK = 23;
 
     public static final int OP_OPEN_CAMERA = 100;
     public static final int OP_OPEN_CAMERA_SHARED = 101;
@@ -53,6 +54,8 @@ public class TestConstants {
     public static final int OP_CREATE_SHARED_SESSION_INVALID_CONFIGS = 106;
     public static final int OP_PERFORM_UNSUPPORTED_COMMANDS = 107;
     public static final int OP_PERFORM_UNSUPPORTED_CAPTURE_SESSION_COMMANDS = 108;
+    public static final int OP_CHECK_FRAMES_RECEIVED = 109;
+    public static final int OP_SET_FREEZE_CLIENT = 110;
 
     public static final String EVENT_CAMERA_ERROR_STR = "error";
     public static final String EVENT_CAMERA_CONNECT_STR = "connect";
@@ -65,6 +68,7 @@ public class TestConstants {
             "onCameraAccessPrioritiesChanged";
     public static final String EVENT_ACTIVITY_TOP_RESUMED_TRUE_STR = "topResumedTrue";
     public static final String EVENT_ACTIVITY_TOP_RESUMED_FALSE_STR = "topResumedFalse";
+    public static final String EVENT_CAMERA_FRAMES_RECEIVED_OK_STR = "framesReceivedOk";
 
     public static final String EVENT_CAMERA_UNKNOWN_STR = "unknown";
 
@@ -107,6 +111,8 @@ public class TestConstants {
                 return EVENT_ACTIVITY_TOP_RESUMED_TRUE_STR;
             case EVENT_ACTIVITY_TOP_RESUMED_FALSE:
                 return EVENT_ACTIVITY_TOP_RESUMED_FALSE_STR;
+            case EVENT_CAMERA_FRAMES_RECEIVED_OK:
+                return EVENT_CAMERA_FRAMES_RECEIVED_OK_STR;
             default:
                 return EVENT_CAMERA_UNKNOWN_STR + " " + err;
         }
