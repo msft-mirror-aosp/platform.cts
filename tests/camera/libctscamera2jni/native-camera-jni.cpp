@@ -728,6 +728,7 @@ class CaptureResultListener {
         mSaveCompletedRequests = false;
         clearSavedRequestsLocked();
         mCompletedFrameNumbers.clear();
+        mStartedFrameNumbers.clear();
         clearFailedLostFrameNumbersLocked();
     }
 
@@ -1882,6 +1883,10 @@ class PreviewTestCase {
 
     bool waitForCaptureStarted(uint32_t timeoutSec) {
         return mResultListener.waitForCaptureStarted(timeoutSec);
+    }
+
+    void resetFrameCounter() {
+        mResultListener.reset();
     }
 
     camera_status_t takePicture() {
@@ -5534,6 +5539,37 @@ testUnsupportedCaptureSessionCommandsNative(JNIEnv* env, jclass /*clazz*/,
     pass = true;
 cleanup:
     ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testResetFrameCounterNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
+    ALOGV("%s", __FUNCTION__);
+    PreviewTestCase* sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    if (sharedCtx == nullptr) {
+        return false;
+    }
+    sharedCtx->resetFrameCounter();
+    return true;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testWaitForFrameNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext, jint timeoutSec) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    PreviewTestCase* sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    if (sharedCtx == nullptr) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    pass = sharedCtx->waitForCaptureStarted(timeoutSec);
+    if (!pass) {
+        LOG_ERROR(errorString, "Camera timed out waiting for new frames");
+    }
+cleanup:
     if (!pass) {
         throwAssertionError(env, errorString);
     }
