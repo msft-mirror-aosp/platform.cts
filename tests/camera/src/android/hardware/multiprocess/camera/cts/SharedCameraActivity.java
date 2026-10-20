@@ -83,10 +83,11 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     HandlerThread mCameraHandlerThread;
     Handler mImageReaderHandler;
     HandlerThread mImageReaderHandlerThread;
+    HandlerThread mMessengerHandlerThread;
     String mCameraId;
     Messenger mMessenger;
-    CameraDevice mCameraDevice;
-    CameraCaptureSession mSession;
+    volatile CameraDevice mCameraDevice;
+    volatile CameraCaptureSession mSession;
     BlockingSessionCallback mSessionMockListener;
     CaptureRequest.Builder mCaptureRequestBuilder;
     Surface mPreviewSurface;
@@ -101,7 +102,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     Size mImageReaderSize;
     int mImageReaderFormat;
     Size mSurfaceViewSize;
-    boolean mIsPrimary = true;
+    volatile boolean mIsPrimary = true;
     volatile boolean mFreezeClient = false;
 
 
@@ -124,7 +125,9 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
         mImageReaderHandlerThread = new HandlerThread("ImageReaderHandlerThread");
         mImageReaderHandlerThread.start();
         mImageReaderHandler = new Handler(mImageReaderHandlerThread.getLooper());
-        mMessenger = new Messenger(new IncomingHandler(mCameraHandlerThread.getLooper()));
+        mMessengerHandlerThread = new HandlerThread("MessengerHandlerThread");
+        mMessengerHandlerThread.start();
+        mMessenger = new Messenger(new IncomingHandler(mMessengerHandlerThread.getLooper()));
         ResultReceiver resultReceiver = getIntent().getParcelableExtra(
                 TestConstants.EXTRA_RESULT_RECEIVER);
         Bundle resultData = new Bundle();
@@ -151,6 +154,9 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
         if (mSession != null) {
             mSession.close();
             mSession = null;
+        }
+        if (mMessengerHandlerThread != null) {
+            mMessengerHandlerThread.quitSafely();
         }
         mCameraHandlerThread.quitSafely();
         if (mImageReaderHandlerThread != null) {
