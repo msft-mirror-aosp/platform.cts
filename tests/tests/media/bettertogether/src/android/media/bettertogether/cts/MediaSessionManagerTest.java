@@ -476,6 +476,8 @@ public class MediaSessionManagerTest {
 
     @Test
     public void testGetSession2Tokens() throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandler();
         Executor handlerExecutor = new HandlerExecutor(handler);
@@ -503,6 +505,8 @@ public class MediaSessionManagerTest {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testGetSession2TokensWithTwoSessions() throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandler();
         Executor handlerExecutor = new HandlerExecutor(handler);
@@ -586,6 +590,8 @@ public class MediaSessionManagerTest {
 
     @Test
     public void testSession2TokensNotChangedBySession1() throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandler();
 
