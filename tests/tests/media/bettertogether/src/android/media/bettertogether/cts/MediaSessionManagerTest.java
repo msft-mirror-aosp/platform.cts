@@ -15,6 +15,8 @@
  */
 package android.media.bettertogether.cts;
 
+import static com.android.bedstead.nene.TestApis.permissions;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -51,6 +53,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
@@ -469,25 +472,29 @@ public class MediaSessionManagerTest {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSession2Tokens() throws Exception {
-        final Context context = getInstrumentation().getTargetContext();
-        Handler handler = createHandlerWithScheduledLooperQuit();
-        Executor handlerExecutor = new HandlerExecutor(handler);
+        try (PermissionContext p =
+                permissions().withPermission(Manifest.permission.MEDIA_CONTENT_CONTROL)) {
+            final Context context = getInstrumentation().getTargetContext();
+            Handler handler = createHandlerWithScheduledLooperQuit();
+            Executor handlerExecutor = new HandlerExecutor(handler);
 
-        Session2TokenListener listener = new Session2TokenListener();
-        mSessionManager.addOnSession2TokensChangedListener(listener, handler);
+            Session2TokenListener listener = new Session2TokenListener();
+            mSessionManager.addOnSession2TokensChangedListener(listener, handler);
 
-        Session2Callback sessionCallback = new Session2Callback();
-        try (MediaSession2 session = new MediaSession2.Builder(context)
-                .setSessionCallback(handlerExecutor, sessionCallback)
-                .build()) {
-            assertThat(sessionCallback.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
-                    .isTrue();
-            assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            Session2Callback sessionCallback = new Session2Callback();
+            try (MediaSession2 session = new MediaSession2.Builder(context)
+                    .setSessionCallback(handlerExecutor, sessionCallback)
+                    .build()) {
+                assertThat(sessionCallback.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isTrue();
+                assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isTrue();
 
-            Session2Token currentToken = session.getToken();
-            assertThat(listContainsToken(listener.mTokens, currentToken)).isTrue();
-            assertThat(listContainsToken(mSessionManager.getSession2Tokens(), currentToken))
-                    .isTrue();
+                Session2Token currentToken = session.getToken();
+                assertThat(listContainsToken(listener.mTokens, currentToken)).isTrue();
+                assertThat(listContainsToken(mSessionManager.getSession2Tokens(), currentToken))
+                        .isTrue();
+            }
         }
     }
 
@@ -495,50 +502,57 @@ public class MediaSessionManagerTest {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSession2TokensWithTwoSessions() throws Exception {
-        final Context context = getInstrumentation().getTargetContext();
-        Handler handler = createHandlerWithScheduledLooperQuit();
-        Executor handlerExecutor = new HandlerExecutor(handler);
+        try (PermissionContext p =
+                permissions().withPermission(Manifest.permission.MEDIA_CONTENT_CONTROL)) {
+            final Context context = getInstrumentation().getTargetContext();
+            Handler handler = createHandlerWithScheduledLooperQuit();
+            Executor handlerExecutor = new HandlerExecutor(handler);
 
-        Session2TokenListener listener = new Session2TokenListener();
-        mSessionManager.addOnSession2TokensChangedListener(listener, handler);
+            Session2TokenListener listener = new Session2TokenListener();
+            mSessionManager.addOnSession2TokensChangedListener(listener, handler);
 
-        try (MediaSession2 session1 = new MediaSession2.Builder(context)
-                .setSessionCallback(handlerExecutor, new Session2Callback())
-                .setId("testGetSession2TokensWithTwoSessions_session1")
-                .build()) {
-
-            assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
-            Session2Token session1Token = session1.getToken();
-            assertThat(listContainsToken(mSessionManager.getSession2Tokens(), session1Token))
-                    .isTrue();
-
-            // Create another session and check the result of getSession2Token().
-            listener.resetCountDownLatch();
-            Session2Token session2Token = null;
-            try (MediaSession2 session2 = new MediaSession2.Builder(context)
+            try (MediaSession2 session1 = new MediaSession2.Builder(context)
                     .setSessionCallback(handlerExecutor, new Session2Callback())
-                    .setId("testGetSession2TokensWithTwoSessions_session2")
+                    .setId("testGetSession2TokensWithTwoSessions_session1")
                     .build()) {
 
                 assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
                         .isTrue();
-                session2Token = session2.getToken();
-                assertThat(session2Token).isNotNull();
+                Session2Token session1Token = session1.getToken();
+                assertThat(listContainsToken(mSessionManager.getSession2Tokens(), session1Token))
+                        .isTrue();
+
+                // Create another session and check the result of getSession2Token().
+                listener.resetCountDownLatch();
+                Session2Token session2Token = null;
+                try (MediaSession2 session2 = new MediaSession2.Builder(context)
+                        .setSessionCallback(handlerExecutor, new Session2Callback())
+                        .setId("testGetSession2TokensWithTwoSessions_session2")
+                        .build()) {
+
+                    assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                            .isTrue();
+                    session2Token = session2.getToken();
+                    assertThat(session2Token).isNotNull();
+                    assertThat(listContainsToken(
+                            mSessionManager.getSession2Tokens(), session1Token))
+                            .isTrue();
+                    assertThat(listContainsToken(
+                            mSessionManager.getSession2Tokens(), session2Token))
+                            .isTrue();
+
+                    listener.resetCountDownLatch();
+                }
+
+                // Since the session2 is closed, getSession2Tokens() shouldn't include session2's
+                // token.
+                assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isTrue();
                 assertThat(listContainsToken(mSessionManager.getSession2Tokens(), session1Token))
                         .isTrue();
                 assertThat(listContainsToken(mSessionManager.getSession2Tokens(), session2Token))
-                        .isTrue();
-
-                listener.resetCountDownLatch();
+                        .isFalse();
             }
-
-            // Since the session2 is closed, getSession2Tokens() shouldn't include session2's token.
-            assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
-                    .isTrue();
-            assertThat(listContainsToken(mSessionManager.getSession2Tokens(), session1Token))
-                    .isTrue();
-            assertThat(listContainsToken(mSessionManager.getSession2Tokens(), session2Token))
-                    .isFalse();
         }
     }
 
@@ -576,21 +590,24 @@ public class MediaSessionManagerTest {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSession2TokensNotChangedBySession1() throws Exception {
-        final Context context = getInstrumentation().getTargetContext();
-        Handler handler = createHandlerWithScheduledLooperQuit();
+        try (PermissionContext p =
+                permissions().withPermission(Manifest.permission.MEDIA_CONTENT_CONTROL)) {
+            final Context context = getInstrumentation().getTargetContext();
+            Handler handler = createHandlerWithScheduledLooperQuit();
 
-        Session2TokenListener listener = new Session2TokenListener();
-        List<Session2Token> initialSession2Tokens = mSessionManager.getSession2Tokens();
-        mSessionManager.addOnSession2TokensChangedListener(listener, handler);
-        MediaSession session = new MediaSession(context, TAG);
-        mResourceReleaser.add(session::release);
-        session.setActive(true);
-        session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
-                | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
-        List<Session2Token> laterSession2Tokens = mSessionManager.getSession2Tokens();
+            Session2TokenListener listener = new Session2TokenListener();
+            List<Session2Token> initialSession2Tokens = mSessionManager.getSession2Tokens();
+            mSessionManager.addOnSession2TokensChangedListener(listener, handler);
+            MediaSession session = new MediaSession(context, TAG);
+            mResourceReleaser.add(session::release);
+            session.setActive(true);
+            session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
+                    | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            assertThat(listener.mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
+            List<Session2Token> laterSession2Tokens = mSessionManager.getSession2Tokens();
 
-        assertThat(laterSession2Tokens).hasSize(initialSession2Tokens.size());
+            assertThat(laterSession2Tokens).hasSize(initialSession2Tokens.size());
+        }
     }
 
     @Test
