@@ -25,7 +25,6 @@ import static org.junit.Assert.fail;
 import android.content.ComponentName;
 import android.content.Context;
 import android.media.MediaController2;
-import android.media.MediaMetadata;
 import android.media.MediaSession2;
 import android.media.Session2Command;
 import android.media.Session2CommandGroup;
@@ -43,6 +42,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -58,6 +58,7 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@Ignore("MediaSession2 is deprecated and removed")
 public class MediaController2Test {
     private static final long WAIT_TIME_MS = 100L;
 
