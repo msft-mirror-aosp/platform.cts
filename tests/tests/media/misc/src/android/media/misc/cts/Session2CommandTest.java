@@ -28,6 +28,7 @@ import android.os.Parcel;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -36,6 +37,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@Ignore("MediaSession2 is deprecated and removed")
 public class Session2CommandTest {
     private final int TEST_COMMAND_CODE = 10000;
     private final int TEST_RESULT_CODE = 0;

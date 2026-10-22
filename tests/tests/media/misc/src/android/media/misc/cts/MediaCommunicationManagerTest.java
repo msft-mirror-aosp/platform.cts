@@ -34,6 +34,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 @SdkSuppress(minSdkVersion = 31, codeName = "S")
+@Ignore("MediaSession2 is deprecated and removed")
 public class MediaCommunicationManagerTest {
     private static final int TIMEOUT_MS = 5000;
     private static final int WAIT_MS = 500;
