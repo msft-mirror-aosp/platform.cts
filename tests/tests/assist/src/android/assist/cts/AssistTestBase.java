@@ -334,14 +334,14 @@ abstract class AssistTestBase {
     }
 
     /**
-     * Calculate display dimensions (including navbar) to pass along in the given intent.
+     * Calculate display and window dimensions to pass along in the given intent.
      */
     private void addDimensionsToIntent(Intent intent) {
         if (mDisplaySize == null) {
             Display.Mode dMode = mTestActivity.getWindowManager().getDefaultDisplay().getMode();
             mDisplaySize = new Point(dMode.getPhysicalWidth(), dMode.getPhysicalHeight());
         }
-        Rect bounds = mTestActivity.getWindowManager().getMaximumWindowMetrics().getBounds();
+        Rect bounds = mTestActivity.getWindowManager().getCurrentWindowMetrics().getBounds();
         intent.putExtra(Utils.DISPLAY_AREA_BOUNDS_KEY, bounds);
         intent.putExtra(Utils.DISPLAY_WIDTH_KEY, mDisplaySize.x);
         intent.putExtra(Utils.DISPLAY_HEIGHT_KEY, mDisplaySize.y);
