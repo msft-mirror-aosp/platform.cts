@@ -278,8 +278,6 @@ public class Utils {
     }
 
     public static boolean isXr(Context context) {
-        return context.getPackageManager().hasSystemFeature("android.software.xr.immersive")
-            || context.getPackageManager().hasSystemFeature("android.software.xr.api.spatial")
-            || context.getPackageManager().hasSystemFeature("android.software.xr.api.openxr");
+        return context.getPackageManager().hasSystemFeature("android.software.xr.api.spatial");
     }
 }
