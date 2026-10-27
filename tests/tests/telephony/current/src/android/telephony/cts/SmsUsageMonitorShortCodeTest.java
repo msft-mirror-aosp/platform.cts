@@ -235,6 +235,8 @@ public class SmsUsageMonitorShortCodeTest {
             new ShortCodeTest("cr", "4664537", SMS_CATEGORY_NOT_SHORT_CODE),
             new ShortCodeTest("cr", "466458", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
             new ShortCodeTest("cr", "466453", SMS_CATEGORY_FREE_SHORT_CODE),
+            new ShortCodeTest("cr", "1521", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("cr", "1590", SMS_CATEGORY_FREE_SHORT_CODE),
 
             new ShortCodeTest("cy", "112", SMS_CATEGORY_NOT_SHORT_CODE),
             new ShortCodeTest("cy", "116117", SMS_CATEGORY_FREE_SHORT_CODE),
