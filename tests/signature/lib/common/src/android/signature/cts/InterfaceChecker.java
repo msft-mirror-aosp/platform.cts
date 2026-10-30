@@ -124,6 +124,7 @@ class InterfaceChecker {
                 .filter(not(Method::isSynthetic))
                 .filter(not(Method::isBridge))
                 .filter(m -> !Modifier.isStatic(m.getModifiers()))
+                .filter(m -> !Modifier.isPrivate(m.getModifiers()))
                 .filter(m -> !HIDDEN_INTERFACE_METHOD_ALLOW_LIST.contains(m.toGenericString()))
                 .filter(m -> !findMethod(classDescription, m))
                 .collect(Collectors.toCollection(ArrayList::new));
