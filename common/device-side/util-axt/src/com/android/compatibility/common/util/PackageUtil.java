@@ -20,7 +20,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.pm.Signature;
 import android.os.Build;
 import android.util.Log;
 
@@ -131,21 +130,11 @@ public class PackageUtil {
      */
     public static String computePackageSignatureDigest(PackageInfo packageInfo)
             throws NoSuchAlgorithmException {
-        if (packageInfo == null) {
-            return null;
-        }
-        Signature[] signatures = null;
-        if (packageInfo.signingInfo != null) {
-            signatures = packageInfo.signingInfo.getApkContentsSigners();
-        }
-        if ((signatures == null || signatures.length == 0) && packageInfo.signatures != null) {
-            signatures = packageInfo.signatures;
-        }
-        if (signatures == null || signatures.length == 0) {
+        if (packageInfo == null || packageInfo.signatures == null || packageInfo.signatures.length == 0) {
             return null;
         }
         MessageDigest messageDigest = MessageDigest.getInstance("SHA256");
-        messageDigest.update(signatures[0].toByteArray());
+        messageDigest.update(packageInfo.signatures[0].toByteArray());
 
         final byte[] digest = messageDigest.digest();
         final int digestLength = digest.length;
