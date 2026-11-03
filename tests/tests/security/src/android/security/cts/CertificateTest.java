@@ -65,7 +65,13 @@ public class CertificateTest extends AndroidTestCase {
                 "F9:B5:B6:32:45:5F:9C:BE:EC:57:5F:80:DC:E9:6E:2C:C7:B2:78:B7",
                 "B1:2E:13:63:45:86:A4:6F:1A:B2:60:68:37:58:2D:C4:AC:FD:94:97",
                 "39:B4:6C:D5:FE:80:06:EB:E2:2F:4A:BB:08:33:A0:AF:DB:B9:DD:84",
-                "53:A2:B0:4B:CA:6B:D6:45:E6:39:8A:8E:C4:0D:D2:BF:77:C3:A2:90"}));
+                "53:A2:B0:4B:CA:6B:D6:45:E6:39:8A:8E:C4:0D:D2:BF:77:C3:A2:90",
+                "B4:D6:07:C2:A5:95:BC:5B:F4:67:4D:C9:DC:6F:6F:0A:00:7A:A5:35",
+                "B5:2E:88:4E:40:C1:11:FB:50:C7:E2:4F:AC:18:2B:BD:68:15:D2:34",
+                "FB:97:96:7C:EF:8D:98:63:06:C0:3B:B6:11:F8:E0:13:97:A2:98:D3",
+                "7A:1F:22:2D:72:B2:C3:19:87:44:DB:61:69:E8:A6:4B:D7:0D:44:0E",
+                "67:65:0D:F1:7E:8E:7E:5B:82:40:A4:F4:56:4B:CF:E2:3D:69:C6:F0",
+                "2B:B1:F5:3E:55:0C:1D:C5:F1:D4:E6:B7:6A:46:4B:55:06:02:AC:21"}));
 
     public void testNoRemovedCertificates() throws Exception {
         Set<String> expectedCertificates = new HashSet<String>(
