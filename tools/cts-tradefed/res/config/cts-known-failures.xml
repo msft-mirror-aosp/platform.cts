@@ -417,9 +417,10 @@
     <!-- b/404682208 -->
     <option name="compatibility:exclude-filter" value="CtsADPFHostTestCases" />
 
-    <!-- b/368509186, b/430247502 -->
+    <!-- b/368509186, b/430247502, b/581585585 -->
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[instant] android.gameframerate.cts.GameFrameRateTest" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[all_foldable_states] android.gameframerate.cts.GameFrameRateTest" />
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:102:STAY_REAR_SELFIE] android.gameframerate.cts.GameFrameRateTest"/>
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:104:STAY_SMALL_DISPLAY_LOCK] android.gameframerate.cts.GameFrameRateTest"/>
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:105:STAND] android.gameframerate.cts.GameFrameRateTest"/>
