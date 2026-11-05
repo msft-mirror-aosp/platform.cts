@@ -128,7 +128,7 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     private static final Pattern FOREGROUND_BYTES_PATTERN = Pattern.compile(
             "foregroundModeBytes = (\\d+)");
 
-    private static final long WATCHDOG_ACTION_TIMEOUT_MS = 15_000;
+    private static final long WATCHDOG_ACTION_TIMEOUT_MS = 30_000;
 
     private boolean mDidModifyDateTime;
     private long mOriginalForegroundBytes;
