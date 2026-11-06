@@ -25,6 +25,8 @@ import android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID
 import android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION
 import android.content.pm.PackageInstaller.Session
 import android.content.pm.PackageInstaller.SessionParams
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.platform.test.annotations.AppModeFull
 import android.util.Log
 import androidx.core.content.FileProvider
@@ -32,6 +34,7 @@ import androidx.test.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiObject2
@@ -105,6 +108,16 @@ class UserRestrictionInstallTest {
     val context: Context = InstrumentationRegistry.getTargetContext()
     val apkFile = File(context.filesDir, TEST_APK_NAME)
     val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+
+    /** Package name of the app that shows the install dialogs */
+    private val packageInstallerPackageName: String by lazy {
+        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).setData(Uri.parse("content:"))
+        val packageName = context.packageManager
+            .resolveActivity(intent, PackageManager.ResolveInfoFlags.of(0))
+            ?.activityInfo?.packageName
+        Log.d(TAG, "Package installer package name: $packageName")
+        checkNotNull(packageName) { "No activity handles ACTION_INSTALL_PACKAGE" }
+    }
 
     @Before
     fun uninstallTestApp() {
@@ -465,8 +478,8 @@ class UserRestrictionInstallTest {
                     button.click()
                     return
                 } else {
-                    // Maybe the screen is small. Swipe down and attempt to click
-                    swipeDown()
+                    // Maybe the screen is small. Scroll the dialog and try again.
+                    scrollInstallerDialog()
                 }
             } catch (ignore: Throwable) {
             }
@@ -474,11 +487,10 @@ class UserRestrictionInstallTest {
         Assert.fail("Failed to click the button: $bySelector")
     }
 
-    private fun swipeDown() {
-        // Perform a swipe from the center of the screen to the top of the screen.
-        // Higher the "steps" value, slower is the swipe
-        val centerX = uiDevice.displayWidth / 2
-        val centerY = uiDevice.displayHeight / 2
-        uiDevice.swipe(centerX, centerY, centerX, 0, 10)
+    private fun scrollInstallerDialog() {
+        // Scroll inside the installer's own scrollable content. A swipe at fixed screen
+        // coordinates can start outside the dialog, and that closes the installer.
+        uiDevice.findObject(By.scrollable(true).pkg(packageInstallerPackageName))
+            ?.scroll(Direction.DOWN, 1.0f)
     }
 }
