@@ -17,14 +17,17 @@
 package android.media.cujcommon.cts;
 
 import android.app.Instrumentation;
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.MotionEvent.PointerCoords;
 import android.view.MotionEvent.PointerProperties;
 import android.view.ScaleGestureDetector;
+import android.view.WindowInsets;
+import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
@@ -102,15 +105,20 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
         .send();
   }
 
-  /** Adjusts the touchable region size, based on the main activity's display metrics. */
+  /** Adjusts the touchable region based on the current window metrics and insets. */
   private void setInputRegionSize() {
-    int[] loc = new int[2];
-    mActivity.getWindow().getDecorView().getRootView().getLocationOnScreen(loc);
-    mXStart = loc[0];
-    mYStart = loc[1];
-    DisplayMetrics displayMetrics = mActivity.getResources().getDisplayMetrics();
-    mWidth = displayMetrics.widthPixels;
-    mHeight = displayMetrics.heightPixels;
+    final WindowMetrics windowMetrics = mActivity.getWindowManager().getCurrentWindowMetrics();
+
+    final Rect bounds = new Rect(windowMetrics.getBounds());
+    final Insets contentInsets = windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(
+            WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+
+    // We cannot use Rect#inset() which requires API level 31. So directly compute insets.
+    mXStart = bounds.left + contentInsets.left;
+    mYStart = bounds.top + contentInsets.top;
+    mWidth = bounds.width() - contentInsets.left - contentInsets.right;
+    mHeight = bounds.height() - contentInsets.top - contentInsets.bottom;
+
     mStepSize = (RIGHT_MARGIN_WIDTH_FACTOR * mWidth - LEFT_MARGIN_WIDTH_FACTOR * mWidth
             - 2 * SPAN_GAP) / (2 * PINCH_STEP_COUNT);
     Log.i(TAG, "Set the touchable region: x = " + mXStart + ", y = " + mYStart
