@@ -47,6 +47,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -61,6 +62,7 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@Ignore("MediaSession2 is deprecated and removed")
 public class MediaSession2Test {
     private static final long WAIT_TIME_MS = 300L;
 

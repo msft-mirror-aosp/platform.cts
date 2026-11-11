@@ -474,6 +474,7 @@ public class MediaSessionManagerTest {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     public void testGetSession2Tokens() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
@@ -502,7 +503,7 @@ public class MediaSessionManagerTest {
         }
     }
 
-    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     public void testGetSession2TokensWithTwoSessions() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
@@ -556,6 +557,7 @@ public class MediaSessionManagerTest {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     public void testAddAndRemoveSession2TokensListener() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
@@ -588,6 +590,7 @@ public class MediaSessionManagerTest {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     public void testSession2TokensNotChangedBySession1() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
