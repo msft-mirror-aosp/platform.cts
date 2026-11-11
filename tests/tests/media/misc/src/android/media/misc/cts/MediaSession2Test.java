@@ -17,11 +17,10 @@
 package android.media.misc.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -30,7 +29,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaController2;
-import android.media.MediaMetadata;
 import android.media.MediaSession2;
 import android.media.Session2Command;
 import android.media.Session2CommandGroup;
@@ -51,20 +49,22 @@ import androidx.test.runner.AndroidJUnit4;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Tests {@link android.media.MediaSession2}.
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@Ignore("MediaSession2 is deprecated and removed")
 public class MediaSession2Test {
     private static final long WAIT_TIME_MS = 300L;
 
