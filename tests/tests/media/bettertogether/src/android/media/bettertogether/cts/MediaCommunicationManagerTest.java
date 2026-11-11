@@ -53,6 +53,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /** Tests {@link android.media.MediaCommunicationManager}. */
+@Ignore("MediaSession2 is deprecated and removed")
 @RunWith(BedsteadJUnit4.class)
 @SmallTest
 @SdkSuppress(minSdkVersion = 31, codeName = "S")

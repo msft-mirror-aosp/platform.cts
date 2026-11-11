@@ -47,6 +47,7 @@ import com.android.bedstead.harrier.annotations.UserTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,6 +60,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /** Tests {@link android.media.MediaController2}. */
+@Ignore("MediaSession2 is deprecated and removed")
 @RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class MediaController2Test {
