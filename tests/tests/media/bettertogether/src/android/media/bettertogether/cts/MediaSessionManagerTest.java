@@ -469,6 +469,7 @@ public class MediaSessionManagerTest {
         assertThat(callback.mCallers.get(4)).isEqualTo(callback.mCallers.get(3));
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSession2Tokens() throws Exception {
@@ -498,7 +499,7 @@ public class MediaSessionManagerTest {
         }
     }
 
-    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSession2TokensWithTwoSessions() throws Exception {
@@ -556,6 +557,7 @@ public class MediaSessionManagerTest {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testAddAndRemoveSession2TokensListener() throws Exception {
@@ -587,6 +589,7 @@ public class MediaSessionManagerTest {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSession2TokensNotChangedBySession1() throws Exception {

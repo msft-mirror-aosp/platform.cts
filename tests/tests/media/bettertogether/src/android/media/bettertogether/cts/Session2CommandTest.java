@@ -31,10 +31,12 @@ import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /** Tests {@link android.media.Session2Command}. */
+@Ignore("MediaSession2 is deprecated and removed")
 @RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class Session2CommandTest {
