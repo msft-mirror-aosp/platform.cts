@@ -5819,6 +5819,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         PackageManager packageManager = sContext.getPackageManager();
+        boolean isPasspointSupported =
+                packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_PASSPOINT);
+        assumeTrue(!hasAutomotiveFeature() || isPasspointSupported);
         assertTrue("Passpoint must be supported",
                 packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_PASSPOINT));
     }
