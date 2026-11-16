@@ -104,6 +104,8 @@ class CertificateData {
         "30:43:FA:4F:F2:57:DC:A0:C3:80:EE:2E:58:EA:78:B2:3F:E6:BB:C1",
         "2B:B1:F5:3E:55:0C:1D:C5:F1:D4:E6:B7:6A:46:4B:55:06:02:AC:21",
         "E7:2E:F1:DF:FC:B2:09:28:CF:5D:D4:D5:67:37:B1:51:CB:86:4F:01",
+        /* Removed emSign Root CA - G1 */
+        "8A:C7:AD:8F:73:AC:4E:C1:B5:75:4D:A5:40:F4:FC:CF:7C:B5:8E:8C",
   };
 
     static final String[] CERTIFICATE_DATA = {
@@ -202,7 +204,6 @@ class CertificateData {
         "F6:9C:DB:B0:FC:F6:02:13:B6:52:32:A6:A3:91:3F:16:70:DA:C3:E1",
         "E5:8C:1C:C4:91:3B:38:63:4B:E9:10:6E:E3:AD:8E:6B:9D:D9:81:4A",
         "B9:99:CD:D1:73:50:8A:C4:47:05:08:9C:8C:88:FB:BE:A0:2B:40:CD",
-        "8A:C7:AD:8F:73:AC:4E:C1:B5:75:4D:A5:40:F4:FC:CF:7C:B5:8E:8C",
         "C8:83:44:C0:18:AE:9F:CC:F1:87:B7:8F:22:D1:C5:D7:45:84:BA:E5",
         "5A:8C:EF:45:D7:A6:98:59:76:7A:8C:8B:44:96:B5:78:CF:47:4B:1A",
         "8D:A7:F9:65:EC:5E:FC:37:91:0F:1C:6E:59:FD:C1:CC:6A:6E:DE:16",
