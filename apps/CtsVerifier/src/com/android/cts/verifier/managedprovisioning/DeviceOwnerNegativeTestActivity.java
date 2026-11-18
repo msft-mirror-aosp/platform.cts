@@ -16,6 +16,8 @@
 
 package com.android.cts.verifier.managedprovisioning;
 
+import static com.android.cts.verifier.managedprovisioning.Utils.createInteractiveTestItem;
+
 import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
@@ -32,8 +34,6 @@ import com.android.cts.verifier.IntentDrivenTestActivity.TestInfo;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestListAdapter.TestListItem;
-
-import static com.android.cts.verifier.managedprovisioning.Utils.createInteractiveTestItem;
 
 /**
  * Activity that lists all device owner negative tests.
@@ -104,11 +104,7 @@ public class DeviceOwnerNegativeTestActivity extends PassFailButtons.TestListAct
             adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_KEYGUARD_NEGATIVE,
                     R.string.enterprise_privacy_keyguard_negative,
                     R.string.enterprise_privacy_keyguard_negative_info,
-                    new ButtonInfo[]{
-                            new ButtonInfo(R.string.go_button_text,
-                                    new Intent(Settings.ACTION_SETTINGS)),
-                            new ButtonInfo(R.string.lock_button_text,
-                                    ByodHelperActivity.createLockIntent())}));
+                    new ButtonInfo(R.string.go_button_text, new Intent(Settings.ACTION_SETTINGS))));
         }
         adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_ADD_ACCOUNT_NEGATIVE,
                 R.string.enterprise_privacy_add_account_negative,
