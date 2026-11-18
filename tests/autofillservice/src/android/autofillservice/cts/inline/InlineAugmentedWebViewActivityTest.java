@@ -33,6 +33,7 @@ import android.autofillservice.cts.testcore.CtsAugmentedAutofillService.Augmente
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
+import android.content.AutofillOptions;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.autofill.AutofillId;
@@ -41,6 +42,7 @@ import android.view.autofill.AutofillValue;
 import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiObject2;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
@@ -50,6 +52,15 @@ public class InlineAugmentedWebViewActivityTest extends
 
     private static final String TAG = "InlineAugmentedWebViewActivityTest";
     private WebViewActivity mActivity;
+
+    @BeforeClass
+    public static void disableCompatMode() {
+        final AutofillOptions defaultOptions = AutofillOptions.forWhitelistingItself();
+        final AutofillOptions options =
+                new AutofillOptions(defaultOptions.loggingLevel, /* compatModeEnabled= */ false);
+        options.augmentedAutofillEnabled = true;
+        sContext.getApplicationContext().setAutofillOptions(options);
+    }
 
     public InlineAugmentedWebViewActivityTest() {
         super(getInlineUiBot());
