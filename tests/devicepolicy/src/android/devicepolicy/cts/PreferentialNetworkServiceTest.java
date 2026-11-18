@@ -39,10 +39,8 @@ import android.net.NetworkProvider;
 import android.net.NetworkScore;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
-import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
-import android.util.Range;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -67,7 +65,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -93,9 +90,6 @@ public final class PreferentialNetworkServiceTest {
             .addCapability(NET_CAPABILITY_NOT_VCN_MANAGED)
             .addCapability(NET_CAPABILITY_ENTERPRISE)
             .removeCapability(NET_CAPABILITY_NOT_RESTRICTED)
-            // Only accept requests from this uid, otherwise the provider who uses this
-            // filter might see all requests of the same user if the feature is enabled.
-            .setUids(Set.of(new Range(Process.myUid(), Process.myUid())))
             .build();
 
     private static final PreferentialNetworkServiceConfig ENABLED_CONFIG =
