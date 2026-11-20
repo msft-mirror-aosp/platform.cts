@@ -15,18 +15,13 @@
  */
 package android.media.cts;
 
-import android.media.AudioManager;
-import android.platform.test.annotations.AppModeFull;
-import com.android.compatibility.common.util.ApiLevelUtil;
-import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.SystemUtil;
-
-import android.content.ComponentName;
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.media.AudioManager;
 import android.media.MediaSession2;
 import android.media.Session2CommandGroup;
 import android.media.Session2Token;
@@ -43,10 +38,15 @@ import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.test.InstrumentationTestCase;
 import android.test.UiThreadTest;
-import android.util.Log;
 import android.view.KeyEvent;
 
+import androidx.test.filters.Suppress;
+
+import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -381,6 +381,8 @@ public class MediaSessionManagerTest extends InstrumentationTestCase {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
+    @Suppress
     public void testGetSession2Tokens() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandler();
@@ -402,6 +404,8 @@ public class MediaSessionManagerTest extends InstrumentationTestCase {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
+    @Suppress
     public void testGetSession2TokensWithTwoSessions() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandler();
@@ -443,6 +447,8 @@ public class MediaSessionManagerTest extends InstrumentationTestCase {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
+    @Suppress
     public void testAddAndRemoveSession2TokensListener() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandler();
@@ -471,6 +477,8 @@ public class MediaSessionManagerTest extends InstrumentationTestCase {
         }
     }
 
+    @Ignore("MediaSession2 is deprecated and removed")
+    @Suppress
     public void testSession2TokensNotChangedBySession1() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandler();
