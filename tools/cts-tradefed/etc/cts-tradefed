@@ -91,6 +91,67 @@ else
     echo "Mac is not a fully supported OS, so Java version support will be best effort"
 fi
 
+# Restore chunked-testcases if needed, before JAR_PATH is assembled below.
+#
+# cts_restorer unlinks _chunks_index.json once testcases/ is fully restored and
+# only then deletes the chunk blobs. Gating on the index rather than on the
+# directory therefore matters: if cleanup is interrupted the directory can
+# survive without its index, and re-running the restorer would fail even though
+# testcases/ is already complete.
+XTS_DIR="${CTS_ROOT}/android-cts"
+if [ -d "${XTS_DIR}/chunked-testcases" ]; then
+    # The restore is destructive (the restorer deletes chunked-testcases/ when
+    # done), so serialize concurrent cts-tradefed startups on the same tree.
+    # The subshell scopes the lock to the restore rather than the whole
+    # Tradefed run. flock is best effort: it is absent on macOS by default, and
+    # the lock file cannot be created in a read-only tree.
+    (
+        if command -v flock >/dev/null 2>&1 && { exec 9>"${XTS_DIR}/.restore.lock"; } 2>/dev/null; then
+            if ! flock -n 9; then
+                echo "Waiting for another cts-tradefed to finish restoring test cases..."
+                flock 9
+            fi
+        fi
+
+        # Re-check under the lock: a concurrent process may have finished
+        # restoring while this one was waiting.
+        if [ ! -d "${XTS_DIR}/chunked-testcases" ]; then
+            exit 0
+        fi
+
+        CTS_RESTORER="${XTS_DIR}/tools/cts_restorer"
+        if [ -f "${XTS_DIR}/chunked-testcases/_chunks_index.json" ]; then
+            # A chunked package that has not been restored yet.
+            if [ ! -x "${CTS_RESTORER}" ]; then
+                echo "Error: ${XTS_DIR}/chunked-testcases is present but ${CTS_RESTORER} is missing or not executable." >&2
+                echo "Aborting execution to prevent running with incomplete testcases." >&2
+                echo "Please download and use a android-cts.zip for the testing." >&2
+                exit 1
+            fi
+            echo "Restoring test cases from chunks, this may take a few minutes..."
+            "${CTS_RESTORER}" --chunked-dir-path "${XTS_DIR}/chunked-testcases" \
+                              --output-dir-path "${XTS_DIR}/testcases"
+            RESTORE_STATUS=$?
+            if [ ${RESTORE_STATUS} -ne 0 ]; then
+                echo "Error: cts_restorer failed to restore testcases (exit code: ${RESTORE_STATUS})." >&2
+                echo "Aborting execution to prevent running with incomplete testcases." >&2
+                echo "Please download and use a android-cts.zip for the testing." >&2
+                exit ${RESTORE_STATUS}
+            fi
+        elif [ ! -d "${XTS_DIR}/testcases" ]; then
+            # No index and nothing restored: the package is incomplete or corrupt.
+            echo "Error: ${XTS_DIR}/chunked-testcases has no _chunks_index.json and ${XTS_DIR}/testcases does not exist." >&2
+            echo "Aborting execution to prevent running with incomplete testcases." >&2
+            echo "Please download and use a android-cts.zip for the testing." >&2
+            exit 1
+        else
+            # Cleanup was interrupted after a successful restore. testcases/ is
+            # complete; the leftover chunk blobs are only wasted disk.
+            echo "Note: ignoring leftover ${XTS_DIR}/chunked-testcases (no index); test cases are already restored." >&2
+        fi
+    ) || exit $?
+fi
+
 JAR_DIR=${CTS_ROOT}/android-cts/tools
 
 for JAR in ${JAR_DIR}/*.jar; do
