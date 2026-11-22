@@ -615,4 +615,7 @@
 
   <!-- b/509794420 -->
   <option name="compatibility:exclude-filter" value="CtsPowerManagerPccTestCases" />
+
+  <!-- b/586809795: AdServices APIs are deprecated -->
+  <option name="compatibility:exclude-filter" value="CtsAdServicesNotInAllowListEndToEndTests" />
 </configuration>
