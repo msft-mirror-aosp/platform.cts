@@ -26,6 +26,7 @@ import com.android.tradefed.testtype.IAbi;
 import com.android.tradefed.testtype.IAbiReceiver;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.IDeviceTest;
+import com.android.tradefed.util.FileUtil;
 
 import org.junit.Assert;
 import org.junit.Assume;
@@ -35,7 +36,10 @@ import org.junit.runner.RunWith;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -149,8 +153,7 @@ public class CtsVideoEncodingQualityHostTest implements IAbiReceiver, IBuildRece
 
         if (mReset) {
             // start with a fresh directory
-            File cwd = new File(".");
-            runCommand("rm -fr " + tmpDir, cwd);
+            FileUtil.recursiveDelete(new File(tmpDir));
         }
 
         // set up test directory, make sure it exists
@@ -248,19 +251,22 @@ public class CtsVideoEncodingQualityHostTest implements IAbiReceiver, IBuildRece
             return;
         }
 
-        String url = BASE_URL + fileName;
-        String cmd = "wget -O " + destination.getPath() + " " + url;
-        LogUtil.CLog.i("wget_cmd = " + cmd);
-
-        int result = 0;
+        String urlString = BASE_URL + fileName;
+        LogUtil.CLog.i("Downloading " + urlString + " to " + destination.getPath());
 
         try {
-            result = runCommand(cmd, destDir);
+            URL url = new URL(urlString);
+            URLConnection conn = url.openConnection();
+            conn.setConnectTimeout(300000);
+            conn.setReadTimeout(300000);
+            try (InputStream in = conn.getInputStream()) {
+                FileUtil.writeToFile(in, destination);
+            }
         } catch (IOException e) {
-            result = -2;
-        } catch (InterruptedException e) {
-            result = -3;
+            if (destination.exists()) {
+                destination.delete();
+            }
+            Assert.fail("Download failed: " + e);
         }
-        Assert.assertTrue("downloadFile failed.\n", result == 0);
     }
 }
