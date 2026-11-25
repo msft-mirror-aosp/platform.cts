@@ -697,6 +697,9 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     @Test
     public void testLockTaskAfterReboot() throws Exception {
         try {
+            // Skip this test on TV
+            assumeFalse("Test does not apply to TV", isTv());
+
             // Just start kiosk mode
             executeDeviceTestMethod(
                     ".LockTaskHostDrivenTest", "testStartLockTask_noAsserts");
