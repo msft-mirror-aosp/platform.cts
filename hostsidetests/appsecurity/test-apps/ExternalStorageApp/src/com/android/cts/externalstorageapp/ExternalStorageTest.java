@@ -35,10 +35,15 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.test.AndroidTestCase;
 import android.text.format.DateUtils;
+import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +53,7 @@ import java.util.List;
  * permissions.
  */
 public class ExternalStorageTest extends AndroidTestCase {
+    private static final String TAG = "ExternalStorageTest";
 
     /**
      * Verify that above our package directories we always have no access.
@@ -120,13 +126,19 @@ public class ExternalStorageTest extends AndroidTestCase {
      * Verify that we can download things into our package directory.
      */
     public void testDownloadManagerPackage() throws Exception {
+        final String url = "http://www.example.com";
+        if (!isServerReachable(url)) {
+            Log.w(TAG, "Skipping test since " + url + " is unreachable");
+            return;
+        }
+
         final DownloadManager dm = getContext().getSystemService(DownloadManager.class);
         final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
         try {
             IntentFilter intentFilter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
             mContext.registerReceiver(receiver, intentFilter);
 
-            final Uri source = Uri.parse("http://www.example.com");
+            final Uri source = Uri.parse(url);
             final File target = new File(
                     getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "meow");
 
@@ -139,6 +151,39 @@ public class ExternalStorageTest extends AndroidTestCase {
             }
         } finally {
             mContext.unregisterReceiver(receiver);
+        }
+    }
+
+    /**
+     * Returns whether {@code urlString} resolves to a non-local address and returns a 2xx response.
+     */
+    private static boolean isServerReachable(String urlString) {
+        HttpURLConnection connection = null;
+        try {
+            final URL url = new URL(urlString);
+            // Some partner networks sinkhole the host to loopback (b/563920138).
+            for (InetAddress addr : InetAddress.getAllByName(url.getHost())) {
+                if (addr.isLoopbackAddress() || addr.isAnyLocalAddress()) {
+                    Log.w(TAG, url.getHost() + " resolves to " + addr);
+                    return false;
+                }
+            }
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            final int responseCode = connection.getResponseCode();
+            if (responseCode / 100 != 2) {
+                Log.w(TAG, "Unexpected HTTP " + responseCode + " from " + urlString);
+                return false;
+            }
+            return true;
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to reach " + urlString, e);
+            return false;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
